@@ -330,9 +330,9 @@ function Prix() {
             ))}
           </ul>
           <div className="mb-2">
-            <span className="font-georgia text-5xl md:text-6xl text-deep font-medium">497 €</span>
+            <span className="font-georgia text-5xl md:text-6xl text-deep font-medium">597 €</span>
           </div>
-          <p className="font-georgia text-mist/60 text-sm italic mb-8">ou 3 × 166 €</p>
+          <p className="font-georgia text-mist/60 text-sm italic mb-8">ou 3 × 199 €</p>
           <BtnPrimary href="#stripe" className="text-lg px-12 py-5">
             Commencer la formation →
           </BtnPrimary>
@@ -353,7 +353,7 @@ const FAQ_ITEMS = [
   { q: 'Est-ce que la formation est liée à une religion ?', r: 'Non. Mediumnia ne s\'inscrit dans aucune religion ni aucun dogme. Elle respecte toutes les croyances et propose un cadre universel basé sur l\'expérience directe.' },
   { q: 'Puis-je suivre la formation depuis l\'étranger ?', r: 'L\'application fonctionne partout dans le monde. Les modules imprimés sont envoyés par courrier, les frais de port internationaux peuvent varier. Contactez-nous pour plus d\'informations.' },
   { q: 'Et si je ne suis pas satisfait ?', r: 'Si dans les 14 jours suivant la réception de vos modules vous estimez que la formation ne vous convient pas, vous pouvez demander un remboursement intégral en nous contactant par email.' },
-  { q: 'Comment fonctionne le paiement en 3 fois ?', r: 'Vous payez 166 € au moment de l\'achat, puis 166 € un mois après, puis 166 € deux mois après. Le paiement est automatique et sécurisé par Stripe.' },
+  { q: 'Comment fonctionne le paiement en 3 fois ?', r: 'Vous payez 199 € au moment de l\'achat, puis 199 € un mois après, puis 199 € deux mois après. Le paiement est automatique et sécurisé par Stripe.' },
 ]
 
 function FaqSection() {
@@ -423,7 +423,7 @@ function StickyBar() {
     <div className={`fixed bottom-0 left-0 right-0 z-50 md:hidden transition-transform duration-300 ${visible ? 'translate-y-0' : 'translate-y-full'}`}>
       <div className="flex items-center justify-between px-5 py-4 border-t border-gold/20"
         style={{ backgroundColor: '#1A1535' }}>
-        <p className="font-georgia text-sm text-gold/80">497 € · Paiement en 3× possible</p>
+        <p className="font-georgia text-sm text-gold/80">597 € · Paiement en 3× possible</p>
         <a href="#stripe"
           className="font-georgia text-sm px-5 py-2.5 rounded-lg transition-all hover:opacity-90 shrink-0 ml-4"
           style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>

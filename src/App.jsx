@@ -618,8 +618,8 @@ export default function App() {
         <Constat />
         <Niveaux />
         <Contenu />
-        <Temoignages />
         <Prix />
+        <Temoignages />
         <FaqSection />
       </main>
       <Footer onPolitique={() => setShowPolitique(true)} onMentions={() => setShowMentions(true)} />

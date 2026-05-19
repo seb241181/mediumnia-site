@@ -67,7 +67,7 @@ function Nav() {
         </a>
         <a href="#prix"
           className="font-georgia text-xs tracking-wide px-4 py-2 rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all hidden md:block">
-          Rejoindre la formation
+          Rejoindre l'accompagnement
         </a>
       </div>
     </header>
@@ -86,7 +86,7 @@ function Hero() {
           MEDIUMNIA
         </h1>
         <p className="font-georgia text-mist text-base md:text-xl tracking-widest italic mb-12">
-          Formation à la Médiumnité Consciente
+          Accompagnement à la Médiumnité Consciente
         </p>
         <p className="font-georgia text-deep text-xl md:text-2xl leading-loose max-w-lg mx-auto mb-14">
           Tout a toujours été là.<br />
@@ -97,7 +97,7 @@ function Hero() {
           href="#formation"
           className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all"
         >
-          Découvrir la formation ↓
+          Découvrir le parcours ↓
         </a>
       </div>
     </section>
@@ -109,19 +109,19 @@ function Constat() {
   return (
     <Section id="constat">
       <Ornament />
-      <SectionTitle>Pourquoi les autres formations ne fonctionnent pas</SectionTitle>
+      <SectionTitle>En quoi cet accompagnement est différent</SectionTitle>
       <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
         <p>
-          Vous avez peut-être déjà lu des livres sur la médiumnité. Suivi des stages. Regardé des vidéos. Et pourtant, à chaque fois, le même sentiment revient : quelque chose manque. Un flou persiste. Les techniques s'empilent mais la clarté n'arrive pas.
+          Peut-être avez-vous déjà exploré des livres, des stages ou des vidéos sur la médiumnité. Et peut-être avez-vous eu ce sentiment persistant : quelque chose de juste était là, mais pas encore pleinement accessible.
         </p>
         <p>
-          La plupart des formations sur la médiumnité font la même erreur. Elles vous donnent des méthodes à appliquer de l'extérieur. Comme si la médiumnité était une compétence technique qu'on visse sur soi. Visualisez ceci. Ressentez cela. Ouvrez tel chakra. Appelez tel guide.
+          Ce n'est pas une question de capacité. C'est une question d'approche.
         </p>
         <p>
-          Et vous, au milieu de tout ça, vous restez avec vos doutes. <em>Est-ce que c'est mon mental ? Est-ce que j'invente ? Est-ce que je suis vraiment fait pour ça ?</em>
+          La plupart des chemins vers la médiumnité proposent des méthodes à appliquer depuis l'extérieur. Des techniques à ajouter. Des rituels à reproduire. Mediumnia part d'un postulat différent : votre perception est déjà là. Elle n'attend pas d'être construite. Elle attend d'être reconnue.
         </p>
         <p className="text-deep font-medium text-xl md:text-2xl mt-8 leading-snug">
-          Le problème n'est pas en vous.<br />Le problème, c'est l'approche.
+          C'est cette différence fondamentale qui change tout.
         </p>
       </div>
     </Section>
@@ -133,16 +133,16 @@ function Solution() {
   return (
     <section id="formation" className="bg-deep/[0.03]">
       <Section className="!pt-20 !pb-20">
-        <SectionTitle>Mediumnia : une formation qui libère au lieu d'enfermer</SectionTitle>
+        <SectionTitle>Mediumnia : un accompagnement qui libère au lieu d'enfermer</SectionTitle>
         <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
           <p>
             Mediumnia ne vous enseigne pas la médiumnité comme une technique extérieure. Elle vous accompagne dans la redécouverte de ce que vous portez déjà en vous.
           </p>
           <p>
-            Cette formation a été construite à partir de plus de douze ans de pratique médiumnique au quotidien. Pas à partir de livres. Pas à partir de théories. À partir de milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles. À partir de ce qui fonctionne vraiment quand on est en face d'un être humain qui souffre et qui cherche.
+            Ce parcours a été construit à partir de plus de douze ans de pratique médiumnique au quotidien. Pas à partir de livres. Pas à partir de théories. À partir de milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles. À partir de ce qui fonctionne vraiment quand on est en face d'un être humain qui souffre et qui cherche.
           </p>
           <p>
-            Mediumnia est structurée en 25 modules et 4 niveaux. Chaque module s'appuie sur le précédent. L'ordre n'est pas arbitraire. Il suit la logique exacte par laquelle la médiumnité se découvre : d'abord les fondations, puis la technique du canal, puis la maîtrise, puis l'art du médium accompli.
+            Mediumnia est structuré en 25 modules et 4 niveaux. Chaque module s'appuie sur le précédent. L'ordre n'est pas arbitraire. Il suit la logique exacte par laquelle la médiumnité se découvre : d'abord les fondations, puis la technique du canal, puis la maîtrise, puis l'art du médium accompli.
           </p>
         </div>
         <blockquote className="mt-12 border-l-4 border-gold pl-6 py-2">
@@ -159,7 +159,7 @@ function Solution() {
 const INCLUS = [
   { icon: '📚', titre: '25 modules imprimés', texte: 'Envoyés chez vous par courrier. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale.' },
   { icon: '📱', titre: 'L\'application Mediumnia', texte: 'Installable sur votre téléphone, accessible 24h/24. Elle contient tous vos modules en version numérique, 32 exercices guidés avec chronomètre, un carnet de pratique personnel et le suivi de votre progression.' },
-  { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: 'Intégrée dans l\'application, Mediumia est une intelligence artificielle formée spécifiquement sur le contenu de la formation. Elle répond à vos questions, vous aide à relire vos ressentis avec discernement, et vous accompagne module après module. Elle ne canalise pas à votre place. Elle vous aide à découvrir votre propre canal.' },
+  { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: 'Intégrée dans l\'application, Mediumia est une intelligence artificielle formée spécifiquement sur le contenu du parcours. Elle répond à vos questions, vous aide à relire vos ressentis avec discernement, et vous accompagne module après module. Elle ne canalise pas à votre place. Elle vous aide à découvrir votre propre canal.' },
   { icon: '⏱️', titre: '32 exercices guidés', texte: 'Chaque exercice est accompagné d\'un minuteur, d\'étapes claires et d\'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique.' },
   { icon: '📝', titre: 'Votre carnet de pratique', texte: 'Intégré dans l\'application, il vous permet de noter vos ressentis, vos perceptions, vos questions après chaque exercice. Avec le temps, il devient votre outil de discernement le plus précieux.' },
   { icon: '🔓', titre: '12 mois d\'accès', texte: 'Votre code personnel vous donne accès à l\'application et à Mediumia pendant 12 mois. Les modules imprimés, eux, restent à vous pour toujours.' },
@@ -169,7 +169,7 @@ function Contenu() {
   return (
     <Section id="contenu">
       <Ornament />
-      <SectionTitle>Ce que contient la formation</SectionTitle>
+      <SectionTitle>Ce que contient le parcours</SectionTitle>
       <div className="grid md:grid-cols-2 gap-5">
         {INCLUS.map((item, i) => (
           <div key={i} className="border border-gold/20 rounded-xl p-6 bg-white/60 hover:border-gold/50 transition-all">
@@ -232,13 +232,13 @@ function Sebastien() {
   return (
     <Section id="sebastien">
       <Ornament />
-      <SectionTitle>Qui vous transmet cette formation</SectionTitle>
+      <SectionTitle>Qui vous transmet ce parcours</SectionTitle>
       <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
         <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans. Pendant cette période, j'ai accompagné des milliers de personnes en consultation individuelle. Des vivants qui cherchaient des réponses. Des familles qui voulaient entrer en contact avec un proche disparu. Des êtres perdus qui avaient juste besoin d'entendre qu'ils n'étaient pas seuls.</p>
-        <p>Ma liste d'attente a atteint un an. J'ai dû arrêter certaines activités pour la réduire à quatre mois. Ce n'est pas pour me vanter. C'est pour vous dire que ce que je transmets dans cette formation vient d'une pratique réelle, quotidienne, intense, testée par la réalité de milliers de séances.</p>
+        <p>Ma liste d'attente a atteint un an. J'ai dû arrêter certaines activités pour la réduire à quatre mois. Ce n'est pas pour me vanter. C'est pour vous dire que ce que je transmets dans ce parcours vient d'une pratique réelle, quotidienne, intense, testée par la réalité de milliers de séances.</p>
         <p>Je n'ai pas appris la médiumnité dans les livres. Je l'ai découverte dans mon propre corps, à travers mes propres épreuves, mes propres doutes, mes propres traversées. Et c'est cette expérience directe que j'ai voulu transmettre ici.</p>
-        <p className="text-deep font-medium text-lg">Mediumnia n'est pas une formation théorique. C'est une transmission.</p>
-        <p>Mon parcours m'a appris une chose que je veux partager avec vous avant toute autre. La médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain qui se réveille quand les conditions sont réunies. Ces conditions, c'est exactement ce que cette formation vous propose de créer.</p>
+        <p className="text-deep font-medium text-lg">Mediumnia n'est pas un parcours théorique. C'est une transmission.</p>
+        <p>Mon parcours m'a appris une chose que je veux partager avec vous avant toute autre. La médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain qui se réveille quand les conditions sont réunies. Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer.</p>
         <p>Je ne vous promets pas que vous deviendrez médium professionnel en 25 modules. Je vous promets que vous découvrirez quelque chose de réel en vous. Et que cette découverte changera votre façon de percevoir le monde.</p>
       </div>
       <blockquote className="mt-12 border-l-4 border-gold pl-6 py-2">
@@ -252,7 +252,7 @@ function Sebastien() {
 
 /* ─── SECTION 7 — TÉMOIGNAGES ─── */
 const TEMOIGNAGES = [
-  { texte: '« Vraiment incroyable. Le sentiment que j\'ai eu c\'est comme si on partait dans une aventure de découverte, très complexe dans la simplicité dont vous avez écrit. J\'ai pas ressenti un effort intellectuel pour comprendre, tout était très clair et ça a touché plus mes émotions que l\'intellectuel. Quand j\'avais lu d\'autres livres sur la médiumnité je restais toujours confuse. Cette fois-ci j\'ai eu plutôt un sentiment de paix. »', source: 'Retour de formation' },
+  { texte: '« Vraiment incroyable. Le sentiment que j\'ai eu c\'est comme si on partait dans une aventure de découverte, très complexe dans la simplicité dont vous avez écrit. J\'ai pas ressenti un effort intellectuel pour comprendre, tout était très clair et ça a touché plus mes émotions que l\'intellectuel. Quand j\'avais lu d\'autres livres sur la médiumnité je restais toujours confuse. Cette fois-ci j\'ai eu plutôt un sentiment de paix. »', source: 'Retour de parcours' },
   { texte: '« J\'ai retrouvé ma petite voix, il y a longtemps que je ne l\'entendais plus et grâce à vos exercices, elle est revenue. J\'ai retrouvé une partie de moi-même. »', source: 'Retour d\'atelier' },
   { texte: '« I love the Mediumnia app! It is very easy to navigate. Great work, I really like it and I don\'t have any comments, I am excited for the launch! »', source: 'Nuri — Retour sur l\'application' },
   { texte: '« Ils ont surtout compris que tout est simple et accessible, il suffit de se l\'autoriser. Pour eux, c\'est une révélation choquante car elle est pourvue de simplicité. »', source: 'Retour d\'atelier' },
@@ -279,9 +279,9 @@ function Temoignages() {
 /* ─── SECTION 8 — APPROCHE UNIQUE ─── */
 const POINTS = [
   { titre: 'Pas de mystère inutile', texte: 'Tout est expliqué clairement. Pas de jargon obscur, pas de rituels imposés, pas de hiérarchie invisible. Vous comprenez ce que vous faites et pourquoi.' },
-  { titre: 'Le cœur au centre', texte: 'La formation place le cœur, et non le cerveau, comme véritable centre de la pratique médiumnique. Le cœur est votre émetteur-récepteur. Le cerveau n\'est qu\'un processeur.' },
+  { titre: 'Le cœur au centre', texte: 'Ce parcours place le cœur, et non le cerveau, comme véritable centre de la pratique médiumnique. Le cœur est votre émetteur-récepteur. Le cerveau n\'est qu\'un processeur.' },
   { titre: 'La souveraineté comme protection', texte: 'Pas de peur, pas de rituels de protection compliqués. Votre souveraineté intérieure est votre première et meilleure protection. Vous apprenez à la poser à chaque pratique.' },
-  { titre: 'Un coach IA formé par le créateur', texte: 'Mediumia n\'est pas un chatbot générique. Elle a été formée spécifiquement sur le contenu des 25 modules et sur la vision de Sébastien. Elle parle avec la voix de la formation.' },
+  { titre: 'Un coach IA formé par le créateur', texte: 'Mediumia n\'est pas un chatbot générique. Elle a été formée spécifiquement sur le contenu des 25 modules et sur la vision de Sébastien. Elle parle avec la voix du parcours.' },
   { titre: 'L\'autonomie comme objectif', texte: 'L\'objectif n\'est pas de vous rendre dépendant d\'un enseignant, d\'un oracle ou d\'un guide. L\'objectif est que vous trouviez votre propre voix et que vous appreniez à lui faire confiance.' },
 ]
 
@@ -312,7 +312,7 @@ function Prix() {
       <Section>
         <SectionTitle>Rejoindre Mediumnia</SectionTitle>
         <div className="border-2 border-gold/40 rounded-2xl p-8 md:p-12 bg-white/70 text-center">
-          <p className="font-georgia text-xs text-mist/50 tracking-widest uppercase mb-8">La formation complète comprend</p>
+          <p className="font-georgia text-xs text-mist/50 tracking-widest uppercase mb-8">Le parcours complet comprend</p>
           <ul className="font-georgia text-base md:text-lg text-deep/80 space-y-3 text-left max-w-sm mx-auto mb-10">
             {[
               '25 modules imprimés envoyés chez vous',
@@ -333,7 +333,7 @@ function Prix() {
           </div>
           <p className="font-georgia text-mist/60 text-sm italic mb-8">ou 3 × 199 €</p>
           <BtnPrimary href="#stripe" className="text-lg px-12 py-5">
-            Commencer la formation →
+            Commencer le parcours →
           </BtnPrimary>
           <p className="font-georgia text-xs text-mist/50 mt-6 leading-relaxed max-w-md mx-auto">
             Paiement sécurisé par Stripe. Vous recevrez vos modules imprimés sous 10 jours ouvrés et votre code d'accès personnel par email dans les 24 heures suivant votre achat.
@@ -346,13 +346,13 @@ function Prix() {
 
 /* ─── SECTION 10 — FAQ ─── */
 const FAQ_ITEMS = [
-  { q: 'Faut-il déjà avoir des capacités médiumniques ?', r: 'Non. La formation est conçue pour les débutants comme pour ceux qui ont déjà des perceptions. Elle commence par les fondations et avance progressivement. Quel que soit votre point de départ, vous êtes au bon endroit.' },
-  { q: 'Combien de temps dure la formation ?', r: 'C\'est vous qui décidez de votre rythme. Certains la traversent en trois mois, d\'autres en un an. Votre accès à l\'application dure 12 mois. Les modules imprimés restent à vous pour toujours.' },
-  { q: 'Est-ce que Mediumia remplace un vrai accompagnement humain ?', r: 'Mediumia est un coach IA formé sur le contenu exact de la formation. Elle ne remplace pas un accompagnement thérapeutique ou un suivi médical. Elle vous aide à comprendre les modules, à relire vos ressentis et à construire votre pratique avec discernement.' },
-  { q: 'Est-ce que la formation est liée à une religion ?', r: 'Non. Mediumnia ne s\'inscrit dans aucune religion ni aucun dogme. Elle respecte toutes les croyances et propose un cadre universel basé sur l\'expérience directe.' },
-  { q: 'Puis-je suivre la formation depuis l\'étranger ?', r: 'L\'application fonctionne partout dans le monde. Les modules imprimés sont envoyés par courrier, les frais de port internationaux peuvent varier. Contactez-nous pour plus d\'informations.' },
-  { q: 'Et si je ne suis pas satisfait ?', r: 'Si dans les 14 jours suivant la réception de vos modules vous estimez que la formation ne vous convient pas, vous pouvez demander un remboursement intégral en nous contactant par email.' },
+  { q: 'Faut-il déjà avoir des capacités médiumniques ?', r: 'Non. Ce parcours est conçu pour les débutants comme pour ceux qui ont déjà des perceptions. Il commence par les fondations et avance progressivement. Quel que soit votre point de départ, vous êtes au bon endroit.' },
+  { q: 'Combien de temps dure le parcours ?', r: 'C\'est vous qui décidez de votre rythme. Certains le traversent en trois mois, d\'autres en un an. Votre accès à l\'application dure 12 mois. Les modules imprimés restent à vous pour toujours.' },
+  { q: 'Est-ce que Mediumia remplace un vrai accompagnement humain ?', r: 'Mediumia est un coach IA formé sur le contenu exact du parcours. Elle ne remplace pas un accompagnement thérapeutique ou un suivi médical. Elle vous aide à comprendre les modules, à relire vos ressentis et à construire votre pratique avec discernement.' },
+  { q: 'Est-ce que ce parcours est lié à une religion ?', r: 'Non. Mediumnia ne s\'inscrit dans aucune religion ni aucun dogme. Elle respecte toutes les croyances et propose un cadre universel basé sur l\'expérience directe.' },
+  { q: 'Puis-je suivre ce parcours depuis l\'étranger ?', r: 'L\'application fonctionne partout dans le monde. Les modules imprimés sont envoyés par courrier, les frais de port internationaux peuvent varier. Contactez-nous pour plus d\'informations.' },
   { q: 'Comment fonctionne le paiement en 3 fois ?', r: 'Vous payez 199 € au moment de l\'achat, puis 199 € un mois après, puis 199 € deux mois après. Le paiement est automatique et sécurisé par Stripe.' },
+  { q: 'Ce parcours peut-il remplacer un suivi médical ou psychologique ?', r: 'Non. Ce parcours ne se substitue en aucun cas à un suivi médical, psychologique ou psychiatrique. Mediumia est un coach pédagogique basé sur l\'intelligence artificielle — ce n\'est ni un médium, ni un thérapeute. En cas de troubles psychiques, de détresse émotionnelle ou de tout symptôme nécessitant une prise en charge, consultez un professionnel de santé qualifié.' },
 ]
 
 function FaqSection() {
@@ -394,7 +394,7 @@ const POLITIQUE = [
   },
   {
     titre: 'Utilisation des données',
-    texte: "Vos données personnelles sont utilisées exclusivement pour traiter votre commande et vous envoyer votre formation. Elles ne sont jamais partagées avec des tiers à des fins commerciales.",
+    texte: "Vos données personnelles sont utilisées exclusivement pour traiter votre commande et vous envoyer votre parcours. Elles ne sont jamais partagées avec des tiers à des fins commerciales.",
   },
   {
     titre: "Données dans l'application",
@@ -470,8 +470,84 @@ function PolitiqueModal({ onClose }) {
   )
 }
 
+/* ─── MODAL MENTIONS LÉGALES ─── */
+const MENTIONS = [
+  {
+    titre: 'Éditeur du site',
+    texte: 'Sébastien Seguin — SIRET : 81918584400027 — Contact : contact@mediumnia.fr',
+  },
+  {
+    titre: 'Hébergement',
+    texte: 'Vercel Inc. — vercel.com',
+  },
+  {
+    titre: 'Nature du parcours',
+    texte: "Mediumnia est un parcours de développement personnel axé sur la découverte de la perception subtile. Il ne constitue en aucun cas un parcours professionnel certifiant, un enseignement médical, paramédical, psychologique ou psychiatrique.",
+  },
+  {
+    titre: 'Responsabilité',
+    texte: "La pratique de la médiumnité relève d'une démarche personnelle et volontaire. Sébastien Seguin ne saurait être tenu responsable de l'usage que l'élève fait des enseignements, exercices et outils proposés dans ce parcours. L'élève reconnaît que ce parcours ne se substitue à aucun suivi médical, psychologique ou psychiatrique. En cas de troubles psychiques, de détresse émotionnelle ou de tout symptôme nécessitant une prise en charge, l'élève s'engage à consulter un professionnel de santé qualifié. L'utilisation de Mediumia (coach IA pédagogique) est proposée à titre d'accompagnement dans la compréhension du parcours. Mediumia n'est ni médium, ni thérapeute, ni professionnel de santé. Ses réponses ne constituent en aucun cas un diagnostic, un avis médical ou une guidance spirituelle.",
+  },
+  {
+    titre: 'Propriété intellectuelle',
+    texte: "L'ensemble du contenu de ce site et du parcours Mediumnia (textes, exercices, structure, méthodologie, application) est la propriété intellectuelle de Sébastien Seguin. Toute reproduction, partielle ou totale, est interdite sans autorisation écrite préalable.",
+  },
+]
+
+function MentionsModal({ onClose }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-0 md:px-6"
+      onClick={onClose}>
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-deep/60 backdrop-blur-sm" />
+      {/* Panneau */}
+      <div
+        className="relative bg-cream w-full md:max-w-2xl max-h-[85vh] rounded-t-2xl md:rounded-2xl overflow-y-auto shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-cream border-b border-gold/20 px-6 py-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gold/60 font-georgia mb-0.5">Mediumnia</p>
+            <h3 className="font-georgia text-deep text-lg font-medium">Mentions légales</h3>
+          </div>
+          <button onClick={onClose}
+            className="text-mist/40 hover:text-mist transition-colors text-2xl leading-none ml-4"
+            aria-label="Fermer">
+            ×
+          </button>
+        </div>
+        {/* Contenu */}
+        <div className="px-6 py-8 space-y-7">
+          {MENTIONS.map((section, i) => (
+            <div key={i}>
+              <p className="font-georgia font-medium text-deep mb-2">{section.titre}</p>
+              <p className="font-georgia text-sm text-mist/80 leading-relaxed">{section.texte}</p>
+            </div>
+          ))}
+        </div>
+        <div className="px-6 pb-8 text-center">
+          <p className="font-georgia text-xs text-mist/40">
+            Pour toute question : <a href="mailto:contact@mediumnia.fr" className="hover:text-gold transition-colors underline">contact@mediumnia.fr</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── FOOTER ─── */
-function Footer({ onPolitique }) {
+function Footer({ onPolitique, onMentions }) {
   return (
     <footer className="border-t border-gold/20 px-6 py-16 text-center">
       <p className="font-georgia text-lg md:text-xl text-mist italic leading-relaxed max-w-xl mx-auto mb-6">
@@ -479,14 +555,16 @@ function Footer({ onPolitique }) {
       </p>
       <p className="text-gold text-3xl mb-10">✦</p>
       <div className="font-georgia text-xs text-mist/50 space-y-1 mb-8">
-        <p>Mediumnia — Formation à la Médiumnité Consciente</p>
+        <p>Mediumnia — Accompagnement à la Médiumnité Consciente</p>
         <p>Sébastien Seguin — Médium professionnel</p>
         <p>SIRET : 81918584400027</p>
       </div>
       <div className="flex items-center justify-center gap-6 font-georgia text-xs text-mist/40">
         <a href="mailto:contact@mediumnia.fr" className="hover:text-gold transition-colors">Contact</a>
         <span>·</span>
-        <a href="#" className="hover:text-gold transition-colors">Mentions légales</a>
+        <button onClick={onMentions} className="hover:text-gold transition-colors">
+          Mentions légales
+        </button>
         <span>·</span>
         <button onClick={onPolitique} className="hover:text-gold transition-colors">
           Politique de confidentialité
@@ -522,6 +600,7 @@ function StickyBar() {
 /* ─── APP ─── */
 export default function App() {
   const [showPolitique, setShowPolitique] = useState(false)
+  const [showMentions, setShowMentions] = useState(false)
   return (
     <div className="bg-cream min-h-screen">
       <Nav />
@@ -530,16 +609,17 @@ export default function App() {
         <Constat />
         <Solution />
         <Contenu />
+        <Temoignages />
         <Niveaux />
         <Sebastien />
-        <Temoignages />
         <Approche />
         <Prix />
         <FaqSection />
       </main>
-      <Footer onPolitique={() => setShowPolitique(true)} />
+      <Footer onPolitique={() => setShowPolitique(true)} onMentions={() => setShowMentions(true)} />
       <StickyBar />
       {showPolitique && <PolitiqueModal onClose={() => setShowPolitique(false)} />}
+      {showMentions && <MentionsModal onClose={() => setShowMentions(false)} />}
     </div>
   )
 }

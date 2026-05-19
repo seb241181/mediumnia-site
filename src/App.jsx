@@ -342,7 +342,7 @@ function Prix() {
             Commencer le parcours →
           </BtnPrimary>
           <p className="font-georgia text-xs text-mist/50 mt-6 leading-relaxed max-w-md mx-auto">
-            Paiement sécurisé par PayPal. Vous recevrez vos modules imprimés sous 10 jours ouvrés et votre code d'accès personnel par email dans les 24 heures suivant votre achat.
+            Paiement sécurisé par PayPal. Expédition sous 72h.
           </p>
         </div>
       </Section>

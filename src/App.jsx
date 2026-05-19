@@ -618,9 +618,9 @@ export default function App() {
         <Constat />
         <Niveaux />
         <Contenu />
+        <Temoignages />
         <Prix />
         <FaqSection />
-        <Temoignages />
       </main>
       <Footer onPolitique={() => setShowPolitique(true)} onMentions={() => setShowMentions(true)} />
       <StickyBar />

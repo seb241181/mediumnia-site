@@ -39,7 +39,7 @@ function Ornament() {
   return <p className="text-gold/40 text-sm tracking-widest text-center my-10">◆ ─────── ◆</p>
 }
 
-function BtnPrimary({ href = '#stripe', children, className = '' }) {
+function BtnPrimary({ href = 'https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW', children, className = '' }) {
   return (
     <a
       href={href}
@@ -337,12 +337,12 @@ function Prix() {
           <div className="mb-2">
             <span className="font-georgia text-5xl md:text-6xl text-deep font-medium">597 €</span>
           </div>
-          <p className="font-georgia text-mist/60 text-sm italic mb-8">ou 3 × 199 €</p>
-          <BtnPrimary href="#stripe" className="text-lg px-12 py-5">
+          <p className="font-georgia text-mist/60 text-sm italic mb-8">Paiement en 4× disponible via PayPal</p>
+          <BtnPrimary href="https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW" className="text-lg px-12 py-5">
             Commencer le parcours →
           </BtnPrimary>
           <p className="font-georgia text-xs text-mist/50 mt-6 leading-relaxed max-w-md mx-auto">
-            Paiement sécurisé par Stripe. Vous recevrez vos modules imprimés sous 10 jours ouvrés et votre code d'accès personnel par email dans les 24 heures suivant votre achat.
+            Paiement sécurisé par PayPal. Vous recevrez vos modules imprimés sous 10 jours ouvrés et votre code d'accès personnel par email dans les 24 heures suivant votre achat.
           </p>
         </div>
       </Section>
@@ -357,7 +357,7 @@ const FAQ_ITEMS = [
   { q: 'Est-ce que Mediumia remplace un vrai accompagnement humain ?', r: 'Mediumia est un coach IA formé sur le contenu exact du parcours. Elle ne remplace pas un accompagnement thérapeutique ou un suivi médical. Elle vous aide à comprendre les modules, à relire vos ressentis et à construire votre pratique avec discernement.' },
   { q: 'Est-ce que ce parcours est lié à une religion ?', r: 'Non. Mediumnia ne s\'inscrit dans aucune religion ni aucun dogme. Elle respecte toutes les croyances et propose un cadre universel basé sur l\'expérience directe.' },
   { q: 'Puis-je suivre ce parcours depuis l\'étranger ?', r: 'L\'application fonctionne partout dans le monde. Les modules imprimés sont envoyés par courrier, les frais de port internationaux peuvent varier. Contactez-nous pour plus d\'informations.' },
-  { q: 'Comment fonctionne le paiement en 3 fois ?', r: 'Vous payez 199 € au moment de l\'achat, puis 199 € un mois après, puis 199 € deux mois après. Le paiement est automatique et sécurisé par Stripe.' },
+  { q: 'Puis-je payer en plusieurs fois ?', r: 'Oui. PayPal propose un paiement en 4 fois sans frais directement sur la page de paiement. Sélectionnez simplement cette option au moment de régler.' },
   { q: 'Ce parcours peut-il remplacer un suivi médical ou psychologique ?', r: 'Non. Ce parcours ne se substitue en aucun cas à un suivi médical, psychologique ou psychiatrique. Mediumia est un coach pédagogique basé sur l\'intelligence artificielle — ce n\'est ni un médium, ni un thérapeute. En cas de troubles psychiques, de détresse émotionnelle ou de tout symptôme nécessitant une prise en charge, consultez un professionnel de santé qualifié.' },
 ]
 
@@ -396,7 +396,7 @@ function FaqSection() {
 const POLITIQUE = [
   {
     titre: 'Données collectées',
-    texte: "Lors de votre achat, nous collectons votre nom, prénom, adresse postale (pour l'envoi des modules imprimés) et adresse email (pour l'envoi du code d'accès). Le paiement est traité directement par Stripe, nous n'avons jamais accès à vos données bancaires.",
+    texte: "Lors de votre achat, nous collectons votre nom, prénom, adresse postale (pour l'envoi des modules imprimés) et adresse email (pour l'envoi du code d'accès). Le paiement est traité directement par PayPal, nous n'avons jamais accès à vos données bancaires.",
   },
   {
     titre: 'Utilisation des données',
@@ -420,7 +420,7 @@ const POLITIQUE = [
   },
   {
     titre: 'Cookies',
-    texte: "Le site mediumnia.fr n'utilise pas de cookies de tracking. Seuls les cookies techniques nécessaires au fonctionnement du paiement Stripe peuvent être utilisés.",
+    texte: "Le site mediumnia.fr n'utilise pas de cookies de tracking. Seuls les cookies techniques nécessaires au fonctionnement du paiement PayPal peuvent être utilisés.",
   },
 ]
 
@@ -593,7 +593,7 @@ function StickyBar() {
       <div className="flex items-center justify-between px-5 py-4 border-t border-gold/20"
         style={{ backgroundColor: '#1A1535' }}>
         <p className="font-georgia text-sm text-gold/80">597 € · Paiement en 3× possible</p>
-        <a href="#stripe"
+        <a href="https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW"
           className="font-georgia text-sm px-5 py-2.5 rounded-lg transition-all hover:opacity-90 shrink-0 ml-4"
           style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>
           Commencer →

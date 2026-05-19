@@ -606,15 +606,15 @@ export default function App() {
       <Nav />
       <main>
         <Hero />
-        <Constat />
         <Solution />
-        <Contenu />
-        <Temoignages />
-        <Niveaux />
-        <Sebastien />
         <Approche />
+        <Sebastien />
+        <Constat />
+        <Niveaux />
+        <Contenu />
         <Prix />
         <FaqSection />
+        <Temoignages />
       </main>
       <Footer onPolitique={() => setShowPolitique(true)} onMentions={() => setShowMentions(true)} />
       <StickyBar />

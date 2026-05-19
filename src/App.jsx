@@ -234,8 +234,7 @@ function Sebastien() {
       <Ornament />
       <SectionTitle>Qui vous transmet cette formation</SectionTitle>
       <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
-        <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Les gens qui me connaissent m'appellent Frérot.</p>
-        <p>Je suis médium professionnel depuis plus de douze ans. Pendant cette période, j'ai accompagné des milliers de personnes en consultation individuelle. Des vivants qui cherchaient des réponses. Des familles qui voulaient entrer en contact avec un proche disparu. Des êtres perdus qui avaient juste besoin d'entendre qu'ils n'étaient pas seuls.</p>
+        <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans. Pendant cette période, j'ai accompagné des milliers de personnes en consultation individuelle. Des vivants qui cherchaient des réponses. Des familles qui voulaient entrer en contact avec un proche disparu. Des êtres perdus qui avaient juste besoin d'entendre qu'ils n'étaient pas seuls.</p>
         <p>Ma liste d'attente a atteint un an. J'ai dû arrêter certaines activités pour la réduire à quatre mois. Ce n'est pas pour me vanter. C'est pour vous dire que ce que je transmets dans cette formation vient d'une pratique réelle, quotidienne, intense, testée par la réalité de milliers de séances.</p>
         <p>Je n'ai pas appris la médiumnité dans les livres. Je l'ai découverte dans mon propre corps, à travers mes propres épreuves, mes propres doutes, mes propres traversées. Et c'est cette expérience directe que j'ai voulu transmettre ici.</p>
         <p className="text-deep font-medium text-lg">Mediumnia n'est pas une formation théorique. C'est une transmission.</p>
@@ -387,8 +386,92 @@ function FaqSection() {
   )
 }
 
+/* ─── MODAL POLITIQUE DE CONFIDENTIALITÉ ─── */
+const POLITIQUE = [
+  {
+    titre: 'Données collectées',
+    texte: "Lors de votre achat, nous collectons votre nom, prénom, adresse postale (pour l'envoi des modules imprimés) et adresse email (pour l'envoi du code d'accès). Le paiement est traité directement par Stripe, nous n'avons jamais accès à vos données bancaires.",
+  },
+  {
+    titre: 'Utilisation des données',
+    texte: "Vos données personnelles sont utilisées exclusivement pour traiter votre commande et vous envoyer votre formation. Elles ne sont jamais partagées avec des tiers à des fins commerciales.",
+  },
+  {
+    titre: "Données dans l'application",
+    texte: "Toutes les données générées dans l'application Mediumnia (carnet de pratique, conversations avec Mediumia, progression dans les modules) sont stockées localement sur votre appareil. Aucune donnée personnelle n'est transmise à nos serveurs.",
+  },
+  {
+    titre: 'Conversations avec Mediumia',
+    texte: "Les conversations que vous avez avec Mediumia transitent par les serveurs d'Anthropic (qui propulse l'intelligence artificielle) pour traitement, mais ne sont pas conservées par nous. Anthropic applique sa propre politique de confidentialité, consultable sur anthropic.com.",
+  },
+  {
+    titre: 'Conservation',
+    texte: "Vos données de commande (nom, adresse, email) sont conservées pendant la durée légale de conservation des factures, soit 10 ans.",
+  },
+  {
+    titre: 'Vos droits',
+    texte: "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles. Pour exercer ces droits, contactez-nous par email.",
+  },
+  {
+    titre: 'Cookies',
+    texte: "Le site mediumnia.fr n'utilise pas de cookies de tracking. Seuls les cookies techniques nécessaires au fonctionnement du paiement Stripe peuvent être utilisés.",
+  },
+]
+
+function PolitiqueModal({ onClose }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-0 md:px-6"
+      onClick={onClose}>
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-deep/60 backdrop-blur-sm" />
+      {/* Panneau */}
+      <div
+        className="relative bg-cream w-full md:max-w-2xl max-h-[85vh] rounded-t-2xl md:rounded-2xl overflow-y-auto shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-cream border-b border-gold/20 px-6 py-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gold/60 font-georgia mb-0.5">Mediumnia</p>
+            <h3 className="font-georgia text-deep text-lg font-medium">Politique de confidentialité</h3>
+          </div>
+          <button onClick={onClose}
+            className="text-mist/40 hover:text-mist transition-colors text-2xl leading-none ml-4"
+            aria-label="Fermer">
+            ×
+          </button>
+        </div>
+        {/* Contenu */}
+        <div className="px-6 py-8 space-y-7">
+          {POLITIQUE.map((section, i) => (
+            <div key={i}>
+              <p className="font-georgia font-medium text-deep mb-2">{section.titre}</p>
+              <p className="font-georgia text-sm text-mist/80 leading-relaxed">{section.texte}</p>
+            </div>
+          ))}
+        </div>
+        <div className="px-6 pb-8 text-center">
+          <p className="font-georgia text-xs text-mist/40">
+            Pour toute question : <a href="mailto:contact@mediumnia.fr" className="hover:text-gold transition-colors underline">contact@mediumnia.fr</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── FOOTER ─── */
-function Footer() {
+function Footer({ onPolitique }) {
   return (
     <footer className="border-t border-gold/20 px-6 py-16 text-center">
       <p className="font-georgia text-lg md:text-xl text-mist italic leading-relaxed max-w-xl mx-auto mb-6">
@@ -405,7 +488,9 @@ function Footer() {
         <span>·</span>
         <a href="#" className="hover:text-gold transition-colors">Mentions légales</a>
         <span>·</span>
-        <a href="#" className="hover:text-gold transition-colors">Politique de confidentialité</a>
+        <button onClick={onPolitique} className="hover:text-gold transition-colors">
+          Politique de confidentialité
+        </button>
       </div>
     </footer>
   )
@@ -436,6 +521,7 @@ function StickyBar() {
 
 /* ─── APP ─── */
 export default function App() {
+  const [showPolitique, setShowPolitique] = useState(false)
   return (
     <div className="bg-cream min-h-screen">
       <Nav />
@@ -451,8 +537,9 @@ export default function App() {
         <Prix />
         <FaqSection />
       </main>
-      <Footer />
+      <Footer onPolitique={() => setShowPolitique(true)} />
       <StickyBar />
+      {showPolitique && <PolitiqueModal onClose={() => setShowPolitique(false)} />}
     </div>
   )
 }

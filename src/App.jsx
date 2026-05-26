@@ -94,7 +94,7 @@ function Hero() {
           Vous avez quelque chose à retrouver.
         </p>
         <a
-          href="#formation"
+          href="#parcours"
           className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all"
         >
           Découvrir le parcours ↓
@@ -131,7 +131,7 @@ function Constat() {
 /* ─── SECTION 3 — LA SOLUTION ─── */
 function Solution() {
   return (
-    <section id="formation" className="bg-deep/[0.03]">
+    <section id="parcours" className="bg-deep/[0.03]">
       <Section className="!pt-20 !pb-20">
         <SectionTitle>Mediumia : un accompagnement qui libère au lieu d'enfermer</SectionTitle>
         <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">

@@ -65,10 +65,20 @@ function Nav() {
         <a href="#" className="font-georgia text-deep tracking-[0.2em] text-sm font-medium">
           ✦ MEDIUMIA
         </a>
-        <a href="#prix"
-          className="font-georgia text-xs tracking-wide px-4 py-2 rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all hidden md:block">
-          Rejoindre l'accompagnement
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href="https://mediumnia-app.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-georgia text-xs tracking-wide text-deep/50 hover:text-gold transition-colors hidden md:block"
+          >
+            Déjà inscrit ? Mon espace →
+          </a>
+          <a href="#prix"
+            className="font-georgia text-xs tracking-wide px-4 py-2 rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all hidden md:block">
+            Rejoindre l'accompagnement
+          </a>
+        </div>
       </div>
     </header>
   )

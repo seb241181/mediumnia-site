@@ -264,6 +264,7 @@ function Sebastien() {
         <p>Je ne vous promets pas que vous deviendrez médium professionnel en 25 modules.</p>
         <p>Je vous promets quelque chose de plus juste : vous allez apprendre à reconnaître ce qui vit déjà en vous, à l'écouter, à le structurer, et à ne plus confondre intuition, émotion, mental et perception subtile.</p>
         <p>Et cette découverte peut profondément changer votre façon de vous percevoir, de percevoir les autres, et de vous relier au monde.</p>
+        </div>
       </div>
       <blockquote className="mt-12 border-l-4 border-gold pl-6 py-2">
         <p className="font-georgia text-lg md:text-xl text-mist italic leading-relaxed">

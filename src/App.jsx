@@ -251,19 +251,28 @@ function Sebastien() {
     <Section id="sebastien">
       <Ornament />
       <SectionTitle>Qui vous transmet ce parcours</SectionTitle>
-      <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
-        <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
-        <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
-        <p>Avec le temps, la demande est devenue très forte. Mon délai de rendez-vous a parfois atteint près d'un an. J'ai alors fait le choix de réorganiser mon activité pour retrouver un rythme plus juste, plus humain, et ramener cette attente à plusieurs mois.</p>
-        <p>Je ne partage pas cela pour impressionner. Je le dis simplement pour situer l'origine de ce parcours : Mediumia est né d'une pratique réelle, quotidienne, éprouvée par des milliers de séances, des milliers d'histoires, des milliers de ressentis confrontés au réel.</p>
-        <p>Je n'ai pas appris la médiumnité dans les livres. Je l'ai découverte dans mon propre corps, à travers mes perceptions, mes épreuves, mes doutes, mes erreurs, mes traversées et mes années de pratique.</p>
-        <p>C'est cette expérience directe que j'ai voulu transmettre ici.</p>
-        <p className="text-deep font-medium text-lg">Mediumia n'est pas un parcours théorique. C'est une transmission.</p>
-        <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies.</p>
-        <p>Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer : un cadre, une progression, des exercices, du discernement, de la sécurité intérieure et une véritable méthode.</p>
-        <p>Je ne vous promets pas que vous deviendrez médium professionnel en 25 modules.</p>
-        <p>Je vous promets quelque chose de plus juste : vous allez apprendre à reconnaître ce qui vit déjà en vous, à l'écouter, à le structurer, et à ne plus confondre intuition, émotion, mental et perception subtile.</p>
-        <p>Et cette découverte peut profondément changer votre façon de vous percevoir, de percevoir les autres, et de vous relier au monde.</p>
+            <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
+        <div className="flex-shrink-0 flex justify-center">
+          <img
+            src="/sebastien.jpg"
+            alt="Sébastien Seguin"
+            className="w-52 h-72 md:w-60 md:h-80 object-cover object-top rounded-2xl border-2 shadow-md"
+            style={{ borderColor: "#C9A84C" }}
+          />
+        </div>
+        <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
+          <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
+          <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
+          <p>Avec le temps, la demande est devenue très forte. Mon délai de rendez-vous a parfois atteint près d'un an. J'ai alors fait le choix de réorganiser mon activité pour retrouver un rythme plus juste, plus humain, et ramener cette attente à plusieurs mois.</p>
+          <p>Je ne partage pas cela pour impressionner. Je le dis simplement pour situer l'origine de ce parcours : Mediumia est né d'une pratique réelle, quotidienne, éprouvée par des milliers de séances, des milliers d'histoires, des milliers de ressentis confrontés au réel.</p>
+          <p>Je n'ai pas appris la médiumnité dans les livres. Je l'ai découverte dans mon propre corps, à travers mes perceptions, mes épreuves, mes doutes, mes erreurs, mes traversées et mes années de pratique.</p>
+          <p>C'est cette expérience directe que j'ai voulu transmettre ici.</p>
+          <p className="text-deep font-medium text-lg">Mediumia n'est pas un parcours théorique. C'est une transmission.</p>
+          <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies.</p>
+          <p>Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer : un cadre, une progression, des exercices, du discernement, de la sécurité intérieure et une véritable méthode.</p>
+          <p>Je ne vous promets pas que vous deviendrez médium professionnel en 25 modules.</p>
+          <p>Je vous promets quelque chose de plus juste : vous allez apprendre à reconnaître ce qui vit déjà en vous, à l'écouter, à le structurer, et à ne plus confondre intuition, émotion, mental et perception subtile.</p>
+          <p>Et cette découverte peut profondément changer votre façon de vous percevoir, de percevoir les autres, et de vous relier au monde.</p>
         </div>
       </div>
       <blockquote className="mt-12 border-l-4 border-gold pl-6 py-2">

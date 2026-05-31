@@ -120,6 +120,14 @@ function Constat() {
     <Section id="constat">
       <Ornament />
       <SectionTitle>En quoi cet accompagnement est différent</SectionTitle>
+      <div className="flex justify-center mb-10">
+        <img
+          src="/sebastien.jpg"
+          alt="Sébastien Seguin"
+          className="w-44 h-44 md:w-56 md:h-56 object-cover rounded-2xl border-2 shadow-md"
+          style={{ borderColor: "#C9A84C" }}
+        />
+      </div>
       <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
         <p>
           Peut-être avez-vous déjà exploré des livres, des stages ou des vidéos sur la médiumnité. Et peut-être avez-vous eu ce sentiment persistant : quelque chose de juste était là, mais pas encore pleinement accessible.

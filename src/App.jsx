@@ -107,14 +107,25 @@ function Hero() {
           Une méthode claire et progressive, accessible même si vous débutez.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a href="#parcours" className="font-georgia text-base tracking-wide px-8 py-4 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]" style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>Découvrir le parcours</a>
-          <a href="#contenu" className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all">Essayer Mediumia gratuitement</a>
+          <a
+            href="#parcours"
+            className="font-georgia text-base tracking-wide px-8 py-4 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]"
+            style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}
+          >
+            Découvrir le parcours
+          </a>
+          {/* TODO: brancher l'essai gratuit quand la route /essai sera disponible */}
+          <a
+            href="#contenu"
+            className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all"
+          >
+            Essayer Mediumia gratuitement
+          </a>
         </div>
       </div>
     </section>
   )
 }
-
 
 /* ─── SECTION MIROIR — EST-CE QUE CELA VOUS PARLE ? ─── */
 function EstCeQueCelaVousParle() {
@@ -122,44 +133,25 @@ function EstCeQueCelaVousParle() {
     <Section id="miroir">
       <Ornament />
       <SectionTitle>Est-ce que cela vous parle ?</SectionTitle>
-      <p className="font-georgia text-mist text-base md:text-lg italic -mt-4 mb-10">Avant de parler de méthode, parlons de vous.</p>
+      <p className="font-georgia text-mist text-base md:text-lg italic -mt-4 mb-10">
+        Avant de parler de méthode, parlons de vous.
+      </p>
       <div className="space-y-7 mb-12">
         {[
           "Vous ressentez parfois des choses que vous ne savez pas expliquer, et vous vous demandez si c'est réel ou si vous l'imaginez.",
           "Une intuition vous traverse, juste, précise, et vous ne savez pas d'où elle vient.",
           "Vous avez lu des livres, suivi des vidéos, et il vous est resté ce sentiment qu'une porte était là, tout près, sans s'ouvrir vraiment.",
           "Vous sentez que quelque chose en vous demande à être écouté, mais personne ne vous a jamais montré comment.",
-        ].map((phrase,i) => (
+        ].map((phrase, i) => (
           <div key={i} className="flex gap-5 items-start">
             <span className="text-gold text-lg mt-1 shrink-0">✦</span>
             <p className="font-georgia text-base md:text-lg text-deep/80 leading-relaxed">{phrase}</p>
           </div>
         ))}
       </div>
-      <p className="font-georgia text-center text-lg md:text-xl text-deep italic leading-relaxed max-w-2xl mx-auto border-t border-gold/20 pt-10">Si l'une de ces phrases résonne, vous êtes au bon endroit. Ce n'est pas une question de don réservé à quelques-uns. C'est une dimension naturelle qui demande seulement les bonnes conditions pour se révéler.</p>
-    </Section>
-  )
-}
-
-
-/* ─── SECTION MIROIR ─── */
-function EstCeQueCelaVousParle() {
-  return (
-    <Section id="miroir">
-      <Ornament />
-      <SectionTitle>Est-ce que cela vous parle ?</SectionTitle>
-      <p className="font-georgia text-mist text-base md:text-lg italic -mt-4 mb-10">Avant de parler de méthode, parlons de vous.</p>
-      <div className="space-y-7 mb-12">
-        {[
-          "Vous ressentez parfois des choses que vous ne savez pas expliquer, et vous vous demandez si c'est réel ou si vous l'imaginez.",
-          "Une intuition vous traverse, juste, précise, et vous ne savez pas d'où elle vient.",
-          "Vous avez lu des livres, suivi des vidéos, et il vous est resté ce sentiment qu'une porte était là, tout près, sans s'ouvrir vraiment.",
-          "Vous sentez que quelque chose en vous demande à être écouté, mais personne ne vous a jamais montré comment.",
-        ].map((phrase,i) => (
-          <div key={i} className="flex gap-5 items-start"><span className="text-gold text-lg mt-1 shrink-0">✦</span><p className="font-georgia text-base md:text-lg text-deep/80 leading-relaxed">{phrase}</p></div>
-        ))}
-      </div>
-      <p className="font-georgia text-center text-lg md:text-xl text-deep italic leading-relaxed max-w-2xl mx-auto border-t border-gold/20 pt-10">Si l'une de ces phrases résonne, vous êtes au bon endroit. Ce n'est pas une question de don réservé à quelques-uns. C'est une dimension naturelle qui demande seulement les bonnes conditions pour se révéler.</p>
+      <p className="font-georgia text-center text-lg md:text-xl text-deep italic leading-relaxed max-w-2xl mx-auto border-t border-gold/20 pt-10">
+        Si l'une de ces phrases résonne, vous êtes au bon endroit. Ce n'est pas une question de don réservé à quelques-uns. C'est une dimension naturelle qui demande seulement les bonnes conditions pour se révéler.
+      </p>
     </Section>
   )
 }
@@ -170,7 +162,7 @@ function Constat() {
     <Section id="constat">
       <Ornament />
       <SectionTitle>En quoi cet accompagnement est différent</SectionTitle>
-<div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
+      <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
         <p>
           Peut-être avez-vous déjà exploré des livres, des stages ou des vidéos sur la médiumnité. Et peut-être avez-vous eu ce sentiment persistant : quelque chose de juste était là, mais pas encore pleinement accessible.
         </p>
@@ -217,12 +209,12 @@ function Solution() {
 
 /* ─── SECTION 4 — CE QUE VOUS RECEVEZ ─── */
 const INCLUS = [
-  { icon: '📚', titre: '25 modules imprimés', texte: 'Envoyés chez vous par courrier. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale.' },
-  { icon: '📱', titre: 'L\'application Mediumia', texte: 'Installable sur votre téléphone, accessible 24h/24. Elle contient tous vos modules en version numérique, 32 exercices guidés avec chronomètre, un carnet de pratique personnel et le suivi de votre progression.' },
-  { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: 'Intégrée dans l\'application, Mediumia est une intelligence artificielle formée spécifiquement sur le contenu du parcours. Elle répond à vos questions, vous aide à relire vos ressentis avec discernement, et vous accompagne module après module. Elle ne canalise pas à votre place. Elle vous aide à découvrir votre propre canal.' },
-  { icon: '⏱️', titre: '32 exercices guidés', texte: 'Chaque exercice est accompagné d\'un minuteur, d\'étapes claires et d\'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique.' },
-  { icon: '📝', titre: 'Votre carnet de pratique', texte: 'Intégré dans l\'application, il vous permet de noter vos ressentis, vos perceptions, vos questions après chaque exercice. Avec le temps, il devient votre outil de discernement le plus précieux.' },
-  { icon: '🔓', titre: '12 mois d\'accès', texte: 'Votre code personnel vous donne accès à l\'application et à Mediumia pendant 12 mois. Les modules imprimés, eux, restent à vous pour toujours.' },
+  { icon: '📚', titre: '25 modules imprimés', texte: "Envoyés chez vous par courrier. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale." },
+  { icon: '📱', titre: "L'application Mediumia", texte: "Installable sur votre téléphone, accessible 24h/24. Elle contient tous vos modules en version numérique, 32 exercices guidés avec chronomètre, un carnet de pratique personnel et le suivi de votre progression." },
+  { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: "Intégrée dans l'application, Mediumia est une intelligence artificielle formée spécifiquement sur le contenu du parcours. Elle répond à vos questions, vous aide à relire vos ressentis avec discernement, et vous accompagne module après module. Elle ne canalise pas à votre place. Elle vous aide à découvrir votre propre canal." },
+  { icon: '⏱️', titre: '32 exercices guidés', texte: "Chaque exercice est accompagné d'un minuteur, d'étapes claires et d'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique." },
+  { icon: '📝', titre: 'Votre carnet de pratique', texte: "Intégré dans l'application, il vous permet de noter vos ressentis, vos perceptions, vos questions après chaque exercice. Avec le temps, il devient votre outil de discernement le plus précieux." },
+  { icon: '🔓', titre: "12 mois d'accès", texte: "Votre code personnel vous donne accès à l'application et à Mediumia pendant 12 mois. Les modules imprimés, eux, restent à vous pour toujours." },
 ]
 
 function Contenu() {
@@ -245,10 +237,10 @@ function Contenu() {
 
 /* ─── SECTION 5 — LES 4 NIVEAUX ─── */
 const NIVEAUX = [
-  { num: '01', titre: 'Les Fondations', modules: 'Modules 1 à 6', texte: 'Poser l\'intention juste. Recevoir avant d\'interpréter. Découvrir votre canal dominant. Comprendre ce qu\'est vraiment un oracle. Développer le discernement vibratoire. Entrer en contact avec vos guides.' },
-  { num: '02', titre: 'La Technique du Canal', modules: 'Modules 7 à 13', texte: 'Le contact avec les défunts. La consécration d\'un oracle. L\'art de la canalisation consciente. L\'ouverture et la fermeture du canal. Les trois sources d\'information intérieure. Le canal intérieur. Les codes vibratoires.' },
-  { num: '03', titre: 'Maîtrise et Autonomie', modules: 'Modules 14 à 20', texte: 'La gestion des émotions du médium. La lecture des signes et synchronicités. La conscience du canal. L\'approfondissement de la relation avec vos guides. L\'art de filtrer les informations. Le contact avancé avec les défunts. La médiumnité mature.' },
-  { num: '04', titre: 'L\'Art du Médium Maître', modules: 'Modules 21 à 25', texte: 'La canalisation créative. La réception instantanée. La canalisation en séance. La lecture médiumnique structurée. Et le module final : accompagner les vivants.' },
+  { num: '01', titre: 'Les Fondations', modules: 'Modules 1 à 6', texte: "Poser l'intention juste. Recevoir avant d'interpréter. Découvrir votre canal dominant. Comprendre ce qu'est vraiment un oracle. Développer le discernement vibratoire. Entrer en contact avec vos guides." },
+  { num: '02', titre: 'La Technique du Canal', modules: 'Modules 7 à 13', texte: "Le contact avec les défunts. La consécration d'un oracle. L'art de la canalisation consciente. L'ouverture et la fermeture du canal. Les trois sources d'information intérieure. Le canal intérieur. Les codes vibratoires." },
+  { num: '03', titre: 'Maîtrise et Autonomie', modules: 'Modules 14 à 20', texte: "La gestion des émotions du médium. La lecture des signes et synchronicités. La conscience du canal. L'approfondissement de la relation avec vos guides. L'art de filtrer les informations. Le contact avancé avec les défunts. La médiumnité mature." },
+  { num: '04', titre: "L'Art du Médium Maître", modules: 'Modules 21 à 25', texte: "La canalisation créative. La réception instantanée. La canalisation en séance. La lecture médiumnique structurée. Et le module final : accompagner les vivants." },
 ]
 
 function Niveaux() {
@@ -282,7 +274,6 @@ function Niveaux() {
             </div>
           ))}
         </div>
-        <FormulaireAvis />
       </Section>
     </section>
   )
@@ -294,28 +285,28 @@ function Sebastien() {
     <Section id="sebastien">
       <Ornament />
       <SectionTitle>Qui vous transmet ce parcours</SectionTitle>
-            <div className="flex flex-col md:flex-row gap-8 items-start mb-10">
+      <div className="flex flex-col md:flex-row gap-8 items-start mb-8">
         <div className="flex-shrink-0 flex justify-center">
           <img
             src="/sebastien.jpg"
             alt="Sébastien Seguin"
-            className="w-52 h-72 md:w-60 md:h-80 object-cover object-top rounded-2xl border-2 shadow-md"
-            style={{ borderColor: "#C9A84C" }}
+            className="w-52 h-72 md:w-56 md:h-80 object-cover object-top rounded-2xl border-2 shadow-md"
+            style={{ borderColor: '#C9A84C' }}
           />
         </div>
         <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
-          <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
-          <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
-          <p>Avec le temps, la demande est devenue très forte. Mon délai de rendez-vous a parfois atteint près d'un an. J'ai alors fait le choix de réorganiser mon activité pour retrouver un rythme plus juste, plus humain, et ramener cette attente à plusieurs mois.</p>
-          <p>Je ne partage pas cela pour impressionner. Je le dis simplement pour situer l'origine de ce parcours : Mediumia est né d'une pratique réelle, quotidienne, éprouvée par des milliers de séances, des milliers d'histoires, des milliers de ressentis confrontés au réel.</p>
-          <p>Je n'ai pas appris la médiumnité dans les livres. Je l'ai découverte dans mon propre corps, à travers mes perceptions, mes épreuves, mes doutes, mes erreurs, mes traversées et mes années de pratique.</p>
-          <p>C'est cette expérience directe que j'ai voulu transmettre ici.</p>
-          <p className="text-deep font-medium text-lg">Mediumia n'est pas un parcours théorique. C'est une transmission.</p>
-          <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies.</p>
-          <p>Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer : un cadre, une progression, des exercices, du discernement, de la sécurité intérieure et une véritable méthode.</p>
-          <p>Je ne vous promets pas que vous deviendrez médium professionnel en 25 modules.</p>
-          <p>Je vous promets quelque chose de plus juste : vous allez apprendre à reconnaître ce qui vit déjà en vous, à l'écouter, à le structurer, et à ne plus confondre intuition, émotion, mental et perception subtile.</p>
-          <p>Et cette découverte peut profondément changer votre façon de vous percevoir, de percevoir les autres, et de vous relier au monde.</p>
+        <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
+        <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
+        <p>Avec le temps, la demande est devenue très forte. Mon délai de rendez-vous a parfois atteint près d'un an. J'ai alors fait le choix de réorganiser mon activité pour retrouver un rythme plus juste, plus humain, et ramener cette attente à plusieurs mois.</p>
+        <p>Je ne partage pas cela pour impressionner. Je le dis simplement pour situer l'origine de ce parcours : Mediumia est né d'une pratique réelle, quotidienne, éprouvée par des milliers de séances, des milliers d'histoires, des milliers de ressentis confrontés au réel.</p>
+        <p>Je n'ai pas appris la médiumnité dans les livres. Je l'ai découverte dans mon propre corps, à travers mes perceptions, mes épreuves, mes doutes, mes erreurs, mes traversées et mes années de pratique.</p>
+        <p>C'est cette expérience directe que j'ai voulu transmettre ici.</p>
+        <p className="text-deep font-medium text-lg">Mediumia n'est pas un parcours théorique. C'est une transmission.</p>
+        <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies.</p>
+        <p>Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer : un cadre, une progression, des exercices, du discernement, de la sécurité intérieure et une véritable méthode.</p>
+        <p>Je ne vous promets pas que vous deviendrez médium professionnel en 25 modules.</p>
+        <p>Je vous promets quelque chose de plus juste : vous allez apprendre à reconnaître ce qui vit déjà en vous, à l'écouter, à le structurer, et à ne plus confondre intuition, émotion, mental et perception subtile.</p>
+        <p>Et cette découverte peut profondément changer votre façon de vous percevoir, de percevoir les autres, et de vous relier au monde.</p>
         </div>
       </div>
       <blockquote className="mt-12 border-l-4 border-gold pl-6 py-2">
@@ -329,49 +320,137 @@ function Sebastien() {
 
 /* ─── SECTION 7 — TÉMOIGNAGES ─── */
 const TEMOIGNAGES = [
-  { texte: '« Vraiment incroyable. Le sentiment que j\'ai eu c\'est comme si on partait dans une aventure de découverte, très complexe dans la simplicité dont vous avez écrit. J\'ai pas ressenti un effort intellectuel pour comprendre, tout était très clair et ça a touché plus mes émotions que l\'intellectuel. Quand j\'avais lu d\'autres livres sur la médiumnité je restais toujours confuse. Cette fois-ci j\'ai eu plutôt un sentiment de paix. »', source: 'Retour de parcours' },
-  { texte: '« J\'ai retrouvé ma petite voix, il y a longtemps que je ne l\'entendais plus et grâce à vos exercices, elle est revenue. J\'ai retrouvé une partie de moi-même. »', source: 'Retour d\'atelier' },
-  { texte: '« I love the Mediumia app! It is very easy to navigate. Great work, I really like it and I don\'t have any comments, I am excited for the launch! »', source: 'Nuri — Retour sur l\'application' },
-  { texte: '« Ils ont surtout compris que tout est simple et accessible, il suffit de se l\'autoriser. Pour eux, c\'est une révélation choquante car elle est pourvue de simplicité. »', source: 'Retour d\'atelier' },
+  { texte: "« Vraiment incroyable. Le sentiment que j'ai eu c'est comme si on partait dans une aventure de découverte, très complexe dans la simplicité dont vous avez écrit. J'ai pas ressenti un effort intellectuel pour comprendre, tout était très clair et ça a touché plus mes émotions que l'intellectuel. Quand j'avais lu d'autres livres sur la médiumnité je restais toujours confuse. Cette fois-ci j'ai eu plutôt un sentiment de paix. »", source: 'Retour de parcours' },
+  { texte: "« J'ai retrouvé ma petite voix, il y a longtemps que je ne l'entendais plus et grâce à vos exercices, elle est revenue. J'ai retrouvé une partie de moi-même. »", source: "Retour d'atelier" },
+  { texte: "« I love the Mediumia app! It is very easy to navigate. Great work, I really like it and I don't have any comments, I am excited for the launch! »", source: 'Nuri — Retour sur l\'application' },
+  { texte: "« Ils ont surtout compris que tout est simple et accessible, il suffit de se l'autoriser. Pour eux, c'est une révélation choquante car elle est pourvue de simplicité. »", source: "Retour d'atelier" },
 ]
 
-
 function FormulaireAvis() {
-  const [open,setOpen]=useState(false)
-  const [note,setNote]=useState(0)
-  const [hover,setHover]=useState(0)
-  const [status,setStatus]=useState('idle')
-  async function handleSubmit(e){
-    e.preventDefault();setStatus('sending')
-    const form=e.target
-    const data={access_key:'9d7eb809-6bd2-4fc3-93b2-c675a63b259e',subject:'Nouvel avis Mediumia (en attente de modération)',name:form.nom.value,message:`Note : ${note>0?note+'/5':'non renseignée'}\n\n${form.message.value}`}
-    try{const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});setStatus(res.ok?'success':'error')}catch{setStatus('error')}
+  const [open, setOpen] = useState(false)
+  const [note, setNote] = useState(0)
+  const [hover, setHover] = useState(0)
+  const [status, setStatus] = useState('idle') // idle | sending | success | error
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setStatus('sending')
+    const form = e.target
+    const data = {
+      access_key: '9d7eb809-6bd2-4fc3-93b2-c675a63b259e',
+      subject: 'Nouvel avis Mediumia (en attente de modération)',
+      name: form.nom.value,
+      message: `Note : ${note > 0 ? note + '/5' : 'non renseignée'}\n\n${form.message.value}`,
+    }
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      setStatus(res.ok ? 'success' : 'error')
+    } catch {
+      setStatus('error')
+    }
   }
-  return(
+
+  return (
     <div className="mt-12 border-t border-gold/20 pt-10">
-      {!open?(<div className="text-center"><button onClick={()=>setOpen(true)} className="font-georgia text-sm tracking-wide text-gold border border-gold/40 px-6 py-3 rounded-lg hover:bg-gold/10 transition-all">Partager mon expérience</button></div>)
-      :status==='success'?(<p className="font-georgia text-center text-base text-mist/80 italic py-4">Merci pour votre témoignage. Il sera publié après validation.</p>)
-      :(<form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-5" aria-label="Formulaire de témoignage">
+      {!open ? (
+        <div className="text-center">
+          <button
+            onClick={() => setOpen(true)}
+            className="font-georgia text-sm tracking-wide text-gold border border-gold/40 px-6 py-3 rounded-lg hover:bg-gold/10 transition-all"
+          >
+            Partager mon expérience
+          </button>
+        </div>
+      ) : status === 'success' ? (
+        <p className="font-georgia text-center text-base text-mist/80 italic py-4">
+          Merci pour votre témoignage. Il sera publié après validation.
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-5" aria-label="Formulaire de témoignage">
           <p className="font-georgia text-base text-deep font-medium text-center mb-6">Partagez votre expérience</p>
-          <div><label htmlFor="avis-nom" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre prénom</label><input id="avis-nom" name="nom" type="text" required placeholder="Prénom ou initiale" className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors"/></div>
-          <div><label className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-2">Note (optionnelle)</label><div className="flex gap-2" role="group" aria-label="Note de 1 à 5 étoiles">{[1,2,3,4,5].map(star=>(<button key={star} type="button" aria-label={`${star} étoile${star>1?'s':''}`} onClick={()=>setNote(star===note?0:star)} onMouseEnter={()=>setHover(star)} onMouseLeave={()=>setHover(0)} className="text-2xl transition-opacity" style={{color:'#C9A84C',opacity:star<=(hover||note)?1:0.25}}>✦</button>))}</div></div>
-          <div><label htmlFor="avis-message" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre témoignage</label><textarea id="avis-message" name="message" required rows={4} placeholder="Décrivez votre expérience avec le parcours..." className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors resize-none"/></div>
-          <p className="font-georgia text-xs text-mist/50 leading-relaxed">En envoyant cet avis, vous acceptez qu'il soit publié après modération. Aucune donnée n'est conservée au-delà de cet envoi.</p>
-          <div className="flex gap-3"><button type="submit" disabled={status==='sending'} className="font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90 disabled:opacity-50" style={{backgroundColor:'#C9A84C',color:'#1A1535',fontWeight:600}}>{status==='sending'?'Envoi...':'Envoyer'}</button><button type="button" onClick={()=>setOpen(false)} className="font-georgia text-sm text-mist/50 hover:text-mist transition-colors px-4">Annuler</button></div>
-          {status==='error'&&<p className="font-georgia text-xs text-red-500">Une erreur est survenue. Veuillez réessayer ou nous contacter par email.</p>}
-        </form>)}
+
+          <div>
+            <label htmlFor="avis-nom" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">
+              Votre prénom
+            </label>
+            <input
+              id="avis-nom"
+              name="nom"
+              type="text"
+              required
+              placeholder="Prénom ou initiale"
+              className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-2">
+              Note (optionnelle)
+            </label>
+            <div className="flex gap-2" role="group" aria-label="Note de 1 à 5 étoiles">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  aria-label={`${star} étoile${star > 1 ? 's' : ''}`}
+                  onClick={() => setNote(star === note ? 0 : star)}
+                  onMouseEnter={() => setHover(star)}
+                  onMouseLeave={() => setHover(0)}
+                  className="text-2xl transition-opacity"
+                  style={{ color: star <= (hover || note) ? '#C9A84C' : '#C9A84C', opacity: star <= (hover || note) ? 1 : 0.25 }}
+                >
+                  ✦
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="avis-message" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">
+              Votre témoignage
+            </label>
+            <textarea
+              id="avis-message"
+              name="message"
+              required
+              rows={4}
+              placeholder="Décrivez votre expérience avec le parcours..."
+              className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors resize-none"
+            />
+          </div>
+
+          <p className="font-georgia text-xs text-mist/50 leading-relaxed">
+            En envoyant cet avis, vous acceptez qu'il soit publié après modération. Aucune donnée n'est conservée au-delà de cet envoi.
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={status === 'sending'}
+              className="font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}
+            >
+              {status === 'sending' ? 'Envoi...' : 'Envoyer'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="font-georgia text-sm text-mist/50 hover:text-mist transition-colors px-4"
+            >
+              Annuler
+            </button>
+          </div>
+          {status === 'error' && (
+            <p className="font-georgia text-xs text-red-500">Une erreur est survenue. Veuillez réessayer ou nous contacter par email.</p>
+          )}
+        </form>
+      )}
     </div>
   )
-}
-
-
-function FormulaireAvis(){
-  const [open,setOpen]=useState(false)
-  const [note,setNote]=useState(0)
-  const [hover,setHover]=useState(0)
-  const [status,setStatus]=useState('idle')
-  async function handleSubmit(e){e.preventDefault();setStatus('sending');const form=e.target;const data={access_key:'9d7eb809-6bd2-4fc3-93b2-c675a63b259e',subject:'Nouvel avis Mediumia (modération)',name:form.nom.value,message:`Note: ${note>0?note+'/5':'—'}\n\n${form.message.value}`};try{const r=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});setStatus(r.ok?'success':'error')}catch{setStatus('error')}}
-  return(<div className="mt-12 border-t border-gold/20 pt-10">{!open?(<div className="text-center"><button onClick={()=>setOpen(true)} className="font-georgia text-sm tracking-wide text-gold border border-gold/40 px-6 py-3 rounded-lg hover:bg-gold/10 transition-all">Partager mon expérience</button></div>):status==='success'?(<p className="font-georgia text-center text-base text-mist/80 italic py-4">Merci pour votre témoignage. Il sera publié après validation.</p>):(<form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-5" aria-label="Formulaire de témoignage"><p className="font-georgia text-base text-deep font-medium text-center mb-6">Partagez votre expérience</p><div><label htmlFor="avis-nom" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre prénom</label><input id="avis-nom" name="nom" type="text" required placeholder="Prénom ou initiale" className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors"/></div><div><label className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-2">Note (optionnelle)</label><div className="flex gap-2">{[1,2,3,4,5].map(s=>(<button key={s} type="button" onClick={()=>setNote(s===note?0:s)} onMouseEnter={()=>setHover(s)} onMouseLeave={()=>setHover(0)} className="text-2xl transition-opacity" style={{color:'#C9A84C',opacity:s<=(hover||note)?1:0.25}}>✦</button>))}</div></div><div><label htmlFor="avis-message" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre témoignage</label><textarea id="avis-message" name="message" required rows={4} placeholder="Décrivez votre expérience..." className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors resize-none"/></div><p className="font-georgia text-xs text-mist/50 leading-relaxed">En envoyant cet avis, vous acceptez qu'il soit publié après modération.</p><div className="flex gap-3"><button type="submit" disabled={status==='sending'} className="font-georgia text-sm tracking-wide px-6 py-3 rounded-lg hover:opacity-90 disabled:opacity-50" style={{backgroundColor:'#C9A84C',color:'#1A1535',fontWeight:600}}>{status==='sending'?'Envoi...':'Envoyer'}</button><button type="button" onClick={()=>setOpen(false)} className="font-georgia text-sm text-mist/50 hover:text-mist px-4">Annuler</button></div>{status==='error'&&<p className="font-georgia text-xs text-red-500">Erreur — réessayez ou contactez-nous par email.</p>}</form>)}</div>)
 }
 
 function Temoignages() {
@@ -395,11 +474,11 @@ function Temoignages() {
 
 /* ─── SECTION 8 — APPROCHE UNIQUE ─── */
 const POINTS = [
-  { titre: 'Pas de mystère inutile', texte: 'Tout est expliqué clairement. Pas de jargon obscur, pas de rituels imposés, pas de hiérarchie invisible. Vous comprenez ce que vous faites et pourquoi.' },
-  { titre: 'Le cœur au centre', texte: 'Ce parcours place le cœur, et non le cerveau, comme véritable centre de la pratique médiumnique. Le cœur est votre émetteur-récepteur. Le cerveau n\'est qu\'un processeur.' },
-  { titre: 'La souveraineté comme protection', texte: 'Pas de peur, pas de rituels de protection compliqués. Votre souveraineté intérieure est votre première et meilleure protection. Vous apprenez à la poser à chaque pratique.' },
-  { titre: 'Un coach IA formé par le créateur', texte: 'Mediumia n\'est pas un chatbot générique. Elle a été formée spécifiquement sur le contenu des 25 modules et sur la vision de Sébastien. Elle parle avec la voix du parcours.' },
-  { titre: 'L\'autonomie comme objectif', texte: 'L\'objectif n\'est pas de vous rendre dépendant d\'un enseignant, d\'un oracle ou d\'un guide. L\'objectif est que vous trouviez votre propre voix et que vous appreniez à lui faire confiance.' },
+  { titre: 'Pas de mystère inutile', texte: "Tout est expliqué clairement. Pas de jargon obscur, pas de rituels imposés, pas de hiérarchie invisible. Vous comprenez ce que vous faites et pourquoi." },
+  { titre: 'Le cœur au centre', texte: "Ce parcours place le cœur, et non le cerveau, comme véritable centre de la pratique médiumnique. Le cœur est votre émetteur-récepteur. Le cerveau n'est qu'un processeur." },
+  { titre: 'La souveraineté comme protection', texte: "Pas de peur, pas de rituels de protection compliqués. Votre souveraineté intérieure est votre première et meilleure protection. Vous apprenez à la poser à chaque pratique." },
+  { titre: "Un coach IA formé par le créateur", texte: "Mediumia n'est pas un chatbot générique. Elle a été formée spécifiquement sur le contenu des 25 modules et sur la vision de Sébastien. Elle parle avec la voix du parcours." },
+  { titre: "L'autonomie comme objectif", texte: "L'objectif n'est pas de vous rendre dépendant d'un enseignant, d'un oracle ou d'un guide. L'objectif est que vous trouviez votre propre voix et que vous appreniez à lui faire confiance." },
 ]
 
 function Approche() {
@@ -437,7 +516,7 @@ function Prix() {
               'Mediumia, votre coach IA personnel',
               '32 exercices guidés avec chronomètre',
               'Carnet de pratique intégré',
-              '12 mois d\'accès à l\'application',
+              "12 mois d'accès à l'application",
             ].map((item, i) => (
               <li key={i} className="flex gap-3 items-start">
                 <span className="text-gold shrink-0 mt-1">—</span>

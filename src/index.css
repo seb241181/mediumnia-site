@@ -2,31 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background-color: #FAFAF7;
-  color: #1A1535;
-  font-family: Georgia, 'Times New Roman', serif;
-  -webkit-font-smoothing: antialiased;
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background-color: #FAFAF7; color: #1A1535; font-family: Georgia, 'Times New Roman', serif; -webkit-font-smoothing: antialiased; }
 @layer utilities {
-  .fade-in {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
-  }
-  .fade-in.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+  .hero-fade-in { animation: heroFadeIn 1s ease both; }
+  @keyframes heroFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .fade-in, .fade-in.visible { transition: none; } .hero-fade-in { animation: none; } }
 }

@@ -90,7 +90,7 @@ function Hero() {
     <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 py-20 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-[0.06] pointer-events-none"
         style={{ background: 'radial-gradient(circle, #C9A84C 0%, transparent 70%)' }} />
-      <div className="relative z-10">
+      <div className="relative z-10 hero-fade-in">
         <p className="text-gold text-5xl mb-6 opacity-70">✦</p>
         <h1 className="font-georgia text-5xl md:text-7xl text-deep tracking-[0.25em] font-medium mb-4">
           MEDIUMIA
@@ -98,19 +98,69 @@ function Hero() {
         <p className="font-georgia text-mist text-base md:text-xl tracking-widest italic mb-12">
           Accompagnement à la Médiumnité Consciente
         </p>
-        <p className="font-georgia text-deep text-xl md:text-2xl leading-loose max-w-lg mx-auto mb-14">
+        <p className="font-georgia text-deep text-xl md:text-2xl leading-loose max-w-lg mx-auto mb-5">
           Tout a toujours été là.<br />
           Vous n'avez rien à devenir.<br />
           Vous avez quelque chose à retrouver.
         </p>
-        <a
-          href="#parcours"
-          className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all"
-        >
-          Découvrir le parcours ↓
-        </a>
+        <p className="font-georgia text-mist text-sm md:text-base italic mb-14 max-w-md mx-auto">
+          Une méthode claire et progressive, accessible même si vous débutez.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a href="#parcours" className="font-georgia text-base tracking-wide px-8 py-4 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]" style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>Découvrir le parcours</a>
+          <a href="#contenu" className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all">Essayer Mediumia gratuitement</a>
+        </div>
       </div>
     </section>
+  )
+}
+
+
+/* ─── SECTION MIROIR — EST-CE QUE CELA VOUS PARLE ? ─── */
+function EstCeQueCelaVousParle() {
+  return (
+    <Section id="miroir">
+      <Ornament />
+      <SectionTitle>Est-ce que cela vous parle ?</SectionTitle>
+      <p className="font-georgia text-mist text-base md:text-lg italic -mt-4 mb-10">Avant de parler de méthode, parlons de vous.</p>
+      <div className="space-y-7 mb-12">
+        {[
+          "Vous ressentez parfois des choses que vous ne savez pas expliquer, et vous vous demandez si c'est réel ou si vous l'imaginez.",
+          "Une intuition vous traverse, juste, précise, et vous ne savez pas d'où elle vient.",
+          "Vous avez lu des livres, suivi des vidéos, et il vous est resté ce sentiment qu'une porte était là, tout près, sans s'ouvrir vraiment.",
+          "Vous sentez que quelque chose en vous demande à être écouté, mais personne ne vous a jamais montré comment.",
+        ].map((phrase,i) => (
+          <div key={i} className="flex gap-5 items-start">
+            <span className="text-gold text-lg mt-1 shrink-0">✦</span>
+            <p className="font-georgia text-base md:text-lg text-deep/80 leading-relaxed">{phrase}</p>
+          </div>
+        ))}
+      </div>
+      <p className="font-georgia text-center text-lg md:text-xl text-deep italic leading-relaxed max-w-2xl mx-auto border-t border-gold/20 pt-10">Si l'une de ces phrases résonne, vous êtes au bon endroit. Ce n'est pas une question de don réservé à quelques-uns. C'est une dimension naturelle qui demande seulement les bonnes conditions pour se révéler.</p>
+    </Section>
+  )
+}
+
+
+/* ─── SECTION MIROIR ─── */
+function EstCeQueCelaVousParle() {
+  return (
+    <Section id="miroir">
+      <Ornament />
+      <SectionTitle>Est-ce que cela vous parle ?</SectionTitle>
+      <p className="font-georgia text-mist text-base md:text-lg italic -mt-4 mb-10">Avant de parler de méthode, parlons de vous.</p>
+      <div className="space-y-7 mb-12">
+        {[
+          "Vous ressentez parfois des choses que vous ne savez pas expliquer, et vous vous demandez si c'est réel ou si vous l'imaginez.",
+          "Une intuition vous traverse, juste, précise, et vous ne savez pas d'où elle vient.",
+          "Vous avez lu des livres, suivi des vidéos, et il vous est resté ce sentiment qu'une porte était là, tout près, sans s'ouvrir vraiment.",
+          "Vous sentez que quelque chose en vous demande à être écouté, mais personne ne vous a jamais montré comment.",
+        ].map((phrase,i) => (
+          <div key={i} className="flex gap-5 items-start"><span className="text-gold text-lg mt-1 shrink-0">✦</span><p className="font-georgia text-base md:text-lg text-deep/80 leading-relaxed">{phrase}</p></div>
+        ))}
+      </div>
+      <p className="font-georgia text-center text-lg md:text-xl text-deep italic leading-relaxed max-w-2xl mx-auto border-t border-gold/20 pt-10">Si l'une de ces phrases résonne, vous êtes au bon endroit. Ce n'est pas une question de don réservé à quelques-uns. C'est une dimension naturelle qui demande seulement les bonnes conditions pour se révéler.</p>
+    </Section>
   )
 }
 
@@ -232,6 +282,7 @@ function Niveaux() {
             </div>
           ))}
         </div>
+        <FormulaireAvis />
       </Section>
     </section>
   )
@@ -284,6 +335,45 @@ const TEMOIGNAGES = [
   { texte: '« Ils ont surtout compris que tout est simple et accessible, il suffit de se l\'autoriser. Pour eux, c\'est une révélation choquante car elle est pourvue de simplicité. »', source: 'Retour d\'atelier' },
 ]
 
+
+function FormulaireAvis() {
+  const [open,setOpen]=useState(false)
+  const [note,setNote]=useState(0)
+  const [hover,setHover]=useState(0)
+  const [status,setStatus]=useState('idle')
+  async function handleSubmit(e){
+    e.preventDefault();setStatus('sending')
+    const form=e.target
+    const data={access_key:'9d7eb809-6bd2-4fc3-93b2-c675a63b259e',subject:'Nouvel avis Mediumia (en attente de modération)',name:form.nom.value,message:`Note : ${note>0?note+'/5':'non renseignée'}\n\n${form.message.value}`}
+    try{const res=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});setStatus(res.ok?'success':'error')}catch{setStatus('error')}
+  }
+  return(
+    <div className="mt-12 border-t border-gold/20 pt-10">
+      {!open?(<div className="text-center"><button onClick={()=>setOpen(true)} className="font-georgia text-sm tracking-wide text-gold border border-gold/40 px-6 py-3 rounded-lg hover:bg-gold/10 transition-all">Partager mon expérience</button></div>)
+      :status==='success'?(<p className="font-georgia text-center text-base text-mist/80 italic py-4">Merci pour votre témoignage. Il sera publié après validation.</p>)
+      :(<form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-5" aria-label="Formulaire de témoignage">
+          <p className="font-georgia text-base text-deep font-medium text-center mb-6">Partagez votre expérience</p>
+          <div><label htmlFor="avis-nom" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre prénom</label><input id="avis-nom" name="nom" type="text" required placeholder="Prénom ou initiale" className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors"/></div>
+          <div><label className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-2">Note (optionnelle)</label><div className="flex gap-2" role="group" aria-label="Note de 1 à 5 étoiles">{[1,2,3,4,5].map(star=>(<button key={star} type="button" aria-label={`${star} étoile${star>1?'s':''}`} onClick={()=>setNote(star===note?0:star)} onMouseEnter={()=>setHover(star)} onMouseLeave={()=>setHover(0)} className="text-2xl transition-opacity" style={{color:'#C9A84C',opacity:star<=(hover||note)?1:0.25}}>✦</button>))}</div></div>
+          <div><label htmlFor="avis-message" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre témoignage</label><textarea id="avis-message" name="message" required rows={4} placeholder="Décrivez votre expérience avec le parcours..." className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors resize-none"/></div>
+          <p className="font-georgia text-xs text-mist/50 leading-relaxed">En envoyant cet avis, vous acceptez qu'il soit publié après modération. Aucune donnée n'est conservée au-delà de cet envoi.</p>
+          <div className="flex gap-3"><button type="submit" disabled={status==='sending'} className="font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90 disabled:opacity-50" style={{backgroundColor:'#C9A84C',color:'#1A1535',fontWeight:600}}>{status==='sending'?'Envoi...':'Envoyer'}</button><button type="button" onClick={()=>setOpen(false)} className="font-georgia text-sm text-mist/50 hover:text-mist transition-colors px-4">Annuler</button></div>
+          {status==='error'&&<p className="font-georgia text-xs text-red-500">Une erreur est survenue. Veuillez réessayer ou nous contacter par email.</p>}
+        </form>)}
+    </div>
+  )
+}
+
+
+function FormulaireAvis(){
+  const [open,setOpen]=useState(false)
+  const [note,setNote]=useState(0)
+  const [hover,setHover]=useState(0)
+  const [status,setStatus]=useState('idle')
+  async function handleSubmit(e){e.preventDefault();setStatus('sending');const form=e.target;const data={access_key:'9d7eb809-6bd2-4fc3-93b2-c675a63b259e',subject:'Nouvel avis Mediumia (modération)',name:form.nom.value,message:`Note: ${note>0?note+'/5':'—'}\n\n${form.message.value}`};try{const r=await fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});setStatus(r.ok?'success':'error')}catch{setStatus('error')}}
+  return(<div className="mt-12 border-t border-gold/20 pt-10">{!open?(<div className="text-center"><button onClick={()=>setOpen(true)} className="font-georgia text-sm tracking-wide text-gold border border-gold/40 px-6 py-3 rounded-lg hover:bg-gold/10 transition-all">Partager mon expérience</button></div>):status==='success'?(<p className="font-georgia text-center text-base text-mist/80 italic py-4">Merci pour votre témoignage. Il sera publié après validation.</p>):(<form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-5" aria-label="Formulaire de témoignage"><p className="font-georgia text-base text-deep font-medium text-center mb-6">Partagez votre expérience</p><div><label htmlFor="avis-nom" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre prénom</label><input id="avis-nom" name="nom" type="text" required placeholder="Prénom ou initiale" className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors"/></div><div><label className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-2">Note (optionnelle)</label><div className="flex gap-2">{[1,2,3,4,5].map(s=>(<button key={s} type="button" onClick={()=>setNote(s===note?0:s)} onMouseEnter={()=>setHover(s)} onMouseLeave={()=>setHover(0)} className="text-2xl transition-opacity" style={{color:'#C9A84C',opacity:s<=(hover||note)?1:0.25}}>✦</button>))}</div></div><div><label htmlFor="avis-message" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">Votre témoignage</label><textarea id="avis-message" name="message" required rows={4} placeholder="Décrivez votre expérience..." className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors resize-none"/></div><p className="font-georgia text-xs text-mist/50 leading-relaxed">En envoyant cet avis, vous acceptez qu'il soit publié après modération.</p><div className="flex gap-3"><button type="submit" disabled={status==='sending'} className="font-georgia text-sm tracking-wide px-6 py-3 rounded-lg hover:opacity-90 disabled:opacity-50" style={{backgroundColor:'#C9A84C',color:'#1A1535',fontWeight:600}}>{status==='sending'?'Envoi...':'Envoyer'}</button><button type="button" onClick={()=>setOpen(false)} className="font-georgia text-sm text-mist/50 hover:text-mist px-4">Annuler</button></div>{status==='error'&&<p className="font-georgia text-xs text-red-500">Erreur — réessayez ou contactez-nous par email.</p>}</form>)}</div>)
+}
+
 function Temoignages() {
   return (
     <section className="bg-deep/[0.03]">
@@ -297,6 +387,7 @@ function Temoignages() {
             </div>
           ))}
         </div>
+        <FormulaireAvis />
       </Section>
     </section>
   )
@@ -372,13 +463,13 @@ function Prix() {
 
 /* ─── SECTION 10 — FAQ ─── */
 const FAQ_ITEMS = [
-  { q: 'Faut-il déjà avoir des capacités médiumniques ?', r: 'Non. Ce parcours est conçu pour les débutants comme pour ceux qui ont déjà des perceptions. Il commence par les fondations et avance progressivement. Quel que soit votre point de départ, vous êtes au bon endroit.' },
-  { q: 'Combien de temps dure le parcours ?', r: 'C\'est vous qui décidez de votre rythme. Certains le traversent en trois mois, d\'autres en un an. Votre accès à l\'application dure 12 mois. Les modules imprimés restent à vous pour toujours.' },
-  { q: 'Est-ce que Mediumia remplace un vrai accompagnement humain ?', r: 'Mediumia est un coach IA formé sur le contenu exact du parcours. Elle ne remplace pas un accompagnement thérapeutique ou un suivi médical. Elle vous aide à comprendre les modules, à relire vos ressentis et à construire votre pratique avec discernement.' },
-  { q: 'Est-ce que ce parcours est lié à une religion ?', r: 'Non. Mediumia ne s\'inscrit dans aucune religion ni aucun dogme. Elle respecte toutes les croyances et propose un cadre universel basé sur l\'expérience directe.' },
-  { q: 'Puis-je suivre ce parcours depuis l\'étranger ?', r: 'L\'application fonctionne partout dans le monde. Les modules imprimés sont envoyés par courrier, les frais de port internationaux peuvent varier. Contactez-nous pour plus d\'informations.' },
-  { q: 'Puis-je payer en plusieurs fois ?', r: 'Oui. PayPal propose un paiement en 4 fois sans frais directement sur la page de paiement. Sélectionnez simplement cette option au moment de régler.' },
-  { q: 'Ce parcours peut-il remplacer un suivi médical ou psychologique ?', r: 'Non. Ce parcours ne se substitue en aucun cas à un suivi médical, psychologique ou psychiatrique. Mediumia est un coach pédagogique basé sur l\'intelligence artificielle — ce n\'est ni un médium, ni un thérapeute. En cas de troubles psychiques, de détresse émotionnelle ou de tout symptôme nécessitant une prise en charge, consultez un professionnel de santé qualifié.' },
+  { q: 'Faut-il déjà avoir des capacités médiumniques ?', r: "Non, et c'est même tout le sens de cet accompagnement. La médiumnité n'est pas un don réservé à quelques élus, c'est une dimension naturelle de l'être humain qui se réveille lorsque les bonnes conditions sont réunies. Le parcours est conçu pour les débutants comme pour celles et ceux qui pratiquent déjà et veulent structurer ce qu'ils ressentent. Vous partez d'où vous êtes." },
+  { q: 'Combien de temps dure le parcours ?', r: "Il n'y a pas de durée imposée. Le parcours est composé de 25 modules répartis en 4 niveaux, et chacun avance à son rythme. Certains traversent un module par semaine, d'autres prennent le temps de vivre chaque exercice sur plusieurs jours. Vous disposez de 12 mois d'accès à l'application pour cheminer librement, et les modules imprimés restent à vous pour toujours." },
+  { q: 'Est-ce que Mediumia remplace un vrai accompagnement humain ?', r: "Non. Mediumia, le coach IA, est un soutien disponible jour et nuit pour répondre à vos questions, relire vos ressentis avec vous et vous guider dans les exercices. Mais elle ne canalise pas à votre place et ne remplace pas la relation humaine. Elle vous aide à découvrir votre propre canal et à gagner en autonomie. C'est un compagnon de route, pas un substitut au lien humain." },
+  { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. Mediumia n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin. Vous n'avez rien à adopter, seulement à expérimenter." },
+  { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application Mediumia et le coach IA sont accessibles partout dans le monde, 24h/24. Pour les modules imprimés envoyés par courrier, l'expédition est possible à l'international. Contactez-nous avant l'achat si vous résidez hors de France métropolitaine afin de confirmer les délais et les frais d'expédition." },
+  { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. Le parcours complet est à 597 €, et un paiement en 4 fois est disponible via PayPal, sans complication. Vous choisissez simplement cette option au moment du règlement." },
+  { q: 'Ce parcours peut-il remplacer un suivi médical ou psychologique ?', r: "Non, en aucun cas. Mediumia est un parcours de développement médiumnique et personnel. Il ne remplace ni un suivi médical, ni un accompagnement psychologique ou psychiatrique. Si vous traversez une souffrance psychique, une période de grande fragilité ou un deuil difficile, entourez-vous de professionnels de santé. La pratique médiumnique se construit sur des fondations intérieures stables, et prendre soin de soi vient toujours en premier." },
 ]
 
 function FaqSection() {
@@ -632,10 +723,11 @@ export default function App() {
       <Nav />
       <main>
         <Hero />
-        <Solution />
+        <EstCeQueCelaVousParle />
+        <Constat />
         <Approche />
         <Sebastien />
-        <Constat />
+        <Solution />
         <Niveaux />
         <Contenu />
         <Prix />

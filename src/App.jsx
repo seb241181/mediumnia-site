@@ -70,7 +70,7 @@ function Nav() {
             href="https://mediumnia-app.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-georgia text-xs tracking-wide text-deep/50 hover:text-gold transition-colors hidden md:block"
+            className="font-georgia text-xs tracking-wide text-deep/70 hover:text-gold transition-colors hidden md:block"
           >
             Déjà inscrit ? Mon espace →
           </a>
@@ -227,7 +227,7 @@ function Contenu() {
           <div key={i} className="border border-gold/20 rounded-xl p-6 bg-white/60 hover:border-gold/50 transition-all">
             <p className="text-2xl mb-3">{item.icon}</p>
             <p className="font-georgia font-medium text-deep text-base mb-2">{item.titre}</p>
-            <p className="font-georgia text-sm text-mist/80 leading-relaxed">{item.texte}</p>
+            <p className="font-georgia text-sm text-mist leading-relaxed">{item.texte}</p>
           </div>
         ))}
       </div>
@@ -259,7 +259,7 @@ function Niveaux() {
                 <span className="font-georgia text-gold text-sm tracking-widest opacity-50 shrink-0">{n.num}</span>
                 <div className="flex-1">
                   <p className="font-georgia text-deep font-medium">{n.titre}</p>
-                  <p className="font-georgia text-mist/60 text-xs mt-0.5">{n.modules}</p>
+                  <p className="font-georgia text-mist text-xs mt-0.5">{n.modules}</p>
                 </div>
                 <span className="text-gold/60 text-xl shrink-0 transition-transform duration-300 select-none"
                   style={{ transform: open === i ? 'rotate(45deg)' : 'rotate(0deg)' }}>
@@ -268,7 +268,7 @@ function Niveaux() {
               </div>
               {open === i && (
                 <div className="px-6 pb-6 border-t border-gold/10">
-                  <p className="font-georgia text-sm text-mist/80 leading-relaxed pt-4">{n.texte}</p>
+                  <p className="font-georgia text-sm text-deep leading-relaxed pt-4">{n.texte}</p>
                 </div>
               )}
             </div>
@@ -374,7 +374,7 @@ function FormulaireAvis() {
           <p className="font-georgia text-base text-deep font-medium text-center mb-6">Partagez votre expérience</p>
 
           <div>
-            <label htmlFor="avis-nom" className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-1.5">
+            <label htmlFor="avis-nom" className="font-georgia text-xs text-mist tracking-wide uppercase block mb-1.5">
               Votre prénom
             </label>
             <input
@@ -388,7 +388,7 @@ function FormulaireAvis() {
           </div>
 
           <div>
-            <label className="font-georgia text-xs text-mist/60 tracking-wide uppercase block mb-2">
+            <label className="font-georgia text-xs text-mist tracking-wide uppercase block mb-2">
               Note (optionnelle)
             </label>
             <div className="flex gap-2" role="group" aria-label="Note de 1 à 5 étoiles">
@@ -423,7 +423,7 @@ function FormulaireAvis() {
             />
           </div>
 
-          <p className="font-georgia text-xs text-mist/50 leading-relaxed">
+          <p className="font-georgia text-xs text-mist leading-relaxed">
             En envoyant cet avis, vous acceptez qu'il soit publié après modération. Aucune donnée n'est conservée au-delà de cet envoi.
           </p>
 
@@ -439,7 +439,7 @@ function FormulaireAvis() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="font-georgia text-sm text-mist/50 hover:text-mist transition-colors px-4"
+              className="font-georgia text-sm text-mist/70 hover:text-mist transition-colors px-4"
             >
               Annuler
             </button>
@@ -492,7 +492,7 @@ function Approche() {
             <span className="text-gold text-lg mt-0.5 shrink-0">✦</span>
             <div>
               <p className="font-georgia font-medium text-deep mb-1">{p.titre}</p>
-              <p className="font-georgia text-sm md:text-base text-mist/80 leading-relaxed">{p.texte}</p>
+              <p className="font-georgia text-sm md:text-base text-mist leading-relaxed">{p.texte}</p>
             </div>
           </div>
         ))}
@@ -508,8 +508,8 @@ function Prix() {
       <Section>
         <SectionTitle>Rejoindre Mediumia</SectionTitle>
         <div className="border-2 border-gold/40 rounded-2xl p-8 md:p-12 bg-white/70 text-center">
-          <p className="font-georgia text-xs text-mist/50 tracking-widest uppercase mb-8">Le parcours complet comprend</p>
-          <ul className="font-georgia text-base md:text-lg text-deep/80 space-y-3 text-left max-w-sm mx-auto mb-10">
+          <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-8">Le parcours complet comprend</p>
+          <ul className="font-georgia text-base md:text-lg text-deep space-y-3 text-left max-w-sm mx-auto mb-10">
             {[
               '25 modules imprimés envoyés chez vous',
               'Application Mediumia sur votre téléphone',
@@ -527,11 +527,11 @@ function Prix() {
           <div className="mb-2">
             <span className="font-georgia text-5xl md:text-6xl text-deep font-medium">597 €</span>
           </div>
-          <p className="font-georgia text-mist/60 text-sm italic mb-8">Paiement en 4× disponible via PayPal</p>
+          <p className="font-georgia text-mist text-sm italic mb-8">Paiement en 4× disponible via PayPal</p>
           <BtnPrimary href="https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW" className="text-lg px-12 py-5">
             Commencer le parcours →
           </BtnPrimary>
-          <p className="font-georgia text-xs text-mist/50 mt-6 leading-relaxed max-w-md mx-auto">
+          <p className="font-georgia text-xs text-mist mt-6 leading-relaxed max-w-md mx-auto">
             Paiement sécurisé par PayPal. Expédition sous 72h.
           </p>
         </div>
@@ -572,7 +572,7 @@ function FaqSection() {
             </div>
             {open === i && (
               <div className="px-6 pb-6 border-t border-gold/10">
-                <p className="font-georgia text-sm md:text-base text-mist/80 leading-relaxed pt-4">{item.r}</p>
+                <p className="font-georgia text-sm md:text-base text-deep leading-relaxed pt-4">{item.r}</p>
               </div>
             )}
           </div>
@@ -642,7 +642,7 @@ function PolitiqueModal({ onClose }) {
             <h3 className="font-georgia text-deep text-lg font-medium">Politique de confidentialité</h3>
           </div>
           <button onClick={onClose}
-            className="text-mist/40 hover:text-mist transition-colors text-2xl leading-none ml-4"
+            className="text-mist/70 hover:text-mist transition-colors text-2xl leading-none ml-4"
             aria-label="Fermer">
             ×
           </button>
@@ -652,12 +652,12 @@ function PolitiqueModal({ onClose }) {
           {POLITIQUE.map((section, i) => (
             <div key={i}>
               <p className="font-georgia font-medium text-deep mb-2">{section.titre}</p>
-              <p className="font-georgia text-sm text-mist/80 leading-relaxed">{section.texte}</p>
+              <p className="font-georgia text-sm text-mist leading-relaxed">{section.texte}</p>
             </div>
           ))}
         </div>
         <div className="px-6 pb-8 text-center">
-          <p className="font-georgia text-xs text-mist/40">
+          <p className="font-georgia text-xs text-mist/70">
             Pour toute question : <a href="mailto:contact@mediumia.fr" className="hover:text-gold transition-colors underline">contact@mediumia.fr</a>
           </p>
         </div>
@@ -750,12 +750,12 @@ function Footer({ onPolitique, onMentions }) {
         « La médiumnité ne s'apprend pas. Elle se découvre.<br />Tout a toujours été là. »
       </p>
       <p className="text-gold text-3xl mb-10">✦</p>
-      <div className="font-georgia text-xs text-mist/50 space-y-1 mb-8">
+      <div className="font-georgia text-xs text-mist space-y-1 mb-8">
         <p>Mediumia — Accompagnement à la Médiumnité Consciente</p>
         <p>Sébastien Seguin — Médium professionnel</p>
         <p>SIRET : 81918584400027</p>
       </div>
-      <div className="flex items-center justify-center gap-6 font-georgia text-xs text-mist/40">
+      <div className="flex items-center justify-center gap-6 font-georgia text-xs text-mist/70">
         <a href="mailto:contact@mediumia.fr" className="hover:text-gold transition-colors">Contact</a>
         <span>·</span>
         <button onClick={onMentions} className="hover:text-gold transition-colors">

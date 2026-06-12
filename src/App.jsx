@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './index.css'
+import OracleTest from './components/OracleTest'
 
 /* ─── Hook d'animation au scroll ─── */
 function useFadeIn() {
@@ -811,6 +812,7 @@ export default function App() {
         <Prix />
         <Temoignages />
         <FaqSection />
+        <OracleTest />
       </main>
       <Footer onPolitique={() => setShowPolitique(true)} onMentions={() => setShowMentions(true)} />
       <StickyBar />

@@ -41,12 +41,18 @@ export default function OracleTest() {
       })
       if (!apiRes.ok) throw new Error('Erreur API')
       const { interpretation } = await apiRes.json()
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID,
-        { to_email: trimmedEmail, card1_name: drawnCards[0].name, card2_name: drawnCards[1].name, card3_name: drawnCards[2].name, interpretation },
-        EMAILJS_PUBLIC_KEY)
+      let emailSent = false
+      try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID,
+          { to_email: trimmedEmail, card1_name: drawnCards[0].name, card2_name: drawnCards[1].name, card3_name: drawnCards[2].name, interpretation },
+          EMAILJS_PUBLIC_KEY)
+        emailSent = true
+      } catch (emailErr) {
+        console.error('EmailJS error:', emailErr)
+      }
       localStorage.setItem(storageKey(trimmedEmail), new Date().toISOString())
       setResult({ cards: drawnCards, interpretation })
-      setMessage("Tirage effectué ! Le résultat vous a été envoyé par email.")
+      setMessage(emailSent ? "Tirage effectué ! Le résultat vous a été envoyé par email." : "Tirage effectué ! (L'envoi par email est temporairement indisponible)")
     } catch (err) { console.error(err); setIsError(true); setMessage('Une erreur est survenue. Veuillez réessayer plus tard.') }
     finally { setLoading(false) }
   }

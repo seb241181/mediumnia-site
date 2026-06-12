@@ -79,12 +79,12 @@ export default function OracleTest() {
 
       <div className="flex flex-col md:flex-row gap-8 items-start mb-8">
         <div className="flex-1">
-          <p className="font-georgia text-xs text-gold/60 tracking-widest uppercase mb-2">Sébastien Seguin</p>
+          <p className="font-georgia text-xs text-gold tracking-widest uppercase mb-2 font-bold">Sébastien Seguin</p>
           <h2 className="font-georgia text-2xl md:text-3xl text-deep font-medium leading-tight mb-1">
             Oracle Au-delà de l'Âme ✦
           </h2>
           <p className="font-georgia text-sm text-mist tracking-wide mb-4">Jeu de 45 Cartes d'Éveil Intuitif</p>
-          <p className="font-georgia text-xs text-gold/70 italic mb-5">Guidance · Développement Personnel · Connexion Intérieure</p>
+          <p className="font-georgia text-xs text-gold italic mb-5 font-bold">Guidance · Développement Personnel · Connexion Intérieure</p>
           <div className="flex items-baseline gap-3 mb-6">
             <span className="font-georgia text-3xl text-deep font-semibold">29,90 €</span>
             <span className="font-georgia text-sm text-mist">+ 4,79 € de port</span>

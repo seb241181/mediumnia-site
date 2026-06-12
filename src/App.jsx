@@ -118,14 +118,14 @@ function Hero() {
           {/* TODO: brancher l'essai gratuit quand la route /essai sera disponible */}
           <a
             href="#contenu"
-            className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all font-semibold"
+            className="font-georgia text-base tracking-wide px-8 py-4 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]" style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
           >
             Essayer Mediumia gratuitement
           </a>
         </div>
         <a
           href="#oracle"
-          className="inline-block mt-8 font-georgia text-sm tracking-wide text-gold border border-gold/40 px-6 py-3 rounded-lg hover:bg-gold/10 hover:border-gold/60 transition-all font-bold"
+          className="inline-block mt-8 font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90" style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
         >
           ✦ Testez gratuitement l'Oracle Au-delà de l'Âme ✦
         </a>
@@ -468,7 +468,7 @@ function Temoignages() {
           {TEMOIGNAGES.map((t, i) => (
             <div key={i} className="bg-white/80 border border-gold/20 rounded-xl p-6">
               <p className="font-georgia text-sm md:text-base text-deep/80 italic leading-relaxed mb-4">{t.texte}</p>
-              <p className="font-georgia text-xs text-gold/70 tracking-wide">— {t.source}</p>
+              <p className="font-georgia text-xs text-gold tracking-wide font-bold">— {t.source}</p>
             </div>
           ))}
         </div>
@@ -644,7 +644,7 @@ function PolitiqueModal({ onClose }) {
         {/* Header */}
         <div className="sticky top-0 bg-cream border-b border-gold/20 px-6 py-5 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-gold/60 font-georgia mb-0.5">Mediumia</p>
+            <p className="text-xs uppercase tracking-widest text-gold font-georgia mb-0.5 font-bold">Mediumia</p>
             <h3 className="font-georgia text-deep text-lg font-medium">Politique de confidentialité</h3>
           </div>
           <button onClick={onClose}
@@ -720,7 +720,7 @@ function MentionsModal({ onClose }) {
         {/* Header */}
         <div className="sticky top-0 bg-cream border-b border-gold/20 px-6 py-5 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-gold/60 font-georgia mb-0.5">Mediumia</p>
+            <p className="text-xs uppercase tracking-widest text-gold font-georgia mb-0.5 font-bold">Mediumia</p>
             <h3 className="font-georgia text-deep text-lg font-medium">Mentions légales</h3>
           </div>
           <button onClick={onClose}
@@ -788,7 +788,7 @@ function StickyBar() {
     <div className={`fixed bottom-0 left-0 right-0 z-50 md:hidden transition-transform duration-300 ${visible ? 'translate-y-0' : 'translate-y-full'}`}>
       <div className="flex items-center justify-between px-5 py-4 border-t border-gold/20"
         style={{ backgroundColor: '#1A1535' }}>
-        <p className="font-georgia text-sm text-gold/80">597 € · Paiement en 4× via PayPal</p>
+        <p className="font-georgia text-sm text-gold font-bold">597 € · Paiement en 4× via PayPal</p>
         <a href="https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW"
           className="font-georgia text-sm px-5 py-2.5 rounded-lg transition-all hover:opacity-90 shrink-0 ml-4"
           style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>

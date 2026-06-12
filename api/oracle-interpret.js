@@ -9,7 +9,7 @@ export default async function handler(req, res) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
       body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], temperature: 0.8, max_tokens: 300 }),
     })
-    if (!r.ok) { console.error(await r.text()); return res.status(502).json({ error: 'OpenAI request failed' }) }
+    if (!r.ok) { console.error(await r.text()); return res.status(502).json({ error: 'OpenAI request failed', detail: err }) }
     const data = await r.json()
     return res.status(200).json({ interpretation: data.choices[0].message.content })
   } catch (e) { console.error(e); return res.status(500).json({ error: 'Failed' }) }

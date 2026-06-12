@@ -123,6 +123,12 @@ function Hero() {
             Essayer Mediumia gratuitement
           </a>
         </div>
+        <a
+          href="#oracle"
+          className="inline-block mt-8 font-georgia text-sm tracking-wide text-gold/80 border border-gold/30 px-6 py-3 rounded-lg hover:bg-gold/10 hover:border-gold/60 transition-all"
+        >
+          ✦ Testez gratuitement l'Oracle Au-delà de l'Âme ✦
+        </a>
       </div>
     </section>
   )

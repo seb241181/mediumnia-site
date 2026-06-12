@@ -125,7 +125,7 @@ function Hero() {
         </div>
         <a
           href="#oracle"
-          className="inline-block mt-8 font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90" style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
+          className="inline-block mt-8 font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]" style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
         >
           ✦ Testez gratuitement l'Oracle Au-delà de l'Âme ✦
         </a>

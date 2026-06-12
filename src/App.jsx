@@ -63,7 +63,7 @@ function Nav() {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-cream/95 backdrop-blur-sm border-b border-gold/20 shadow-sm' : ''}`}>
       <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="#" className="font-georgia text-deep tracking-[0.2em] text-sm font-medium">
+        <a href="#" className="font-georgia text-deep tracking-[0.2em] text-base font-semibold">
           ✦ MEDIUMIA
         </a>
         <div className="flex items-center gap-4">
@@ -71,12 +71,12 @@ function Nav() {
             href="https://mediumnia-app.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-georgia text-xs tracking-wide text-deep/70 hover:text-gold transition-colors hidden md:block"
+            className="font-georgia text-sm tracking-wide text-deep/70 hover:text-gold transition-colors hidden md:block font-medium"
           >
             Déjà inscrit ? Mon espace →
           </a>
           <a href="#prix"
-            className="font-georgia text-xs tracking-wide px-4 py-2 rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all hidden md:block">
+            className="font-georgia text-sm tracking-wide px-5 py-2.5 rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all hidden md:block font-medium">
             Rejoindre l'accompagnement
           </a>
         </div>
@@ -118,14 +118,14 @@ function Hero() {
           {/* TODO: brancher l'essai gratuit quand la route /essai sera disponible */}
           <a
             href="#contenu"
-            className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all"
+            className="font-georgia text-base tracking-wide text-gold border border-gold/50 px-8 py-4 rounded-lg hover:bg-gold/10 transition-all font-semibold"
           >
             Essayer Mediumia gratuitement
           </a>
         </div>
         <a
           href="#oracle"
-          className="inline-block mt-8 font-georgia text-sm tracking-wide text-gold/80 border border-gold/30 px-6 py-3 rounded-lg hover:bg-gold/10 hover:border-gold/60 transition-all"
+          className="inline-block mt-8 font-georgia text-sm tracking-wide text-gold border border-gold/40 px-6 py-3 rounded-lg hover:bg-gold/10 hover:border-gold/60 transition-all font-bold"
         >
           ✦ Testez gratuitement l'Oracle Au-delà de l'Âme ✦
         </a>

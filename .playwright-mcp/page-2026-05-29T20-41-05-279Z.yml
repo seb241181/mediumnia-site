@@ -1,0 +1,78 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - link "Kling AI" [ref=e8] [cursor=pointer]:
+            - /url: /
+            - img "Kling AI" [ref=e9]
+          - generic [ref=e10] [cursor=pointer]: Creative Studio
+          - generic [ref=e11] [cursor=pointer]: API Platform
+          - generic [ref=e12] [cursor=pointer]: About Us
+          - link "Blog" [ref=e13] [cursor=pointer]:
+            - /url: /blog
+        - generic [ref=e14]:
+          - button "English" [ref=e16] [cursor=pointer]:
+            - generic [ref=e17]: English
+            - img [ref=e19]
+          - button "Experience Now" [ref=e21] [cursor=pointer]
+    - generic [ref=e22]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: All-New KlingAI 3.0 Series
+        - generic [ref=e31]: All in One, One for All
+        - generic [ref=e32] [cursor=pointer]: Create Now
+      - generic [ref=e34]: In-car POV, handheld shot, focused on the road ahead.
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: Kling 3.0
+        - generic [ref=e41]: Model Series
+      - generic [ref=e42]: Built on a fully upgraded architecture, VIDEO 3.0 and VIDEO 3.0 Omni natively support deep multimodal instruction parsing and cross-task integration, redefining the narrative logic of light and sound. From precise long-form storyboard control to Native Audio–powered feature decoupling, the system enables dual binding of visual identity and vocal tone. Across complex multi-scene transitions, VIDEO 3.0 delivers high creative freedom with exceptional consistency
+  - img
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - textbox "Ask anything..."
+                    - button:
+                      - img
+                - generic:
+                  - generic: Search by
+                  - button "Logo":
+                    - img "Logo"
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Kling AI Customer Support
+                            - generic:
+                              - button:
+                                - generic:
+                                  - img
+                              - button:
+                                - generic:
+                                  - img
+                        - generic:
+                          - status:
+                            - img
+                            - generic: Loading...
+                        - generic:
+                          - generic:
+                            - text: Powered by
+                            - button "Logo":
+                              - img "Logo"
+                            - generic:
+                              - img

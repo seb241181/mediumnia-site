@@ -1,0 +1,71 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e7]:
+          - img [ref=e10]
+          - generic [ref=e19]:
+            - generic [ref=e21] [cursor=pointer]: Image Generation
+            - generic [ref=e23] [cursor=pointer]: Video Generation
+            - generic [ref=e25] [cursor=pointer]: Motion Control
+            - generic [ref=e27] [cursor=pointer]: Avatar
+          - img [ref=e30]
+        - generic [ref=e33]:
+          - img [ref=e34]
+          - generic [ref=e36]: Sign in to View Your Assets
+          - button "One-click Sign In" [ref=e37] [cursor=pointer]:
+            - generic [ref=e39]: One-click Sign In
+    - banner [ref=e40]:
+      - generic [ref=e41]:
+        - link [ref=e43] [cursor=pointer]:
+          - /url: /app
+          - img [ref=e44]
+        - list [ref=e47]:
+          - link "Explore" [ref=e48] [cursor=pointer]:
+            - /url: /app?ac=1
+            - generic [ref=e49]:
+              - img [ref=e50]
+              - generic [ref=e52]: Explore
+          - link "Assets" [ref=e53] [cursor=pointer]:
+            - /url: /app/user-assets/projects?ac=1
+            - generic [ref=e54]:
+              - img [ref=e55]
+              - generic [ref=e57]: Assets
+          - link "Omni" [ref=e60] [cursor=pointer]:
+            - /url: /app/omni/new?ac=1
+            - generic [ref=e61]:
+              - img [ref=e62]
+              - generic [ref=e64]: Omni
+          - link "Generate" [ref=e65] [cursor=pointer]:
+            - /url: /app/video/new?ac=1
+            - generic [ref=e66]:
+              - img [ref=e67]
+              - generic [ref=e69]: Generate
+          - link "Canvas" [ref=e70] [cursor=pointer]:
+            - /url: https://kling.ai/canvas/
+            - generic [ref=e71]:
+              - img [ref=e72]
+              - generic [ref=e74]: Canvas
+          - link "All Tools" [ref=e75] [cursor=pointer]:
+            - /url: /app/all-tools?ac=1
+            - generic [ref=e76]:
+              - img [ref=e77]
+              - generic [ref=e79]: All Tools
+      - generic [ref=e80]:
+        - link [ref=e81] [cursor=pointer]:
+          - /url: /release-note/release-history
+          - img [ref=e83]
+        - link [ref=e86] [cursor=pointer]:
+          - /url: /dev
+          - img [ref=e88]
+        - generic [ref=e92] [cursor=pointer]: Sign In
+        - generic [ref=e93] [cursor=pointer]:
+          - generic [ref=e94]:
+            - text: Plans from
+            - generic [ref=e95]: $8.8
+          - generic [ref=e97]: subscription
+        - menubar [ref=e98]:
+          - menuitem [ref=e99]:
+            - img [ref=e102] [cursor=pointer]
+  - img
+  - img

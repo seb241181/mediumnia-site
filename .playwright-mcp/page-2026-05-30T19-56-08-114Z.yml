@@ -1,0 +1,142 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e7]:
+          - img [ref=e10]
+          - generic [ref=e19]:
+            - generic [ref=e21] [cursor=pointer]: Image Generation
+            - generic [ref=e23] [cursor=pointer]: Video Generation
+            - generic [ref=e25] [cursor=pointer]: Motion Control
+            - generic [ref=e27] [cursor=pointer]: Avatar
+          - generic [ref=e30]:
+            - generic [ref=e32]:
+              - generic [ref=e35] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e37]
+                  - generic [ref=e39]:
+                    - img [ref=e40]
+                    - generic [ref=e41]: VIDEO 1.6
+                - img [ref=e44]
+              - generic [ref=e46]:
+                - generic [ref=e56] [cursor=pointer]:
+                  - generic [ref=e57]:
+                    - img [ref=e58]
+                    - paragraph [ref=e60]: Add start and end frames.
+                  - generic [ref=e62]: History
+                - generic [ref=e66]:
+                  - textbox [ref=e68]
+                  - generic:
+                    - generic:
+                      - text: Please describe your creative ideas for the video, or have DeepSeek generate the prompt or view
+                      - link "Help Center" [ref=e69] [cursor=pointer]:
+                        - /url: /quickstart/image-to-video-guide
+                      - text: for a quick start.
+                  - generic [ref=e71]:
+                    - img [ref=e74] [cursor=pointer]
+                    - img [ref=e77] [cursor=pointer]
+              - generic [ref=e79]:
+                - generic [ref=e80]:
+                  - generic [ref=e81]: Sound Effects
+                  - img [ref=e82] [cursor=pointer]
+                  - generic [ref=e84]:
+                    - generic [ref=e86]: Free for now
+                    - generic [ref=e87]:
+                      - switch [checked]
+                - generic [ref=e91]:
+                  - generic [ref=e93] [cursor=pointer]:
+                    - generic [ref=e94]: Integrated sound with video generation
+                    - generic [ref=e95]:
+                      - text: Advanced
+                      - img [ref=e96]
+                  - generic [ref=e98]:
+                    - generic [ref=e100]:
+                      - generic [ref=e102]:
+                        - generic [ref=e103]:
+                          - img [ref=e104]
+                          - text: Sound
+                        - generic [ref=e106]:
+                          - textbox [ref=e108]
+                          - generic: "(Optional) Enter the sound effect. For example: sound of waves"
+                      - generic [ref=e110]:
+                        - generic [ref=e111]:
+                          - img [ref=e112]
+                          - text: Music
+                        - generic [ref=e114]:
+                          - textbox [ref=e116]
+                          - generic: "(Optional) Enter the background music. For example: melodic flute playing"
+                    - generic [ref=e119]:
+                      - generic [ref=e120]:
+                        - button [ref=e121] [cursor=pointer]:
+                          - img [ref=e124]
+                        - generic [ref=e126]: ASMR Mode
+                      - generic [ref=e127]:
+                        - text: (Immersive experiences with enhanced details
+                        - generic [ref=e128] [cursor=pointer]: Demo
+                        - text: )
+            - generic [ref=e130]:
+              - generic [ref=e133] [cursor=pointer]:
+                - img [ref=e134]
+                - generic [ref=e136]: 1080p · 5s · 9:16 · 1
+                - img [ref=e137]
+              - button "Generate" [ref=e141] [cursor=pointer]:
+                - generic [ref=e143]: Generate
+        - generic [ref=e146]:
+          - img [ref=e147]
+          - generic [ref=e149]: Sign in to View Your Assets
+          - button "One-click Sign In" [ref=e150] [cursor=pointer]:
+            - generic [ref=e152]: One-click Sign In
+    - banner [ref=e153]:
+      - generic [ref=e154]:
+        - link [ref=e156] [cursor=pointer]:
+          - /url: /app
+          - img [ref=e157]
+        - list [ref=e160]:
+          - link "Explore" [ref=e161] [cursor=pointer]:
+            - /url: /app?ac=1
+            - generic [ref=e162]:
+              - img [ref=e163]
+              - generic [ref=e165]: Explore
+          - link "Assets" [ref=e166] [cursor=pointer]:
+            - /url: /app/user-assets/projects?ac=1
+            - generic [ref=e167]:
+              - img [ref=e168]
+              - generic [ref=e170]: Assets
+          - link "Omni" [ref=e173] [cursor=pointer]:
+            - /url: /app/omni/new?ac=1
+            - generic [ref=e174]:
+              - img [ref=e175]
+              - generic [ref=e177]: Omni
+          - link "Generate" [ref=e178] [cursor=pointer]:
+            - /url: /app/video/new?ac=1
+            - generic [ref=e179]:
+              - img [ref=e180]
+              - generic [ref=e182]: Generate
+          - link "Canvas" [ref=e183] [cursor=pointer]:
+            - /url: https://kling.ai/canvas/
+            - generic [ref=e184]:
+              - img [ref=e185]
+              - generic [ref=e187]: Canvas
+          - link "All Tools" [ref=e188] [cursor=pointer]:
+            - /url: /app/all-tools?ac=1
+            - generic [ref=e189]:
+              - img [ref=e190]
+              - generic [ref=e192]: All Tools
+      - generic [ref=e193]:
+        - link [ref=e194] [cursor=pointer]:
+          - /url: /release-note/release-history
+          - img [ref=e196]
+        - link [ref=e199] [cursor=pointer]:
+          - /url: /dev
+          - img [ref=e201]
+        - generic [ref=e205] [cursor=pointer]: Sign In
+        - generic [ref=e206] [cursor=pointer]:
+          - generic [ref=e207]:
+            - text: Plans from
+            - generic [ref=e208]: $8.8
+          - generic [ref=e210]: subscription
+        - menubar [ref=e211]:
+          - menuitem [ref=e212]:
+            - img [ref=e215] [cursor=pointer]
+  - img
+  - img

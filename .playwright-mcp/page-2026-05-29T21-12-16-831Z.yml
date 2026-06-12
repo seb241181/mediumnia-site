@@ -1,0 +1,267 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e7]:
+          - img [ref=e10]
+          - generic [ref=e19]:
+            - generic [ref=e21] [cursor=pointer]: Image Generation
+            - generic [ref=e23] [cursor=pointer]: Video Generation
+            - generic [ref=e25] [cursor=pointer]: Motion Control
+            - generic [ref=e27] [cursor=pointer]: Avatar
+          - generic [ref=e30]:
+            - generic [ref=e32]:
+              - generic [ref=e35] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e37]
+                  - generic [ref=e39]:
+                    - img [ref=e40]
+                    - generic [ref=e41]: VIDEO 1.5
+                - img [ref=e44]
+              - generic [ref=e46]:
+                - generic [ref=e56] [cursor=pointer]:
+                  - generic [ref=e57]:
+                    - img [ref=e58]
+                    - paragraph [ref=e60]: Add start and end frames.
+                  - generic [ref=e62]: History
+                - generic [ref=e66]:
+                  - textbox [ref=e68]
+                  - generic [ref=e70]:
+                    - img [ref=e357] [cursor=pointer]
+                    - generic [ref=e71]:
+                      - img [ref=e360] [cursor=pointer]
+                      - img [ref=e74] [cursor=pointer]
+                      - img [ref=e77] [cursor=pointer]
+              - generic [ref=e79]:
+                - generic [ref=e80]:
+                  - generic [ref=e81]: Sound Effects
+                  - img [ref=e82] [cursor=pointer]
+                  - generic [ref=e84]:
+                    - generic [ref=e86]: Free for now
+                    - generic [ref=e87]:
+                      - switch [checked]
+                - generic [ref=e91]:
+                  - generic [ref=e93] [cursor=pointer]:
+                    - generic [ref=e94]: Integrated sound with video generation
+                    - generic [ref=e95]:
+                      - text: Advanced
+                      - img [ref=e96]
+                  - generic [ref=e98]:
+                    - generic [ref=e100]:
+                      - generic [ref=e102]:
+                        - generic [ref=e103]:
+                          - img [ref=e104]
+                          - text: Sound
+                        - generic [ref=e106]:
+                          - textbox [ref=e108]
+                          - generic: "(Optional) Enter the sound effect. For example: sound of waves"
+                      - generic [ref=e110]:
+                        - generic [ref=e111]:
+                          - img [ref=e112]
+                          - text: Music
+                        - generic [ref=e114]:
+                          - textbox [ref=e116]
+                          - generic: "(Optional) Enter the background music. For example: melodic flute playing"
+                    - generic [ref=e119]:
+                      - generic [ref=e120]:
+                        - button [ref=e121] [cursor=pointer]:
+                          - img [ref=e124]
+                        - generic [ref=e126]: ASMR Mode
+                      - generic [ref=e127]:
+                        - text: (Immersive experiences with enhanced details
+                        - generic [ref=e266] [cursor=pointer]: Demo
+                        - text: )
+              - generic [ref=e128]:
+                - generic [ref=e129]:
+                  - generic [ref=e130]: Motion Brush
+                  - img [ref=e131] [cursor=pointer]
+                - img [ref=e134]
+              - generic [ref=e136]:
+                - generic [ref=e138]: Camera Movement
+                - img [ref=e140]
+            - generic [ref=e143]:
+              - generic [ref=e146] [cursor=pointer]:
+                - img [ref=e147]
+                - generic [ref=e149]: 720p · 5s · 16:9 · 1
+                - img [ref=e150]
+              - button "20 Generate" [ref=e422] [cursor=pointer]:
+                - generic [ref=e156]:
+                  - generic [ref=e423]:
+                    - img [ref=e424]
+                    - generic [ref=e426]: "20"
+                  - text: Generate
+        - generic [ref=e157]:
+          - generic [ref=e267]:
+            - generic [ref=e268]:
+              - img [ref=e269]
+              - text: Turn on notifications for generation update.
+              - generic [ref=e271]: Allow
+            - img [ref=e272] [cursor=pointer]
+          - generic [ref=e158]:
+            - generic [ref=e159]:
+              - generic [ref=e160]:
+                - generic [ref=e161] [cursor=pointer]: All
+                - generic [ref=e162] [cursor=pointer]: Images
+                - generic [ref=e163] [cursor=pointer]: Videos
+                - generic [ref=e164] [cursor=pointer]: Audio
+              - button "Favorites" [ref=e165] [cursor=pointer]:
+                - generic [ref=e167]:
+                  - img [ref=e168]
+                  - generic [ref=e170]: Favorites
+            - generic [ref=e171]:
+              - generic [ref=e172]:
+                - img [ref=e174] [cursor=pointer]
+                - img [ref=e177] [cursor=pointer]
+              - button "Assets" [ref=e179] [cursor=pointer]:
+                - generic [ref=e180]:
+                  - img [ref=e181]
+                  - generic [ref=e184]: Assets
+          - generic [ref=e431]:
+            - generic [ref=e434]:
+              - generic [ref=e435]:
+                - generic [ref=e436]:
+                  - img [ref=e437]
+                  - generic [ref=e439]: Video
+                - generic [ref=e440]:
+                  - img [ref=e442] [cursor=pointer]
+                  - img [ref=e445] [cursor=pointer]
+              - generic [ref=e448]:
+                - generic [ref=e451]: A mystical medium woman sits cross-legged inside an ancient stone temple, hands raised, eyes closed. Glowing violet and gold sacred geometry sigils float and rotate slowly around her. Ethereal smoke rises from candles, forming spirit silhouettes. A crystal ball on the altar pulses with deep blue inner light, revealing cosmic nebulae within. Shafts of moonlight pierce through cracked stone ceiling. Cinematic slow motion, photorealistic, 4K, atmospheric fog, otherworldly mystical ambiance.
+                - img [ref=e454] [cursor=pointer]
+            - generic [ref=e460]:
+              - img [ref=e462]
+              - generic [ref=e463]:
+                - generic [ref=e464]:
+                  - generic [ref=e465]: Queueing…
+                  - generic [ref=e467]:
+                    - img [ref=e468]
+                    - img [ref=e470]
+                    - img [ref=e472]
+                    - img [ref=e474]
+                    - img [ref=e476]
+                    - img [ref=e478]
+                  - generic [ref=e480]: Creating...
+                  - generic [ref=e482]:
+                    - img [ref=e483]
+                    - img [ref=e485]
+                    - img [ref=e487]
+                    - img [ref=e489]
+                    - img [ref=e491]
+                    - img [ref=e493]
+                    - img [ref=e495]
+                - generic [ref=e498]: "Creating... Estimated wait: 3 minutes"
+                - generic [ref=e500]: Turn on notificationto get notified when generation is complete.
+    - banner [ref=e188]:
+      - generic [ref=e189]:
+        - link [ref=e191] [cursor=pointer]:
+          - /url: /app
+          - img [ref=e192]
+        - list [ref=e195]:
+          - link "Explore" [ref=e196] [cursor=pointer]:
+            - /url: /app?ac=1
+            - generic [ref=e197]:
+              - img [ref=e279]
+              - generic [ref=e200]: Explore
+          - link "Assets" [ref=e201] [cursor=pointer]:
+            - /url: /app/user-assets/projects?ac=1
+            - generic [ref=e202]:
+              - img [ref=e281]
+              - generic [ref=e205]: Assets
+          - link "Omni" [ref=e208] [cursor=pointer]:
+            - /url: /app/omni/new?ac=1
+            - generic [ref=e209]:
+              - img [ref=e283]
+              - generic [ref=e212]: Omni
+          - link "Generate" [ref=e213] [cursor=pointer]:
+            - /url: /app/video/new?ac=1
+            - generic [ref=e214]:
+              - img [ref=e285]
+              - generic [ref=e217]: Generate
+          - link "Canvas" [ref=e218] [cursor=pointer]:
+            - /url: https://kling.ai/canvas/
+            - generic [ref=e219]:
+              - img [ref=e287]
+              - generic [ref=e222]: Canvas
+          - link "All Tools" [ref=e223] [cursor=pointer]:
+            - /url: /app/all-tools?ac=1
+            - generic [ref=e224]:
+              - img [ref=e289]
+              - generic [ref=e227]: All Tools
+      - generic [ref=e228]:
+        - img [ref=e232] [cursor=pointer]
+        - link [ref=e234] [cursor=pointer]:
+          - /url: /release-note/release-history
+          - img [ref=e236]
+        - link [ref=e239] [cursor=pointer]:
+          - /url: /dev
+          - img [ref=e241]
+        - generic [ref=e245] [cursor=pointer]:
+          - generic [ref=e247]:
+            - generic [ref=e248]:
+              - img [ref=e249]
+              - img [ref=e250]
+            - generic:
+              - img
+          - generic [ref=e251]:
+            - img [ref=e252]
+            - generic [ref=e254]: "726"
+        - generic [ref=e255] [cursor=pointer]:
+          - generic [ref=e257]: Standard
+          - generic [ref=e259]: subscription
+        - menubar [ref=e260]:
+          - menuitem [ref=e261]:
+            - img [ref=e264] [cursor=pointer]
+  - img
+  - img
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - textbox "Ask anything..."
+                    - button:
+                      - img
+                - generic:
+                  - generic: Search by
+                  - button "Logo":
+                    - img "Logo"
+          - generic:
+            - img [ref=e353] [cursor=pointer]
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Kling AI Customer Support
+                            - generic:
+                              - button:
+                                - generic:
+                                  - img
+                              - button:
+                                - generic:
+                                  - img
+                        - generic:
+                          - status:
+                            - img
+                            - generic: Loading...
+                        - generic:
+                          - generic:
+                            - text: Powered by
+                            - button "Logo":
+                              - img "Logo"
+                            - generic:
+                              - img
+  - alert [ref=e501]:
+    - img [ref=e503]
+    - paragraph [ref=e505]: Task submitted. Generation in progress.

@@ -1,0 +1,79 @@
+- generic [active] [ref=e1]:
+  - img
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - link "Kling AI" [ref=e8] [cursor=pointer]:
+            - /url: /
+            - img "Kling AI" [ref=e9]
+          - generic [ref=e10] [cursor=pointer]: Outils
+          - generic [ref=e11] [cursor=pointer]: Plateforme développeurs
+          - generic [ref=e12] [cursor=pointer]: À propos de nous
+          - link "Blog" [ref=e13] [cursor=pointer]:
+            - /url: /blog
+        - generic [ref=e14]:
+          - button "Français" [ref=e16] [cursor=pointer]:
+            - generic [ref=e17]: Français
+            - img [ref=e19]
+          - button "Essayez maintenant" [ref=e21] [cursor=pointer]
+    - generic [ref=e22]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: Découvrez la toute nouvelle série KLING AI 3.0
+        - generic [ref=e31]: Tout-en-un, un pour tout
+        - generic [ref=e32] [cursor=pointer]: Commencer à créer
+      - generic [ref=e34]: Vue depuis l’intérieur de la voiture, plan caméra à la main, mise au point sur la route devant
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]: Modèle de la série Video 3.0
+        - generic [ref=e41]: Série de modèles
+      - generic [ref=e42]: Reposant sur une architecture sous-jacente entièrement repensée, Video 3.0 et Video 3.0 Omni prennent en charge nativement l’analyse approfondie des instructions multimodales et la fusion inter-tâches, redéfinissant la logique narrative de la lumière, de l’ombre et du son.
+      - generic [ref=e43]: Du découpage précis des vidéos très longues au découplage des caractéristiques de Native Audio, nous avons réalisé une double liaison entre l’Element visuel et les Voices auditives. Dans l’orchestration spatio-temporelle de scènes complexes, nous vous offrons une expérience de création ultime, à la fois très libre et hautement cohérente.
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - textbox "Ask anything..."
+                    - button:
+                      - img
+                - generic:
+                  - generic: Search by
+                  - button "Logo":
+                    - img "Logo"
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Kling AI Customer Support
+                            - generic:
+                              - button:
+                                - generic:
+                                  - img
+                              - button:
+                                - generic:
+                                  - img
+                        - generic:
+                          - status:
+                            - img
+                            - generic: Loading...
+                        - generic:
+                          - generic:
+                            - text: Powered by
+                            - button "Logo":
+                              - img "Logo"
+                            - generic:
+                              - img

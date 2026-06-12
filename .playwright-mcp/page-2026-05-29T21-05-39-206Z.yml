@@ -1,0 +1,624 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e7]:
+          - img [ref=e10]
+          - generic [ref=e19]:
+            - generic [ref=e239] [cursor=pointer]: Génération d'images
+            - generic [ref=e240] [cursor=pointer]: Génération vidéo
+            - generic [ref=e241] [cursor=pointer]: Contrôle du mouvement
+            - generic [ref=e242] [cursor=pointer]: Avatar
+          - generic [ref=e30]:
+            - generic [ref=e32]:
+              - generic [ref=e35] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e37]
+                  - generic [ref=e39]:
+                    - img [ref=e40]
+                    - generic [ref=e1010]: VIDÉO 1.5
+                - img [ref=e46]
+              - generic [ref=e48]:
+                - generic [ref=e58] [cursor=pointer]:
+                  - generic [ref=e59]:
+                    - img [ref=e60]
+                    - paragraph [ref=e62]:
+                      - generic [ref=e246]: Ajouter les images de début et de fin.
+                  - generic [ref=e247]: Histoire
+                - generic [ref=e68]:
+                  - textbox [ref=e70]
+                  - generic [ref=e71]:
+                    - img [ref=e250] [cursor=pointer]
+                    - generic [ref=e81]:
+                      - img [ref=e255] [cursor=pointer]
+                      - img [ref=e85] [cursor=pointer]
+                      - img [ref=e88] [cursor=pointer]
+              - generic [ref=e1011]:
+                - generic [ref=e1012]:
+                  - generic [ref=e1014]: Bruitage
+                  - img [ref=e1015] [cursor=pointer]
+                  - generic [ref=e1017]:
+                    - generic [ref=e1020]: Gratuit pour le moment
+                    - generic [ref=e1021]:
+                      - switch [checked]
+                - generic [ref=e1025]:
+                  - generic [ref=e1027] [cursor=pointer]:
+                    - generic [ref=e1029]: Génération audio et vidéo intégrée
+                    - generic [ref=e1030]:
+                      - generic [ref=e1031]: Avancé
+                      - img [ref=e1032]
+                  - generic [ref=e1034]:
+                    - generic [ref=e1036]:
+                      - generic [ref=e1038]:
+                        - generic [ref=e1039]:
+                          - img [ref=e1040]
+                          - generic [ref=e1042]: Son
+                        - generic [ref=e1043]:
+                          - textbox [ref=e1045]
+                          - generic:
+                            - generic: "(Facultatif) Saisissez l'effet sonore. Par exemple : le bruit des vagues."
+                      - generic [ref=e1047]:
+                        - generic [ref=e1048]:
+                          - img [ref=e1049]
+                          - generic [ref=e1051]: Musique
+                        - generic [ref=e1052]:
+                          - textbox [ref=e1054]
+                          - generic:
+                            - generic: "(Facultatif) Saisissez la musique de fond. Par exemple : une flûte mélodieuse."
+                    - generic [ref=e1057]:
+                      - generic [ref=e1058]:
+                        - button [ref=e1059] [cursor=pointer]:
+                          - img [ref=e1062]
+                        - generic [ref=e1065]: Mode ASMR
+                      - generic [ref=e1066]:
+                        - generic [ref=e1067]: (Expériences immersives aux détails améliorés
+                        - generic [ref=e1068] [cursor=pointer]: Demo
+                        - generic [ref=e1069]: )
+              - generic [ref=e1070]:
+                - generic [ref=e1071]:
+                  - generic [ref=e1073]: Pinceau de mouvement
+                  - img [ref=e1074] [cursor=pointer]
+                - img [ref=e1077]
+              - generic [ref=e1079]:
+                - generic [ref=e1082]: Mouvement de la caméra
+                - img [ref=e1084]
+            - generic [ref=e91]:
+              - generic [ref=e94] [cursor=pointer]:
+                - img [ref=e95]
+                - generic [ref=e1158]: 720p · 5 s · 16:9 · 1
+                - img [ref=e98]
+              - button "20 Générer" [ref=e1159] [cursor=pointer]:
+                - generic [ref=e107]:
+                  - generic [ref=e1161]:
+                    - img [ref=e1162]
+                    - generic [ref=e1165]: "20"
+                  - generic [ref=e264]: Générer
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]:
+              - img [ref=e111]
+              - generic [ref=e265]: Activez les notifications de mise à jour de génération.
+              - generic [ref=e266]: Permettre
+            - img [ref=e114] [cursor=pointer]
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e118]:
+                - generic [ref=e267] [cursor=pointer]: Tous
+                - generic [ref=e268] [cursor=pointer]: Images
+                - generic [ref=e269] [cursor=pointer]: Vidéos
+                - generic [ref=e270] [cursor=pointer]: Audio
+              - button "Favoris" [ref=e271] [cursor=pointer]:
+                - generic [ref=e125]:
+                  - img [ref=e126]
+                  - generic [ref=e272]: Favoris
+            - generic [ref=e129]:
+              - generic [ref=e130]:
+                - img [ref=e132] [cursor=pointer]
+                - img [ref=e135] [cursor=pointer]
+              - button "Actifs" [ref=e273] [cursor=pointer]:
+                - generic [ref=e138]:
+                  - img [ref=e139]
+                  - generic [ref=e274]: Actifs
+          - generic [ref=e145]:
+            - img [ref=e146]
+            - generic [ref=e275]: Libérez votre potentiel créatif. Découvrez la magie de Kling AI.
+    - banner [ref=e149]:
+      - generic [ref=e150]:
+        - link [ref=e152] [cursor=pointer]:
+          - /url: /app
+          - img [ref=e153]
+        - list [ref=e156]:
+          - link "Explorer" [ref=e276] [cursor=pointer]:
+            - /url: /app?ac=1
+            - generic [ref=e158]:
+              - img [ref=e227]
+              - generic [ref=e277]: Explorer
+          - link "Actifs" [ref=e278] [cursor=pointer]:
+            - /url: /app/user-assets/projects?ac=1
+            - generic [ref=e163]:
+              - img [ref=e229]
+              - generic [ref=e279]: Actifs
+          - link "Omni" [ref=e169] [cursor=pointer]:
+            - /url: /app/omni/new?ac=1
+            - generic [ref=e170]:
+              - img [ref=e231]
+              - generic [ref=e280]: Omni
+          - link "Générer" [ref=e281] [cursor=pointer]:
+            - /url: /app/video/new?ac=1
+            - generic [ref=e175]:
+              - img [ref=e233]
+              - generic [ref=e282]: Générer
+          - link "Toile" [ref=e283] [cursor=pointer]:
+            - /url: https://kling.ai/canvas/
+            - generic [ref=e180]:
+              - img [ref=e235]
+              - generic [ref=e284]: Toile
+          - link "Tous les outils" [ref=e285] [cursor=pointer]:
+            - /url: /app/all-tools?ac=1
+            - generic [ref=e185]:
+              - img [ref=e237]
+              - generic [ref=e286]: Tous les outils
+      - generic [ref=e189]:
+        - img [ref=e193] [cursor=pointer]
+        - link [ref=e195] [cursor=pointer]:
+          - /url: /release-note/release-history
+          - img [ref=e197]
+        - link [ref=e200] [cursor=pointer]:
+          - /url: /dev
+          - img [ref=e202]
+        - generic [ref=e206] [cursor=pointer]:
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - img [ref=e210]
+              - img [ref=e211]
+            - generic:
+              - img
+          - generic [ref=e212]:
+            - img [ref=e213]
+            - generic [ref=e287]: "66"
+        - generic [ref=e216] [cursor=pointer]:
+          - generic [ref=e289]: Mise à niveau
+          - generic [ref=e291]: abonnement
+        - menubar [ref=e221]:
+          - menuitem [ref=e222]:
+            - img [ref=e225] [cursor=pointer]
+    - dialog [ref=e1167]:
+      - generic [active] [ref=e1168]:
+        - banner [ref=e1169]:
+          - heading [level=2]
+          - button "Fermer cette boîte de dialogue" [ref=e1170] [cursor=pointer]:
+            - img [ref=e1172]
+        - generic [ref=e1175]:
+          - generic [ref=e1176]:
+            - generic [ref=e1178]: La piste gratuite est utilisée. Passez à la piste multipiste.
+            - generic [ref=e1180]: La file d'attente pour le plan gratuit est actuellement pleine. Passez à la génération Fast-Track pour obtenir des résultats en seulement 3 minutes.
+          - generic [ref=e1181]:
+            - generic [ref=e1184]:
+              - generic [ref=e1186] [cursor=pointer]: Plans
+              - generic [ref=e1188] [cursor=pointer]: Crédits
+            - generic [ref=e1191]:
+              - generic [ref=e1192]:
+                - generic [ref=e1193] [cursor=pointer]:
+                  - generic [ref=e1195]: Annuel
+                  - generic [ref=e1198]: "-34%"
+                - generic [ref=e1199] [cursor=pointer]:
+                  - generic [ref=e1201]: Mensuel
+                  - generic [ref=e1204]: "-12%"
+              - generic [ref=e1205]:
+                - img [ref=e1208] [cursor=pointer]
+                - generic [ref=e1212]:
+                  - generic [ref=e1213]:
+                    - generic [ref=e1214]:
+                      - generic [ref=e1217]: Basique
+                      - generic [ref=e1220]:
+                        - generic [ref=e1221]: "0"
+                        - text: $
+                      - generic [ref=e1223]: Libre pour toujours
+                      - button "Actuel" [disabled] [ref=e1227]:
+                        - generic [ref=e1230]: Actuel
+                    - generic [ref=e1231]:
+                      - generic [ref=e1237]: Pas de crédits mensuels
+                      - generic [ref=e1238]:
+                        - generic [ref=e1239]:
+                          - img [ref=e1240]
+                          - generic [ref=e1245]: "Quantité d'éléments créés : 30"
+                        - generic [ref=e1246]:
+                          - img [ref=e1247]
+                          - generic [ref=e1250]: Connectez-vous pour recevoir des crédits mensuels
+                        - generic [ref=e1251]:
+                          - img [ref=e1252]
+                          - generic [ref=e1255]: Connectez-vous pour profiter des fonctionnalités réservées aux abonnés mensuels
+                        - generic [ref=e1256]:
+                          - img [ref=e1257]
+                          - generic [ref=e1260]: Le contenu généré n'est pas destiné à un usage commercial.
+                  - generic [ref=e1261]:
+                    - generic [ref=e1262]:
+                      - generic [ref=e1265]: Standard
+                      - generic [ref=e1266]:
+                        - generic [ref=e1267]:
+                          - generic [ref=e1269]: 6,99
+                          - generic [ref=e1270]: $ / mois
+                        - generic [ref=e1272]: 10 $
+                      - generic [ref=e1273]:
+                        - generic [ref=e1274]: "Prochain renouvellement mensuel :"
+                        - generic [ref=e1276]: 8,8 $
+                        - generic [ref=e1277]: (12 % de réduction)
+                      - generic [ref=e1281]: Jusqu'à 30 % de réduction
+                      - generic [ref=e1282]:
+                        - button "Abonnez-vous à l'offre spéciale" [ref=e1285] [cursor=pointer]:
+                          - generic [ref=e1288]: Abonnez-vous à l'offre spéciale
+                        - generic [ref=e1291]: Réduction valable uniquement pour le premier abonnement, résiliable à tout moment
+                    - generic [ref=e1292]:
+                      - generic [ref=e1294]:
+                        - generic [ref=e1295]:
+                          - img [ref=e1296]
+                          - generic [ref=e1297]:
+                            - generic [ref=e1299]: "660"
+                            - generic [ref=e1300]: crédits par mois
+                        - generic [ref=e1301]:
+                          - generic [ref=e1302]:
+                            - generic [ref=e1303]: À partir de
+                            - generic [ref=e1305]: 1,33 $
+                            - generic [ref=e1306]: pour
+                            - generic [ref=e1308]: "100"
+                            - generic [ref=e1309]: crédits
+                          - generic [ref=e1310]:
+                            - generic [ref=e1312]: "660"
+                            - generic [ref=e1313]: images /
+                            - generic [ref=e1315]: "33"
+                            - generic [ref=e1316]: vidéos 720p
+                      - generic [ref=e1317]:
+                        - generic [ref=e1318]:
+                          - img [ref=e1319]
+                          - generic [ref=e1320]:
+                            - generic [ref=e1321]:
+                              - generic [ref=e1323]: VIDÉO 2.6 - Commande vocale
+                              - img [ref=e1324]
+                            - generic [ref=e1327]: Gratuit
+                        - generic [ref=e1328]:
+                          - img [ref=e1329]
+                          - generic [ref=e1331]:
+                            - generic [ref=e1332]:
+                              - generic [ref=e1334]: VIDÉO O1 - Prise de vue multiple Element AI
+                              - img [ref=e1335]
+                            - generic [ref=e1338]: 3 utilisations gratuites par jour
+                        - generic [ref=e1339]:
+                          - img [ref=e1340]
+                          - generic [ref=e1345]: "Quantité d'éléments créés : 50"
+                        - generic [ref=e1346]:
+                          - img [ref=e1347]
+                          - generic [ref=e1352]: Crédits gratuits quotidiens pour les abonnés
+                        - generic [ref=e1353]:
+                          - img [ref=e1354]
+                          - generic [ref=e1357]: File d'attente illimitée de tâches
+                        - generic [ref=e1358]:
+                          - img [ref=e1359]
+                          - generic [ref=e1362]: Génération accélérée
+                        - generic [ref=e1363]:
+                          - img [ref=e1364]
+                          - generic [ref=e1367]: Génération vidéo 1080p
+                        - generic [ref=e1368]:
+                          - img [ref=e1369]
+                          - generic [ref=e1372]: Mise à l'échelle d'images
+                        - generic [ref=e1373]:
+                          - img [ref=e1374]
+                          - generic [ref=e1377]: suppression du filigrane de marque
+                        - generic [ref=e1378]:
+                          - img [ref=e1379]
+                          - generic [ref=e1382]: Extension vidéo
+                        - generic [ref=e1383]:
+                          - img [ref=e1384]
+                          - generic [ref=e1387]: Le contenu généré est destiné à un usage commercial
+                  - generic [ref=e1388]:
+                    - generic [ref=e1389]:
+                      - generic [ref=e1392]: Pro
+                      - generic [ref=e1393]:
+                        - generic [ref=e1394]:
+                          - generic [ref=e1396]: 25,99
+                          - generic [ref=e1397]: $ / mois
+                        - generic [ref=e1399]: 37 $
+                      - generic [ref=e1400]:
+                        - generic [ref=e1401]: "Prochain renouvellement mensuel :"
+                        - generic [ref=e1403]: 32,56 $
+                        - generic [ref=e1404]: (12 % de réduction)
+                      - generic [ref=e1408]: Jusqu'à 30 % de réduction
+                      - generic [ref=e1409]:
+                        - button "Abonnez-vous à l'offre spéciale" [ref=e1412] [cursor=pointer]:
+                          - generic [ref=e1415]: Abonnez-vous à l'offre spéciale
+                        - generic [ref=e1418]: Réduction valable uniquement pour le premier abonnement, résiliable à tout moment
+                    - generic [ref=e1419]:
+                      - generic [ref=e1421]:
+                        - generic [ref=e1422]:
+                          - img [ref=e1423]
+                          - generic [ref=e1424]:
+                            - generic [ref=e1426]: "3000"
+                            - generic [ref=e1427]: crédits par mois
+                        - generic [ref=e1428]:
+                          - generic [ref=e1429]:
+                            - generic [ref=e1430]: À partir de
+                            - generic [ref=e1432]: 1,09 $
+                            - generic [ref=e1433]: pour
+                            - generic [ref=e1435]: "100"
+                            - generic [ref=e1436]: crédits
+                          - generic [ref=e1437]:
+                            - generic [ref=e1439]: "3000"
+                            - generic [ref=e1440]: images /
+                            - generic [ref=e1442]: "150"
+                            - generic [ref=e1443]: vidéos 720p
+                      - generic [ref=e1444]:
+                        - generic [ref=e1445]:
+                          - img [ref=e1446]
+                          - generic [ref=e1447]:
+                            - generic [ref=e1448]:
+                              - generic [ref=e1450]: VIDÉO 2.6 - Commande vocale
+                              - img [ref=e1451]
+                            - generic [ref=e1454]: Gratuit
+                        - generic [ref=e1455]:
+                          - img [ref=e1456]
+                          - generic [ref=e1458]:
+                            - generic [ref=e1459]:
+                              - generic [ref=e1461]: VIDÉO O1 - Prise de vue multiple Element AI
+                              - img [ref=e1462]
+                            - generic [ref=e1465]: 3 utilisations gratuites par jour
+                        - generic [ref=e1466]:
+                          - img [ref=e1467]
+                          - generic [ref=e1472]: "Quantité d'éléments créés : 150"
+                        - generic [ref=e1473]:
+                          - img [ref=e1474]
+                          - generic [ref=e1479]: Crédits gratuits quotidiens pour les abonnés
+                        - generic [ref=e1480]:
+                          - img [ref=e1481]
+                          - generic [ref=e1484]: File d'attente illimitée de tâches
+                        - generic [ref=e1485]:
+                          - img [ref=e1486]
+                          - generic [ref=e1489]: Génération accélérée
+                        - generic [ref=e1490]:
+                          - img [ref=e1491]
+                          - generic [ref=e1494]: Génération vidéo 1080p
+                        - generic [ref=e1495]:
+                          - img [ref=e1496]
+                          - generic [ref=e1499]: Mise à l'échelle d'images
+                        - generic [ref=e1500]:
+                          - img [ref=e1501]
+                          - generic [ref=e1504]: suppression du filigrane de marque
+                        - generic [ref=e1505]:
+                          - img [ref=e1506]
+                          - generic [ref=e1509]: Extension vidéo
+                        - generic [ref=e1510]:
+                          - img [ref=e1511]
+                          - generic [ref=e1514]: Accès prioritaire aux nouvelles fonctionnalités
+                        - generic [ref=e1515]:
+                          - img [ref=e1516]
+                          - generic [ref=e1519]: Le contenu généré est destiné à un usage commercial
+                  - generic [ref=e1520]:
+                    - generic [ref=e1521]:
+                      - generic [ref=e1524]: Premier
+                      - generic [ref=e1525]:
+                        - generic [ref=e1526]:
+                          - generic [ref=e1528]: 64,99
+                          - generic [ref=e1529]: $ / mois
+                        - generic [ref=e1531]: 92 $
+                      - generic [ref=e1532]:
+                        - generic [ref=e1533]: "Prochain renouvellement mensuel :"
+                        - generic [ref=e1535]: 80,96 $
+                        - generic [ref=e1536]: (12 % de réduction)
+                      - generic [ref=e1540]: Jusqu'à 29 % de réduction
+                      - generic [ref=e1541]:
+                        - button "Abonnez-vous à l'offre spéciale" [ref=e1544] [cursor=pointer]:
+                          - generic [ref=e1547]: Abonnez-vous à l'offre spéciale
+                        - generic [ref=e1550]: Réduction valable uniquement pour le premier abonnement, résiliable à tout moment
+                    - generic [ref=e1551]:
+                      - generic [ref=e1553]:
+                        - generic [ref=e1554]:
+                          - img [ref=e1555]
+                          - generic [ref=e1556]:
+                            - generic [ref=e1558]: "8000"
+                            - generic [ref=e1559]: crédits par mois
+                        - generic [ref=e1560]:
+                          - generic [ref=e1561]:
+                            - generic [ref=e1562]: À partir de
+                            - generic [ref=e1564]: 1,01 $
+                            - generic [ref=e1565]: pour
+                            - generic [ref=e1567]: "100"
+                            - generic [ref=e1568]: crédits
+                          - generic [ref=e1569]:
+                            - generic [ref=e1571]: "8000"
+                            - generic [ref=e1572]: images /
+                            - generic [ref=e1574]: "400"
+                            - generic [ref=e1575]: vidéos 720p
+                      - generic [ref=e1576]:
+                        - generic [ref=e1577]:
+                          - img [ref=e1578]
+                          - generic [ref=e1579]:
+                            - generic [ref=e1580]:
+                              - generic [ref=e1582]: VIDÉO 2.6 - Commande vocale
+                              - img [ref=e1583]
+                            - generic [ref=e1586]: Gratuit
+                        - generic [ref=e1587]:
+                          - img [ref=e1588]
+                          - generic [ref=e1590]:
+                            - generic [ref=e1591]:
+                              - generic [ref=e1593]: VIDÉO O1 - Prise de vue multiple Element AI
+                              - img [ref=e1594]
+                            - generic [ref=e1597]: 3 utilisations gratuites par jour
+                        - generic [ref=e1598]:
+                          - img [ref=e1599]
+                          - generic [ref=e1604]: "Quantité d'éléments créés : 150"
+                        - generic [ref=e1605]:
+                          - img [ref=e1606]
+                          - generic [ref=e1611]: Crédits gratuits quotidiens pour les abonnés
+                        - generic [ref=e1612]:
+                          - img [ref=e1613]
+                          - generic [ref=e1616]: File d'attente illimitée de tâches
+                        - generic [ref=e1617]:
+                          - img [ref=e1618]
+                          - generic [ref=e1621]: Génération accélérée
+                        - generic [ref=e1622]:
+                          - img [ref=e1623]
+                          - generic [ref=e1626]: Génération vidéo 1080p
+                        - generic [ref=e1627]:
+                          - img [ref=e1628]
+                          - generic [ref=e1631]: Mise à l'échelle d'images
+                        - generic [ref=e1632]:
+                          - img [ref=e1633]
+                          - generic [ref=e1636]: suppression du filigrane de marque
+                        - generic [ref=e1637]:
+                          - img [ref=e1638]
+                          - generic [ref=e1641]: Extension vidéo
+                        - generic [ref=e1642]:
+                          - img [ref=e1643]
+                          - generic [ref=e1646]: Accès prioritaire aux nouvelles fonctionnalités
+                        - generic [ref=e1647]:
+                          - img [ref=e1648]
+                          - generic [ref=e1651]: Le contenu généré est destiné à un usage commercial
+                  - generic [ref=e1652]:
+                    - generic [ref=e1653]:
+                      - generic [ref=e1654]:
+                        - generic [ref=e1656]: Ultra
+                        - generic [ref=e1658]: NOUVEAU
+                      - generic [ref=e1659]:
+                        - generic [ref=e1660]:
+                          - generic [ref=e1662]: 127,99
+                          - generic [ref=e1663]: $ / mois
+                        - generic [ref=e1665]: 180 $
+                      - generic [ref=e1666]:
+                        - generic [ref=e1667]: "Prochain renouvellement mensuel :"
+                        - generic [ref=e1669]: 159,99 $
+                        - generic [ref=e1670]: (11 % de réduction)
+                      - generic [ref=e1674]: Jusqu'à 29 % de réduction
+                      - generic [ref=e1675]:
+                        - button "Abonnez-vous à l'offre spéciale" [ref=e1678] [cursor=pointer]:
+                          - generic [ref=e1681]: Abonnez-vous à l'offre spéciale
+                        - generic [ref=e1684]: Réduction valable uniquement pour le premier abonnement, résiliable à tout moment
+                    - generic [ref=e1685]:
+                      - generic [ref=e1687]:
+                        - generic [ref=e1688]:
+                          - img [ref=e1689]
+                          - generic [ref=e1690]:
+                            - generic [ref=e1692]: 26 000
+                            - generic [ref=e1693]: crédits par mois
+                        - generic [ref=e1694]:
+                          - generic [ref=e1695]:
+                            - generic [ref=e1696]: À partir de
+                            - generic [ref=e1698]: 0,62 $
+                            - generic [ref=e1699]: pour
+                            - generic [ref=e1701]: "100"
+                            - generic [ref=e1702]: crédits
+                          - generic [ref=e1703]:
+                            - generic [ref=e1705]: 26 000
+                            - generic [ref=e1706]: images /
+                            - generic [ref=e1708]: 1 300
+                            - generic [ref=e1709]: vidéos 720p
+                      - generic [ref=e1710]:
+                        - generic [ref=e1711]:
+                          - img [ref=e1712]
+                          - generic [ref=e1713]:
+                            - generic [ref=e1714]:
+                              - generic [ref=e1716]: VIDÉO 2.6 - Commande vocale
+                              - img [ref=e1717]
+                            - generic [ref=e1720]: Gratuit
+                        - generic [ref=e1721]:
+                          - img [ref=e1722]
+                          - generic [ref=e1724]:
+                            - generic [ref=e1725]:
+                              - generic [ref=e1727]: VIDÉO O1 - Prise de vue multiple Element AI
+                              - img [ref=e1728]
+                            - generic [ref=e1731]: 3 utilisations gratuites par jour
+                        - generic [ref=e1732]:
+                          - img [ref=e1733]
+                          - generic [ref=e1738]: "Quantité d'éléments créés : 500"
+                        - generic [ref=e1739]:
+                          - img [ref=e1740]
+                          - generic [ref=e1745]: Crédits gratuits quotidiens pour les abonnés
+                        - generic [ref=e1746]:
+                          - img [ref=e1747]
+                          - generic [ref=e1750]: File d'attente illimitée de tâches
+                        - generic [ref=e1751]:
+                          - img [ref=e1752]
+                          - generic [ref=e1755]: Génération accélérée
+                        - generic [ref=e1756]:
+                          - img [ref=e1757]
+                          - generic [ref=e1760]: Génération vidéo 1080p
+                        - generic [ref=e1761]:
+                          - img [ref=e1762]
+                          - generic [ref=e1765]: Mise à l'échelle d'images
+                        - generic [ref=e1766]:
+                          - img [ref=e1767]
+                          - generic [ref=e1770]: suppression du filigrane de marque
+                        - generic [ref=e1771]:
+                          - img [ref=e1772]
+                          - generic [ref=e1775]: Extension vidéo
+                        - generic [ref=e1776]:
+                          - img [ref=e1777]
+                          - generic [ref=e1780]: Accès prioritaire aux nouvelles fonctionnalités
+                        - generic [ref=e1781]:
+                          - img [ref=e1782]
+                          - generic [ref=e1785]: Invitation à un test bêta (le cas échéant)
+                        - generic [ref=e1786]:
+                          - img [ref=e1787]
+                          - generic [ref=e1790]: Le contenu généré est destiné à un usage commercial
+          - generic [ref=e1791]:
+            - generic [ref=e1792]: Vous ne trouvez pas ce que vous cherchez ? Consultez
+            - link "les conditions générales du service payant" [ref=e1793] [cursor=pointer]:
+              - /url: /docs/payment-policy
+              - generic [ref=e1794]: les conditions générales du service payant
+            - generic [ref=e1795]: ou
+            - generic [ref=e1797] [cursor=pointer]: contactez-nous
+            - generic [ref=e1798]: .
+  - img
+  - img
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - textbox "Posez n'importe quelle question..."
+                    - button:
+                      - img
+                - generic:
+                  - generic:
+                    - generic: Recherche par
+                  - button "Logo":
+                    - img "Logo"
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic: Assistance clientèle Kling AI
+                            - generic:
+                              - button:
+                                - generic:
+                                  - img
+                              - button:
+                                - generic:
+                                  - img
+                        - generic:
+                          - status:
+                            - img
+                            - generic:
+                              - generic: Chargement...
+                        - generic:
+                          - generic:
+                            - generic: Alimenté par
+                            - button "Logo":
+                              - img "Logo"
+                            - generic:
+                              - img
+  - alert [ref=e1799]:
+    - img [ref=e1801]
+    - paragraph [ref=e1803]:
+      - generic [ref=e1804]: Il est temporairement impossible de soumettre de nouvelles tâches.

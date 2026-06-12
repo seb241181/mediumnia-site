@@ -1,0 +1,191 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e7]:
+          - img [ref=e10]
+          - generic [ref=e19]:
+            - generic [ref=e21] [cursor=pointer]: Image Generation
+            - generic [ref=e23] [cursor=pointer]: Video Generation
+            - generic [ref=e25] [cursor=pointer]: Motion Control
+            - generic [ref=e27] [cursor=pointer]: Avatar
+          - generic [ref=e30]:
+            - generic [ref=e32]:
+              - generic [ref=e35] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e37]
+                  - generic [ref=e39]:
+                    - img [ref=e40]
+                    - generic [ref=e41]: VIDEO 3.0
+                    - generic [ref=e42]: NEW
+                    - generic [ref=e43]: Enhanced Native Audio, Improved Element Consistency, and Support for Multi-Shot Storytelling
+                - img [ref=e46]
+              - generic [ref=e48]:
+                - generic [ref=e58] [cursor=pointer]:
+                  - generic [ref=e59]:
+                    - img [ref=e60]
+                    - paragraph [ref=e62]: Add start and end frames.
+                  - generic [ref=e64]: History
+                - generic [ref=e68]:
+                  - textbox [active] [ref=e70]
+                  - generic:
+                    - generic: Use quotation marks for speaking/singing content. For example, Host says, "welcome to today's release." Support multiple languages, dialects and accents. View the
+                  - generic [ref=e71]:
+                    - generic [ref=e72]:
+                      - generic [ref=e76] [cursor=pointer]: Multi-Shot
+                      - generic [ref=e77] [cursor=pointer]:
+                        - generic [ref=e78]: Custom Multi-Shot
+                        - img [ref=e79]
+                    - generic [ref=e81]:
+                      - img [ref=e85] [cursor=pointer]
+                      - img [ref=e88] [cursor=pointer]
+            - generic [ref=e91]:
+              - generic [ref=e93]:
+                - generic [ref=e94] [cursor=pointer]:
+                  - img [ref=e95]
+                  - generic [ref=e97]: 1080p · 5s · 16:9 · 1
+                  - img [ref=e98]
+                - generic [ref=e100] [cursor=pointer]:
+                  - img [ref=e101]
+                  - text: Native Audio
+              - button "Generate" [ref=e105] [cursor=pointer]:
+                - generic [ref=e107]: Generate
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - generic [ref=e110]:
+              - img [ref=e111]
+              - text: Turn on notifications for generation update.
+              - generic [ref=e113]: Allow
+            - img [ref=e114] [cursor=pointer]
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e118]:
+                - generic [ref=e119] [cursor=pointer]: All
+                - generic [ref=e120] [cursor=pointer]: Images
+                - generic [ref=e121] [cursor=pointer]: Videos
+                - generic [ref=e122] [cursor=pointer]: Audio
+              - button "Favorites" [ref=e123] [cursor=pointer]:
+                - generic [ref=e125]:
+                  - img [ref=e126]
+                  - generic [ref=e128]: Favorites
+            - generic [ref=e129]:
+              - generic [ref=e130]:
+                - img [ref=e132] [cursor=pointer]
+                - img [ref=e135] [cursor=pointer]
+              - button "Assets" [ref=e137] [cursor=pointer]:
+                - generic [ref=e138]:
+                  - img [ref=e139]
+                  - generic [ref=e142]: Assets
+          - generic [ref=e145]:
+            - img [ref=e146]
+            - generic [ref=e148]: Release your creative potential. Experience the magic of Kling AI.
+    - banner [ref=e149]:
+      - generic [ref=e150]:
+        - link [ref=e152] [cursor=pointer]:
+          - /url: /app
+          - img [ref=e153]
+        - list [ref=e156]:
+          - link "Explore" [ref=e157] [cursor=pointer]:
+            - /url: /app?ac=1
+            - generic [ref=e158]:
+              - img [ref=e227]
+              - generic [ref=e161]: Explore
+          - link "Assets" [ref=e162] [cursor=pointer]:
+            - /url: /app/user-assets/projects?ac=1
+            - generic [ref=e163]:
+              - img [ref=e229]
+              - generic [ref=e166]: Assets
+          - link "Omni" [ref=e169] [cursor=pointer]:
+            - /url: /app/omni/new?ac=1
+            - generic [ref=e170]:
+              - img [ref=e231]
+              - generic [ref=e173]: Omni
+          - link "Generate" [ref=e174] [cursor=pointer]:
+            - /url: /app/video/new?ac=1
+            - generic [ref=e175]:
+              - img [ref=e233]
+              - generic [ref=e178]: Generate
+          - link "Canvas" [ref=e179] [cursor=pointer]:
+            - /url: https://kling.ai/canvas/
+            - generic [ref=e180]:
+              - img [ref=e235]
+              - generic [ref=e183]: Canvas
+          - link "All Tools" [ref=e184] [cursor=pointer]:
+            - /url: /app/all-tools?ac=1
+            - generic [ref=e185]:
+              - img [ref=e237]
+              - generic [ref=e188]: All Tools
+      - generic [ref=e189]:
+        - img [ref=e193] [cursor=pointer]
+        - link [ref=e195] [cursor=pointer]:
+          - /url: /release-note/release-history
+          - img [ref=e197]
+        - link [ref=e200] [cursor=pointer]:
+          - /url: /dev
+          - img [ref=e202]
+        - generic [ref=e206] [cursor=pointer]:
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - img [ref=e210]
+              - img [ref=e211]
+            - generic:
+              - img
+          - generic [ref=e212]:
+            - img [ref=e213]
+            - generic [ref=e215]: "66"
+        - generic [ref=e216] [cursor=pointer]:
+          - generic [ref=e218]: Upgrade
+          - generic [ref=e220]: subscription
+        - menubar [ref=e221]:
+          - menuitem [ref=e222]:
+            - img [ref=e225] [cursor=pointer]
+  - img
+  - img
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - textbox "Ask anything..."
+                    - button:
+                      - img
+                - generic:
+                  - generic: Search by
+                  - button "Logo":
+                    - img "Logo"
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Kling AI Customer Support
+                            - generic:
+                              - button:
+                                - generic:
+                                  - img
+                              - button:
+                                - generic:
+                                  - img
+                        - generic:
+                          - status:
+                            - img
+                            - generic: Loading...
+                        - generic:
+                          - generic:
+                            - text: Powered by
+                            - button "Logo":
+                              - img "Logo"
+                            - generic:
+                              - img

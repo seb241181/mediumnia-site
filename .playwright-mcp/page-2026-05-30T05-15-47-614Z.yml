@@ -1,0 +1,456 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e7]:
+          - img [ref=e10]
+          - generic [ref=e15]:
+            - img [ref=e18] [cursor=pointer]
+            - generic [ref=e23]:
+              - generic [ref=e25] [cursor=pointer]: Image Generation
+              - generic [ref=e27] [cursor=pointer]: Video Generation
+              - generic [ref=e29] [cursor=pointer]: Motion Control
+              - generic [ref=e31] [cursor=pointer]: Avatar
+          - generic [ref=e34]:
+            - generic [ref=e36]:
+              - generic [ref=e39] [cursor=pointer]:
+                - generic:
+                  - combobox [ref=e41]
+                  - generic [ref=e43]:
+                    - img [ref=e44]
+                    - generic [ref=e45]: VIDEO 1.6
+                - img [ref=e48]
+              - generic [ref=e50]:
+                - generic [ref=e53]:
+                  - generic [ref=e54]:
+                    - generic [ref=e55]:
+                      - generic [ref=e601]:
+                        - generic [ref=e602]:
+                          - img [ref=e603]
+                          - img [ref=e604]
+                        - generic [ref=e606]:
+                          - img [ref=e608] [cursor=pointer]
+                          - img [ref=e611] [cursor=pointer]
+                      - generic [ref=e614]:
+                        - img [ref=e616] [cursor=pointer]
+                        - img [ref=e619] [cursor=pointer]
+                    - generic [ref=e625] [cursor=pointer]:
+                      - generic [ref=e626]:
+                        - img [ref=e627]
+                        - paragraph [ref=e629]: Add an end frame(Optional)
+                      - generic [ref=e631]: History
+                  - img [ref=e633] [cursor=pointer]
+                - generic [ref=e70]:
+                  - textbox [ref=e72]
+                  - generic [ref=e74]:
+                    - img [ref=e637] [cursor=pointer]
+                    - generic [ref=e75]:
+                      - img [ref=e640] [cursor=pointer]
+                      - img [ref=e78] [cursor=pointer]
+                      - img [ref=e81] [cursor=pointer]
+              - generic [ref=e83]:
+                - generic [ref=e84]:
+                  - generic [ref=e85]: Sound Effects
+                  - img [ref=e86] [cursor=pointer]
+                  - generic [ref=e88]:
+                    - generic [ref=e90]: Free for now
+                    - generic [ref=e91]:
+                      - switch
+                - generic [ref=e95]:
+                  - generic [ref=e97] [cursor=pointer]:
+                    - generic [ref=e98]: Integrated sound with video generation
+                    - generic [ref=e99]:
+                      - text: Advanced
+                      - img [ref=e100]
+                  - generic [ref=e102]:
+                    - generic [ref=e104]:
+                      - generic [ref=e106]:
+                        - generic [ref=e107]:
+                          - img [ref=e108]
+                          - text: Sound
+                        - generic [ref=e110]:
+                          - textbox [ref=e112]
+                          - generic: "(Optional) Enter the sound effect. For example: sound of waves"
+                      - generic [ref=e114]:
+                        - generic [ref=e115]:
+                          - img [ref=e116]
+                          - text: Music
+                        - generic [ref=e118]:
+                          - textbox [ref=e120]
+                          - generic: "(Optional) Enter the background music. For example: melodic flute playing"
+                    - generic [ref=e123]:
+                      - generic [ref=e124]:
+                        - button [ref=e125] [cursor=pointer]:
+                          - img [ref=e128]
+                        - generic [ref=e130]: ASMR Mode
+                      - generic [ref=e131]:
+                        - text: (Immersive experiences with enhanced details
+                        - generic [ref=e132] [cursor=pointer]: Demo
+                        - text: )
+            - generic [ref=e148]:
+              - generic [ref=e151] [cursor=pointer]:
+                - img [ref=e152]
+                - generic [ref=e154]: 1080p · 5s · 1
+                - img [ref=e155]
+              - button "35 Generate" [ref=e642] [cursor=pointer]:
+                - generic [ref=e161]:
+                  - generic [ref=e975]:
+                    - img [ref=e976]
+                    - generic [ref=e978]: "35"
+                  - text: Generate
+        - generic [ref=e162]:
+          - generic [ref=e163]:
+            - generic [ref=e164]:
+              - img [ref=e165]
+              - text: Turn on notifications for generation update.
+              - generic [ref=e167]: Allow
+            - img [ref=e168] [cursor=pointer]
+          - generic [ref=e170]:
+            - generic [ref=e171]:
+              - generic [ref=e172]:
+                - generic [ref=e173] [cursor=pointer]: All
+                - generic [ref=e174] [cursor=pointer]: Images
+                - generic [ref=e175] [cursor=pointer]: Videos
+                - generic [ref=e176] [cursor=pointer]: Audio
+              - button "Favorites" [ref=e177] [cursor=pointer]:
+                - generic [ref=e179]:
+                  - img [ref=e180]
+                  - generic [ref=e182]: Favorites
+            - generic [ref=e183]:
+              - generic [ref=e184]:
+                - img [ref=e186] [cursor=pointer]
+                - img [ref=e189] [cursor=pointer]
+              - button "Assets" [ref=e191] [cursor=pointer]:
+                - generic [ref=e192]:
+                  - img [ref=e193]
+                  - generic [ref=e196]: Assets
+          - generic [ref=e197]:
+            - generic [ref=e199]:
+              - generic [ref=e981]:
+                - generic [ref=e984]:
+                  - generic [ref=e985]:
+                    - generic [ref=e986]:
+                      - img [ref=e987]
+                      - generic [ref=e989]: Video
+                      - generic [ref=e991]: Video 1.6
+                      - generic [ref=e993]: 1080p
+                    - generic [ref=e994]:
+                      - img [ref=e996] [cursor=pointer]
+                      - img [ref=e999] [cursor=pointer]
+                  - generic [ref=e1002]:
+                    - generic [ref=e1008]: A single mystical oracle card floating and slowly rotating in dark cosmic space, golden winged key glowing on card back, sacred geometry light patterns emanating, golden particles dissolving into stardust, ethereal atmosphere, slow cinematic push in, deep navy and gold tones, 9:16 vertical
+                    - img [ref=e1011] [cursor=pointer]
+                - generic [ref=e1017]:
+                  - img [ref=e1019]
+                  - generic [ref=e1020]:
+                    - generic [ref=e1021]:
+                      - generic [ref=e1022]: Queueing…
+                      - generic [ref=e1024]:
+                        - img [ref=e1025]
+                        - img [ref=e1027]
+                        - img [ref=e1029]
+                        - img [ref=e1031]
+                        - img [ref=e1033]
+                        - img [ref=e1035]
+                      - generic [ref=e1037]: Creating...
+                      - generic [ref=e1039]:
+                        - img [ref=e1040]
+                        - img [ref=e1042]
+                        - img [ref=e1044]
+                        - img [ref=e1046]
+                        - img [ref=e1048]
+                        - img [ref=e1050]
+                        - img [ref=e1052]
+                    - generic [ref=e1055]: "Creating... Estimated wait: 1 minute"
+                    - generic [ref=e1057]: Turn on notificationto get notified when generation is complete.
+              - generic [ref=e817]:
+                - generic [ref=e820]:
+                  - generic [ref=e821]:
+                    - generic [ref=e822]:
+                      - img [ref=e823]
+                      - generic [ref=e825]: Video
+                      - generic [ref=e827]: Video 1.6
+                      - generic [ref=e829]: 1080p
+                    - generic [ref=e830]:
+                      - img [ref=e832] [cursor=pointer]
+                      - img [ref=e835] [cursor=pointer]
+                  - generic [ref=e838]:
+                    - generic [ref=e844]: Mystical oracle cards slowly spreading on dark wooden table, black velvet gloved hands gracefully placing cards, golden candles flickering, amethyst crystals glowing purple, cinematic slow motion, atmospheric smoke, warm amber light, deep shadows, sacred ritual atmosphere, 9:16 vertical
+                    - img [ref=e847] [cursor=pointer]
+                - generic [ref=e904]:
+                  - generic [ref=e905]:
+                    - img [ref=e907]
+                    - generic [ref=e911]:
+                      - generic [ref=e912]:
+                        - button [ref=e913] [cursor=pointer]:
+                          - img [ref=e914]
+                        - generic [ref=e916]: 00:04 / 00:05
+                      - button [ref=e918] [cursor=pointer]:
+                        - img [ref=e919]
+                  - generic [ref=e929]:
+                    - generic [ref=e931]:
+                      - img [ref=e933] [cursor=pointer]
+                      - img [ref=e936] [cursor=pointer]
+                      - img [ref=e939] [cursor=pointer]
+                      - img [ref=e942] [cursor=pointer]
+                    - generic [ref=e944]:
+                      - img [ref=e946] [cursor=pointer]
+                      - img [ref=e949] [cursor=pointer]
+                      - button [ref=e952] [cursor=pointer]:
+                        - img [ref=e954]
+                      - button [ref=e958] [cursor=pointer]:
+                        - button [ref=e959]:
+                          - img [ref=e961]
+                      - button [ref=e964] [cursor=pointer]:
+                        - img [ref=e966]
+                      - button [ref=e970] [cursor=pointer]:
+                        - img [ref=e972]
+              - generic [ref=e653]:
+                - generic [ref=e656]:
+                  - generic [ref=e657]:
+                    - generic [ref=e658]:
+                      - img [ref=e659]
+                      - generic [ref=e661]: Video
+                      - generic [ref=e663]: Video 1.6
+                      - generic [ref=e665]: 1080p
+                    - generic [ref=e666]:
+                      - img [ref=e668] [cursor=pointer]
+                      - img [ref=e671] [cursor=pointer]
+                  - generic [ref=e674]:
+                    - generic [ref=e680]: Oracle cards spread on dark wooden table, black velvet gloved hands, candles flickering, amethyst crystals glowing, slow cinematic dolly push in, candlelight dancing, atmospheric smoke particles, deep shadows, warm amber light, 9:16 vertical
+                    - img [ref=e683] [cursor=pointer]
+                - generic [ref=e740]:
+                  - generic [ref=e741]:
+                    - img [ref=e743]
+                    - generic [ref=e747]:
+                      - generic [ref=e748]:
+                        - button [ref=e749] [cursor=pointer]:
+                          - img [ref=e750]
+                        - generic [ref=e752]: 00:01 / 00:05
+                      - button [ref=e754] [cursor=pointer]:
+                        - img [ref=e755]
+                  - generic [ref=e765]:
+                    - generic [ref=e767]:
+                      - img [ref=e769] [cursor=pointer]
+                      - img [ref=e772] [cursor=pointer]
+                      - img [ref=e775] [cursor=pointer]
+                      - img [ref=e778] [cursor=pointer]
+                    - generic [ref=e780]:
+                      - img [ref=e782] [cursor=pointer]
+                      - img [ref=e785] [cursor=pointer]
+                      - button [ref=e788] [cursor=pointer]:
+                        - img [ref=e790]
+                      - button [ref=e794] [cursor=pointer]:
+                        - button [ref=e795]:
+                          - img [ref=e797]
+                      - button [ref=e800] [cursor=pointer]:
+                        - img [ref=e802]
+                      - button [ref=e806] [cursor=pointer]:
+                        - img [ref=e808]
+              - generic [ref=e202]:
+                - generic [ref=e205]:
+                  - generic [ref=e206]:
+                    - generic [ref=e207]:
+                      - img [ref=e208]
+                      - generic [ref=e210]: Video
+                      - generic [ref=e212]: Video 1.5
+                      - generic [ref=e214]: 720p
+                    - generic [ref=e215]:
+                      - img [ref=e217] [cursor=pointer]
+                      - img [ref=e220] [cursor=pointer]
+                  - generic [ref=e223]:
+                    - generic [ref=e229]: Oracle cards spread on dark wooden table, black velvet gloved hands, candles flickering, amethyst crystals glowing, slow cinematic dolly push in, candlelight dancing, atmospheric smoke particles, deep shadows, warm amber light, 9:16 vertical
+                    - img [ref=e232] [cursor=pointer]
+                - generic [ref=e236]:
+                  - generic [ref=e237]:
+                    - img [ref=e239]
+                    - generic [ref=e243]:
+                      - generic [ref=e244]:
+                        - button [ref=e245] [cursor=pointer]:
+                          - img [ref=e246]
+                        - button [ref=e249] [cursor=pointer]:
+                          - img [ref=e250]
+                        - generic [ref=e252]: 00:02 / 00:05
+                      - button [ref=e254] [cursor=pointer]:
+                        - img [ref=e255]
+                  - generic [ref=e265]:
+                    - generic [ref=e267]:
+                      - img [ref=e269] [cursor=pointer]
+                      - img [ref=e272] [cursor=pointer]
+                      - img [ref=e275] [cursor=pointer]
+                      - img [ref=e278] [cursor=pointer]
+                    - generic [ref=e280]:
+                      - img [ref=e282] [cursor=pointer]
+                      - img [ref=e285] [cursor=pointer]
+                      - button [ref=e288] [cursor=pointer]:
+                        - img [ref=e290]
+                      - button [ref=e294] [cursor=pointer]:
+                        - button [ref=e295]:
+                          - img [ref=e297]
+                      - button [ref=e300] [cursor=pointer]:
+                        - img [ref=e302]
+                      - button [ref=e306] [cursor=pointer]:
+                        - img [ref=e308]
+              - generic [ref=e312]:
+                - generic [ref=e315]:
+                  - generic [ref=e316]:
+                    - generic [ref=e317]:
+                      - img [ref=e318]
+                      - generic [ref=e320]: Video
+                      - generic [ref=e322]: Video 1.5
+                      - generic [ref=e324]: 720p
+                    - generic [ref=e325]:
+                      - img [ref=e327] [cursor=pointer]
+                      - img [ref=e330] [cursor=pointer]
+                  - generic [ref=e333]:
+                    - generic [ref=e336]: A mystical medium woman sits cross-legged inside an ancient stone temple, hands raised, eyes closed. Glowing violet and gold sacred geometry sigils float and rotate slowly around her. Ethereal smoke rises from candles, forming spirit silhouettes. A crystal ball on the altar pulses with deep blue inner light, revealing cosmic nebulae within. Shafts of moonlight pierce through cracked stone ceiling. Cinematic slow motion, photorealistic, 4K, atmospheric fog, otherworldly mystical ambiance.
+                    - img [ref=e339] [cursor=pointer]
+                - generic [ref=e343]:
+                  - generic [ref=e344]:
+                    - img [ref=e346]
+                    - generic [ref=e350]:
+                      - generic [ref=e351]:
+                        - button [ref=e352] [cursor=pointer]:
+                          - img [ref=e353]
+                        - button [ref=e356] [cursor=pointer]:
+                          - img [ref=e357]
+                        - generic [ref=e359]: 00:00 / 00:05
+                      - button [ref=e361] [cursor=pointer]:
+                        - img [ref=e362]
+                  - generic [ref=e372]:
+                    - generic [ref=e374]:
+                      - img [ref=e376] [cursor=pointer]
+                      - img [ref=e379] [cursor=pointer]
+                      - img [ref=e382] [cursor=pointer]
+                      - img [ref=e385] [cursor=pointer]
+                    - generic [ref=e387]:
+                      - img [ref=e389] [cursor=pointer]
+                      - img [ref=e392] [cursor=pointer]
+                      - button [ref=e395] [cursor=pointer]:
+                        - img [ref=e397]
+                      - button [ref=e401] [cursor=pointer]:
+                        - button [ref=e402]:
+                          - img [ref=e404]
+                      - button [ref=e407] [cursor=pointer]:
+                        - img [ref=e409]
+                      - button [ref=e413] [cursor=pointer]:
+                        - img [ref=e415]
+            - generic [ref=e417]:
+              - img [ref=e1061] [cursor=pointer]
+              - img "Thumbnail" [ref=e974] [cursor=pointer]
+              - img "Thumbnail" [ref=e810] [cursor=pointer]
+              - img "Thumbnail" [ref=e420] [cursor=pointer]
+              - img "Thumbnail" [ref=e423] [cursor=pointer]
+    - banner [ref=e429]:
+      - generic [ref=e430]:
+        - link [ref=e432] [cursor=pointer]:
+          - /url: /app
+          - img [ref=e433]
+        - list [ref=e436]:
+          - link "Explore" [ref=e437] [cursor=pointer]:
+            - /url: /app?ac=1
+            - generic [ref=e438]:
+              - img [ref=e439]
+              - generic [ref=e441]: Explore
+          - link "Assets" [ref=e442] [cursor=pointer]:
+            - /url: /app/user-assets/projects?ac=1
+            - generic [ref=e443]:
+              - img [ref=e444]
+              - generic [ref=e446]: Assets
+          - link "Omni" [ref=e449] [cursor=pointer]:
+            - /url: /app/omni/new?ac=1
+            - generic [ref=e450]:
+              - img [ref=e451]
+              - generic [ref=e453]: Omni
+          - link "Generate" [ref=e454] [cursor=pointer]:
+            - /url: /app/video/new?ac=1
+            - generic [ref=e455]:
+              - img [ref=e456]
+              - generic [ref=e458]: Generate
+          - link "Canvas" [ref=e459] [cursor=pointer]:
+            - /url: https://kling.ai/canvas/
+            - generic [ref=e460]:
+              - img [ref=e461]
+              - generic [ref=e463]: Canvas
+          - link "All Tools" [ref=e464] [cursor=pointer]:
+            - /url: /app/all-tools?ac=1
+            - generic [ref=e465]:
+              - img [ref=e466]
+              - generic [ref=e468]: All Tools
+      - generic [ref=e469]:
+        - img [ref=e473] [cursor=pointer]
+        - link [ref=e476] [cursor=pointer]:
+          - /url: /release-note/release-history
+          - img [ref=e478]
+        - link [ref=e481] [cursor=pointer]:
+          - /url: /dev
+          - img [ref=e483]
+        - generic [ref=e487] [cursor=pointer]:
+          - generic [ref=e489]:
+            - generic [ref=e490]:
+              - img [ref=e491]
+              - img [ref=e492]
+            - generic:
+              - img
+          - generic [ref=e493]:
+            - img [ref=e494]
+            - generic [ref=e496]: "601"
+        - generic [ref=e497] [cursor=pointer]:
+          - generic [ref=e499]: Standard
+          - generic [ref=e501]: subscription
+        - menubar [ref=e502]:
+          - menuitem [ref=e503]:
+            - img [ref=e506] [cursor=pointer]
+  - img
+  - img
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - textbox "Ask anything..."
+                    - button:
+                      - img
+                - generic:
+                  - generic: Search by
+                  - button "Logo":
+                    - img "Logo"
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Kling AI Customer Support
+                            - generic:
+                              - button:
+                                - generic:
+                                  - img
+                              - button:
+                                - generic:
+                                  - img
+                        - generic:
+                          - status:
+                            - img
+                            - generic: Loading...
+                        - generic:
+                          - generic:
+                            - text: Powered by
+                            - button "Logo":
+                              - img "Logo"
+                            - generic:
+                              - img
+  - alert [ref=e1063]:
+    - img [ref=e1065]
+    - paragraph [ref=e1067]: Task submitted. Generation in progress.

@@ -22,7 +22,7 @@ function useFadeIn() {
 function Section({ id, children, className = '' }) {
   const ref = useFadeIn()
   return (
-    <section id={id} ref={ref} className={`fade-in px-6 py-20 md:py-28 max-w-3xl mx-auto w-full ${className}`}>
+    <section id={id} ref={ref} className={`fade-in px-6 py-12 md:py-16 max-w-3xl mx-auto w-full ${className}`}>
       {children}
     </section>
   )
@@ -30,14 +30,14 @@ function Section({ id, children, className = '' }) {
 
 function SectionTitle({ children }) {
   return (
-    <h2 className="font-georgia text-2xl md:text-3xl text-deep font-medium leading-tight mb-10">
+    <h2 className="font-georgia text-2xl md:text-3xl text-deep font-medium leading-tight mb-6">
       {children}
     </h2>
   )
 }
 
 function Ornament() {
-  return <p className="text-gold/40 text-sm tracking-widest text-center my-10">◆ ─────── ◆</p>
+  return <p className="text-gold/40 text-sm tracking-widest text-center my-6">◆ ─────── ◆</p>
 }
 
 function BtnPrimary({ href = 'https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW', children, className = '' }) {
@@ -92,19 +92,19 @@ function Hero() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-[0.06] pointer-events-none"
         style={{ background: 'radial-gradient(circle, #C9A84C 0%, transparent 70%)' }} />
       <div className="relative z-10 hero-fade-in">
-        <p className="text-gold text-5xl mb-6 opacity-70">✦</p>
+        <p className="text-gold text-4xl mb-4 opacity-70">✦</p>
         <h1 className="font-georgia text-5xl md:text-7xl text-deep tracking-[0.25em] font-medium mb-4">
           MEDIUMIA
         </h1>
-        <p className="font-georgia text-mist text-base md:text-xl tracking-widest italic mb-12">
+        <p className="font-georgia text-mist text-base md:text-xl tracking-widest italic mb-8">
           Accompagnement à la Médiumnité Consciente
         </p>
-        <p className="font-georgia text-deep text-xl md:text-2xl leading-loose max-w-lg mx-auto mb-5">
+        <p className="font-georgia text-deep text-xl md:text-2xl leading-loose max-w-lg mx-auto mb-4">
           Tout a toujours été là.<br />
           Vous n'avez rien à devenir.<br />
           Vous avez quelque chose à retrouver.
         </p>
-        <p className="font-georgia text-mist text-sm md:text-base italic mb-14 max-w-md mx-auto">
+        <p className="font-georgia text-mist text-sm md:text-base italic mb-10 max-w-md mx-auto">
           Une méthode claire et progressive, accessible même si vous débutez.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -156,7 +156,7 @@ function EstCeQueCelaVousParle() {
           </div>
         ))}
       </div>
-      <p className="font-georgia text-center text-lg md:text-xl text-deep italic leading-relaxed max-w-2xl mx-auto border-t border-gold/20 pt-10">
+      <p className="font-georgia text-center text-lg md:text-xl text-deep italic leading-relaxed max-w-2xl mx-auto border-t border-gold/20 pt-6">
         Si l'une de ces phrases résonne, vous êtes au bon endroit. Ce n'est pas une question de don réservé à quelques-uns. C'est une dimension naturelle qui demande seulement les bonnes conditions pour se révéler.
       </p>
     </Section>
@@ -179,7 +179,7 @@ function Constat() {
         <p>
           La plupart des chemins vers la médiumnité proposent des méthodes à appliquer depuis l'extérieur. Des techniques à ajouter. Des rituels à reproduire. Mediumia part d'un postulat différent : votre perception est déjà là. Elle n'attend pas d'être construite. Elle attend d'être reconnue.
         </p>
-        <p className="text-deep font-medium text-xl md:text-2xl mt-8 leading-snug">
+        <p className="text-deep font-medium text-xl md:text-2xl mt-5 leading-snug">
           C'est cette différence fondamentale qui change tout.
         </p>
       </div>
@@ -191,7 +191,7 @@ function Constat() {
 function Solution() {
   return (
     <section id="parcours" className="bg-deep/[0.03]">
-      <Section className="!pt-20 !pb-20">
+      <Section className="!pt-12 !pb-12">
         <SectionTitle>Mediumia : un accompagnement qui libère au lieu d'enfermer</SectionTitle>
         <div className="space-y-5 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
           <p>
@@ -204,7 +204,7 @@ function Solution() {
             Mediumia est structuré en 25 modules et 4 niveaux. Chaque module s'appuie sur le précédent. L'ordre n'est pas arbitraire. Il suit la logique exacte par laquelle la médiumnité se découvre : d'abord les fondations, puis la technique du canal, puis la maîtrise, puis l'art du médium accompli.
           </p>
         </div>
-        <blockquote className="mt-12 border-l-4 border-gold pl-6 py-2">
+        <blockquote className="mt-8 border-l-4 border-gold pl-6 py-2">
           <p className="font-georgia text-xl md:text-2xl text-deep italic leading-relaxed">
             « La médiumnité ne s'apprend pas. Elle se découvre. »
           </p>
@@ -315,7 +315,7 @@ function Sebastien() {
         <p>Et cette découverte peut profondément changer votre façon de vous percevoir, de percevoir les autres, et de vous relier au monde.</p>
         </div>
       </div>
-      <blockquote className="mt-12 border-l-4 border-gold pl-6 py-2">
+      <blockquote className="mt-8 border-l-4 border-gold pl-6 py-2">
         <p className="font-georgia text-lg md:text-xl text-mist italic leading-relaxed">
           « L'enfer précède le paradis. La lumière s'exprime à travers l'obscurité. C'est le jeu ici. »
         </p>
@@ -492,7 +492,7 @@ function Approche() {
     <Section id="approche">
       <Ornament />
       <SectionTitle>Ce qui rend Mediumia différente</SectionTitle>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {POINTS.map((p, i) => (
           <div key={i} className="flex gap-5 items-start">
             <span className="text-gold text-lg mt-0.5 shrink-0">✦</span>

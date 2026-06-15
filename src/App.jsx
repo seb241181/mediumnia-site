@@ -79,6 +79,11 @@ function Nav() {
             className="font-georgia text-sm tracking-wide px-5 py-2.5 rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all hidden md:block font-medium">
             Rejoindre l'accompagnement
           </a>
+          <a href="https://sebastien-seguin.reservio.com" target="_blank" rel="noopener noreferrer"
+            className="font-georgia text-sm tracking-wide px-5 py-2.5 rounded-lg transition-all hover:opacity-90 hidden md:block font-medium"
+            style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>
+            Prendre RDV
+          </a>
         </div>
       </div>
     </header>
@@ -320,6 +325,13 @@ function Sebastien() {
           « L'enfer précède le paradis. La lumière s'exprime à travers l'obscurité. C'est le jeu ici. »
         </p>
       </blockquote>
+      <div className="text-center mt-10">
+        <a href="https://sebastien-seguin.reservio.com" target="_blank" rel="noopener noreferrer"
+          className="inline-block font-georgia text-base tracking-wide px-8 py-4 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]"
+          style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>
+          Prendre RDV avec Sébastien →
+        </a>
+      </div>
     </Section>
   )
 }

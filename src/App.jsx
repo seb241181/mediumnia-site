@@ -92,6 +92,7 @@ function Nav() {
 
 /* ─── SECTION 1 — HERO ─── */
 function Hero() {
+  const [showTrialForm, setShowTrialForm] = useState(false)
   return (
     <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 py-20 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full opacity-[0.06] pointer-events-none"
@@ -120,13 +121,13 @@ function Hero() {
           >
             Découvrir le parcours
           </a>
-          {/* TODO: brancher l'essai gratuit quand la route /essai sera disponible */}
-          <a
-            href="#contenu"
-            className="font-georgia text-base tracking-wide px-8 py-4 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]" style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
+          <button
+            onClick={() => setShowTrialForm(true)}
+            className="font-georgia text-base tracking-wide px-8 py-4 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]"
+            style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
           >
             Essayer Mediumia gratuitement
-          </a>
+          </button>
         </div>
         <a
           href="#oracle"
@@ -135,7 +136,130 @@ function Hero() {
           ✦ Testez gratuitement l'Oracle Au-delà de l'Âme ✦
         </a>
       </div>
+
+      {showTrialForm && <FormulaireEssai onClose={() => setShowTrialForm(false)} />}
     </section>
+  )
+}
+
+/* ─── FORMULAIRE D'ESSAI GRATUIT ─── */
+function generateTrialCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  const part = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  return `ESSAI-${part()}-${part()}`
+}
+
+function FormulaireEssai({ onClose }) {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState('idle') // idle | sending | success | error
+  const [code, setCode] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setStatus('sending')
+    const trialCode = generateTrialCode()
+    setCode(trialCode)
+
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: '9d7eb809-6bd2-4fc3-93b2-c675a63b259e',
+          subject: '🎉 Nouvel essai gratuit Mediumia',
+          email: email.trim(),
+          message: `Nouvel essai gratuit Mediumia
+
+Email : ${email.trim()}
+Code d'accès : ${trialCode}
+Date : ${new Date().toLocaleDateString('fr-FR')}
+
+L'utilisateur peut se connecter sur : https://mediumnia-app.vercel.app`,
+        }),
+      })
+      if (!res.ok) throw new Error('Erreur')
+      setStatus('success')
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  // Fermeture au clic sur l'overlay ou Escape
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-deep/60 backdrop-blur-sm" />
+      <div className="relative bg-cream w-full max-w-md rounded-2xl shadow-2xl p-8" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-mist/50 hover:text-mist text-2xl leading-none" aria-label="Fermer">×</button>
+
+        {status === 'success' ? (
+          <div className="text-center py-4">
+            <p className="text-4xl mb-4">✨</p>
+            <h3 className="font-georgia text-xl text-deep font-medium mb-3">Code envoyé !</h3>
+            <p className="font-georgia text-sm text-mist leading-relaxed mb-6">
+              Votre code d'essai a été envoyé à <strong className="text-deep">{email}</strong>.
+            </p>
+            <div className="bg-deep/5 rounded-xl p-4 mb-6">
+              <p className="font-georgia text-xs text-mist/70 mb-2">Votre code :</p>
+              <p className="font-georgia text-lg text-gold font-bold tracking-wider">{code}</p>
+            </div>
+            <p className="font-georgia text-xs text-mist/60 leading-relaxed mb-6">
+              Rendez-vous sur <a href="https://mediumnia-app.vercel.app" target="_blank" rel="noopener noreferrer" className="text-gold underline">mediumnia-app.vercel.app</a> et saisissez ce code pour commencer.
+            </p>
+            <button onClick={onClose}
+              className="font-georgia text-sm px-6 py-3 rounded-lg transition-all hover:opacity-90"
+              style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>
+              C'est noté !
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="text-center mb-6">
+              <p className="text-3xl mb-3">✨</p>
+              <h3 className="font-georgia text-xl text-deep font-medium mb-2">Essayez Mediumia gratuitement</h3>
+              <p className="font-georgia text-sm text-mist leading-relaxed">
+                Recevez un code d'accès pour discuter avec Mediumia, découvrir la formation et poser toutes vos questions.<br />
+                <strong className="text-deep">30 messages offerts.</strong>
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="font-georgia text-xs text-mist uppercase tracking-wider block mb-1.5">
+                  Votre email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="vous@exemple.fr"
+                  required
+                  className="w-full font-georgia text-sm text-deep bg-white/70 border border-gold/30 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors"
+                />
+              </div>
+              <button type="submit" disabled={status === 'sending' || !email.trim()}
+                className="w-full font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>
+                {status === 'sending' ? 'Envoi en cours...' : 'Recevoir mon code d\'essai'}
+              </button>
+              {status === 'error' && (
+                <p className="font-georgia text-xs text-red-500 text-center">Une erreur est survenue. Réessayez ou contactez-nous.</p>
+              )}
+            </form>
+
+            <p className="font-georgia text-xs text-mist/50 text-center mt-6 leading-relaxed">
+              Code utilisable immédiatement. Accès à Mediumia uniquement. 30 messages. Valable 7 jours.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 

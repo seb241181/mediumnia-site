@@ -80,11 +80,6 @@ function Nav() {
             style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}>
             Rejoindre l'accompagnement
           </a>
-          <a href="https://sebastien-seguin.reservio.com" target="_blank" rel="noopener noreferrer"
-            className="font-georgia text-sm tracking-wide px-5 py-2.5 rounded-lg transition-all hover:opacity-90 hidden md:block font-medium"
-            style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>
-            Prendre RDV
-          </a>
         </div>
       </div>
     </header>

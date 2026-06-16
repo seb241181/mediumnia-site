@@ -71,12 +71,13 @@ function Nav() {
             href="https://mediumnia-app.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-georgia text-sm tracking-wide text-deep/70 hover:text-gold transition-colors hidden md:block font-medium"
+            className="font-georgia text-sm tracking-wide text-deep/70 hover:text-gold transition-colors hidden md:block font-bold"
           >
             Déjà inscrit ? Mon espace →
           </a>
           <a href="#prix"
-            className="font-georgia text-sm tracking-wide px-5 py-2.5 rounded-lg border border-gold/40 text-gold hover:bg-gold/10 transition-all hidden md:block font-medium">
+            className="font-georgia text-sm tracking-wide px-5 py-2.5 rounded-lg transition-all hover:opacity-90 hidden md:block font-bold"
+            style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}>
             Rejoindre l'accompagnement
           </a>
           <a href="https://sebastien-seguin.reservio.com" target="_blank" rel="noopener noreferrer"
@@ -135,6 +136,17 @@ function Hero() {
         >
           ✦ Testez gratuitement l'Oracle Au-delà de l'Âme ✦
         </a>
+        <div className="mt-4">
+          <a
+            href="https://sebastien-seguin.reservio.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block font-georgia text-sm tracking-wide px-6 py-3 rounded-lg transition-all hover:opacity-90 hover:scale-[1.02]"
+            style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
+          >
+            Prendre RDV avec Sébastien →
+          </a>
+        </div>
       </div>
 
       {showTrialForm && <FormulaireEssai onClose={() => setShowTrialForm(false)} />}

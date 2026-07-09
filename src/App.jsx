@@ -352,8 +352,8 @@ function Solution() {
 
 /* ─── SECTION 4 — CE QUE VOUS RECEVEZ ─── */
 const INCLUS = [
-  { icon: '📚', titre: '25 modules PDF', texte: "Envoyés chez vous par courrier. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale." },
-  { icon: '⏱️', titre: '84 exercices guidés', texte: "Chaque exercice est accompagné d'un minuteur, d'étapes claires et d'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique." },
+  { icon: '📚', titre: '25 modules PDF', texte: "Téléchargement immédiat après votre achat. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale." },
+  { icon: '⏱️', titre: '84 exercices guidés', texte: "Chaque exercice est accompagné d'étapes claires et d'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique." },
   { icon: '📝', titre: 'Votre carnet de pratique', texte: "Intégré dans l'application, il vous permet de noter vos ressentis, vos perceptions, vos questions après chaque exercice. Avec le temps, il devient votre outil de discernement le plus précieux." },
   { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: "Intégrée dans l'application, Mediumia est une intelligence artificielle formée spécifiquement sur le contenu du parcours. Elle répond à vos questions, vous aide à relire vos ressentis avec discernement, et vous accompagne module après module. Elle ne canalise pas à votre place. Elle vous aide à découvrir votre propre canal." },
   { icon: '🔓', titre: "12 mois d'accès", texte: "Votre code personnel vous donne accès à l'application et à Mediumia pendant 12 mois. Les modules téléchargés, eux, restent à vous pour toujours." },
@@ -661,9 +661,9 @@ function Prix() {
           <ul className="font-georgia text-base md:text-lg text-deep space-y-3 text-left max-w-sm mx-auto mb-10">
             {[
               '25 modules PDF téléchargeables',
-              'Application Mediumia sur votre téléphone',
+              'Application Mediumia sur votre téléphone ou ordinateur',
               'Mediumia, votre coach IA personnel',
-              '84 exercices guidés avec chronomètre',
+              '84 exercices guidés',
               'Carnet de pratique intégré',
               "12 mois d'accès à l'application",
             ].map((item, i) => (
@@ -695,7 +695,7 @@ const FAQ_ITEMS = [
   { q: 'Combien de temps dure le parcours ?', r: "Il n'y a pas de durée imposée. Le parcours est composé de 25 modules répartis en 4 niveaux, et chacun avance à son rythme. Certains traversent un module par semaine, d'autres prennent le temps de vivre chaque exercice sur plusieurs jours. Vous disposez de 12 mois d'accès à l'application pour cheminer librement, et les modules téléchargés restent à vous pour toujours." },
   { q: 'Est-ce que Mediumia remplace un vrai accompagnement humain ?', r: "Non. Mediumia, le coach IA, est un soutien disponible jour et nuit pour répondre à vos questions, relire vos ressentis avec vous et vous guider dans les exercices. Mais elle ne canalise pas à votre place et ne remplace pas la relation humaine. Elle vous aide à découvrir votre propre canal et à gagner en autonomie. C'est un compagnon de route, pas un substitut au lien humain." },
   { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. Mediumia n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin. Vous n'avez rien à adopter, seulement à expérimenter." },
-  { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application Mediumia et le coach IA sont accessibles partout dans le monde, 24h/24. Les modules PDF sont accessibles partout dans le monde, 24h/24, sans frais d'expédition. Dès votre paiement validé, vous téléchargez vos modules directement depuis votre espace personnel." },
+  { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application Mediumia, le coach IA et les modules PDF sont accessibles partout dans le monde, 24h/24, sans frais d'expédition. Dès votre paiement validé, vous téléchargez vos modules directement depuis votre espace personnel, où que vous soyez." },
   { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. Le parcours complet est à 597 €, et un paiement en 4 fois est disponible via PayPal, sans complication. Vous choisissez simplement cette option au moment du règlement." },
   { q: 'Ce parcours peut-il remplacer un suivi médical ou psychologique ?', r: "Non, en aucun cas. Mediumia est un parcours de développement médiumnique et personnel. Il ne remplace ni un suivi médical, ni un accompagnement psychologique ou psychiatrique. Si vous traversez une souffrance psychique, une période de grande fragilité ou un deuil difficile, entourez-vous de professionnels de santé. La pratique médiumnique se construit sur des fondations intérieures stables, et prendre soin de soi vient toujours en premier." },
 ]

@@ -353,7 +353,7 @@ function Solution() {
 /* ─── SECTION 4 — CE QUE VOUS RECEVEZ ─── */
 const INCLUS = [
   { icon: '📚', titre: '25 modules PDF', texte: "Téléchargement immédiat après votre achat. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale." },
-  { icon: '⏱️', titre: '84 exercices guidés', texte: "Chaque exercice est accompagné d'un minuteur, d'étapes claires et d'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique." },
+  { icon: '⏱️', titre: '84 exercices guidés', texte: "Chaque exercice est accompagné d'étapes claires et d'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique." },
   { icon: '📝', titre: 'Votre carnet de pratique', texte: "Intégré dans l'application, il vous permet de noter vos ressentis, vos perceptions, vos questions après chaque exercice. Avec le temps, il devient votre outil de discernement le plus précieux." },
   { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: "Intégrée dans l'application, Mediumia est une intelligence artificielle formée spécifiquement sur le contenu du parcours. Elle répond à vos questions, vous aide à relire vos ressentis avec discernement, et vous accompagne module après module. Elle ne canalise pas à votre place. Elle vous aide à découvrir votre propre canal." },
   { icon: '🔓', titre: "12 mois d'accès", texte: "Votre code personnel vous donne accès à l'application et à Mediumia pendant 12 mois. Les modules téléchargés, eux, restent à vous pour toujours." },
@@ -661,9 +661,9 @@ function Prix() {
           <ul className="font-georgia text-base md:text-lg text-deep space-y-3 text-left max-w-sm mx-auto mb-10">
             {[
               '25 modules PDF téléchargeables',
-              'Application Mediumia sur votre téléphone',
+              'Application Mediumia sur votre téléphone ou ordinateur',
               'Mediumia, votre coach IA personnel',
-              '84 exercices guidés avec chronomètre',
+              '84 exercices guidés',
               'Carnet de pratique intégré',
               "12 mois d'accès à l'application",
             ].map((item, i) => (

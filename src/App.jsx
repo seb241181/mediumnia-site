@@ -352,7 +352,7 @@ function Solution() {
 
 /* ─── SECTION 4 — CE QUE VOUS RECEVEZ ─── */
 const INCLUS = [
-  { icon: '📚', titre: '25 modules PDF', texte: "Téléchargement immédiat après votre achat. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale." },
+  { icon: '📚', titre: '25 modules PDF · 269 pages', texte: "Téléchargement immédiat après votre achat. 25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale." },
   { icon: '⏱️', titre: '84 exercices guidés', texte: "Chaque exercice est accompagné d'étapes claires et d'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique." },
   { icon: '📝', titre: 'Votre carnet de pratique', texte: "Intégré dans l'application, il vous permet de noter vos ressentis, vos perceptions, vos questions après chaque exercice. Avec le temps, il devient votre outil de discernement le plus précieux." },
   { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: "Intégrée dans l'application, Mediumia est une intelligence artificielle formée spécifiquement sur le contenu du parcours. Elle répond à vos questions, vous aide à relire vos ressentis avec discernement, et vous accompagne module après module. Elle ne canalise pas à votre place. Elle vous aide à découvrir votre propre canal." },
@@ -468,13 +468,6 @@ function Sebastien() {
 }
 
 /* ─── SECTION 7 — TÉMOIGNAGES ─── */
-const TEMOIGNAGES = [
-  { texte: "« Vraiment incroyable. Le sentiment que j'ai eu c'est comme si on partait dans une aventure de découverte, très complexe dans la simplicité dont vous avez écrit. J'ai pas ressenti un effort intellectuel pour comprendre, tout était très clair et ça a touché plus mes émotions que l'intellectuel. Quand j'avais lu d'autres livres sur la médiumnité je restais toujours confuse. Cette fois-ci j'ai eu plutôt un sentiment de paix. »", source: 'Retour de parcours' },
-  { texte: "« J'ai retrouvé ma petite voix, il y a longtemps que je ne l'entendais plus et grâce à vos exercices, elle est revenue. J'ai retrouvé une partie de moi-même. »", source: "Retour d'atelier" },
-  { texte: "« I love the Mediumia app! It is very easy to navigate. Great work, I really like it and I don't have any comments, I am excited for the launch! »", source: 'Nuri — Retour sur l\'application' },
-  { texte: "« Ils ont surtout compris que tout est simple et accessible, il suffit de se l'autoriser. Pour eux, c'est une révélation choquante car elle est pourvue de simplicité. »", source: "Retour d'atelier" },
-]
-
 function FormulaireAvis() {
   const [open, setOpen] = useState(false)
   const [note, setNote] = useState(0)
@@ -606,15 +599,10 @@ function Temoignages() {
   return (
     <section className="bg-deep/[0.03]">
       <Section id="temoignages">
-        <SectionTitle>Ce qu'en disent ceux qui l'ont vécu</SectionTitle>
-        <div className="grid md:grid-cols-2 gap-5">
-          {TEMOIGNAGES.map((t, i) => (
-            <div key={i} className="bg-white/80 border border-gold/20 rounded-xl p-6">
-              <p className="font-georgia text-sm md:text-base text-deep/80 italic leading-relaxed mb-4">{t.texte}</p>
-              <p className="font-georgia text-xs text-gold tracking-wide font-bold">— {t.source}</p>
-            </div>
-          ))}
-        </div>
+        <SectionTitle>Partagez votre expérience</SectionTitle>
+        <p className="font-georgia text-mist text-base md:text-lg italic -mt-4">
+          Vous avez suivi le parcours ? Votre témoignage aidera d'autres personnes à franchir le pas. Il sera publié après validation.
+        </p>
         <FormulaireAvis />
       </Section>
     </section>
@@ -660,7 +648,7 @@ function Prix() {
           <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-8">Le parcours complet comprend</p>
           <ul className="font-georgia text-base md:text-lg text-deep space-y-3 text-left max-w-sm mx-auto mb-10">
             {[
-              '25 modules PDF téléchargeables',
+              '25 modules PDF téléchargeables (269 pages)',
               'Application Mediumia sur votre téléphone ou ordinateur',
               'Mediumia, votre coach IA personnel',
               '84 exercices guidés',

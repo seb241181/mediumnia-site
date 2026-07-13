@@ -169,20 +169,12 @@ function FormulaireEssai({ onClose }) {
     setCode(trialCode)
 
     try {
-      const res = await fetch('https://api.web3forms.com/submit', {
+      const res = await fetch('https://sebastien999.app.n8n.cloud/webhook/mediumia-essai-gratuit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          access_key: '9d7eb809-6bd2-4fc3-93b2-c675a63b259e',
-          subject: '🎉 Nouvel essai gratuit Mediumia',
           email: email.trim(),
-          message: `Nouvel essai gratuit Mediumia
-
-Email : ${email.trim()}
-Code d'accès : ${trialCode}
-Date : ${new Date().toLocaleDateString('fr-FR')}
-
-L'utilisateur peut se connecter sur : https://mediumnia-app.vercel.app`,
+          code: trialCode,
         }),
       })
       if (!res.ok) throw new Error('Erreur')

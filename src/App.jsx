@@ -658,11 +658,11 @@ function Prix() {
             <span className="font-georgia text-5xl md:text-6xl text-deep font-medium">597 €</span>
           </div>
           <p className="font-georgia text-mist text-sm italic mb-8">Paiement en 4× disponible via PayPal</p>
-          <BtnPrimary href="https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW" className="text-lg px-12 py-5">
-            Commencer le parcours →
-          </BtnPrimary>
+          <div className="inline-block font-georgia text-lg px-12 py-5 rounded-lg border-2 border-gold/40 text-mist tracking-wide">
+            Bientôt disponible
+          </div>
           <p className="font-georgia text-xs text-mist mt-6 leading-relaxed max-w-md mx-auto">
-            Paiement sécurisé par PayPal. Votre code d'accès vous est envoyé par email peu après le paiement.
+            Les inscriptions rouvrent très bientôt. Revenez faire un tour !
           </p>
         </div>
       </Section>
@@ -913,11 +913,9 @@ function StickyBar() {
       <div className="flex items-center justify-between px-5 py-4 border-t border-gold/20"
         style={{ backgroundColor: '#1A1535' }}>
         <p className="font-georgia text-sm text-gold font-bold">597 € · Paiement en 4× via PayPal</p>
-        <a href="https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW"
-          className="font-georgia text-sm px-5 py-2.5 rounded-lg transition-all hover:opacity-90 shrink-0 ml-4"
-          style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 600 }}>
-          Commencer →
-        </a>
+        <span className="font-georgia text-sm px-5 py-2.5 rounded-lg shrink-0 ml-4 border border-gold/40 text-gold">
+          Bientôt disponible
+        </span>
       </div>
     </div>
   )

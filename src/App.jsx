@@ -71,9 +71,10 @@ function Nav() {
             href="https://mediumnia-app.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-georgia text-sm tracking-wide text-deep/70 hover:text-gold transition-colors hidden md:block font-bold"
+            className="font-georgia text-xs md:text-sm tracking-wide px-3 py-2 md:px-5 md:py-2.5 rounded-lg transition-all hover:opacity-90 font-bold"
+            style={{ backgroundColor: '#C9A84C', color: '#1A1535', fontWeight: 700 }}
           >
-            Déjà inscrit ? Mon espace →
+            Mon espace →
           </a>
           <a href="#prix"
             className="font-georgia text-sm tracking-wide px-5 py-2.5 rounded-lg transition-all hover:opacity-90 hidden md:block font-bold"

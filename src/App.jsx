@@ -800,7 +800,7 @@ function PolitiqueModal({ onClose }) {
 const MENTIONS = [
   {
     titre: 'Éditeur du site',
-    texte: 'Sébastien Seguin — SIRET : 81918584400027 — Contact : contact@mediumia.fr',
+    texte: 'Sébastien Seguin — 1 Chemin des Capucines, 59143 Lederzeele — SIRET : 81918584400027 — Contact : contact@mediumia.fr',
   },
   {
     titre: 'Hébergement',
@@ -923,10 +923,191 @@ function StickyBar() {
   )
 }
 
+const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
+const PAYPAL_LIVE_CLIENT_ID = 'AaDcpJKhNljhRNPldmZmGb1be69SjetjLI3TCz6kH5P3AOrWk2WrQEY8RoXcQYcGDERH_dpWqFTEIe_G'
+
+function createPayPalTestInvoiceId() {
+  const uniqueId = window.crypto?.randomUUID?.() || `${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
+  return `mediumia-test-${Date.now()}-${uniqueId}`
+}
+
+function PayPalWorkflowTestPage() {
+  const [status, setStatus] = useState('Chargement du SDK PayPal Live...')
+  const [lastInvoiceId, setLastInvoiceId] = useState('')
+  const paypalRef = useRef(null)
+  const cardRef = useRef(null)
+  const renderedRef = useRef(false)
+
+  useEffect(() => {
+    document.title = 'Test PayPal Live MediumIA 1 EUR'
+
+    const robots = document.createElement('meta')
+    robots.name = 'robots'
+    robots.content = 'noindex,nofollow,noarchive'
+    document.head.appendChild(robots)
+
+    return () => {
+      document.head.removeChild(robots)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (renderedRef.current) return
+    renderedRef.current = true
+
+    let script
+    let canceled = false
+
+    const loadTimer = window.setTimeout(() => {
+      if (canceled) return
+
+      script = document.createElement('script')
+      const params = new URLSearchParams({
+        'client-id': PAYPAL_LIVE_CLIENT_ID,
+        currency: 'EUR',
+        intent: 'capture',
+        components: 'buttons,funding-eligibility',
+        'enable-funding': 'card',
+        'disable-funding': 'paylater,venmo',
+        locale: 'fr_FR',
+      })
+      script.src = `https://www.paypal.com/sdk/js?${params.toString()}`
+      script.async = true
+      script.dataset.mediumiaPaypalTest = 'true'
+
+      const createOrder = (data, actions) => {
+        const invoiceId = createPayPalTestInvoiceId()
+        setLastInvoiceId(invoiceId)
+        setStatus(`Creation de la commande PayPal 1,00 EUR... Invoice : ${invoiceId}`)
+        return actions.order.create({
+          intent: 'CAPTURE',
+          purchase_units: [
+            {
+              description: 'Test workflow MediumIA - 1 EUR',
+              custom_id: invoiceId,
+              invoice_id: invoiceId,
+              amount: {
+                currency_code: 'EUR',
+                value: '1.00',
+              },
+            },
+          ],
+          application_context: {
+            brand_name: 'MediumIA',
+            shipping_preference: 'NO_SHIPPING',
+            user_action: 'PAY_NOW',
+          },
+        }).then((orderId) => {
+          setStatus(`Commande PayPal creee : ${orderId} | Invoice : ${invoiceId}`)
+          return orderId
+        })
+      }
+
+      const onApprove = (data, actions) => {
+        setStatus(`Paiement approuve, capture de la commande ${data.orderID}...`)
+        return actions.order.capture().then((details) => {
+          setStatus(`Paiement capture : ${details?.id || data.orderID}`)
+        })
+      }
+
+      const onCancel = () => {
+        setStatus('Paiement annule dans PayPal.')
+      }
+
+      const onError = (err) => {
+        console.error('Erreur PayPal test MediumIA', err)
+        setStatus(`Erreur PayPal : ${err?.message || 'voir console navigateur'}`)
+      }
+
+      script.onload = () => {
+        if (!window.paypal || !paypalRef.current || !cardRef.current) {
+          setStatus('SDK PayPal charge, mais composant indisponible.')
+          return
+        }
+
+        setStatus('SDK PayPal Live charge. Boutons prets.')
+
+        window.paypal.Buttons({
+          fundingSource: window.paypal.FUNDING.PAYPAL,
+          style: {
+            layout: 'vertical',
+            color: 'gold',
+            shape: 'rect',
+            label: 'paypal',
+          },
+          createOrder,
+          onApprove,
+          onCancel,
+          onError,
+        }).render(paypalRef.current)
+
+        window.paypal.Buttons({
+          fundingSource: window.paypal.FUNDING.CARD,
+          style: {
+            layout: 'vertical',
+            color: 'black',
+            shape: 'rect',
+            label: 'pay',
+          },
+          createOrder,
+          onApprove,
+          onCancel,
+          onError,
+        }).render(cardRef.current).catch((err) => {
+          console.error('Bouton carte PayPal indisponible', err)
+          setStatus('Bouton carte indisponible pour ce compte ou ce navigateur.')
+        })
+      }
+
+      script.onerror = () => {
+        setStatus('Erreur de chargement du SDK PayPal Live.')
+      }
+
+      document.body.appendChild(script)
+    }, 0)
+
+    return () => {
+      canceled = true
+      window.clearTimeout(loadTimer)
+      renderedRef.current = false
+      script?.remove()
+    }
+  }, [])
+
+  return (
+    <main className="min-h-screen bg-cream px-6 py-16 flex items-center justify-center">
+      <section className="w-full max-w-lg border border-gold/30 rounded-2xl bg-white/70 p-8 text-center">
+        <p className="text-gold text-3xl mb-4">✦</p>
+        <h1 className="font-georgia text-3xl text-deep mb-3">Test PayPal Live MediumIA</h1>
+        <p className="font-georgia text-mist leading-relaxed mb-6">
+          Page temporaire non indexée pour déclencher une capture PayPal Live à 1,00 EUR.
+        </p>
+        <div className="mb-6">
+          <span className="font-georgia text-5xl text-deep">1,00 EUR</span>
+        </div>
+        <div className="space-y-4">
+          <div ref={paypalRef} />
+          <div ref={cardRef} />
+        </div>
+        <p className="font-georgia text-sm text-mist mt-6">{status}</p>
+        {lastInvoiceId && (
+          <p className="font-georgia text-xs text-mist/70 mt-3">
+            Dernier invoice_id : {lastInvoiceId}
+          </p>
+        )}
+      </section>
+    </main>
+  )
+}
+
 /* ─── APP ─── */
 export default function App() {
   const [showPolitique, setShowPolitique] = useState(false)
   const [showMentions, setShowMentions] = useState(false)
+  if (window.location.pathname === PAYPAL_TEST_PATH) {
+    return <PayPalWorkflowTestPage />
+  }
+
   return (
     <div className="bg-cream min-h-screen">
       <Nav />

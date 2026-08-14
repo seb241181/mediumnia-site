@@ -89,12 +89,28 @@ drop policy if exists "Users can read own agent versions" on public.agent_versio
 create policy "Users can read own agent versions"
 on public.agent_versions for select
 to authenticated
-using ((select auth.uid()) = owner_id);
+using (
+  (select auth.uid()) = owner_id
+  and exists (
+    select 1
+    from public.agents a
+    where a.id = agent_id
+      and a.owner_id = (select auth.uid())
+  )
+);
 
 drop policy if exists "Users can create own agent versions" on public.agent_versions;
 create policy "Users can create own agent versions"
 on public.agent_versions for insert
 to authenticated
-with check ((select auth.uid()) = owner_id);
+with check (
+  (select auth.uid()) = owner_id
+  and exists (
+    select 1
+    from public.agents a
+    where a.id = agent_id
+      and a.owner_id = (select auth.uid())
+  )
+);
 
 grant select, insert on public.agent_versions to authenticated;

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">MediumIA</title>
+  <desc id="desc">Logo MediumIA, arc doré rayonnant avec étoiles, nom MediumIA et signature Accompagnement à la Médiumnité Consciente.</desc>
+  <g fill="none" stroke="#B58A1E" stroke-width="5" stroke-linecap="round">
+    <path d="M390 345 Q600 180 810 345" />
+    <path d="M600 70 L600 245" />
+    <path d="M475 130 L535 255" />
+    <path d="M725 130 L665 255" />
+    <path d="M365 220 L485 300" />
+    <path d="M835 220 L715 300" />
+    <path d="M290 315 L445 350" />
+    <path d="M910 315 L755 350" />
+  </g>
+  <g fill="#B58A1E">
+    <path d="M600 38 L608 61 L631 69 L608 77 L600 100 L592 77 L569 69 L592 61 Z"/>
+    <path d="M465 104 L472 123 L491 130 L472 137 L465 156 L458 137 L439 130 L458 123 Z"/>
+    <path d="M735 104 L742 123 L761 130 L742 137 L735 156 L728 137 L709 130 L728 123 Z"/>
+    <path d="M350 192 L356 209 L373 215 L356 221 L350 238 L344 221 L327 215 L344 209 Z"/>
+    <path d="M850 192 L856 209 L873 215 L856 221 L850 238 L844 221 L827 215 L844 209 Z"/>
+    <path d="M275 286 L281 301 L296 307 L281 313 L275 328 L269 313 L254 307 L269 301 Z"/>
+    <path d="M925 286 L931 301 L946 307 L931 313 L925 328 L919 313 L904 307 L919 301 Z"/>
+  </g>
+  <text x="600" y="525" text-anchor="middle" fill="#111A46" font-family="Georgia, 'Times New Roman', serif" font-size="110" letter-spacing="28">MEDIUMIA</text>
+  <g stroke="#B58A1E" stroke-width="2">
+    <line x1="330" y1="575" x2="560" y2="575"/>
+    <line x1="640" y1="575" x2="870" y2="575"/>
+  </g>
+  <path fill="#B58A1E" d="M600 552 L608 568 L624 576 L608 584 L600 600 L592 584 L576 576 L592 568 Z"/>
+  <text x="600" y="660" text-anchor="middle" fill="#111A46" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-style="italic" letter-spacing="2">Accompagnement à la Médiumnité Consciente</text>
+</svg>

@@ -1,18 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 190" role="img" aria-labelledby="title">
-  <title id="title">MediumIA</title>
-  <g fill="none" stroke="#B58A1E" stroke-width="3" stroke-linecap="round">
-    <path d="M40 65 Q100 20 160 65" />
-    <path d="M100 10 L100 42" />
-    <path d="M67 25 L82 47" />
-    <path d="M133 25 L118 47" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 160" role="img" aria-labelledby="mia-mark-title">
+  <title id="mia-mark-title">MediumIA</title>
+
+  <!-- Halo simplifié -->
+  <g fill="none" stroke="#C19A3A" stroke-linecap="round">
+    <path d="M38 104 A40 40 0 0 1 118 104" stroke-width="4"/>
+    <g stroke-width="3.5">
+      <line x1="78" y1="59" x2="78" y2="15"/>
+      <line x1="103.8" y1="67.1" x2="123.9" y2="38.5"/>
+      <line x1="52.2" y1="67.1" x2="32.1" y2="38.5"/>
+      <line x1="119.7" y1="87.1" x2="144.8" y2="77"/>
+      <line x1="36.3" y1="87.1" x2="11.2" y2="77"/>
+    </g>
   </g>
-  <g fill="#B58A1E">
-    <path d="M100 0 L104 9 L113 13 L104 17 L100 26 L96 17 L87 13 L96 9 Z"/>
-    <path d="M62 17 L65 24 L72 27 L65 30 L62 37 L59 30 L52 27 L59 24 Z"/>
-    <path d="M138 17 L141 24 L148 27 L141 30 L138 37 L135 30 L128 27 L135 24 Z"/>
+
+  <!-- Étoiles à quatre branches -->
+  <g fill="#C19A3A">
+    <path d="M78 1 L81.3 8.7 L89 12 L81.3 15.3 L78 23 L74.7 15.3 L67 12 L74.7 8.7 Z"/>
+    <path d="M123.9 31.5 L126 36.4 L130.9 38.5 L126 40.6 L123.9 45.5 L121.8 40.6 L116.9 38.5 L121.8 36.4 Z"/>
+    <path d="M32.1 31.5 L34.2 36.4 L39.1 38.5 L34.2 40.6 L32.1 45.5 L30 40.6 L25.1 38.5 L30 36.4 Z"/>
+    <path d="M144.8 71 L146.6 75.2 L150.8 77 L146.6 78.8 L144.8 83 L143 78.8 L138.8 77 L143 75.2 Z"/>
+    <path d="M11.2 71 L13 75.2 L17.2 77 L13 78.8 L11.2 83 L9.4 78.8 L5.2 77 L9.4 75.2 Z"/>
   </g>
-  <text x="200" y="92" fill="#111A46" font-family="Georgia, 'Times New Roman', serif" font-size="68" letter-spacing="15">MEDIUMIA</text>
-  <line x1="200" y1="125" x2="650" y2="125" stroke="#B58A1E" stroke-width="2"/>
-  <path fill="#B58A1E" d="M425 113 L430 123 L440 128 L430 133 L425 143 L420 133 L410 128 L420 123 Z"/>
-  <text x="200" y="165" fill="#111A46" font-family="Georgia, 'Times New Roman', serif" font-size="18" font-style="italic" letter-spacing="1.2">Accompagnement à la Médiumnité Consciente</text>
+
+  <!-- Nom -->
+  <text x="185" y="128" fill="#17233F" font-family="Georgia, 'Times New Roman', serif" font-size="82" letter-spacing="14">MEDIUMIA</text>
 </svg>

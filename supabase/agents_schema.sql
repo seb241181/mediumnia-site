@@ -1,5 +1,5 @@
--- MediumIA Agents — première fondation de données
--- À exécuter dans le SQL Editor du projet Supabase choisi pour MediumIA Agents.
+-- MediumIA Agents — fondation de données
+-- Schéma de référence : agents, versions, conversations et messages.
 
 create extension if not exists pgcrypto;
 
@@ -26,32 +26,23 @@ create table if not exists public.agents (
 
 create index if not exists agents_owner_id_idx on public.agents(owner_id);
 create index if not exists agents_status_idx on public.agents(status);
-
 alter table public.agents enable row level security;
 
 drop policy if exists "Users can read own agents" on public.agents;
-create policy "Users can read own agents"
-on public.agents for select
-to authenticated
+create policy "Users can read own agents" on public.agents for select to authenticated
 using ((select auth.uid()) = owner_id);
 
 drop policy if exists "Users can create own agents" on public.agents;
-create policy "Users can create own agents"
-on public.agents for insert
-to authenticated
+create policy "Users can create own agents" on public.agents for insert to authenticated
 with check ((select auth.uid()) = owner_id);
 
 drop policy if exists "Users can update own agents" on public.agents;
-create policy "Users can update own agents"
-on public.agents for update
-to authenticated
+create policy "Users can update own agents" on public.agents for update to authenticated
 using ((select auth.uid()) = owner_id)
 with check ((select auth.uid()) = owner_id);
 
 drop policy if exists "Users can delete own draft agents" on public.agents;
-create policy "Users can delete own draft agents"
-on public.agents for delete
-to authenticated
+create policy "Users can delete own draft agents" on public.agents for delete to authenticated
 using ((select auth.uid()) = owner_id and status = 'draft');
 
 grant select, insert, update, delete on public.agents to authenticated;
@@ -59,6 +50,7 @@ grant select, insert, update, delete on public.agents to authenticated;
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public, pg_temp
 as $$
 begin
   new.updated_at = now();
@@ -67,8 +59,7 @@ end;
 $$;
 
 drop trigger if exists agents_set_updated_at on public.agents;
-create trigger agents_set_updated_at
-before update on public.agents
+create trigger agents_set_updated_at before update on public.agents
 for each row execute function public.set_updated_at();
 
 create table if not exists public.agent_versions (
@@ -79,38 +70,103 @@ create table if not exists public.agent_versions (
   snapshot jsonb not null,
   created_at timestamptz not null default now()
 );
-
 create index if not exists agent_versions_agent_id_idx on public.agent_versions(agent_id);
 create index if not exists agent_versions_owner_id_idx on public.agent_versions(owner_id);
-
 alter table public.agent_versions enable row level security;
 
 drop policy if exists "Users can read own agent versions" on public.agent_versions;
-create policy "Users can read own agent versions"
-on public.agent_versions for select
-to authenticated
+create policy "Users can read own agent versions" on public.agent_versions for select to authenticated
 using (
   (select auth.uid()) = owner_id
-  and exists (
-    select 1
-    from public.agents a
-    where a.id = agent_id
-      and a.owner_id = (select auth.uid())
-  )
+  and exists (select 1 from public.agents a where a.id = agent_id and a.owner_id = (select auth.uid()))
 );
 
 drop policy if exists "Users can create own agent versions" on public.agent_versions;
-create policy "Users can create own agent versions"
-on public.agent_versions for insert
-to authenticated
+create policy "Users can create own agent versions" on public.agent_versions for insert to authenticated
 with check (
   (select auth.uid()) = owner_id
-  and exists (
-    select 1
-    from public.agents a
-    where a.id = agent_id
-      and a.owner_id = (select auth.uid())
-  )
+  and exists (select 1 from public.agents a where a.id = agent_id and a.owner_id = (select auth.uid()))
 );
 
 grant select, insert on public.agent_versions to authenticated;
+
+create table if not exists public.agent_conversations (
+  id uuid primary key default gen_random_uuid(),
+  agent_id uuid not null references public.agents(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  title text not null default 'Nouvelle conversation',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists agent_conversations_owner_id_idx on public.agent_conversations(owner_id);
+create index if not exists agent_conversations_agent_id_idx on public.agent_conversations(agent_id);
+alter table public.agent_conversations enable row level security;
+
+drop policy if exists "Users can read own conversations" on public.agent_conversations;
+create policy "Users can read own conversations" on public.agent_conversations for select to authenticated
+using (
+  (select auth.uid()) = owner_id
+  and exists (select 1 from public.agents a where a.id = agent_id and a.owner_id = (select auth.uid()))
+);
+
+drop policy if exists "Users can create own conversations" on public.agent_conversations;
+create policy "Users can create own conversations" on public.agent_conversations for insert to authenticated
+with check (
+  (select auth.uid()) = owner_id
+  and exists (select 1 from public.agents a where a.id = agent_id and a.owner_id = (select auth.uid()))
+);
+
+drop policy if exists "Users can update own conversations" on public.agent_conversations;
+create policy "Users can update own conversations" on public.agent_conversations for update to authenticated
+using ((select auth.uid()) = owner_id)
+with check ((select auth.uid()) = owner_id);
+
+drop policy if exists "Users can delete own conversations" on public.agent_conversations;
+create policy "Users can delete own conversations" on public.agent_conversations for delete to authenticated
+using ((select auth.uid()) = owner_id);
+
+grant select, insert, update, delete on public.agent_conversations to authenticated;
+
+drop trigger if exists agent_conversations_set_updated_at on public.agent_conversations;
+create trigger agent_conversations_set_updated_at before update on public.agent_conversations
+for each row execute function public.set_updated_at();
+
+create table if not exists public.agent_messages (
+  id bigint generated by default as identity primary key,
+  conversation_id uuid not null references public.agent_conversations(id) on delete cascade,
+  agent_id uuid not null references public.agents(id) on delete cascade,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  role text not null check (role in ('user','assistant')),
+  content text not null check (char_length(content) between 1 and 20000),
+  created_at timestamptz not null default now()
+);
+create index if not exists agent_messages_conversation_id_idx on public.agent_messages(conversation_id, created_at);
+create index if not exists agent_messages_owner_id_idx on public.agent_messages(owner_id);
+alter table public.agent_messages enable row level security;
+
+drop policy if exists "Users can read own messages" on public.agent_messages;
+create policy "Users can read own messages" on public.agent_messages for select to authenticated
+using (
+  (select auth.uid()) = owner_id
+  and exists (
+    select 1 from public.agent_conversations c
+    where c.id = conversation_id
+      and c.owner_id = (select auth.uid())
+      and c.agent_id = agent_id
+  )
+);
+
+drop policy if exists "Users can create own messages" on public.agent_messages;
+create policy "Users can create own messages" on public.agent_messages for insert to authenticated
+with check (
+  (select auth.uid()) = owner_id
+  and exists (
+    select 1 from public.agent_conversations c
+    where c.id = conversation_id
+      and c.owner_id = (select auth.uid())
+      and c.agent_id = agent_id
+  )
+  and exists (select 1 from public.agents a where a.id = agent_id and a.owner_id = (select auth.uid()))
+);
+
+grant select, insert on public.agent_messages to authenticated;

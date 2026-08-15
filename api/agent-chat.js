@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
-function textFromResponse(data) {
+function textFromOpenAIResponse(data) {
   const parts = []
   for (const item of data?.output || []) {
     if (item?.type !== 'message') continue
@@ -9,6 +9,14 @@ function textFromResponse(data) {
     }
   }
   return parts.join('\n').trim()
+}
+
+function textFromAnthropicResponse(data) {
+  return (data?.content || [])
+    .filter((part) => part?.type === 'text' && part.text)
+    .map((part) => part.text)
+    .join('\n')
+    .trim()
 }
 
 function buildInstructions(agent) {
@@ -39,15 +47,66 @@ RÈGLES MEDIUMIA
 - Reste utile, concret et cohérent avec la mission de cet agent.`
 }
 
+async function callAnthropic({ apiKey, model, instructions, history }) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 900,
+      system: instructions,
+      messages: history,
+    }),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    console.error('MediumIA Anthropic error:', response.status, detail)
+    return { error: 'Le cerveau Anthropic n’a pas pu répondre.' }
+  }
+
+  const data = await response.json()
+  const reply = textFromAnthropicResponse(data)
+  return reply ? { reply } : { error: 'Réponse Anthropic vide.' }
+}
+
+async function callOpenAI({ apiKey, model, instructions, history }) {
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      instructions,
+      input: history,
+      max_output_tokens: 900,
+      store: false,
+    }),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    console.error('MediumIA OpenAI error:', response.status, detail)
+    return { error: 'Le cerveau OpenAI n’a pas pu répondre.' }
+  }
+
+  const data = await response.json()
+  const reply = textFromOpenAIResponse(data)
+  return reply ? { reply } : { error: 'Réponse OpenAI vide.' }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
   const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY
-  const openaiKey = process.env.OPENAI_API_KEY || process.env.CLE_API_OPENAI
-
   if (!supabaseUrl || !supabaseKey) return res.status(503).json({ error: 'Supabase server configuration missing' })
-  if (!openaiKey) return res.status(503).json({ error: 'AI server configuration missing' })
 
   const authHeader = req.headers.authorization || ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
@@ -104,6 +163,8 @@ export default async function handler(req, res) {
     conversationId = conversation.id
   }
 
+  // Le message utilisateur est sauvegardé AVANT l'appel au fournisseur IA.
+  // Ainsi, une panne ou une clé manquante ne fait pas perdre la conversation.
   const { error: userMessageError } = await db.from('agent_messages').insert({
     conversation_id: conversationId,
     agent_id: agent.id,
@@ -121,52 +182,72 @@ export default async function handler(req, res) {
     .limit(20)
 
   if (historyError) return res.status(500).json({ error: 'Impossible de charger la conversation' })
-  const history = [...(latestMessages || [])].reverse().map((m) => ({ role: m.role, content: m.content }))
+  const history = [...(latestMessages || [])]
+    .reverse()
+    .map((m) => ({ role: m.role, content: m.content }))
 
   const instructions = agent.system_prompt?.trim() || buildInstructions(agent)
-  const model = process.env.OPENAI_AGENT_MODEL || agent.model || 'gpt-5-mini'
+  const provider = (agent.provider || 'anthropic').toLowerCase()
 
-  let aiResponse
+  let result
   try {
-    aiResponse = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        instructions,
-        input: history,
-        max_output_tokens: 900,
-        store: false,
-      }),
-    })
+    if (provider === 'anthropic') {
+      const anthropicKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.CLE_API_ANTHROPIC
+      if (!anthropicKey) {
+        return res.status(503).json({
+          error: 'Anthropic server configuration missing',
+          conversationId,
+          messageSaved: true,
+        })
+      }
+      const model = process.env.ANTHROPIC_AGENT_MODEL || agent.model || 'claude-sonnet-4-20250514'
+      result = await callAnthropic({ apiKey: anthropicKey, model, instructions, history })
+      if (result.error) return res.status(502).json({ error: result.error, conversationId, messageSaved: true })
+      result.provider = 'anthropic'
+      result.model = model
+    } else if (provider === 'openai') {
+      const openaiKey = process.env.OPENAI_API_KEY || process.env.CLE_API_OPENAI
+      if (!openaiKey) {
+        return res.status(503).json({
+          error: 'OpenAI server configuration missing',
+          conversationId,
+          messageSaved: true,
+        })
+      }
+      const model = process.env.OPENAI_AGENT_MODEL || agent.model || 'gpt-5-mini'
+      result = await callOpenAI({ apiKey: openaiKey, model, instructions, history })
+      if (result.error) return res.status(502).json({ error: result.error, conversationId, messageSaved: true })
+      result.provider = 'openai'
+      result.model = model
+    } else {
+      return res.status(400).json({
+        error: `Fournisseur IA non pris en charge : ${provider}`,
+        conversationId,
+        messageSaved: true,
+      })
+    }
   } catch (error) {
-    console.error('MediumIA OpenAI network error:', String(error))
-    return res.status(502).json({ error: 'Le cerveau IA est momentanément indisponible.' })
+    console.error('MediumIA provider network error:', String(error))
+    return res.status(502).json({
+      error: 'Le cerveau IA est momentanément indisponible.',
+      conversationId,
+      messageSaved: true,
+    })
   }
-
-  if (!aiResponse.ok) {
-    const detail = await aiResponse.text()
-    console.error('MediumIA OpenAI error:', aiResponse.status, detail)
-    return res.status(502).json({ error: 'Le cerveau IA n’a pas pu répondre.' })
-  }
-
-  const aiData = await aiResponse.json()
-  const reply = textFromResponse(aiData)
-  if (!reply) return res.status(502).json({ error: 'Réponse IA vide.' })
 
   const { error: assistantMessageError } = await db.from('agent_messages').insert({
     conversation_id: conversationId,
     agent_id: agent.id,
     owner_id: user.id,
     role: 'assistant',
-    content: reply,
+    content: result.reply,
   })
-  if (assistantMessageError) {
-    console.error('MediumIA assistant message persistence error:', assistantMessageError)
-  }
+  if (assistantMessageError) console.error('MediumIA assistant message persistence error:', assistantMessageError)
 
-  return res.status(200).json({ conversationId, reply })
+  return res.status(200).json({
+    conversationId,
+    reply: result.reply,
+    provider: result.provider,
+    model: result.model,
+  })
 }

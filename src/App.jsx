@@ -5,8 +5,10 @@ import AgentsPlatform from './components/AgentsPlatform'
 function Nav({ onOpenPro }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-      <div className="max-w-6xl mx-auto px-5 md:px-6 py-4 flex items-center justify-between gap-4">
-        <a href="#top" className="font-georgia text-deep tracking-[0.2em] text-sm md:text-base font-semibold">✦ MEDIUMIA</a>
+      <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
+        <a href="#top" className="shrink-0" aria-label="MediumIA — retour en haut">
+          <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-12 md:h-14 w-auto" />
+        </a>
         <nav className="hidden md:flex items-center gap-6 font-georgia text-sm text-mist">
           <a href="#decouvrir" className="hover:text-deep">Découvrir</a>
           <a href="#formation" className="hover:text-deep">Se former</a>
@@ -44,11 +46,14 @@ function PublicPlatformHome({ onOpenPro }) {
     <div id="top" className="bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} />
       <main>
-        <section className="min-h-[88vh] flex flex-col items-center justify-center text-center px-6 pt-28 pb-16">
-          <p className="text-gold text-5xl mb-5 opacity-80">✦</p>
-          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-5">Le monde spirituel, relié autrement</p>
-          <h1 className="font-georgia text-5xl md:text-7xl text-deep tracking-[0.18em] font-medium mb-6">MEDIUMIA</h1>
-          <p className="font-georgia text-deep text-xl md:text-3xl leading-relaxed max-w-3xl mx-auto mb-6">Comprendre. Apprendre. Rencontrer.<br/><span className="text-gold">Exercer autrement.</span></p>
+        <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-6 pt-28 pb-16">
+          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-3">Le monde spirituel, relié autrement</p>
+          <img
+            src="/mediumia-logo.svg"
+            alt="MediumIA — Accompagnement à la Médiumnité Consciente"
+            className="w-full max-w-[780px] md:max-w-[900px] h-auto"
+          />
+          <p className="font-georgia text-deep text-xl md:text-3xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-6">Comprendre. Apprendre. Rencontrer.<br/><span className="text-gold">Exercer autrement.</span></p>
           <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l’univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l’humain.</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <a href="#decouvrir" className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir MediumIA</a>
@@ -94,7 +99,9 @@ function PublicPlatformHome({ onOpenPro }) {
               <p className="font-georgia text-cream/70 text-lg leading-relaxed">Les professionnels pourront présenter leur activité sur MediumIA et partager leur fiche auprès de leur propre communauté. Leur visibilité fera connaître MediumIA ; MediumIA leur apportera à son tour un nouvel espace de découverte et des outils professionnels.</p>
             </div>
             <div className="rounded-3xl border border-gold/35 bg-white/5 p-8 text-center">
-              <p className="text-gold text-4xl mb-4">✦</p>
+              <div className="rounded-2xl bg-cream p-3 mb-5">
+                <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-20 w-auto max-w-full mx-auto" />
+              </div>
               <p className="font-georgia text-xs tracking-[0.23em] text-gold uppercase mb-3">Badge réseau</p>
               <p className="font-georgia text-2xl mb-2">Présent sur MediumIA</p>
               <p className="font-georgia text-sm text-cream/50">Exemple de signature et de badge professionnel — bientôt.</p>
@@ -111,7 +118,7 @@ function PublicPlatformHome({ onOpenPro }) {
       </main>
 
       <footer className="border-t border-gold/20 px-6 py-8 text-center">
-        <p className="font-georgia text-deep tracking-[0.2em] text-sm mb-2">✦ MEDIUMIA</p>
+        <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-16 w-auto max-w-full mx-auto mb-2" />
         <p className="font-georgia text-mist text-xs">Monde spirituel · Formation · Réseau · Outils professionnels</p>
       </footer>
     </div>

@@ -19,11 +19,7 @@ function textFromAnthropicResponse(data) {
     .trim()
 }
 
-// Modèle Anthropic par défaut pour MediumIA (valide en 2026, cf. doc officielle).
 const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-5'
-
-// Identifiants Anthropic retirés/obsolètes → remappés vers un modèle valide,
-// quelle que soit leur origine (variable d'env, colonne agent.model en base…).
 const RETIRED_ANTHROPIC_MODELS = new Set([
   'claude-sonnet-4-20250514',
   'claude-opus-4-20250514',
@@ -63,7 +59,36 @@ RÈGLES MEDIUMIA
 - Tu peux utiliser tes connaissances générales pour aider, mais distingue-les des informations spécifiques au propriétaire.
 - N’exécute aucune action externe (achat, envoi, rendez-vous, publication, modification de données) tant qu’un outil et une autorisation explicite ne te sont pas fournis.
 - Réponds dans la langue de l’utilisateur, sauf demande contraire.
-- Reste utile, concret et cohérent avec la mission de cet agent.`
+- Reste utile, concret et cohérent avec la mission de cet agent.
+- Quand des SOURCES MEDIUMIA sont fournies, elles ont priorité pour les faits propres à l’entreprise.
+- N’invente jamais le contenu d’une source absente. Si les sources ne permettent pas de répondre, dis-le.
+- Quand tu t’appuies sur une source MediumIA, mentionne naturellement son nom dans la réponse si cela aide à vérifier l’information.`
+}
+
+function buildKnowledgeContext(matches) {
+  if (!Array.isArray(matches) || matches.length === 0) return { text: '', sources: [] }
+  const blocks = []
+  const sources = []
+  let totalChars = 0
+  for (const match of matches) {
+    if (!match?.content || totalChars >= 12000) break
+    const remaining = 12000 - totalChars
+    const content = String(match.content).slice(0, remaining)
+    if (!content) continue
+    const label = match.document_name || 'Source MediumIA'
+    blocks.push(`[${label} — extrait ${Number(match.chunk_index || 0) + 1}]\n${content}`)
+    sources.push({
+      document_id: match.document_id,
+      document_name: label,
+      chunk_index: match.chunk_index,
+      rank: match.rank,
+    })
+    totalChars += content.length
+  }
+  return {
+    text: blocks.length ? `\n\nSOURCES MEDIUMIA VALIDÉES PAR LE PROPRIÉTAIRE\n${blocks.join('\n\n---\n\n')}` : '',
+    sources,
+  }
 }
 
 async function callAnthropic({ apiKey, model, instructions, history }) {
@@ -77,8 +102,6 @@ async function callAnthropic({ apiKey, model, instructions, history }) {
     body: JSON.stringify({
       model,
       max_tokens: 900,
-      // Chat conversationnel : on désactive le raisonnement étendu pour garder
-      // des réponses rapides et éviter qu'il consomme le budget de tokens.
       thinking: { type: 'disabled' },
       system: instructions,
       messages: history,
@@ -86,7 +109,6 @@ async function callAnthropic({ apiKey, model, instructions, history }) {
   })
 
   if (!response.ok) {
-    // Diagnostic serveur exploitable, SANS jamais exposer la clé API.
     const detail = await response.text()
     let errorType = 'unknown'
     try { errorType = JSON.parse(detail)?.error?.type || 'unknown' } catch { /* corps non-JSON */ }
@@ -195,8 +217,6 @@ export default async function handler(req, res) {
     conversationId = conversation.id
   }
 
-  // Le message utilisateur est sauvegardé AVANT l'appel au fournisseur IA.
-  // Ainsi, une panne ou une clé manquante ne fait pas perdre la conversation.
   const { error: userMessageError } = await db.from('agent_messages').insert({
     conversation_id: conversationId,
     agent_id: agent.id,
@@ -218,7 +238,20 @@ export default async function handler(req, res) {
     .reverse()
     .map((m) => ({ role: m.role, content: m.content }))
 
-  const instructions = agent.system_prompt?.trim() || buildInstructions(agent)
+  let knowledgeMatches = []
+  const { data: matchedChunks, error: knowledgeError } = await db.rpc('search_agent_document_chunks', {
+    p_agent_id: agent.id,
+    p_query: cleanMessage,
+    p_limit: 6,
+  })
+  if (knowledgeError) {
+    console.error('MediumIA knowledge search error:', knowledgeError.message)
+  } else {
+    knowledgeMatches = matchedChunks || []
+  }
+
+  const knowledge = buildKnowledgeContext(knowledgeMatches)
+  const instructions = (agent.system_prompt?.trim() || buildInstructions(agent)) + knowledge.text
   const provider = (agent.provider || 'anthropic').toLowerCase()
 
   let result
@@ -226,11 +259,7 @@ export default async function handler(req, res) {
     if (provider === 'anthropic') {
       const anthropicKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.CLE_API_ANTHROPIC
       if (!anthropicKey) {
-        return res.status(503).json({
-          error: 'Anthropic server configuration missing',
-          conversationId,
-          messageSaved: true,
-        })
+        return res.status(503).json({ error: 'Anthropic server configuration missing', conversationId, messageSaved: true })
       }
       const model = resolveAnthropicModel(process.env.ANTHROPIC_AGENT_MODEL || agent.model)
       result = await callAnthropic({ apiKey: anthropicKey, model, instructions, history })
@@ -240,11 +269,7 @@ export default async function handler(req, res) {
     } else if (provider === 'openai') {
       const openaiKey = process.env.OPENAI_API_KEY || process.env.CLE_API_OPENAI
       if (!openaiKey) {
-        return res.status(503).json({
-          error: 'OpenAI server configuration missing',
-          conversationId,
-          messageSaved: true,
-        })
+        return res.status(503).json({ error: 'OpenAI server configuration missing', conversationId, messageSaved: true })
       }
       const model = process.env.OPENAI_AGENT_MODEL || agent.model || 'gpt-5-mini'
       result = await callOpenAI({ apiKey: openaiKey, model, instructions, history })
@@ -252,19 +277,11 @@ export default async function handler(req, res) {
       result.provider = 'openai'
       result.model = model
     } else {
-      return res.status(400).json({
-        error: `Fournisseur IA non pris en charge : ${provider}`,
-        conversationId,
-        messageSaved: true,
-      })
+      return res.status(400).json({ error: `Fournisseur IA non pris en charge : ${provider}`, conversationId, messageSaved: true })
     }
   } catch (error) {
     console.error('MediumIA provider network error:', String(error))
-    return res.status(502).json({
-      error: 'Le cerveau IA est momentanément indisponible.',
-      conversationId,
-      messageSaved: true,
-    })
+    return res.status(502).json({ error: 'Le cerveau IA est momentanément indisponible.', conversationId, messageSaved: true })
   }
 
   const { error: assistantMessageError } = await db.from('agent_messages').insert({
@@ -273,13 +290,30 @@ export default async function handler(req, res) {
     owner_id: user.id,
     role: 'assistant',
     content: result.reply,
+    provider: result.provider,
+    model: result.model,
+    sources: knowledge.sources,
   })
   if (assistantMessageError) console.error('MediumIA assistant message persistence error:', assistantMessageError)
+
+  await db.from('agent_audit_events').insert({
+    owner_id: user.id,
+    agent_id: agent.id,
+    event_type: 'agent_response_generated',
+    resource_type: 'conversation',
+    resource_id: conversationId,
+    details: {
+      provider: result.provider,
+      model: result.model,
+      source_count: knowledge.sources.length,
+    },
+  })
 
   return res.status(200).json({
     conversationId,
     reply: result.reply,
     provider: result.provider,
     model: result.model,
+    sources: knowledge.sources,
   })
 }

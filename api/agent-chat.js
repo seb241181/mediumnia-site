@@ -19,6 +19,25 @@ function textFromAnthropicResponse(data) {
     .trim()
 }
 
+// Modèle Anthropic par défaut pour MediumIA (valide en 2026, cf. doc officielle).
+const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-5'
+
+// Identifiants Anthropic retirés/obsolètes → remappés vers un modèle valide,
+// quelle que soit leur origine (variable d'env, colonne agent.model en base…).
+const RETIRED_ANTHROPIC_MODELS = new Set([
+  'claude-sonnet-4-20250514',
+  'claude-opus-4-20250514',
+  'claude-3-opus-20240229',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-5-sonnet-20240620',
+  'claude-3-7-sonnet-20250219',
+])
+
+function resolveAnthropicModel(candidate) {
+  const model = (candidate || '').trim() || DEFAULT_ANTHROPIC_MODEL
+  return RETIRED_ANTHROPIC_MODELS.has(model) ? DEFAULT_ANTHROPIC_MODEL : model
+}
+
 function buildInstructions(agent) {
   return `Tu es « ${agent.name || 'Agent MediumIA'} », un agent IA créé dans MediumIA.
 
@@ -58,14 +77,27 @@ async function callAnthropic({ apiKey, model, instructions, history }) {
     body: JSON.stringify({
       model,
       max_tokens: 900,
+      // Chat conversationnel : on désactive le raisonnement étendu pour garder
+      // des réponses rapides et éviter qu'il consomme le budget de tokens.
+      thinking: { type: 'disabled' },
       system: instructions,
       messages: history,
     }),
   })
 
   if (!response.ok) {
+    // Diagnostic serveur exploitable, SANS jamais exposer la clé API.
     const detail = await response.text()
-    console.error('MediumIA Anthropic error:', response.status, detail)
+    let errorType = 'unknown'
+    try { errorType = JSON.parse(detail)?.error?.type || 'unknown' } catch { /* corps non-JSON */ }
+    console.error(
+      'MediumIA Anthropic error:',
+      'status=' + response.status,
+      'type=' + errorType,
+      'model=' + model,
+      'request_id=' + (response.headers.get('request-id') || 'n/a'),
+      'body=' + detail,
+    )
     return { error: 'Le cerveau Anthropic n’a pas pu répondre.' }
   }
 
@@ -200,7 +232,7 @@ export default async function handler(req, res) {
           messageSaved: true,
         })
       }
-      const model = process.env.ANTHROPIC_AGENT_MODEL || agent.model || 'claude-sonnet-4-20250514'
+      const model = resolveAnthropicModel(process.env.ANTHROPIC_AGENT_MODEL || agent.model)
       result = await callAnthropic({ apiKey: anthropicKey, model, instructions, history })
       if (result.error) return res.status(502).json({ error: result.error, conversationId, messageSaved: true })
       result.provider = 'anthropic'

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
+import AgentChat from './AgentChat.jsx'
 
 const templates = [
   { id: 'commerce', icon: '◈', category: 'Commerce', name: 'Assistant Boutique', description: 'Répond aux questions clients, présente vos produits, explique vos horaires et oriente vers l’achat.', tag: 'Prêt à personnaliser', starter: 'Je tiens une boutique et je veux un agent qui répond aux questions de mes clients, présente mes produits et les aide avant leur achat.' },
@@ -20,9 +21,8 @@ const questions = [
   { key: 'limits', label: 'Que ne doit-il jamais faire sans votre accord ?', placeholder: 'Exemple : promettre un résultat, modifier un rendez-vous, accorder une remise, donner un avis médical…' },
 ]
 
-/* ─── Modal d'authentification (design MediumIA) ─── */
 function AuthModal({ onClose, signIn, signUp }) {
-  const [mode, setMode] = useState('signin') // signin | signup
+  const [mode, setMode] = useState('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -68,24 +68,18 @@ function AuthModal({ onClose, signIn, signUp }) {
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="font-georgia text-xs text-cream/50 uppercase tracking-wider block mb-1.5">Email</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.fr"
-                className="w-full rounded-lg bg-white/10 border border-gold/25 px-4 py-3 text-cream placeholder:text-cream/30 outline-none focus:border-gold/60 font-georgia" />
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.fr" className="w-full rounded-lg bg-white/10 border border-gold/25 px-4 py-3 text-cream placeholder:text-cream/30 outline-none focus:border-gold/60 font-georgia" />
             </div>
             <div>
               <label className="font-georgia text-xs text-cream/50 uppercase tracking-wider block mb-1.5">Mot de passe</label>
-              <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••"
-                className="w-full rounded-lg bg-white/10 border border-gold/25 px-4 py-3 text-cream placeholder:text-cream/30 outline-none focus:border-gold/60 font-georgia" />
+              <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full rounded-lg bg-white/10 border border-gold/25 px-4 py-3 text-cream placeholder:text-cream/30 outline-none focus:border-gold/60 font-georgia" />
             </div>
             {error && <p className="font-georgia text-sm text-red-300">{error}</p>}
             {info && <p className="font-georgia text-sm text-gold">{info}</p>}
-            <button type="submit" disabled={busy} className="w-full font-georgia px-6 py-3.5 rounded-lg bg-gold text-deep font-bold disabled:opacity-50">
-              {busy ? 'Un instant…' : (mode === 'signin' ? 'Se connecter' : 'Créer mon compte')}
-            </button>
+            <button type="submit" disabled={busy} className="w-full font-georgia px-6 py-3.5 rounded-lg bg-gold text-deep font-bold disabled:opacity-50">{busy ? 'Un instant…' : (mode === 'signin' ? 'Se connecter' : 'Créer mon compte')}</button>
             <p className="font-georgia text-sm text-cream/55 text-center">
               {mode === 'signin' ? 'Pas encore de compte ?' : 'Déjà un compte ?'}{' '}
-              <button type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setInfo('') }} className="text-gold underline">
-                {mode === 'signin' ? 'Créer un compte' : 'Se connecter'}
-              </button>
+              <button type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setInfo('') }} className="text-gold underline">{mode === 'signin' ? 'Créer un compte' : 'Se connecter'}</button>
             </p>
           </form>
         )}
@@ -94,9 +88,8 @@ function AuthModal({ onClose, signIn, signUp }) {
   )
 }
 
-/* ─── Onglet « Mes agents » (lecture réelle, RLS) ─── */
-function MyAgents({ user, onCreate }) {
-  const [status, setStatus] = useState('loading') // loading | error | ready
+function MyAgents({ user, onCreate, onOpen }) {
+  const [status, setStatus] = useState('loading')
   const [agents, setAgents] = useState([])
   const [error, setError] = useState('')
 
@@ -124,9 +117,7 @@ function MyAgents({ user, onCreate }) {
         <button onClick={onCreate} className="font-georgia text-sm px-5 py-2.5 rounded-lg bg-deep text-gold font-bold">+ Nouvel agent</button>
       </div>
 
-      {status === 'loading' && (
-        <p className="font-georgia text-mist text-center py-16">Chargement de vos agents…</p>
-      )}
+      {status === 'loading' && <p className="font-georgia text-mist text-center py-16">Chargement de vos agents…</p>}
 
       {status === 'error' && (
         <div className="rounded-2xl border border-red-300/40 bg-red-50 p-6 text-center">
@@ -147,12 +138,15 @@ function MyAgents({ user, onCreate }) {
       {status === 'ready' && agents.length > 0 && (
         <div className="grid md:grid-cols-2 gap-5">
           {agents.map((agent) => (
-            <article key={agent.id} className="rounded-2xl border border-gold/25 bg-white/55 p-6 shadow-sm">
+            <article key={agent.id} className="rounded-2xl border border-gold/25 bg-white/55 p-6 shadow-sm flex flex-col">
               <div className="flex items-start justify-between mb-3 gap-3">
                 <h3 className="font-georgia text-xl text-deep">{agent.name}</h3>
                 <span className="font-georgia text-[11px] uppercase tracking-wider text-gold bg-deep/5 rounded-full px-3 py-1 shrink-0">{agent.status}</span>
               </div>
-              <p className="font-georgia text-mist text-sm leading-relaxed line-clamp-4">{agent.mission || 'Agent en préparation.'}</p>
+              <p className="font-georgia text-mist text-sm leading-relaxed line-clamp-4 flex-1">{agent.mission || 'Agent en préparation.'}</p>
+              <div className="mt-5 pt-4 border-t border-gold/15 flex justify-end">
+                <button onClick={() => onOpen(agent.id)} className="font-georgia text-sm px-5 py-2.5 rounded-lg bg-gold text-deep font-bold">Ouvrir →</button>
+              </div>
             </article>
           ))}
         </div>
@@ -161,7 +155,6 @@ function MyAgents({ user, onCreate }) {
   )
 }
 
-/* ─── Créateur d'agent (design conservé) + sauvegarde réelle ─── */
 function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState({ mission: initialMission, audience: '', tone: '', knowledge: '', limits: '' })
@@ -179,8 +172,6 @@ function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
   }
 
   async function createAgent() {
-    // Sécurité : on ne fait JAMAIS confiance à un owner_id de formulaire.
-    // L'ID provient toujours de la session Supabase (RLS le revérifie côté serveur).
     if (!user) { onRequireAuth(); return }
     if (!supabase) { setSaveError('Configuration Supabase manquante.'); return }
     setSaving(true); setSaveError('')
@@ -194,7 +185,6 @@ function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
       knowledge_summary: answers.knowledge,
       limits: answers.limits,
       status: 'draft',
-      // permissions : valeur par défaut définie dans le schéma (jsonb) — non fournie ici.
     })
     setSaving(false)
     if (error) { setSaveError(error.message); return }
@@ -207,9 +197,7 @@ function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
       <p className="font-georgia text-gold text-xs tracking-[0.2em] uppercase mb-3">Première identité construite</p>
       <h2 className="font-georgia text-3xl md:text-4xl mb-4">Votre agent commence à prendre forme.</h2>
       <p className="font-georgia text-cream/70 leading-relaxed mb-7">MediumIA a maintenant assez d’éléments pour préparer sa première fiche. Rien n’est publié : vous garderez toujours la validation finale.</p>
-      <div className="space-y-4">
-        {questions.map((q) => <div key={q.key} className="rounded-xl border border-gold/20 bg-white/5 p-4"><p className="font-georgia text-xs text-gold mb-2">{q.label}</p><p className="font-georgia text-sm text-cream/85 leading-relaxed">{answers[q.key]}</p></div>)}
-      </div>
+      <div className="space-y-4">{questions.map((q) => <div key={q.key} className="rounded-xl border border-gold/20 bg-white/5 p-4"><p className="font-georgia text-xs text-gold mb-2">{q.label}</p><p className="font-georgia text-sm text-cream/85 leading-relaxed">{answers[q.key]}</p></div>)}</div>
 
       {saved ? (
         <div className="mt-7 rounded-xl border border-gold/40 bg-gold/10 p-5 text-center">
@@ -223,9 +211,7 @@ function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
           <div className="mt-7 rounded-xl border border-gold/30 bg-gold/10 p-5"><p className="font-georgia text-sm text-gold font-bold mb-2">Prochaine étape</p><p className="font-georgia text-sm text-cream/70 leading-relaxed">Enregistrer cet agent dans votre espace personnel. Il restera en brouillon, prêt à être affiné puis activé quand vous le déciderez.</p></div>
           {saveError && <p className="font-georgia text-sm text-red-300 mt-4">{saveError}</p>}
           <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
-            <button onClick={createAgent} disabled={saving} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold disabled:opacity-50">
-              {saving ? 'Enregistrement…' : (user ? 'Créer mon agent' : 'Se connecter pour créer mon agent')}
-            </button>
+            <button onClick={createAgent} disabled={saving} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold disabled:opacity-50">{saving ? 'Enregistrement…' : (user ? 'Créer mon agent' : 'Se connecter pour créer mon agent')}</button>
             <button onClick={() => { setStep(0); setFinished(false); setSaveError('') }} className="font-georgia text-sm text-gold">← Modifier mes réponses</button>
           </div>
         </>
@@ -246,37 +232,47 @@ function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
 
 export default function AgentsPlatform({ onBack }) {
   const [category, setCategory] = useState('Tous')
-  const [tab, setTab] = useState('explorer') // explorer | create | mes-agents
+  const [tab, setTab] = useState('explorer')
   const [starter, setStarter] = useState('')
+  const [selectedAgentId, setSelectedAgentId] = useState(null)
   const [authOpen, setAuthOpen] = useState(false)
   const { user, signIn, signUp, signOut } = useAuth()
   const visible = useMemo(() => category === 'Tous' ? templates : templates.filter((item) => item.category === category), [category])
-  const openCreator = (mission = '') => { setStarter(mission); setTab('create'); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const openCreator = (mission = '') => { setStarter(mission); setSelectedAgentId(null); setTab('create'); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const openMyAgents = () => {
     if (!user) { setAuthOpen(true); return }
-    setTab('mes-agents'); window.scrollTo({ top: 0, behavior: 'smooth' })
+    setSelectedAgentId(null); setTab('mes-agents'); window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const openAgent = (agentId) => {
+    setSelectedAgentId(agentId); setTab('chat'); window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const handleSignOut = async () => {
+    await signOut()
+    setSelectedAgentId(null)
+    setTab('explorer')
   }
 
   return <div className="min-h-screen bg-cream text-deep">
     <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20"><div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4"><button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm md:text-base font-semibold">✦ MEDIUMIA</button><div className="flex items-center gap-2 md:gap-3">
-      <button onClick={() => setTab('explorer')} className={`font-georgia text-xs md:text-sm px-3 py-2 rounded-lg ${tab === 'explorer' ? 'bg-deep text-gold' : 'text-mist'}`}>Explorer</button>
+      <button onClick={() => { setSelectedAgentId(null); setTab('explorer') }} className={`font-georgia text-xs md:text-sm px-3 py-2 rounded-lg ${tab === 'explorer' ? 'bg-deep text-gold' : 'text-mist'}`}>Explorer</button>
       <button onClick={() => openCreator('')} className={`font-georgia text-xs md:text-sm px-3 py-2 rounded-lg ${tab === 'create' ? 'bg-deep text-gold' : 'text-mist'}`}>Créer</button>
-      {user && <button onClick={openMyAgents} className={`font-georgia text-xs md:text-sm px-3 py-2 rounded-lg ${tab === 'mes-agents' ? 'bg-deep text-gold' : 'text-mist'}`}>Mes agents</button>}
+      {user && <button onClick={openMyAgents} className={`font-georgia text-xs md:text-sm px-3 py-2 rounded-lg ${tab === 'mes-agents' || tab === 'chat' ? 'bg-deep text-gold' : 'text-mist'}`}>Mes agents</button>}
       {user ? (
         <div className="flex items-center gap-2">
           <span className="hidden md:inline font-georgia text-xs text-mist/70 max-w-[140px] truncate" title={user.email}>{user.email}</span>
-          <button onClick={() => signOut()} className="font-georgia text-xs md:text-sm px-3 py-2 rounded-lg border border-gold/40 text-deep font-bold">Déconnexion</button>
+          <button onClick={handleSignOut} className="font-georgia text-xs md:text-sm px-3 py-2 rounded-lg border border-gold/40 text-deep font-bold">Déconnexion</button>
         </div>
       ) : (
         <button onClick={() => setAuthOpen(true)} className="font-georgia text-xs md:text-sm px-4 py-2 rounded-lg bg-gold text-deep font-bold">Connexion</button>
       )}
     </div></div></header>
     <main>
-      <section className="px-6 pt-16 pb-12 text-center max-w-4xl mx-auto"><p className="font-georgia text-gold tracking-[0.25em] text-xs uppercase mb-5">MediumIA Agents</p><h1 className="font-georgia text-4xl md:text-6xl leading-tight font-medium mb-6">Votre savoir. Votre façon de travailler.<br/><span className="text-gold">Votre agent IA.</span></h1><p className="font-georgia text-mist text-base md:text-xl leading-relaxed max-w-2xl mx-auto mb-9">Choisissez un agent prêt à l’emploi ou créez le vôtre. MediumIA lui transmet votre métier, vos documents, vos règles et votre manière d’accompagner.</p><div className="flex flex-col sm:flex-row gap-4 justify-center"><button onClick={() => setTab('explorer')} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Explorer les agents</button><button onClick={() => openCreator('')} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">Créer mon agent</button></div></section>
+      {tab !== 'chat' && <section className="px-6 pt-16 pb-12 text-center max-w-4xl mx-auto"><p className="font-georgia text-gold tracking-[0.25em] text-xs uppercase mb-5">MediumIA Agents</p><h1 className="font-georgia text-4xl md:text-6xl leading-tight font-medium mb-6">Votre savoir. Votre façon de travailler.<br/><span className="text-gold">Votre agent IA.</span></h1><p className="font-georgia text-mist text-base md:text-xl leading-relaxed max-w-2xl mx-auto mb-9">Choisissez un agent prêt à l’emploi ou créez le vôtre. MediumIA lui transmet votre métier, vos documents, vos règles et votre manière d’accompagner.</p><div className="flex flex-col sm:flex-row gap-4 justify-center"><button onClick={() => setTab('explorer')} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Explorer les agents</button><button onClick={() => openCreator('')} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">Créer mon agent</button></div></section>}
       {tab === 'explorer' && <section className="px-6 pb-20 max-w-6xl mx-auto"><div className="flex gap-2 overflow-x-auto pb-5">{categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`shrink-0 font-georgia text-sm px-4 py-2 rounded-full border ${category === item ? 'bg-deep text-gold border-deep' : 'border-gold/30 text-mist'}`}>{item}</button>)}</div><div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">{visible.map((agent) => <article key={agent.id} className="rounded-2xl border border-gold/25 bg-white/55 p-6 flex flex-col min-h-[300px] shadow-sm"><div className="flex items-start justify-between mb-6"><span className="text-gold text-3xl">{agent.icon}</span><span className="font-georgia text-[11px] uppercase tracking-wider text-mist bg-deep/5 rounded-full px-3 py-1">{agent.category}</span></div><h2 className="font-georgia text-2xl mb-3">{agent.name}</h2><p className="font-georgia text-mist text-sm leading-relaxed flex-1">{agent.description}</p><div className="mt-6 pt-5 border-t border-gold/15 flex items-center justify-between gap-3"><span className="font-georgia text-xs text-gold">{agent.tag}</span><button onClick={() => openCreator(agent.starter)} className="font-georgia text-sm font-bold">Personnaliser →</button></div></article>)}</div></section>}
       {tab === 'create' && <section className="px-6 pb-24 max-w-3xl mx-auto"><AgentCreator key={starter} initialMission={starter} user={user} onRequireAuth={() => setAuthOpen(true)} onCreated={openMyAgents}/></section>}
-      {tab === 'mes-agents' && <MyAgents user={user} onCreate={() => openCreator('')}/>}
+      {tab === 'mes-agents' && <MyAgents user={user} onCreate={() => openCreator('')} onOpen={openAgent}/>} 
+      {tab === 'chat' && selectedAgentId && <AgentChat agentId={selectedAgentId} onBack={openMyAgents}/>} 
     </main>
-    {authOpen && <AuthModal onClose={() => setAuthOpen(false)} signIn={signIn} signUp={signUp}/>}
+    {authOpen && <AuthModal onClose={() => setAuthOpen(false)} signIn={signIn} signUp={signUp}/>} 
   </div>
 }

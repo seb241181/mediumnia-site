@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 190" role="img" aria-labelledby="title">
+  <title id="title">MediumIA</title>
+  <g fill="none" stroke="#B58A1E" stroke-width="3" stroke-linecap="round">
+    <path d="M40 65 Q100 20 160 65" />
+    <path d="M100 10 L100 42" />
+    <path d="M67 25 L82 47" />
+    <path d="M133 25 L118 47" />
+  </g>
+  <g fill="#B58A1E">
+    <path d="M100 0 L104 9 L113 13 L104 17 L100 26 L96 17 L87 13 L96 9 Z"/>
+    <path d="M62 17 L65 24 L72 27 L65 30 L62 37 L59 30 L52 27 L59 24 Z"/>
+    <path d="M138 17 L141 24 L148 27 L141 30 L138 37 L135 30 L128 27 L135 24 Z"/>
+  </g>
+  <text x="200" y="92" fill="#111A46" font-family="Georgia, 'Times New Roman', serif" font-size="68" letter-spacing="15">MEDIUMIA</text>
+  <line x1="200" y1="125" x2="650" y2="125" stroke="#B58A1E" stroke-width="2"/>
+  <path fill="#B58A1E" d="M425 113 L430 123 L440 128 L430 133 L425 143 L420 133 L410 128 L420 123 Z"/>
+  <text x="200" y="165" fill="#111A46" font-family="Georgia, 'Times New Roman', serif" font-size="18" font-style="italic" letter-spacing="1.2">Accompagnement à la Médiumnité Consciente</text>
+</svg>

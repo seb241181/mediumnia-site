@@ -13,6 +13,7 @@ function Nav({ onOpenPro }) {
           <a href="#decouvrir" className="hover:text-deep">Découvrir</a>
           <a href="#formation" className="hover:text-deep">Se former</a>
           <a href="#reseau" className="hover:text-deep">Trouver un praticien</a>
+          <a href="#identite" className="hover:text-deep">La marque</a>
         </nav>
         <button onClick={onOpenPro} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">Espace Pro →</button>
       </div>
@@ -104,8 +105,51 @@ function PublicPlatformHome({ onOpenPro }) {
               </div>
               <p className="font-georgia text-xs tracking-[0.23em] text-gold uppercase mb-3">Badge réseau</p>
               <p className="font-georgia text-2xl mb-2">Présent sur MediumIA</p>
-              <p className="font-georgia text-sm text-cream/50">Exemple de signature et de badge professionnel — bientôt.</p>
+              <p className="font-georgia text-sm text-cream/50">Un signe simple à afficher sur un site, une signature ou les réseaux sociaux.</p>
             </div>
+          </div>
+        </section>
+
+        <section id="identite" className="px-6 py-20 md:py-24 max-w-6xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Identité MediumIA</p>
+            <h2 className="font-georgia text-3xl md:text-5xl leading-tight mb-5">Une marque reconnaissable, du site jusqu’à la signature e-mail.</h2>
+            <p className="font-georgia text-mist text-lg leading-relaxed">Le même langage visuel et les mêmes mots peuvent vivre dans les profils professionnels, les signatures, les supports imprimés et les réseaux sociaux.</p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-5">
+            <article className="rounded-3xl border border-gold/25 bg-white/55 p-7 md:p-8 shadow-sm">
+              <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Signature e-mail</p>
+              <div className="rounded-2xl bg-cream border border-gold/20 p-5">
+                <p className="font-georgia text-deep text-lg font-bold">Sébastien Seguin</p>
+                <p className="font-georgia text-mist text-sm mb-4">Médium · Fondateur de MediumIA</p>
+                <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-14 w-auto max-w-full mb-3" />
+                <p className="font-georgia text-deep text-sm leading-relaxed">Comprendre · Apprendre · Rencontrer · Exercer autrement</p>
+                <p className="font-georgia text-gold text-sm mt-2">mediumia.fr</p>
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-gold/25 bg-deep text-cream p-7 md:p-8 shadow-sm">
+              <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Badge réseau</p>
+              <div className="rounded-2xl border border-gold/35 bg-white/5 p-6 text-center min-h-[220px] flex flex-col items-center justify-center">
+                <div className="rounded-xl bg-cream p-3 mb-4">
+                  <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-14 w-auto max-w-full mx-auto" />
+                </div>
+                <p className="font-georgia text-xl">Présent sur MediumIA</p>
+                <p className="font-georgia text-cream/50 text-sm mt-2">Le signe d’appartenance au réseau.</p>
+              </div>
+            </article>
+
+            <article className="rounded-3xl border border-gold/25 bg-white/55 p-7 md:p-8 shadow-sm">
+              <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Architecture de marque</p>
+              <div className="space-y-3 font-georgia">
+                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">01</span> · MediumIA Découvrir</div>
+                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">02</span> · MediumIA Formation</div>
+                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">03</span> · MediumIA Réseau</div>
+                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">04</span> · MediumIA Pro</div>
+              </div>
+              <p className="font-georgia text-mist text-sm leading-relaxed mt-5">Les agents IA deviennent des outils de MediumIA Pro, pas l’identité centrale de la marque.</p>
+            </article>
           </div>
         </section>
 

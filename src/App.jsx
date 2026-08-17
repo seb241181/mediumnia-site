@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import './index.css'
 import AgentsPlatform from './components/AgentsPlatform'
-import BoutiqueSection from './components/BoutiqueSection'
+import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'
 import FormationPage from './components/FormationPage'
+import OraclePage from './components/OraclePage'
 
 function Nav({ onOpenPro, onOpenFormation }) {
   return (
@@ -47,10 +48,10 @@ function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, d
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
-      <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} />
+      <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenOracle={onOpenOracle} />
       <main>
 
         {/* ── Hero ── */}
@@ -106,22 +107,16 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation }) {
         {/* ── Consulter ── */}
         <ConsultationSection id="consulter" />
 
-        {/* ── Boutique : MediumIA × L'Écho des Fées ── */}
-        <div className="relative" id="boutique">
-          <div className="max-w-6xl mx-auto px-6 pt-12 pb-0">
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 pb-6 border-b border-gold/20">
-              <div className="flex-1">
-                <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-2">La boutique</p>
-                <h2 className="font-georgia font-medium text-3xl md:text-4xl text-deep leading-tight">
-                  MediumIA <span className="text-gold/50 font-light mx-2">×</span> L'Écho des Fées
-                </h2>
-                <p className="font-georgia text-mist text-sm mt-2 italic">Sélection Aurélie Seguin</p>
-              </div>
-              <img src="/images/brand/LEcho_des_Fees_logo.png" alt="L'Écho des Fées" className="h-14 md:h-16 w-auto object-contain" />
-            </div>
+        {/* ── Boutique ── */}
+        <section id="boutique" className="border-t border-gold/15">
+          <div className="max-w-6xl mx-auto px-6 pt-12 pb-2">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-2">La boutique</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-4xl text-deep leading-tight">
+              Créations &amp; sélection
+            </h2>
           </div>
-          <BoutiqueSection id="boutique-module" />
-        </div>
+          <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} />
+        </section>
 
         {/* ── Trouver un praticien / Réseau ── */}
         <section id="reseau" className="px-6 py-16 md:py-24 bg-deep text-cream mt-8">
@@ -154,15 +149,17 @@ const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
 
 export default function App() {
   const path = window.location.pathname
-  const initial = path.startsWith('/agents') ? 'agents' : path.startsWith('/formation') ? 'formation' : 'home'
+  const initial = path.startsWith('/agents') ? 'agents' : path.startsWith('/formation') ? 'formation' : path.startsWith('/oracle') ? 'oracle' : 'home'
   const [view, setView] = useState(initial)
 
-  const openPro = () => { window.history.pushState({}, '', '/agents'); setView('agents') }
-  const openFormation = () => { window.history.pushState({}, '', '/formation'); setView('formation') }
-  const backHome = () => { window.history.pushState({}, '', '/'); setView('home') }
+  const openPro      = () => { window.history.pushState({}, '', '/agents');    setView('agents') }
+  const openFormation= () => { window.history.pushState({}, '', '/formation'); setView('formation') }
+  const openOracle   = () => { window.history.pushState({}, '', '/oracle');    setView('oracle') }
+  const backHome     = () => { window.history.pushState({}, '', '/');          setView('home') }
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} />
-  if (view === 'agents') return <AgentsPlatform onBack={backHome} />
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} />
+  if (view === 'agents')   return <AgentsPlatform onBack={backHome} />
   if (view === 'formation') return <FormationPage onBack={backHome} />
-  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} />
+  if (view === 'oracle')   return <OraclePage onBack={backHome} />
+  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} />
 }

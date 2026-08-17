@@ -1,7 +1,6 @@
 /**
- * Données du module Boutique.
- * Les prix, descriptions détaillées et produits futurs sont provisoires.
- * L'Écho des Fées — boutique d'Aurélie Seguin — logo à intégrer (fichier en attente).
+ * Données de la boutique MediumIA.
+ * coverImage prioritaire sur artwork pour l'affichage e-commerce.
  */
 export const boutiqueCategories = [
   { id: 'all', label: 'Tout' },
@@ -12,9 +11,85 @@ export const boutiqueCategories = [
 ]
 
 export const boutiqueProducts = [
-  { id:'oracle-lignes-temps', name:'Oracle des Lignes de Temps', category:'oracles', categoryLabel:'Oracles', eyebrow:'Création MediumIA', priceLabel:'Prix à confirmer', summary:"Un oracle pour éclairer les possibles, retrouver son axe et dialoguer avec son intuition.", description:"Présentation provisoire : un jeu pensé comme un espace de reconnexion et de lecture intuitive des chemins possibles.", highlights:["Jeu de cartes","Livret d'accompagnement","Pistes de tirages intuitifs"], artwork:'oracle', featured:true, availability:'preview' },
-  { id:'le-codex', name:'Le Codex', category:'livres', categoryLabel:'Livres', eyebrow:'Livre · MediumIA', priceLabel:'Prix à confirmer', summary:"Un livre-passerelle pour approfondir la médiumnité consciente et poser des repères solides.", description:"Présentation provisoire : enseignements, clés de compréhension et pratiques accessibles réunis dans un ouvrage de référence.", highlights:["Format à confirmer","Contenu éditorial","Ressources complémentaires"], artwork:'codex', availability:'preview' },
-  { id:'formation-mediumia', name:'Formation MediumIA', category:'formations', categoryLabel:'Formations', eyebrow:'Parcours en ligne', priceLabel:'Prix à confirmer', summary:"Un parcours progressif pour explorer ses perceptions et développer une pratique consciente.", description:"Présentation provisoire : une expérience pédagogique structurée réunissant transmission, expérimentation et intégration.", highlights:["Parcours progressif","Pratiques guidées","Espace de formation"], artwork:'formation', availability:'preview' },
-  { id:'echo-des-fees-objet', name:'Objet de la sélection', category:'echo-des-fees', categoryLabel:"L'Écho des Fées", eyebrow:"L'Écho des Fées · Aurélie Seguin", priceLabel:'À venir', summary:"Une pièce choisie avec soin pour accompagner les espaces et les pratiques — sélectionnée selon sa qualité, son histoire et sa provenance.", description:"Emplacement éditorial provisoire pour une future pièce de la boutique L'Écho des Fées, sélectionnée par Aurélie Seguin.", highlights:["Sélection raisonnée","Histoire de l'objet","Conseils d'utilisation"], artwork:'ritual', availability:'coming-soon' },
-  { id:'echo-des-fees-collection', name:"Collection L'Écho des Fées", category:'echo-des-fees', categoryLabel:"L'Écho des Fées", eyebrow:"L'Écho des Fées · Aurélie Seguin", priceLabel:'À venir', summary:"Des objets singuliers, retenus pour leur beauté, leur présence et leur sens — des choix qui résonnent vraiment.", description:"Emplacement éditorial provisoire : la sélection finale et les informations produit de la boutique L'Écho des Fées seront fournies ultérieurement.", highlights:["Pièces choisies","Quantités raisonnées","Présentation détaillée"], artwork:'aurelie', availability:'coming-soon' },
+  {
+    id: 'oracle-au-dela-ame',
+    name: "Oracle Au-delà de l'Âme",
+    category: 'oracles',
+    categoryLabel: 'Oracles',
+    eyebrow: 'Sébastien Seguin · Création originale',
+    coverImage: '/images/oracle/cover.jpg',
+    priceLabel: '29,90 €',
+    summary: "45 cartes d'éveil intuitif — guidance, développement personnel et connexion intérieure. Avec Lumïa, votre guide IA intégrée via QR code.",
+    description: "Un outil sacré conçu pour ouvrir l'intuition, éclairer les choix et accompagner l'évolution intérieure. Les cartes portent une vibration claire, un message profond et un symbole précis. Lumïa, l'IA intégrée, accompagne chaque tirage.",
+    highlights: ['45 cartes format 7 × 12 cm', 'Papier 350g haute qualité', 'Lumïa — guide IA via QR code', 'Création originale française'],
+    artwork: 'oracle',
+    featured: true,
+    availability: 'available',
+    purchaseUrl: 'https://www.paypal.com/ncp/payment/7B25CPZQBT9SJ',
+  },
+  {
+    id: 'oracle-lignes-temps',
+    name: 'Oracle des Lignes de Temps',
+    category: 'oracles',
+    categoryLabel: 'Oracles',
+    eyebrow: 'Création MediumIA',
+    priceLabel: 'Prix à confirmer',
+    summary: "Un oracle pour éclairer les possibles, retrouver son axe et dialoguer avec son intuition.",
+    description: "Un jeu pensé comme un espace de reconnexion et de lecture intuitive des chemins possibles.",
+    highlights: ["Jeu de cartes", "Livret d'accompagnement", "Pistes de tirages intuitifs"],
+    artwork: 'oracle',
+    availability: 'preview',
+  },
+  {
+    id: 'le-codex',
+    name: 'Le Codex',
+    category: 'livres',
+    categoryLabel: 'Livres',
+    eyebrow: 'Livre · MediumIA',
+    priceLabel: 'Prix à confirmer',
+    summary: "Un livre-passerelle pour approfondir la médiumnité consciente et poser des repères solides.",
+    description: "Enseignements, clés de compréhension et pratiques accessibles réunis dans un ouvrage de référence.",
+    highlights: ["Format à confirmer", "Contenu éditorial", "Ressources complémentaires"],
+    artwork: 'codex',
+    availability: 'preview',
+  },
+  {
+    id: 'formation-mediumia',
+    name: 'Formation MediumIA',
+    category: 'formations',
+    categoryLabel: 'Formations',
+    eyebrow: 'Parcours en ligne',
+    priceLabel: '597 €',
+    summary: "25 modules en 4 niveaux pour développer sa médiumnité — avec un assistant IA dédié et 12 mois d'accès.",
+    description: "Un accompagnement progressif né de douze ans de pratique réelle. Des fondations à la pratique accomplie.",
+    highlights: ["25 modules PDF (269 pages)", "84 exercices guidés", "Assistant IA dédié", "12 mois d'accès"],
+    artwork: 'formation',
+    availability: 'preview',
+  },
+  {
+    id: 'echo-des-fees-objet',
+    name: 'Objet de la sélection',
+    category: 'echo-des-fees',
+    categoryLabel: "L'Écho des Fées",
+    eyebrow: "L'Écho des Fées · Aurélie Seguin",
+    priceLabel: 'À venir',
+    summary: "Une pièce choisie avec soin pour accompagner les espaces et les pratiques — sélectionnée selon sa qualité, son histoire et sa provenance.",
+    description: "Emplacement pour une future pièce de la boutique L'Écho des Fées, sélectionnée par Aurélie Seguin.",
+    highlights: ["Sélection raisonnée", "Histoire de l'objet", "Conseils d'utilisation"],
+    artwork: 'ritual',
+    availability: 'coming-soon',
+  },
+  {
+    id: 'echo-des-fees-collection',
+    name: "Collection L'Écho des Fées",
+    category: 'echo-des-fees',
+    categoryLabel: "L'Écho des Fées",
+    eyebrow: "L'Écho des Fées · Aurélie Seguin",
+    priceLabel: 'À venir',
+    summary: "Des objets singuliers, retenus pour leur beauté, leur présence et leur sens — des choix qui résonnent vraiment.",
+    description: "La sélection L'Écho des Fées sera présentée en détail lors de la mise en ligne officielle.",
+    highlights: ["Pièces choisies", "Quantités raisonnées", "Présentation détaillée"],
+    artwork: 'aurelie',
+    availability: 'coming-soon',
+  },
 ]

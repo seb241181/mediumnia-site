@@ -5,9 +5,10 @@ import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'
 import FormationPage from './components/FormationPage'
 import OraclePage from './components/OraclePage'
+import ReseauDirectory from './components/ReseauDirectory'
 import ReseauJoindre from './components/ReseauJoindre'
 
-function Nav({ onOpenPro, onOpenFormation }) {
+function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
       <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
@@ -20,7 +21,7 @@ function Nav({ onOpenPro, onOpenFormation }) {
           <button onClick={onOpenFormation} className="hover:text-gold transition-colors">Se former</button>
           <a href="#consulter" className="hover:text-gold transition-colors">Consulter</a>
           <a href="#boutique" className="hover:text-gold transition-colors">Boutique</a>
-          <a href="#reseau" className="hover:text-gold transition-colors">Trouver un praticien</a>
+          <button onClick={onOpenReseauDir} className="hover:text-gold transition-colors">Trouver un praticien</button>
         </nav>
         <button onClick={onOpenPro} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">Espace Pro →</button>
       </div>
@@ -49,10 +50,56 @@ function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, d
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseau }) {
+function FeaturedAccompagnement({ onOpen }) {
+  const features = [
+    { icon: '◇', label: '25 modules PDF', sub: '4 niveaux · 269 pages' },
+    { icon: '◌', label: '84 exercices guidés', sub: 'Progressifs et pratiques' },
+    { icon: '✦', label: 'Assistant MediumIA', sub: 'Formé sur le parcours' },
+    { icon: '◈', label: '12 mois d\'accès', sub: 'Modules PDF à vie' },
+  ]
+  return (
+    <article
+      className="rounded-3xl border border-gold/25 p-8 md:p-12 shadow-lg flex flex-col md:flex-row md:items-center gap-8 md:gap-12"
+      style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="font-georgia text-gold tracking-[0.28em] text-[11px] uppercase mb-2">MEDIUMIA</p>
+        <p className="font-georgia text-gold/55 tracking-[0.14em] text-sm mb-6">Accompagnement à la Médiumnité Consciente</p>
+        <h2 className="font-georgia text-cream text-3xl md:text-5xl font-medium leading-tight mb-5">
+          Médiumnité Consciente
+        </h2>
+        <p className="font-georgia text-cream/65 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
+          25 modules en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès.
+          Une transmission née de plus de douze ans de pratique réelle.
+        </p>
+        <button
+          onClick={onOpen}
+          className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold text-base hover:bg-gold/90 transition-colors"
+        >
+          Découvrir l'accompagnement →
+        </button>
+      </div>
+      <div className="shrink-0 grid grid-cols-2 gap-3 md:w-64">
+        {features.map(f => (
+          <div
+            key={f.label}
+            className="rounded-2xl border border-gold/20 p-4"
+            style={{ background: 'rgba(255,255,255,0.07)' }}
+          >
+            <span className="text-gold text-xl block mb-2">{f.icon}</span>
+            <p className="font-georgia text-xs text-cream font-medium leading-snug mb-1">{f.label}</p>
+            <p className="font-georgia text-[10px] leading-tight" style={{ color: 'rgba(250,250,247,0.45)' }}>{f.sub}</p>
+          </div>
+        ))}
+      </div>
+    </article>
+  )
+}
+
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
-      <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenOracle={onOpenOracle} />
+      <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
       <main>
 
         {/* ── Hero ── */}
@@ -76,33 +123,27 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
           </div>
         </section>
 
-        {/* ── Découvrir — vue d'ensemble de l'écosystème ── */}
+        {/* ── Découvrir ── */}
         <section id="decouvrir" className="px-6 py-16 max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="h-10 w-auto mx-auto mb-5 opacity-60" />
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">L'univers MediumIA</p>
             <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Ce que vous trouverez ici.</h2>
-            <p className="font-georgia text-mist text-lg leading-relaxed">Des ressources pour explorer, un accompagnement pour apprendre, des praticiens pour être guidé, et pour les professionnels, des outils pensés pour leur réalité.</p>
+            <p className="font-georgia text-mist text-lg leading-relaxed">Un accompagnement pour apprendre et pratiquer, des praticiens pour être guidé, et pour les professionnels, des outils pensés pour leur activité.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-5">
-            <UniverseCard icon="◌" eyebrow="Ressources" title="Guides, articles & pratiques" action="Contenus bientôt disponibles" badge="Bientôt">
-              Des ressources librement accessibles pour comprendre la médiumnité, les différentes pratiques spirituelles et s'orienter — rédigées avec soin pour éclairer sans enfermer.
-            </UniverseCard>
-
+          <div className="flex flex-col gap-5">
             <div id="formation">
-              <UniverseCard icon="◇" eyebrow="Accompagnement" title="Médiumnité Consciente" action="Découvrir l'accompagnement" onClick={onOpenFormation}>
-                25 modules en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès. Une transmission née de plus de douze ans de pratique réelle.
+              <FeaturedAccompagnement onOpen={onOpenFormation} />
+            </div>
+            <div className="grid md:grid-cols-2 gap-5">
+              <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>
+                Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
+              </UniverseCard>
+              <UniverseCard icon="✺" eyebrow="Espace Pro" title="Développer son activité sans perdre son identité" action="Entrer dans l'espace Pro" onClick={onOpenPro} dark badge="Prototype privé">
+                Assistants IA métier, documents et mémoire professionnelle, aide à la communication, futurs profils du réseau et outils pensés spécialement pour les professionnels de l'accompagnement spirituel.
               </UniverseCard>
             </div>
-
-            <UniverseCard icon="✦" eyebrow="Consulter" title="Rencontrer un praticien" action="Voir les consultations" href="#consulter">
-              Sébastien Seguin (médiumnité & guidance) et Aurélie Seguin (bien-être, EFT, réflexologie) proposent des accompagnements individuels. Une présence humaine, une écoute réelle.
-            </UniverseCard>
-
-            <UniverseCard icon="✺" eyebrow="Espace Pro" title="Développer son activité sans perdre son identité" action="Entrer dans l'espace Pro" onClick={onOpenPro} dark badge="Prototype privé">
-              Assistants IA métier, documents et mémoire professionnelle, aide à la communication, futurs profils du réseau et outils pensés spécialement pour les professionnels de l'accompagnement spirituel.
-            </UniverseCard>
           </div>
         </section>
 
@@ -120,14 +161,14 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
           <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} />
         </section>
 
-        {/* ── Trouver un praticien / Réseau ── */}
+        {/* ── Réseau ── */}
         <section id="reseau" className="px-6 py-16 md:py-24 bg-deep text-cream mt-8">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Trouver un praticien</p>
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le réseau MediumIA</p>
             <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Trouver un praticien qui vous correspond</h2>
-            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto mb-10">Découvrez progressivement des professionnels du spirituel, du bien-être et de l'accompagnement, avec des profils permettant de comprendre leur pratique et leur approche avant de les contacter.</p>
-            <button onClick={onOpenReseau} className="font-georgia text-sm text-gold/70 border border-gold/30 px-5 py-2.5 rounded-lg hover:border-gold/60 hover:text-gold transition-colors">
-              Vous êtes praticien ? Rejoindre le réseau MediumIA →
+            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto mb-10">Découvrez des professionnels du spirituel, du bien-être et de l'accompagnement, avec des profils permettant de comprendre leur pratique et leur approche avant de les contacter.</p>
+            <button onClick={onOpenReseauDir} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">
+              Voir le réseau MediumIA →
             </button>
           </div>
         </section>
@@ -154,20 +195,27 @@ const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
 
 export default function App() {
   const path = window.location.pathname
-  const initial = path.startsWith('/agents') ? 'agents' : path.startsWith('/formation') ? 'formation' : path.startsWith('/oracle') ? 'oracle' : path.startsWith('/reseau') ? 'reseau' : 'home'
+  const initial = path.startsWith('/agents') ? 'agents'
+    : path.startsWith('/formation') ? 'formation'
+    : path.startsWith('/oracle') ? 'oracle'
+    : path.startsWith('/reseau/rejoindre') ? 'reseau-form'
+    : path.startsWith('/reseau') ? 'reseau-dir'
+    : 'home'
   const [view, setView] = useState(initial)
 
-  const nav = (path, view) => { window.history.pushState({}, '', path); window.scrollTo(0, 0); setView(view) }
-  const openPro       = () => nav('/agents',           'agents')
-  const openFormation = () => nav('/formation',        'formation')
-  const openOracle    = () => nav('/oracle',           'oracle')
-  const openReseau    = () => nav('/reseau/rejoindre', 'reseau')
-  const backHome      = () => nav('/',                 'home')
+  const nav = (p, v) => { window.history.pushState({}, '', p); window.scrollTo(0, 0); setView(v) }
+  const openPro        = () => nav('/agents',           'agents')
+  const openFormation  = () => nav('/formation',        'formation')
+  const openOracle     = () => nav('/oracle',           'oracle')
+  const openReseauDir  = () => nav('/reseau',           'reseau-dir')
+  const openReseauForm = () => nav('/reseau/rejoindre', 'reseau-form')
+  const backHome       = () => nav('/',                 'home')
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseau={openReseau} />
-  if (view === 'agents')    return <AgentsPlatform onBack={backHome} onOpenReseau={openReseau} />
-  if (view === 'formation') return <FormationPage onBack={backHome} />
-  if (view === 'oracle')    return <OraclePage onBack={backHome} />
-  if (view === 'reseau')    return <ReseauJoindre onBack={backHome} />
-  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseau={openReseau} />
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} />
+  if (view === 'agents')      return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} />
+  if (view === 'formation')   return <FormationPage onBack={backHome} />
+  if (view === 'oracle')      return <OraclePage onBack={backHome} />
+  if (view === 'reseau-dir')  return <ReseauDirectory onBack={backHome} />
+  if (view === 'reseau-form') return <ReseauJoindre onBack={backHome} />
+  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} />
 }

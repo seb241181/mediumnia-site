@@ -3,8 +3,9 @@ import './index.css'
 import AgentsPlatform from './components/AgentsPlatform'
 import BoutiqueSection from './components/BoutiqueSection'
 import ConsultationSection from './components/ConsultationSection'
+import FormationPage from './components/FormationPage'
 
-function Nav({ onOpenPro }) {
+function Nav({ onOpenPro, onOpenFormation }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
       <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
@@ -14,7 +15,7 @@ function Nav({ onOpenPro }) {
         </a>
         <nav className="hidden md:flex items-center gap-6 font-georgia text-sm text-deep font-medium">
           <a href="#decouvrir" className="hover:text-gold transition-colors">Découvrir</a>
-          <a href="#formation" className="hover:text-gold transition-colors">Se former</a>
+          <button onClick={onOpenFormation} className="hover:text-gold transition-colors">Se former</button>
           <a href="#consulter" className="hover:text-gold transition-colors">Consulter</a>
           <a href="#boutique" className="hover:text-gold transition-colors">Boutique</a>
           <a href="#reseau" className="hover:text-gold transition-colors">Trouver un praticien</a>
@@ -46,10 +47,10 @@ function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, d
   )
 }
 
-function PublicPlatformHome({ onOpenPro }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
-      <Nav onOpenPro={onOpenPro} />
+      <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} />
       <main>
 
         {/* ── Hero ── */}
@@ -87,7 +88,7 @@ function PublicPlatformHome({ onOpenPro }) {
             </UniverseCard>
 
             <div id="formation">
-              <UniverseCard icon="◇" eyebrow="Se former" title="Développer sa médiumnité" action="Découvrir la formation" href="https://mediumia.fr">
+              <UniverseCard icon="◇" eyebrow="Se former" title="Développer sa médiumnité" action="Découvrir la formation" onClick={onOpenFormation}>
                 25 modules répartis en 4 niveaux — des fondations à la pratique accomplie — avec un coach IA dédié et 12 mois d'accès. Une transmission née de plus de douze ans de pratique réelle.
               </UniverseCard>
             </div>
@@ -114,7 +115,7 @@ function PublicPlatformHome({ onOpenPro }) {
               MediumIA <span className="text-gold/60 mx-2">×</span> L'Écho des Fées
               <span className="ml-2 font-georgia text-mist text-xs font-normal italic">— Aurélie Seguin</span>
             </span>
-            {/* Slot logo L'Écho des Fées — fichier en attente */}
+            <img src="/images/brand/LEcho_des_Fees_logo.png" alt="L'Écho des Fées" className="h-8 w-auto object-contain opacity-80" />
           </div>
           <BoutiqueSection id="boutique" />
         </div>
@@ -149,17 +150,16 @@ function PublicPlatformHome({ onOpenPro }) {
 const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
 
 export default function App() {
-  const [view, setView] = useState(window.location.pathname.startsWith('/agents') ? 'agents' : 'home')
-  const openPro = () => {
-    window.history.pushState({}, '', '/agents')
-    setView('agents')
-  }
-  const backHome = () => {
-    window.history.pushState({}, '', '/')
-    setView('home')
-  }
+  const path = window.location.pathname
+  const initial = path.startsWith('/agents') ? 'agents' : path.startsWith('/formation') ? 'formation' : 'home'
+  const [view, setView] = useState(initial)
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} />
+  const openPro = () => { window.history.pushState({}, '', '/agents'); setView('agents') }
+  const openFormation = () => { window.history.pushState({}, '', '/formation'); setView('formation') }
+  const backHome = () => { window.history.pushState({}, '', '/'); setView('home') }
+
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} />
   if (view === 'agents') return <AgentsPlatform onBack={backHome} />
-  return <PublicPlatformHome onOpenPro={openPro} />
+  if (view === 'formation') return <FormationPage onBack={backHome} />
+  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} />
 }

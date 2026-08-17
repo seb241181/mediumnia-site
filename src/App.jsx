@@ -77,9 +77,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation }) {
         {/* ── Découvrir — vue d'ensemble de l'écosystème ── */}
         <section id="decouvrir" className="px-6 py-16 max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Un même univers, plusieurs portes</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">MediumIA n'est pas un simple outil IA.</h2>
-            <p className="font-georgia text-mist text-lg leading-relaxed">C'est un écosystème dédié au monde spirituel : découvrir, se former, consulter des praticiens, trouver des ressources et donner aux professionnels des outils pensés pour leur réalité.</p>
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">L'univers MediumIA</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Ce que vous trouverez ici.</h2>
+            <p className="font-georgia text-mist text-lg leading-relaxed">Des ressources pour explorer, une formation pour apprendre, des praticiens pour être accompagné, et pour les professionnels, des outils pensés pour leur réalité.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
@@ -89,7 +89,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation }) {
 
             <div id="formation">
               <UniverseCard icon="◇" eyebrow="Se former" title="Développer sa médiumnité" action="Découvrir la formation" onClick={onOpenFormation}>
-                25 modules répartis en 4 niveaux — des fondations à la pratique accomplie — avec un coach IA dédié et 12 mois d'accès. Une transmission née de plus de douze ans de pratique réelle.
+                25 modules répartis en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès. Une transmission née de plus de douze ans de pratique réelle.
               </UniverseCard>
             </div>
 
@@ -98,7 +98,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation }) {
             </UniverseCard>
 
             <UniverseCard icon="✺" eyebrow="Espace Pro" title="Développer son activité sans perdre son identité" action="Entrer dans l'espace Pro" onClick={onOpenPro} dark badge="Prototype privé">
-              Agents IA métier, documents et mémoire professionnelle, aide à la communication, futurs profils du réseau et outils pensés spécialement pour les professionnels de l'accompagnement spirituel.
+              Assistants IA métier, documents et mémoire professionnelle, aide à la communication, futurs profils du réseau et outils pensés spécialement pour les professionnels de l'accompagnement spirituel.
             </UniverseCard>
           </div>
         </section>
@@ -107,25 +107,28 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation }) {
         <ConsultationSection id="consulter" />
 
         {/* ── Boutique : MediumIA × L'Écho des Fées ── */}
-        <div className="relative">
-          <div className="max-w-6xl mx-auto px-6 pt-10 pb-2 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <span className="font-georgia text-gold tracking-[0.24em] text-xs uppercase">La boutique</span>
-            <span className="hidden sm:block text-gold/30">·</span>
-            <span className="font-georgia text-deep font-medium text-sm">
-              MediumIA <span className="text-gold/60 mx-2">×</span> L'Écho des Fées
-              <span className="ml-2 font-georgia text-mist text-xs font-normal italic">— Aurélie Seguin</span>
-            </span>
-            <img src="/images/brand/LEcho_des_Fees_logo.png" alt="L'Écho des Fées" className="h-8 w-auto object-contain opacity-80" />
+        <div className="relative" id="boutique">
+          <div className="max-w-6xl mx-auto px-6 pt-12 pb-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5 pb-6 border-b border-gold/20">
+              <div className="flex-1">
+                <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-2">La boutique</p>
+                <h2 className="font-georgia font-medium text-3xl md:text-4xl text-deep leading-tight">
+                  MediumIA <span className="text-gold/50 font-light mx-2">×</span> L'Écho des Fées
+                </h2>
+                <p className="font-georgia text-mist text-sm mt-2 italic">Sélection Aurélie Seguin</p>
+              </div>
+              <img src="/images/brand/LEcho_des_Fees_logo.png" alt="L'Écho des Fées" className="h-14 md:h-16 w-auto object-contain" />
+            </div>
           </div>
-          <BoutiqueSection id="boutique" />
+          <BoutiqueSection id="boutique-module" />
         </div>
 
         {/* ── Trouver un praticien / Réseau ── */}
         <section id="reseau" className="px-6 py-16 md:py-24 bg-deep text-cream mt-8">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le réseau</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Un jour, dire « je suis sur MediumIA » devra vouloir dire quelque chose.</h2>
-            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto">Les professionnels pourront présenter leur activité sur MediumIA et partager leur fiche auprès de leur propre communauté. Leur visibilité fera connaître MediumIA ; MediumIA leur apportera à son tour un nouvel espace de découverte et des outils professionnels.</p>
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Pour les professionnels</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Votre pratique reste la vôtre.</h2>
+            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto">Les professionnels de la médiumnité et du bien-être peuvent présenter leur activité sur MediumIA et être découverts par de nouveaux consultants. MediumIA vous aide à structurer votre pratique, à la présenter clairement et à la transmettre — sans jamais s'y substituer.</p>
           </div>
         </section>
 

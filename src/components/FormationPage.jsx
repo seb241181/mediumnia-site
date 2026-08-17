@@ -10,9 +10,9 @@ const NIVEAUX = [
 const INCLUS = [
   { icon: '◇', titre: '25 modules PDF · 269 pages', texte: "25 modules complets répartis en 4 niveaux, plus une introduction et un lexique. Écrits dans un langage clair, profond et accessible. Chaque module contient des explications, des exercices pratiques, des questions de réflexion et une citation centrale." },
   { icon: '◌', titre: '84 exercices guidés', texte: "Chaque exercice est accompagné d'étapes claires et d'une question de carnet. Du plus simple au plus avancé, ils construisent progressivement votre pratique." },
-  { icon: '✦', titre: 'Mediumia, votre coach IA personnel', texte: "Formée spécifiquement sur le contenu des 25 modules, Mediumia répond à vos questions, vous aide à relire vos ressentis avec discernement et vous accompagne module après module. Elle ne canalise pas à votre place — elle vous aide à découvrir votre propre canal." },
+  { icon: '✦', titre: 'MediumIA, votre assistant personnel', texte: "Formé spécifiquement sur le contenu des 25 modules, MediumIA répond à vos questions, vous aide à relire vos ressentis avec discernement et vous accompagne module après module. Il ne canalise pas à votre place — il vous aide à découvrir votre propre canal." },
   { icon: '◈', titre: 'Carnet de pratique intégré', texte: "Intégré dans l'application, il vous permet de noter vos ressentis, vos perceptions, vos questions après chaque exercice. Avec le temps, il devient votre outil de discernement le plus précieux." },
-  { icon: '◉', titre: "12 mois d'accès", texte: "Votre code personnel vous donne accès à l'application et à Mediumia pendant 12 mois. Les modules téléchargés, eux, restent à vous pour toujours." },
+  { icon: '◉', titre: "12 mois d'accès", texte: "Votre code personnel vous donne accès à l'application et à MediumIA pendant 12 mois. Les modules téléchargés, eux, restent à vous pour toujours." },
 ]
 
 const POINTS = [
@@ -20,45 +20,31 @@ const POINTS = [
   { titre: 'Le cœur au centre', texte: "Ce parcours place le cœur comme véritable centre de la pratique médiumnique. Le cœur est votre émetteur-récepteur. Le cerveau n'est qu'un processeur." },
   { titre: 'La souveraineté comme protection', texte: "Votre souveraineté intérieure est votre première et meilleure protection. Vous apprenez à la poser à chaque pratique — sans peur ni rituels compliqués." },
   { titre: "L'autonomie comme objectif", texte: "L'objectif n'est pas de vous rendre dépendant d'un enseignant ou d'un oracle. L'objectif est que vous trouviez votre propre voix et que vous appreniez à lui faire confiance." },
-  { titre: "Un coach IA formé par le créateur", texte: "Mediumia n'est pas un chatbot générique. Elle a été formée spécifiquement sur le contenu des 25 modules et la vision de Sébastien. Elle parle avec la voix du parcours." },
+  { titre: "Un assistant formé par le créateur", texte: "MediumIA n'est pas un assistant générique. Il a été formé spécifiquement sur le contenu des 25 modules et la vision de Sébastien. Il parle avec la voix du parcours." },
 ]
 
 const FAQ = [
   { q: 'Faut-il déjà avoir des capacités médiumniques ?', r: "Non, et c'est même tout le sens de cet accompagnement. La médiumnité n'est pas un don réservé à quelques élus. Le parcours est conçu pour les débutants comme pour celles et ceux qui pratiquent déjà et veulent structurer ce qu'ils ressentent." },
   { q: 'Combien de temps dure le parcours ?', r: "Il n'y a pas de durée imposée. Certains traversent un module par semaine, d'autres prennent le temps de vivre chaque exercice sur plusieurs jours. Vous disposez de 12 mois d'accès à l'application pour cheminer librement, et les modules téléchargés restent à vous pour toujours." },
-  { q: 'Est-ce que Mediumia remplace un vrai accompagnement humain ?', r: "Non. Mediumia, le coach IA, est un soutien disponible jour et nuit, mais elle ne remplace pas la relation humaine. Elle vous aide à découvrir votre propre canal et à gagner en autonomie. C'est un compagnon de route, pas un substitut." },
-  { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. Mediumia n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin." },
-  { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, le coach IA et les modules PDF sont accessibles partout dans le monde, 24h/24, sans frais d'expédition. Votre code d'accès vous est envoyé par email dans les heures qui suivent le paiement." },
+  { q: 'Est-ce que MediumIA remplace un vrai accompagnement humain ?', r: "Non. MediumIA, l'assistant intégré, est un soutien disponible jour et nuit, mais il ne remplace pas la relation humaine. Il vous aide à découvrir votre propre canal et à gagner en autonomie. C'est un compagnon de route, pas un substitut." },
+  { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. MediumIA n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin." },
+  { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, l'assistant intégré et les modules PDF sont accessibles partout dans le monde, 24h/24, sans frais d'expédition. Votre code d'accès vous est envoyé par email dans les heures qui suivent le paiement." },
   { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. Le parcours complet est à 597 €, et un paiement en 4 fois est disponible via PayPal sans complication. Vous choisissez simplement cette option au moment du règlement." },
 ]
 
-function Accordion({ items, qKey = 'q', rKey = 'r' }) {
-  const [open, setOpen] = useState(null)
-  return (
-    <div className="space-y-2">
-      {items.map((item, i) => (
-        <div key={i} className="border border-gold/20 rounded-xl overflow-hidden bg-white/50 hover:border-gold/40 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
-          <div className="flex items-center gap-5 px-6 py-5">
-            <div className="flex-1 font-georgia text-deep font-medium text-base">{item[qKey]}</div>
-            <span className="text-gold/60 text-xl shrink-0 transition-transform duration-300 select-none" style={{ transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
-          </div>
-          {open === i && (
-            <div className="px-6 pb-5 border-t border-gold/10">
-              <p className="font-georgia text-mist text-base leading-relaxed pt-4">{item[rKey]}</p>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
+const POUR_QUI = [
+  "Vous ressentez quelque chose depuis longtemps, sans savoir le nommer.",
+  "Vous pratiquez déjà et cherchez à structurer ce que vous vivez.",
+  "Vous voulez apprendre dans la clarté — sans mystère inutile.",
+  "Vous cherchez l'autonomie, pas la dépendance à un enseignant.",
+]
 
 function NiveauxAccordion() {
   const [open, setOpen] = useState(null)
   return (
     <div className="space-y-3">
       {NIVEAUX.map((n, i) => (
-        <div key={i} className="border border-gold/20 rounded-xl overflow-hidden bg-white/50 hover:border-gold/40 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
+        <div key={i} className="border-2 border-gold/25 rounded-xl overflow-hidden bg-white/50 hover:border-gold/50 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
           <div className="flex items-center gap-5 px-6 py-5">
             <span className="font-georgia text-gold text-sm tracking-widest shrink-0">{n.num}</span>
             <div className="flex-1">
@@ -78,6 +64,27 @@ function NiveauxAccordion() {
   )
 }
 
+function FAQAccordion() {
+  const [open, setOpen] = useState(null)
+  return (
+    <div className="space-y-2">
+      {FAQ.map((item, i) => (
+        <div key={i} className="border-2 border-gold/20 rounded-xl overflow-hidden bg-white/50 hover:border-gold/40 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
+          <div className="flex items-center gap-5 px-6 py-5">
+            <div className="flex-1 font-georgia text-deep font-medium text-base">{item.q}</div>
+            <span className="text-gold/60 text-xl shrink-0 transition-transform duration-300 select-none" style={{ transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
+          </div>
+          {open === i && (
+            <div className="px-6 pb-5 border-t border-gold/10">
+              <p className="font-georgia text-mist text-base leading-relaxed pt-4">{item.r}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function FormationPage({ onBack }) {
   return (
     <div className="bg-cream min-h-screen text-deep">
@@ -88,7 +95,7 @@ export default function FormationPage({ onBack }) {
           <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors flex items-center gap-2">
             ← MediumIA
           </button>
-          <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold hidden md:block">Formation · Développer sa médiumnité</span>
+          <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold hidden md:block">Développer sa médiumnité</span>
           <span className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep/10 text-deep/40 font-bold cursor-not-allowed">
             Bientôt disponible
           </span>
@@ -99,11 +106,15 @@ export default function FormationPage({ onBack }) {
 
         {/* ── Hero ── */}
         <section className="px-6 py-20 md:py-28 max-w-4xl mx-auto text-center">
-          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-4">MediumIA · Formation</p>
-          <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-tight mb-6">Développer sa médiumnité</h1>
-          <p className="font-bodoni text-xl md:text-2xl text-deep/80 leading-relaxed max-w-2xl mx-auto mb-4 italic">
+          <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-36 md:w-48 mx-auto mb-8 opacity-90" />
+          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-6">Formation · Médiumnité</p>
+          <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-tight mb-10">
+            Développer sa médiumnité
+          </h1>
+          <blockquote className="font-bodoni text-2xl md:text-4xl text-deep leading-relaxed max-w-2xl mx-auto mb-3 italic">
             « La médiumnité ne s'apprend pas. Elle se découvre. »
-          </p>
+          </blockquote>
+          <p className="font-georgia text-gold/70 text-xs tracking-[0.2em] uppercase mb-10">— Sébastien Seguin</p>
           <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto mb-10">
             Un accompagnement structuré en 25 modules et 4 niveaux, né de plus de douze ans de pratique médiumnique réelle. Pas de théories. Une transmission.
           </p>
@@ -111,13 +122,28 @@ export default function FormationPage({ onBack }) {
             <span className="font-georgia px-8 py-4 rounded-lg bg-deep/10 text-deep/40 font-bold cursor-not-allowed">
               Paiement disponible lors de la mise en ligne
             </span>
-            <button onClick={() => document.getElementById('niveaux')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">
+            <button onClick={() => document.getElementById('niveaux')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-8 py-4 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">
               Découvrir les 4 niveaux ↓
             </button>
           </div>
         </section>
 
-        {/* ── Ce que vous recevez ── */}
+        {/* ── Pour qui ── */}
+        <section className="bg-deep/[0.04] px-6 py-14">
+          <div className="max-w-3xl mx-auto">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-6 text-center">Ce parcours est pour vous si</p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {POUR_QUI.map((item, i) => (
+                <div key={i} className="flex gap-3 items-start border-2 border-gold/20 rounded-xl p-5 bg-white/50">
+                  <span className="text-gold shrink-0 mt-0.5">—</span>
+                  <p className="font-georgia text-deep text-sm leading-relaxed">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Ce que contient la formation ── */}
         <section className="px-6 py-16 max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le parcours complet</p>
@@ -125,7 +151,7 @@ export default function FormationPage({ onBack }) {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {INCLUS.map((item, i) => (
-              <div key={i} className="border border-gold/20 rounded-2xl p-6 bg-white/60 hover:border-gold/50 transition-all">
+              <div key={i} className="border-2 border-gold/25 rounded-2xl p-6 bg-white/60 hover:border-gold/60 transition-all">
                 <span className="text-gold text-2xl block mb-3">{item.icon}</span>
                 <p className="font-georgia font-medium text-deep text-base mb-2">{item.titre}</p>
                 <p className="font-georgia text-sm text-mist leading-relaxed">{item.texte}</p>
@@ -135,7 +161,7 @@ export default function FormationPage({ onBack }) {
         </section>
 
         {/* ── Les 4 niveaux ── */}
-        <section id="niveaux" className="bg-deep/[0.03] px-6 py-16">
+        <section id="niveaux" className="bg-deep/[0.04] px-6 py-16">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Structure du parcours</p>
@@ -146,15 +172,15 @@ export default function FormationPage({ onBack }) {
           </div>
         </section>
 
-        {/* ── Ce qui rend Mediumia différente ── */}
+        {/* ── Ce qui rend MediumIA différente ── */}
         <section className="px-6 py-16 max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">L'approche</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Ce qui rend Mediumia différente</h2>
+            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Ce qui rend MediumIA différente</h2>
           </div>
           <div className="space-y-5">
             {POINTS.map((p, i) => (
-              <div key={i} className="flex gap-5 items-start border border-gold/15 rounded-2xl p-5 bg-white/40">
+              <div key={i} className="flex gap-5 items-start border-2 border-gold/20 rounded-2xl p-5 bg-white/40 hover:border-gold/40 transition-all">
                 <span className="text-gold text-lg mt-0.5 shrink-0">✦</span>
                 <div>
                   <p className="font-georgia font-medium text-deep mb-1">{p.titre}</p>
@@ -166,7 +192,7 @@ export default function FormationPage({ onBack }) {
         </section>
 
         {/* ── Sébastien ── */}
-        <section className="bg-deep/[0.03] px-6 py-16 md:py-20">
+        <section className="bg-deep/[0.04] px-6 py-16 md:py-20">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le créateur du parcours</p>
@@ -185,34 +211,20 @@ export default function FormationPage({ onBack }) {
                 <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
                 <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
                 <p>Ce parcours a été construit à partir de cette pratique réelle, quotidienne. Pas à partir de livres. Pas à partir de théories. À partir de milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles — à partir de ce qui fonctionne vraiment quand on est en face d'un être humain qui souffre et qui cherche.</p>
-                <p className="text-deep font-medium">Mediumia n'est pas un parcours théorique. C'est une transmission.</p>
+                <p className="text-deep font-medium">MediumIA n'est pas un parcours théorique. C'est une transmission.</p>
                 <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies. Ces conditions, c'est exactement ce que cette formation vous propose de créer.</p>
                 <blockquote className="border-l-4 border-gold pl-5 py-1 mt-4">
                   <p className="font-georgia text-lg text-mist italic leading-relaxed">
                     « L'enfer précède le paradis. La lumière s'exprime à travers l'obscurité. C'est le jeu ici. »
                   </p>
                 </blockquote>
-                <div className="pt-2">
-                  <a href="https://sebastien-seguin.reservio.com" target="_blank" rel="noopener noreferrer" className="font-georgia text-sm text-gold border border-gold/40 px-5 py-2.5 rounded-lg hover:bg-gold/10 transition-all inline-block">
-                    Prendre rendez-vous avec Sébastien →
-                  </a>
-                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── FAQ ── */}
-        <section className="px-6 py-16 max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Questions fréquentes</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">FAQ</h2>
-          </div>
-          <Accordion items={FAQ} />
-        </section>
-
         {/* ── Offre / Prix ── */}
-        <section className="px-6 py-16 bg-deep/[0.03]">
+        <section className="px-6 py-16">
           <div className="max-w-2xl mx-auto text-center">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Rejoindre la formation</p>
             <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-8">Commencer votre parcours</h2>
@@ -221,8 +233,8 @@ export default function FormationPage({ onBack }) {
               <ul className="font-georgia text-base text-deep space-y-3 mb-8">
                 {[
                   '25 modules PDF téléchargeables (269 pages)',
-                  'Application Mediumia sur mobile et ordinateur',
-                  'Mediumia, votre coach IA personnel',
+                  'Application MediumIA sur mobile et ordinateur',
+                  'MediumIA, votre assistant personnel',
                   '84 exercices guidés',
                   'Carnet de pratique intégré',
                   "12 mois d'accès à l'application",
@@ -238,10 +250,7 @@ export default function FormationPage({ onBack }) {
                   <span className="font-georgia text-5xl text-deep font-medium">597 €</span>
                 </div>
                 <p className="font-georgia text-mist text-sm italic mb-6">Paiement en 4× disponible via PayPal</p>
-                <button
-                  disabled
-                  className="font-georgia inline-block px-10 py-4 rounded-lg bg-deep/20 text-deep/40 font-bold text-lg cursor-not-allowed"
-                >
+                <button disabled className="font-georgia inline-block px-10 py-4 rounded-lg bg-deep/20 text-deep/40 font-bold text-lg cursor-not-allowed w-full md:w-auto">
                   Paiement disponible lors de la mise en ligne
                 </button>
                 <p className="font-georgia text-xs text-mist mt-4 leading-relaxed max-w-md mx-auto italic">
@@ -249,10 +258,23 @@ export default function FormationPage({ onBack }) {
                 </p>
               </div>
             </div>
-            <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
-              ← Retour à MediumIA
-            </button>
           </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section className="px-6 pb-16 max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Questions fréquentes</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">FAQ</h2>
+          </div>
+          <FAQAccordion />
+        </section>
+
+        {/* ── CTA final ── */}
+        <section className="px-6 py-12 text-center border-t border-gold/20">
+          <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
+            ← Retour à MediumIA
+          </button>
         </section>
 
       </main>

@@ -60,25 +60,20 @@ function ProductCard({ product, onOpen, onOpenOracle }) {
 
 function EchoFeesBanner() {
   return (
-    <div className="relative overflow-hidden rounded-2xl mb-8 border-2" style={{ borderColor: 'rgba(201,168,76,.3)', background: 'linear-gradient(135deg,#faf8f2,#f2ece3 60%,#faf8f3)' }}>
-      <div className="px-8 py-10 flex flex-col md:flex-row items-center md:items-end gap-6 justify-between">
-        <div className="flex-1">
-          <p className="font-georgia text-xs tracking-[0.24em] uppercase mb-3" style={{ color: '#C9A84C' }}>Boutique partenaire</p>
-          <h3 className="font-georgia font-medium text-2xl md:text-3xl text-deep leading-tight mb-3">
-            L'Écho des Fées
-          </h3>
-          <p className="font-georgia text-sm italic mb-1" style={{ color: '#4A3F6B' }}>
-            Sélection Aurélie Seguin — Praticienne bien-être
-          </p>
-          <p className="font-georgia text-sm leading-relaxed max-w-md" style={{ color: '#4A3F6B' }}>
-            Des objets choisis avec soin pour accompagner les espaces et les pratiques — retenus pour leur qualité, leur histoire et leur provenance.
-          </p>
-        </div>
+    <div className="relative overflow-hidden rounded-2xl mb-10 border-2" style={{ borderColor: 'rgba(201,168,76,.4)', background: 'linear-gradient(140deg,#f9f4ea,#ede6d6 50%,#f9f4ea)' }}>
+      <div className="px-8 md:px-12 py-12 md:py-16 flex flex-col items-center text-center">
         <img
           src="/images/brand/LEcho_des_Fees_logo.png"
           alt="L'Écho des Fées"
-          className="w-40 md:w-56 object-contain shrink-0"
+          className="h-24 md:h-32 w-auto object-contain mb-6"
         />
+        <p className="font-georgia text-xs tracking-[0.28em] uppercase mb-3" style={{ color: '#C9A84C' }}>L'univers boutique d'Aurélie Seguin</p>
+        <h3 className="font-georgia font-medium text-3xl md:text-5xl text-deep leading-tight mb-4">
+          L'Écho des Fées
+        </h3>
+        <p className="font-georgia text-base md:text-lg italic leading-relaxed max-w-xl" style={{ color: '#4A3F6B' }}>
+          Des objets choisis avec soin pour accompagner les espaces et les pratiques — retenus pour leur qualité, leur histoire et leur provenance.
+        </p>
       </div>
     </div>
   )

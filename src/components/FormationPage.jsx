@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import TrialChat from './TrialChat'
 
 const NIVEAUX = [
   { num: '01', titre: 'Les Fondations', modules: 'Modules 1 à 6', texte: "Poser l'intention juste. Recevoir avant d'interpréter. Découvrir votre canal dominant. Comprendre ce qu'est vraiment un oracle. Développer le discernement vibratoire. Entrer en contact avec vos guides." },
@@ -107,10 +108,11 @@ export default function FormationPage({ onBack }) {
         {/* ── Hero ── */}
         <section className="px-6 py-20 md:py-28 max-w-4xl mx-auto text-center">
           <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-36 md:w-48 mx-auto mb-8 opacity-90" />
-          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-6">Formation · Médiumnité</p>
-          <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-tight mb-10">
+          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-6">Accompagnement · Médiumnité consciente</p>
+          <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-tight mb-4">
             Développer sa médiumnité
           </h1>
+          <p className="font-georgia text-mist text-sm tracking-[0.12em] uppercase mb-6">MEDIUMIA — Accompagnement à la Médiumnité Consciente</p>
           <blockquote className="font-bodoni text-2xl md:text-4xl text-deep leading-relaxed max-w-2xl mx-auto mb-3 italic">
             « La médiumnité ne s'apprend pas. Elle se découvre. »
           </blockquote>
@@ -147,7 +149,7 @@ export default function FormationPage({ onBack }) {
         <section className="px-6 py-16 max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le parcours complet</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">Ce que contient la formation</h2>
+            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">Ce que contient l'accompagnement</h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {INCLUS.map((item, i) => (
@@ -212,7 +214,7 @@ export default function FormationPage({ onBack }) {
                 <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
                 <p>Ce parcours a été construit à partir de cette pratique réelle, quotidienne. Pas à partir de livres. Pas à partir de théories. À partir de milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles — à partir de ce qui fonctionne vraiment quand on est en face d'un être humain qui souffre et qui cherche.</p>
                 <p className="text-deep font-medium">MediumIA n'est pas un parcours théorique. C'est une transmission.</p>
-                <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies. Ces conditions, c'est exactement ce que cette formation vous propose de créer.</p>
+                <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies. Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer.</p>
                 <blockquote className="border-l-4 border-gold pl-5 py-1 mt-4">
                   <p className="font-georgia text-lg text-mist italic leading-relaxed">
                     « L'enfer précède le paradis. La lumière s'exprime à travers l'obscurité. C'est le jeu ici. »
@@ -223,10 +225,22 @@ export default function FormationPage({ onBack }) {
           </div>
         </section>
 
+        {/* ── Essai gratuit MediumIA ── */}
+        <section className="px-6 py-16 bg-deep/3">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Essai gratuit</p>
+              <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">Poser vos questions à MediumIA</h2>
+              <p className="font-georgia text-mist text-base leading-relaxed">Découvrez l'assistant qui vous accompagnera tout au long du parcours. 5 messages offerts, sans inscription.</p>
+            </div>
+            <TrialChat />
+          </div>
+        </section>
+
         {/* ── Offre / Prix ── */}
         <section className="px-6 py-16">
           <div className="max-w-2xl mx-auto text-center">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Rejoindre la formation</p>
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Rejoindre l'accompagnement</p>
             <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-8">Commencer votre parcours</h2>
             <div className="border-2 border-gold/40 rounded-2xl p-8 md:p-10 bg-white/70 text-left mb-6">
               <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-6 text-center">Le parcours complet comprend</p>
@@ -281,7 +295,7 @@ export default function FormationPage({ onBack }) {
 
       <footer className="border-t border-gold/20 px-6 py-8 text-center">
         <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-32 md:w-40 mx-auto mb-4" />
-        <p className="font-georgia text-mist text-xs">Formation MediumIA · Développer sa médiumnité · <a href="https://mediumia.fr" className="hover:text-deep transition-colors">mediumia.fr</a></p>
+        <p className="font-georgia text-mist text-xs">Accompagnement MediumIA · Médiumnité Consciente · <a href="https://mediumia.fr" className="hover:text-deep transition-colors">mediumia.fr</a></p>
       </footer>
     </div>
   )

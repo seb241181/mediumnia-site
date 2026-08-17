@@ -55,7 +55,7 @@ export const boutiqueProducts = [
   },
   {
     id: 'formation-mediumia',
-    name: 'Formation MediumIA',
+    name: 'Accompagnement MediumIA',
     category: 'formations',
     categoryLabel: 'Formations',
     eyebrow: 'Parcours en ligne',

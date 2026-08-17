@@ -78,9 +78,10 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle }) {
         {/* ── Découvrir — vue d'ensemble de l'écosystème ── */}
         <section id="decouvrir" className="px-6 py-16 max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
+            <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="h-10 w-auto mx-auto mb-5 opacity-60" />
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">L'univers MediumIA</p>
             <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Ce que vous trouverez ici.</h2>
-            <p className="font-georgia text-mist text-lg leading-relaxed">Des ressources pour explorer, une formation pour apprendre, des praticiens pour être accompagné, et pour les professionnels, des outils pensés pour leur réalité.</p>
+            <p className="font-georgia text-mist text-lg leading-relaxed">Des ressources pour explorer, un accompagnement pour apprendre, des praticiens pour être guidé, et pour les professionnels, des outils pensés pour leur réalité.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
@@ -89,8 +90,8 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle }) {
             </UniverseCard>
 
             <div id="formation">
-              <UniverseCard icon="◇" eyebrow="Se former" title="Développer sa médiumnité" action="Découvrir la formation" onClick={onOpenFormation}>
-                25 modules répartis en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès. Une transmission née de plus de douze ans de pratique réelle.
+              <UniverseCard icon="◇" eyebrow="Accompagnement" title="Médiumnité Consciente" action="Découvrir l'accompagnement" onClick={onOpenFormation}>
+                25 modules en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès. Une transmission née de plus de douze ans de pratique réelle.
               </UniverseCard>
             </div>
 
@@ -139,7 +140,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle }) {
 
       <footer className="border-t border-gold/20 px-6 py-8 text-center">
         <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-40 md:w-52 mx-auto mb-4" />
-        <p className="font-georgia text-mist text-xs">Monde spirituel · Formation · Réseau · Outils professionnels</p>
+        <p className="font-georgia text-mist text-xs">Monde spirituel · Accompagnement · Réseau · Outils professionnels</p>
       </footer>
     </div>
   )
@@ -152,10 +153,11 @@ export default function App() {
   const initial = path.startsWith('/agents') ? 'agents' : path.startsWith('/formation') ? 'formation' : path.startsWith('/oracle') ? 'oracle' : 'home'
   const [view, setView] = useState(initial)
 
-  const openPro      = () => { window.history.pushState({}, '', '/agents');    setView('agents') }
-  const openFormation= () => { window.history.pushState({}, '', '/formation'); setView('formation') }
-  const openOracle   = () => { window.history.pushState({}, '', '/oracle');    setView('oracle') }
-  const backHome     = () => { window.history.pushState({}, '', '/');          setView('home') }
+  const nav = (path, view) => { window.history.pushState({}, '', path); window.scrollTo(0, 0); setView(view) }
+  const openPro       = () => nav('/agents',    'agents')
+  const openFormation = () => nav('/formation', 'formation')
+  const openOracle    = () => nav('/oracle',    'oracle')
+  const backHome      = () => nav('/',          'home')
 
   if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} />
   if (view === 'agents')   return <AgentsPlatform onBack={backHome} />

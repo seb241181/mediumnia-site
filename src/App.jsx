@@ -5,6 +5,7 @@ import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'
 import FormationPage from './components/FormationPage'
 import OraclePage from './components/OraclePage'
+import ReseauJoindre from './components/ReseauJoindre'
 
 function Nav({ onOpenPro, onOpenFormation }) {
   return (
@@ -48,7 +49,7 @@ function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, d
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseau }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenOracle={onOpenOracle} />
@@ -122,9 +123,12 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle }) {
         {/* ── Trouver un praticien / Réseau ── */}
         <section id="reseau" className="px-6 py-16 md:py-24 bg-deep text-cream mt-8">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Pour les professionnels</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Votre pratique reste la vôtre.</h2>
-            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto">Les professionnels de la médiumnité et du bien-être peuvent présenter leur activité sur MediumIA et être découverts par de nouveaux consultants. MediumIA vous aide à structurer votre pratique, à la présenter clairement et à la transmettre — sans jamais s'y substituer.</p>
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Trouver un praticien</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Trouver un praticien qui vous correspond</h2>
+            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto mb-10">Découvrez progressivement des professionnels du spirituel, du bien-être et de l'accompagnement, avec des profils permettant de comprendre leur pratique et leur approche avant de les contacter.</p>
+            <button onClick={onOpenReseau} className="font-georgia text-sm text-gold/70 border border-gold/30 px-5 py-2.5 rounded-lg hover:border-gold/60 hover:text-gold transition-colors">
+              Vous êtes praticien ? Rejoindre le réseau MediumIA →
+            </button>
           </div>
         </section>
 
@@ -150,18 +154,20 @@ const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
 
 export default function App() {
   const path = window.location.pathname
-  const initial = path.startsWith('/agents') ? 'agents' : path.startsWith('/formation') ? 'formation' : path.startsWith('/oracle') ? 'oracle' : 'home'
+  const initial = path.startsWith('/agents') ? 'agents' : path.startsWith('/formation') ? 'formation' : path.startsWith('/oracle') ? 'oracle' : path.startsWith('/reseau') ? 'reseau' : 'home'
   const [view, setView] = useState(initial)
 
   const nav = (path, view) => { window.history.pushState({}, '', path); window.scrollTo(0, 0); setView(view) }
-  const openPro       = () => nav('/agents',    'agents')
-  const openFormation = () => nav('/formation', 'formation')
-  const openOracle    = () => nav('/oracle',    'oracle')
-  const backHome      = () => nav('/',          'home')
+  const openPro       = () => nav('/agents',           'agents')
+  const openFormation = () => nav('/formation',        'formation')
+  const openOracle    = () => nav('/oracle',           'oracle')
+  const openReseau    = () => nav('/reseau/rejoindre', 'reseau')
+  const backHome      = () => nav('/',                 'home')
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} />
-  if (view === 'agents')   return <AgentsPlatform onBack={backHome} />
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseau={openReseau} />
+  if (view === 'agents')    return <AgentsPlatform onBack={backHome} onOpenReseau={openReseau} />
   if (view === 'formation') return <FormationPage onBack={backHome} />
-  if (view === 'oracle')   return <OraclePage onBack={backHome} />
-  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} />
+  if (view === 'oracle')    return <OraclePage onBack={backHome} />
+  if (view === 'reseau')    return <ReseauJoindre onBack={backHome} />
+  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseau={openReseau} />
 }

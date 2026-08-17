@@ -6,8 +6,9 @@ function Nav({ onOpenPro }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
       <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
-        <a href="#top" className="shrink-0" aria-label="MediumIA — retour en haut">
-          <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-12 md:h-14 w-auto" />
+        <a href="#top" className="shrink-0 flex items-center gap-2" aria-label="MediumIA — retour en haut">
+          <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-8 md:h-10 w-auto" />
+          <span className="font-georgia text-deep tracking-[0.2em] text-base font-semibold">MEDIUMIA</span>
         </a>
         <nav className="hidden md:flex items-center gap-6 font-georgia text-sm text-mist">
           <a href="#decouvrir" className="hover:text-deep">Découvrir</a>
@@ -50,9 +51,9 @@ function PublicPlatformHome({ onOpenPro }) {
         <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-6 pt-28 pb-16">
           <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-3">Le monde spirituel, relié autrement</p>
           <img
-            src="/mediumia-logo.svg"
-            alt="MediumIA — Accompagnement à la Médiumnité Consciente"
-            className="w-full max-w-[780px] md:max-w-[900px] h-auto"
+            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"
+            alt="MediumIA — Le monde spirituel, relié autrement"
+            className="w-64 md:w-96 mx-auto mb-4"
           />
           <p className="font-georgia text-deep text-xl md:text-3xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-6">Comprendre. Apprendre. Rencontrer.<br/><span className="text-gold">Exercer autrement.</span></p>
           <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l’univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l’humain.</p>
@@ -101,7 +102,7 @@ function PublicPlatformHome({ onOpenPro }) {
             </div>
             <div className="rounded-3xl border border-gold/35 bg-white/5 p-8 text-center">
               <div className="rounded-2xl bg-cream p-3 mb-5">
-                <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-20 w-auto max-w-full mx-auto" />
+                <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="h-20 w-auto max-w-full mx-auto" />
               </div>
               <p className="font-georgia text-xs tracking-[0.23em] text-gold uppercase mb-3">Badge réseau</p>
               <p className="font-georgia text-2xl mb-2">Présent sur MediumIA</p>
@@ -121,11 +122,7 @@ function PublicPlatformHome({ onOpenPro }) {
             <article className="rounded-3xl border border-gold/25 bg-white/55 p-7 md:p-8 shadow-sm">
               <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Signature e-mail</p>
               <div className="rounded-2xl bg-cream border border-gold/20 p-5">
-                <p className="font-georgia text-deep text-lg font-bold">Sébastien Seguin</p>
-                <p className="font-georgia text-mist text-sm mb-4">Médium · Fondateur de MediumIA</p>
-                <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-14 w-auto max-w-full mb-3" />
-                <p className="font-georgia text-deep text-sm leading-relaxed">Comprendre · Apprendre · Rencontrer · Exercer autrement</p>
-                <p className="font-georgia text-gold text-sm mt-2">mediumia.fr</p>
+                <img src="/images/brand/MEDIUMIA_signature_email_2026-08-16.png" alt="MediumIA — Sébastien Seguin, Médium · Fondateur de MediumIA" className="w-full max-w-md mx-auto" />
               </div>
             </article>
 
@@ -133,7 +130,7 @@ function PublicPlatformHome({ onOpenPro }) {
               <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Badge réseau</p>
               <div className="rounded-2xl border border-gold/35 bg-white/5 p-6 text-center min-h-[220px] flex flex-col items-center justify-center">
                 <div className="rounded-xl bg-cream p-3 mb-4">
-                  <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-14 w-auto max-w-full mx-auto" />
+                  <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-14 w-auto max-w-full mx-auto" />
                 </div>
                 <p className="font-georgia text-xl">Présent sur MediumIA</p>
                 <p className="font-georgia text-cream/50 text-sm mt-2">Le signe d’appartenance au réseau.</p>
@@ -162,7 +159,7 @@ function PublicPlatformHome({ onOpenPro }) {
       </main>
 
       <footer className="border-t border-gold/20 px-6 py-8 text-center">
-        <img src="/mediumia-wordmark.svg" alt="MediumIA" className="h-16 w-auto max-w-full mx-auto mb-2" />
+        <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-40 md:w-52 mx-auto mb-4" />
         <p className="font-georgia text-mist text-xs">Monde spirituel · Formation · Réseau · Outils professionnels</p>
       </footer>
     </div>

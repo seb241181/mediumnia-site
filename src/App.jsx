@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './index.css'
 import AgentsPlatform from './components/AgentsPlatform'
+import BoutiqueSection from './components/BoutiqueSection'
 
 function Nav({ onOpenPro }) {
   return (
@@ -14,6 +15,7 @@ function Nav({ onOpenPro }) {
           <a href="#decouvrir" className="hover:text-deep">Découvrir</a>
           <a href="#formation" className="hover:text-deep">Se former</a>
           <a href="#reseau" className="hover:text-deep">Trouver un praticien</a>
+          <a href="#boutique" className="hover:text-deep">Boutique</a>
           <a href="#identite" className="hover:text-deep">La marque</a>
         </nav>
         <button onClick={onOpenPro} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">Espace Pro →</button>
@@ -110,6 +112,8 @@ function PublicPlatformHome({ onOpenPro }) {
             </div>
           </div>
         </section>
+
+        <BoutiqueSection id="boutique" />
 
         <section id="identite" className="px-6 py-20 md:py-24 max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">

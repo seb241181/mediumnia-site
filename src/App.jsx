@@ -32,7 +32,7 @@ function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, d
         {badge && <span className={`font-georgia text-[10px] uppercase tracking-[0.16em] rounded-full px-3 py-1 ${dark ? 'bg-white/10 text-gold' : 'bg-deep/5 text-mist'}`}>{badge}</span>}
       </div>
       <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-3">{eyebrow}</p>
-      <h2 className="font-georgia text-2xl md:text-3xl leading-tight mb-4">{title}</h2>
+      <h2 className="font-bodoni text-2xl md:text-3xl leading-tight mb-4">{title}</h2>
       <p className={`font-georgia leading-relaxed flex-1 ${dark ? 'text-cream/70' : 'text-mist'}`}>{children}</p>
       {href ? (
         <a href={href} target="_blank" rel="noopener noreferrer" className={`font-georgia text-sm font-bold mt-7 ${buttonClasses}`}>{action} →</a>
@@ -55,7 +55,7 @@ function PublicPlatformHome({ onOpenPro }) {
             alt="MediumIA — Le monde spirituel, relié autrement"
             className="w-64 md:w-96 mx-auto mb-4"
           />
-          <p className="font-georgia text-deep text-xl md:text-3xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-6">Comprendre. Apprendre. Rencontrer.<br/><span className="text-gold">Exercer autrement.</span></p>
+          <p className="font-bodoni text-deep text-xl md:text-3xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-6">Comprendre. Apprendre. Rencontrer.<br/><span className="text-gold">Exercer autrement.</span></p>
           <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l’univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l’humain.</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <a href="#decouvrir" className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir MediumIA</a>
@@ -66,7 +66,7 @@ function PublicPlatformHome({ onOpenPro }) {
         <section id="decouvrir" className="px-6 py-16 max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Un même univers, plusieurs portes</p>
-            <h2 className="font-georgia text-3xl md:text-5xl leading-tight mb-5">MediumIA n’est pas un simple outil IA.</h2>
+            <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">MediumIA n’est pas un simple outil IA.</h2>
             <p className="font-georgia text-mist text-lg leading-relaxed">C’est un écosystème dédié au monde spirituel : découvrir, se former, trouver des professionnels et donner aux praticiens des outils pensés pour leur réalité.</p>
           </div>
 
@@ -97,7 +97,7 @@ function PublicPlatformHome({ onOpenPro }) {
           <div className="max-w-5xl mx-auto grid md:grid-cols-[1.3fr_0.7fr] gap-10 items-center">
             <div>
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le réseau</p>
-              <h2 className="font-georgia text-3xl md:text-5xl leading-tight mb-5">Un jour, dire « je suis sur MediumIA » devra vouloir dire quelque chose.</h2>
+              <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">Un jour, dire « je suis sur MediumIA » devra vouloir dire quelque chose.</h2>
               <p className="font-georgia text-cream/70 text-lg leading-relaxed">Les professionnels pourront présenter leur activité sur MediumIA et partager leur fiche auprès de leur propre communauté. Leur visibilité fera connaître MediumIA ; MediumIA leur apportera à son tour un nouvel espace de découverte et des outils professionnels.</p>
             </div>
             <div className="rounded-3xl border border-gold/35 bg-white/5 p-8 text-center">
@@ -105,7 +105,7 @@ function PublicPlatformHome({ onOpenPro }) {
                 <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="h-20 w-auto max-w-full mx-auto" />
               </div>
               <p className="font-georgia text-xs tracking-[0.23em] text-gold uppercase mb-3">Badge réseau</p>
-              <p className="font-georgia text-2xl mb-2">Présent sur MediumIA</p>
+              <p className="font-bodoni text-2xl mb-2">Présent sur MediumIA</p>
               <p className="font-georgia text-sm text-cream/50">Un signe simple à afficher sur un site, une signature ou les réseaux sociaux.</p>
             </div>
           </div>
@@ -114,7 +114,7 @@ function PublicPlatformHome({ onOpenPro }) {
         <section id="identite" className="px-6 py-20 md:py-24 max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Identité MediumIA</p>
-            <h2 className="font-georgia text-3xl md:text-5xl leading-tight mb-5">Une marque reconnaissable, du site jusqu’à la signature e-mail.</h2>
+            <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">Une marque reconnaissable, du site jusqu’à la signature e-mail.</h2>
             <p className="font-georgia text-mist text-lg leading-relaxed">Le même langage visuel et les mêmes mots peuvent vivre dans les profils professionnels, les signatures, les supports imprimés et les réseaux sociaux.</p>
           </div>
 
@@ -132,7 +132,7 @@ function PublicPlatformHome({ onOpenPro }) {
                 <div className="rounded-xl bg-cream p-3 mb-4">
                   <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-14 w-auto max-w-full mx-auto" />
                 </div>
-                <p className="font-georgia text-xl">Présent sur MediumIA</p>
+                <p className="font-bodoni text-xl">Présent sur MediumIA</p>
                 <p className="font-georgia text-cream/50 text-sm mt-2">Le signe d’appartenance au réseau.</p>
               </div>
             </article>
@@ -152,7 +152,7 @@ function PublicPlatformHome({ onOpenPro }) {
 
         <section className="px-6 py-20 max-w-4xl mx-auto text-center">
           <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Pour les professionnels</p>
-          <h2 className="font-georgia text-3xl md:text-5xl leading-tight mb-5">L’IA devient un outil. Votre pratique reste la vôtre.</h2>
+          <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">L’IA devient un outil. Votre pratique reste la vôtre.</h2>
           <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto mb-8">MediumIA Pro est construit pour les métiers du spirituel, du bien-être et de la transmission. Votre savoir reste dans MediumIA ; l’intelligence artificielle vient l’aider à circuler, pas le remplacer.</p>
           <button onClick={onOpenPro} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir le prototype Pro →</button>
         </section>

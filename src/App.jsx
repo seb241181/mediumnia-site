@@ -2,6 +2,7 @@ import { useState } from 'react'
 import './index.css'
 import AgentsPlatform from './components/AgentsPlatform'
 import BoutiqueSection from './components/BoutiqueSection'
+import ConsultationSection from './components/ConsultationSection'
 
 function Nav({ onOpenPro }) {
   return (
@@ -14,9 +15,9 @@ function Nav({ onOpenPro }) {
         <nav className="hidden md:flex items-center gap-6 font-georgia text-sm text-mist">
           <a href="#decouvrir" className="hover:text-deep">Découvrir</a>
           <a href="#formation" className="hover:text-deep">Se former</a>
-          <a href="#reseau" className="hover:text-deep">Trouver un praticien</a>
+          <a href="#consulter" className="hover:text-deep">Consulter</a>
           <a href="#boutique" className="hover:text-deep">Boutique</a>
-          <a href="#identite" className="hover:text-deep">La marque</a>
+          <a href="#reseau" className="hover:text-deep">Trouver un praticien</a>
         </nav>
         <button onClick={onOpenPro} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">Espace Pro →</button>
       </div>
@@ -58,7 +59,7 @@ function PublicPlatformHome({ onOpenPro }) {
             className="w-64 md:w-96 mx-auto mb-4"
           />
           <p className="font-bodoni text-deep text-xl md:text-3xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-6">Comprendre. Apprendre. Rencontrer.<br/><span className="text-gold">Exercer autrement.</span></p>
-          <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l’univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l’humain.</p>
+          <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l'univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l'humain.</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <a href="#decouvrir" className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir MediumIA</a>
             <button onClick={onOpenPro} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">Je suis professionnel →</button>
@@ -68,8 +69,8 @@ function PublicPlatformHome({ onOpenPro }) {
         <section id="decouvrir" className="px-6 py-16 max-w-6xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Un même univers, plusieurs portes</p>
-            <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">MediumIA n’est pas un simple outil IA.</h2>
-            <p className="font-georgia text-mist text-lg leading-relaxed">C’est un écosystème dédié au monde spirituel : découvrir, se former, trouver des professionnels et donner aux praticiens des outils pensés pour leur réalité.</p>
+            <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">MediumIA n'est pas un simple outil IA.</h2>
+            <p className="font-georgia text-mist text-lg leading-relaxed">C'est un écosystème dédié au monde spirituel : découvrir, se former, consulter des praticiens, trouver des ressources et donner aux professionnels des outils pensés pour leur réalité.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
@@ -79,85 +80,36 @@ function PublicPlatformHome({ onOpenPro }) {
 
             <div id="formation">
               <UniverseCard icon="◇" eyebrow="Se former" title="Développer sa médiumnité" action="Découvrir la formation" href="https://mediumia.fr">
-                Le parcours MediumIA accompagne l’apprentissage et la pratique avec une méthode structurée, des exercices et un espace élève dédié.
+                Le parcours MediumIA accompagne l'apprentissage et la pratique avec une méthode structurée, des exercices et un espace élève dédié.
               </UniverseCard>
             </div>
 
-            <div id="reseau">
-              <UniverseCard icon="✦" eyebrow="Le réseau MediumIA" title="Trouver un praticien" action="Annuaire en préparation" badge="En construction">
-                Demain, MediumIA permettra de découvrir médiums, énergéticiens, astrologues, tarologues, praticiens bien-être, formateurs, boutiques et lieux liés à cet univers.
-              </UniverseCard>
-            </div>
+            <UniverseCard icon="✦" eyebrow="Consulter" title="Rencontrer un praticien" action="Voir les consultations" href="#consulter">
+              Sébastien Seguin et Aurélie proposent des consultations de médiumnité et des soins bien-être. Une présence humaine, une écoute réelle.
+            </UniverseCard>
 
-            <UniverseCard icon="✺" eyebrow="Espace Pro" title="Développer son activité sans perdre son identité" action="Entrer dans l’espace Pro" onClick={onOpenPro} dark badge="Prototype privé">
-              Agents IA métier, documents et mémoire professionnelle, aide à la communication, futurs profils du réseau et outils pensés spécialement pour les professionnels de l’accompagnement spirituel.
+            <UniverseCard icon="✺" eyebrow="Espace Pro" title="Développer son activité sans perdre son identité" action="Entrer dans l'espace Pro" onClick={onOpenPro} dark badge="Prototype privé">
+              Agents IA métier, documents et mémoire professionnelle, aide à la communication, futurs profils du réseau et outils pensés spécialement pour les professionnels de l'accompagnement spirituel.
             </UniverseCard>
           </div>
         </section>
 
-        <section className="px-6 py-16 md:py-24 bg-deep text-cream mt-8">
-          <div className="max-w-5xl mx-auto grid md:grid-cols-[1.3fr_0.7fr] gap-10 items-center">
-            <div>
-              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le réseau</p>
-              <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">Un jour, dire « je suis sur MediumIA » devra vouloir dire quelque chose.</h2>
-              <p className="font-georgia text-cream/70 text-lg leading-relaxed">Les professionnels pourront présenter leur activité sur MediumIA et partager leur fiche auprès de leur propre communauté. Leur visibilité fera connaître MediumIA ; MediumIA leur apportera à son tour un nouvel espace de découverte et des outils professionnels.</p>
-            </div>
-            <div className="rounded-3xl border border-gold/35 bg-white/5 p-8 text-center">
-              <div className="rounded-2xl bg-cream p-3 mb-5">
-                <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="h-20 w-auto max-w-full mx-auto" />
-              </div>
-              <p className="font-georgia text-xs tracking-[0.23em] text-gold uppercase mb-3">Badge réseau</p>
-              <p className="font-bodoni text-2xl mb-2">Présent sur MediumIA</p>
-              <p className="font-georgia text-sm text-cream/50">Un signe simple à afficher sur un site, une signature ou les réseaux sociaux.</p>
-            </div>
-          </div>
-        </section>
+        <ConsultationSection id="consulter" />
 
         <BoutiqueSection id="boutique" />
 
-        <section id="identite" className="px-6 py-20 md:py-24 max-w-6xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Identité MediumIA</p>
-            <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">Une marque reconnaissable, du site jusqu’à la signature e-mail.</h2>
-            <p className="font-georgia text-mist text-lg leading-relaxed">Le même langage visuel et les mêmes mots peuvent vivre dans les profils professionnels, les signatures, les supports imprimés et les réseaux sociaux.</p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-5">
-            <article className="rounded-3xl border border-gold/25 bg-white/55 p-7 md:p-8 shadow-sm">
-              <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Signature e-mail</p>
-              <div className="rounded-2xl bg-cream border border-gold/20 p-5">
-                <img src="/images/brand/MEDIUMIA_signature_email_2026-08-16.png" alt="MediumIA — Sébastien Seguin, Médium · Fondateur de MediumIA" className="w-full max-w-md mx-auto" />
-              </div>
-            </article>
-
-            <article className="rounded-3xl border border-gold/25 bg-deep text-cream p-7 md:p-8 shadow-sm">
-              <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Badge réseau</p>
-              <div className="rounded-2xl border border-gold/35 bg-white/5 p-6 text-center min-h-[220px] flex flex-col items-center justify-center">
-                <div className="rounded-xl bg-cream p-3 mb-4">
-                  <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-14 w-auto max-w-full mx-auto" />
-                </div>
-                <p className="font-bodoni text-xl">Présent sur MediumIA</p>
-                <p className="font-georgia text-cream/50 text-sm mt-2">Le signe d’appartenance au réseau.</p>
-              </div>
-            </article>
-
-            <article className="rounded-3xl border border-gold/25 bg-white/55 p-7 md:p-8 shadow-sm">
-              <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-5">Architecture de marque</p>
-              <div className="space-y-3 font-georgia">
-                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">01</span> · MediumIA Découvrir</div>
-                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">02</span> · MediumIA Formation</div>
-                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">03</span> · MediumIA Réseau</div>
-                <div className="rounded-xl border border-gold/20 px-4 py-3"><span className="text-gold">04</span> · MediumIA Pro</div>
-              </div>
-              <p className="font-georgia text-mist text-sm leading-relaxed mt-5">Les agents IA deviennent des outils de MediumIA Pro, pas l’identité centrale de la marque.</p>
-            </article>
+        <section id="reseau" className="px-6 py-16 md:py-24 bg-deep text-cream mt-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le réseau</p>
+            <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">Un jour, dire « je suis sur MediumIA » devra vouloir dire quelque chose.</h2>
+            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto">Les professionnels pourront présenter leur activité sur MediumIA et partager leur fiche auprès de leur propre communauté. Leur visibilité fera connaître MediumIA ; MediumIA leur apportera à son tour un nouvel espace de découverte et des outils professionnels.</p>
           </div>
         </section>
 
         <section className="px-6 py-20 max-w-4xl mx-auto text-center">
           <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Pour les professionnels</p>
-          <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">L’IA devient un outil. Votre pratique reste la vôtre.</h2>
-          <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto mb-8">MediumIA Pro est construit pour les métiers du spirituel, du bien-être et de la transmission. Votre savoir reste dans MediumIA ; l’intelligence artificielle vient l’aider à circuler, pas le remplacer.</p>
+          <h2 className="font-bodoni text-3xl md:text-5xl leading-tight mb-5">L'IA devient un outil. Votre pratique reste la vôtre.</h2>
+          <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto mb-8">Votre savoir reste le vôtre ; l'intelligence artificielle vous aide à le structurer, le transmettre et le faire circuler, sans jamais se substituer à votre pratique.</p>
           <button onClick={onOpenPro} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir le prototype Pro →</button>
         </section>
       </main>

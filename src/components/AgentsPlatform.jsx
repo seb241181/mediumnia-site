@@ -204,7 +204,7 @@ function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
           <p className="text-gold text-3xl mb-2">✓</p>
           <p className="font-georgia text-cream font-bold mb-1">Assistant enregistré.</p>
           <p className="font-georgia text-sm text-cream/70 mb-4">Votre assistant est sauvegardé en brouillon dans votre espace.</p>
-          <button onClick={() => onCreated?.()} className="font-georgia px-6 py-3 rounded-lg bg-gold text-deep font-bold">Voir mes agents →</button>
+          <button onClick={() => onCreated?.()} className="font-georgia px-6 py-3 rounded-lg bg-gold text-deep font-bold">Voir mes assistants →</button>
         </div>
       ) : (
         <>

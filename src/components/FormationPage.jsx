@@ -89,9 +89,9 @@ export default function FormationPage({ onBack }) {
             ← MediumIA
           </button>
           <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold hidden md:block">Formation · Développer sa médiumnité</span>
-          <a href="https://mediumia.fr" target="_blank" rel="noopener noreferrer" className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-gold text-deep font-bold">
-            Rejoindre →
-          </a>
+          <span className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep/10 text-deep/40 font-bold cursor-not-allowed">
+            Bientôt disponible
+          </span>
         </div>
       </header>
 
@@ -108,9 +108,9 @@ export default function FormationPage({ onBack }) {
             Un accompagnement structuré en 25 modules et 4 niveaux, né de plus de douze ans de pratique médiumnique réelle. Pas de théories. Une transmission.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="https://mediumia.fr" target="_blank" rel="noopener noreferrer" className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">
-              Rejoindre le parcours — 597 €
-            </a>
+            <span className="font-georgia px-8 py-4 rounded-lg bg-deep/10 text-deep/40 font-bold cursor-not-allowed">
+              Paiement disponible lors de la mise en ligne
+            </span>
             <button onClick={() => document.getElementById('niveaux')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">
               Découvrir les 4 niveaux ↓
             </button>
@@ -238,16 +238,14 @@ export default function FormationPage({ onBack }) {
                   <span className="font-georgia text-5xl text-deep font-medium">597 €</span>
                 </div>
                 <p className="font-georgia text-mist text-sm italic mb-6">Paiement en 4× disponible via PayPal</p>
-                <a
-                  href="https://www.paypal.com/ncp/payment/V7G9ELH4LF6YW"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-georgia inline-block px-10 py-4 rounded-lg bg-gold text-deep font-bold text-lg hover:opacity-90 transition-opacity"
+                <button
+                  disabled
+                  className="font-georgia inline-block px-10 py-4 rounded-lg bg-deep/20 text-deep/40 font-bold text-lg cursor-not-allowed"
                 >
-                  Commencer le parcours →
-                </a>
-                <p className="font-georgia text-xs text-mist mt-4 leading-relaxed max-w-md mx-auto">
-                  Paiement sécurisé par PayPal. Votre code d'accès et le lien vers vos modules vous sont envoyés par email dans les heures qui suivent (sous 3h maximum).
+                  Paiement disponible lors de la mise en ligne
+                </button>
+                <p className="font-georgia text-xs text-mist mt-4 leading-relaxed max-w-md mx-auto italic">
+                  Version preview — le paiement sera activé lors de la mise en ligne officielle.
                 </p>
               </div>
             </div>

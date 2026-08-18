@@ -7,18 +7,19 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ── Praticiens ──────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS booking_practitioners (
-  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  owner_id      UUID        REFERENCES auth.users(id) ON DELETE CASCADE,
-  slug          TEXT        NOT NULL UNIQUE,
-  name          TEXT        NOT NULL,
-  role          TEXT        NOT NULL DEFAULT '',
-  photo_url     TEXT,
-  tagline       TEXT        NOT NULL DEFAULT '',
-  intro         TEXT        NOT NULL DEFAULT '',
-  timezone      TEXT        NOT NULL DEFAULT 'Europe/Paris',
-  is_active     BOOLEAN     NOT NULL DEFAULT false
+  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  owner_id              UUID        REFERENCES auth.users(id) ON DELETE CASCADE,
+  slug                  TEXT        NOT NULL UNIQUE,
+  name                  TEXT        NOT NULL,
+  role                  TEXT        NOT NULL DEFAULT '',
+  photo_url             TEXT,
+  tagline               TEXT        NOT NULL DEFAULT '',
+  intro                 TEXT        NOT NULL DEFAULT '',
+  timezone              TEXT        NOT NULL DEFAULT 'Europe/Paris',
+  is_active             BOOLEAN     NOT NULL DEFAULT false,
+  booking_horizon_days  INTEGER     NOT NULL DEFAULT 60  -- horizon de réservation en jours (api/rdv-config.js)
 );
 
 CREATE INDEX IF NOT EXISTS idx_booking_practitioners_slug ON booking_practitioners (slug);
@@ -150,27 +151,53 @@ CREATE POLICY "practitioner_own_bookings" ON bookings
     )
   );
 
--- ── States OAuth (consommation unique — Production uniquement) ──────────────
--- En Preview, la signature HMAC + expiry 5 min suffisent.
--- En Production, stocker chaque state en DB garantit qu'il ne peut être rejoué.
+-- ── States OAuth (consommation unique — atomique via RPC) ───────────────────
+-- Chaque state est lié à un user_id + practitioner_id pour traçabilité.
+-- La consommation est atomique via DELETE … RETURNING (RPC consume_oauth_state).
 --
--- Activer en Production :
---   1. Appliquer cette table
---   2. Dans api/google-calendar/connect.js : INSERT le state avant redirection
---   3. Dans api/google-calendar/callback.js : SELECT + DELETE le state (consommation unique)
---   4. Cron de purge : DELETE FROM oauth_states WHERE expires_at < now()
+-- Si oauth_states existait déjà sans ces colonnes, utiliser :
+--   ALTER TABLE oauth_states
+--     ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+--     ADD COLUMN IF NOT EXISTS practitioner_id UUID REFERENCES booking_practitioners(id) ON DELETE CASCADE;
+--
+-- Cron de purge : DELETE FROM oauth_states WHERE expires_at < now()
 
 CREATE TABLE IF NOT EXISTS oauth_states (
-  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-  state        TEXT        NOT NULL UNIQUE,
-  practitioner_slug TEXT   NOT NULL,
-  expires_at   TIMESTAMPTZ NOT NULL,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  state             TEXT        NOT NULL UNIQUE,
+  practitioner_slug TEXT        NOT NULL,
+  practitioner_id   UUID        REFERENCES booking_practitioners(id) ON DELETE CASCADE,
+  user_id           UUID        REFERENCES auth.users(id) ON DELETE CASCADE,
+  expires_at        TIMESTAMPTZ NOT NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states (expires_at);
 ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
 -- Accessible uniquement via service_role (API serverless) — aucune policy authenticated.
+
+-- ── RPC : consommation atomique d'un OAuth state ────────────────────────────
+-- DELETE … RETURNING garantit qu'un state est utilisé une seule fois même en cas
+-- d'appels concurrents (pas de fenêtre TOCTOU entre SELECT et DELETE).
+-- Le WHERE expires_at > now() élimine les states expirés sans retour de ligne.
+--
+-- Appelé dans api/google-calendar/callback.js via :
+--   supabase.rpc('consume_oauth_state', { p_state: state })
+
+CREATE OR REPLACE FUNCTION consume_oauth_state(p_state TEXT)
+RETURNS TABLE(practitioner_slug TEXT, practitioner_id UUID, user_id UUID)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
+BEGIN
+  RETURN QUERY
+  DELETE FROM oauth_states
+  WHERE state = p_state AND expires_at > now()
+  RETURNING
+    oauth_states.practitioner_slug,
+    oauth_states.practitioner_id,
+    oauth_states.user_id;
+END;
+$$;
 
 -- ── Données initiales — praticiens ──────────────────────────────────────────
 -- owner_id = NULL ici : la vérification requirePractitionerOwner refusera toute
@@ -189,6 +216,12 @@ ON CONFLICT (slug) DO NOTHING;
 -- À personnaliser avec le vrai UUID Supabase (Authentication → Users → User UID) :
 -- UPDATE booking_practitioners SET owner_id = '<votre-uuid>' WHERE slug = 'sebastien-seguin';
 -- UPDATE booking_practitioners SET owner_id = '<votre-uuid>' WHERE slug = 'aurelie-seguin';
+
+-- ── Migration booking_practitioners (si table existante sans horizon) ────────
+-- ALTER TABLE booking_practitioners
+--   ADD COLUMN IF NOT EXISTS booking_horizon_days INTEGER NOT NULL DEFAULT 60;
+-- Une fois appliquée, api/rdv-config.js peut lire booking_horizon_days depuis la DB
+-- (voir TODO dans le fichier).
 
 -- ── Notes sécurité avant Production ─────────────────────────────────────────
 -- 1. OAuth tokens Google : chiffrement AES-256 obligatoire au repos

@@ -1,12 +1,14 @@
 /**
- * GET /api/rdv-availability?practitioner=<slug>&date=YYYY-MM-DD&duration_min=<int>
+ * GET /api/rdv-availability?practitioner=<slug>&date=YYYY-MM-DD&service_id=<uuid>
  *
  * Retourne les créneaux disponibles pour une date donnée.
+ * En mode LIVE, service_id est obligatoire : la durée est lue depuis booking_services
+ * côté serveur (jamais fournie par le client).
  *
  * Modes de réponse :
  *   'demo'                 → Supabase absent, praticien inconnu, ou pas de connexion Google
  *   'live'                 → créneaux calculés via Google Calendar freeBusy + booking_availability_rules
- *   'configuration_required' → Google connecté mais rules absentes OU duration_min manquant
+ *   'configuration_required' → Google connecté mais service/rules non configurés
  *   'error'                → règles présentes, freeBusy échoué
  *
  * ── Timezone (Europe/Paris) ─────────────────────────────────────────────────
@@ -29,8 +31,9 @@ import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/g
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import { generateDemoSlots } from '../src/data/rdvData.js'
 
-const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const SLUG_RE       = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
+const DATE_RE       = /^\d{4}-\d{2}-\d{2}$/
+const SERVICE_ID_RE = /^[a-zA-Z0-9_\-]{1,100}$/
 
 /**
  * Convertit une heure Paris (HH:MM) en Date UTC pour une date donnée.
@@ -102,13 +105,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { practitioner: slug, date, duration_min: durationParam } = req.query
+  const { practitioner: slug, date, service_id: serviceIdParam } = req.query
 
   if (!slug || !SLUG_RE.test(slug)) {
     return res.status(400).json({ error: 'Paramètre practitioner manquant ou invalide' })
   }
   if (!date || !DATE_RE.test(date)) {
     return res.status(400).json({ error: 'Paramètre date manquant ou invalide (YYYY-MM-DD attendu)' })
+  }
+  // service_id est validé ici au format uniquement ; l'existence en DB est vérifiée dans le path LIVE
+  if (serviceIdParam && !SERVICE_ID_RE.test(serviceIdParam)) {
+    return res.status(400).json({ error: 'Paramètre service_id invalide' })
   }
 
   // ── Mode démo si Supabase absent ─────────────────────────────────────────────
@@ -153,6 +160,33 @@ export default async function handler(req, res) {
     })
   }
 
+  // ── Service : durée depuis la DB uniquement (jamais depuis le client) ────────
+  if (!serviceIdParam) {
+    return res.status(200).json({
+      mode: 'configuration_required',
+      slots: [],
+      notice: 'Paramètre service_id requis en mode LIVE.',
+    })
+  }
+
+  const { data: svc, error: svcErr } = await supabase
+    .from('booking_services')
+    .select('duration_min')
+    .eq('id', serviceIdParam)
+    .eq('practitioner_id', practitioner.id)
+    .eq('is_active', true)
+    .single()
+
+  if (svcErr || !svc) {
+    return res.status(200).json({
+      mode: 'configuration_required',
+      slots: [],
+      notice: 'Service introuvable ou inactif — configurez vos prestations dans booking_services.',
+    })
+  }
+
+  const durationMin = svc.duration_min
+
   // ── Règles de disponibilité ───────────────────────────────────────────────────
   // Jour de semaine Paris : date string YYYY-MM-DD → JS getDay() → schéma 0=Lun
   const jsDay = new Date(date + 'T12:00:00Z').getDay()   // UTC noon = même jour Paris
@@ -170,16 +204,6 @@ export default async function handler(req, res) {
       mode: 'configuration_required',
       slots: [],
       notice: 'Les horaires de disponibilité ne sont pas encore configurés pour ce praticien.',
-    })
-  }
-
-  // ── Validation de la durée de prestation ─────────────────────────────────────
-  const durationMin = parseInt(durationParam, 10)
-  if (!durationMin || durationMin <= 0 || durationMin > 480) {
-    return res.status(200).json({
-      mode: 'configuration_required',
-      slots: [],
-      notice: 'Durée de prestation manquante ou invalide — paramètre duration_min requis.',
     })
   }
 

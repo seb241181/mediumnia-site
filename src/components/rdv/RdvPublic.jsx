@@ -51,15 +51,29 @@ function ServiceCard({ service, selected, onSelect }) {
 }
 
 /* ── Calendar picker ── */
-function CalendarPicker({ selected, onSelect }) {
+// config = { mode, availableWeekdays, horizonDays, notice } | null (chargement)
+// mode 'demo'  → availableWeekdays null → règles DEMO : Lun-Ven, 42 j
+// mode 'live'  → availableWeekdays [0..6] JS day numbers depuis booking_availability_rules
+function CalendarPicker({ selected, onSelect, config }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const minDate = new Date(today)
   minDate.setDate(minDate.getDate() + 1)
+
+  // Horizon : config DB en mode LIVE, 42 jours en mode DEMO, 42 par défaut pendant le chargement
+  const horizonDays = config?.horizonDays ?? 42
   const maxDate = new Date(today)
-  maxDate.setDate(maxDate.getDate() + 42)
+  maxDate.setDate(maxDate.getDate() + horizonDays)
 
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+
+  if (config === null) {
+    return (
+      <div className="rounded-2xl border border-gold/25 bg-white/60 p-5 text-center">
+        <p className="font-georgia text-sm text-mist py-8">Chargement du calendrier…</p>
+      </div>
+    )
+  }
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
@@ -67,12 +81,21 @@ function CalendarPicker({ selected, onSelect }) {
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
+  function isDayDisabled(date) {
+    if (date < minDate || date > maxDate) return true
+    if (config.availableWeekdays === null) {
+      // Mode DEMO : week-ends désactivés (comportement d'origine préservé)
+      return date.getDay() === 0 || date.getDay() === 6
+    }
+    // Mode LIVE : seuls les jours ayant des règles en DB sont sélectionnables
+    return !config.availableWeekdays.includes(date.getDay())
+  }
+
   const cells = []
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month, d)
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6
-    cells.push({ date, disabled: isWeekend || date < minDate || date > maxDate })
+    cells.push({ date, disabled: isDayDisabled(date) })
   }
 
   const canPrev = new Date(year, month - 1, 1) >= new Date(today.getFullYear(), today.getMonth(), 1)
@@ -139,12 +162,13 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
       String(date.getMonth() + 1).padStart(2, '0'),
       String(date.getDate()).padStart(2, '0'),
     ].join('-')
-    // duration (valeur interne de rdvData, utilisée en Preview ; sera remplacée par
-    // un lookup DB côté serveur une fois les services seedés dans booking_services)
+    // service_id transmis au serveur ; la durée est lue dans booking_services côté serveur.
+    // En mode DEMO (Google non connecté), service_id est ignoré et des créneaux fictifs
+    // sont retournés. En mode LIVE, le service doit exister dans booking_services.
     const params = new URLSearchParams({
       practitioner: practitionerSlug,
       date: dateStr,
-      duration_min: String(service.duration),
+      service_id: service.id,
     })
     fetch(`/api/rdv-availability?${params}`)
       .then(r => r.json())
@@ -318,6 +342,14 @@ export default function RdvPublic({ onBack }) {
   const [service, setService] = useState(null)
   const [date, setDate] = useState(null)
   const [time, setTime] = useState(null)
+  const [calConfig, setCalConfig] = useState(null)
+
+  useEffect(() => {
+    fetch(`/api/rdv-config?practitioner=${slug}`)
+      .then(r => r.json())
+      .then(data => setCalConfig(data))
+      .catch(() => setCalConfig({ mode: 'demo', availableWeekdays: null, horizonDays: 42, notice: null }))
+  }, [slug])
 
   if (!practitioner) {
     return (
@@ -417,7 +449,7 @@ export default function RdvPublic({ onBack }) {
                   <button onClick={() => setStep(0)} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Prestation</button>
                   <h2 className="font-georgia font-medium text-xl">Choisissez une date</h2>
                 </div>
-                <CalendarPicker selected={date} onSelect={selectDate} />
+                <CalendarPicker selected={date} onSelect={selectDate} config={calConfig} />
               </div>
             )}
 

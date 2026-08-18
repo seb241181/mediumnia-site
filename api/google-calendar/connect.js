@@ -66,6 +66,8 @@ export default async function handler(req, res) {
     .insert({
       state,
       practitioner_slug: slug,
+      practitioner_id: auth.practitionerId,
+      user_id: auth.userId,
       expires_at: new Date(Date.now() + STATE_TTL_MS).toISOString(),
     })
 

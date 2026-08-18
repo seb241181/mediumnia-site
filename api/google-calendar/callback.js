@@ -56,31 +56,23 @@ export default async function handler(req, res) {
 
   const supabase = getSupabaseAdmin()
 
-  // ── Couche 2 : consommation unique du state en DB ────────────────────────────
-  // Opération SELECT → vérification → DELETE séquentielle.
-  // (Sans transaction native JS client : fenêtre de concurrence négligeable en Preview.
-  //  En Production, utiliser un RPC Supabase avec DELETE … RETURNING pour atomicité réelle.)
-  const { data: stateRecord, error: stateErr } = await supabase
-    .from('oauth_states')
-    .select('practitioner_slug, expires_at')
-    .eq('state', state)
-    .single()
+  // ── Couche 2 : consommation atomique du state via RPC ───────────────────────
+  // DELETE … RETURNING garantit qu'un state ne peut être consommé qu'une seule
+  // fois, même en cas d'appels concurrents (pas de fenêtre TOCTOU).
+  // Le RPC vérifie également expires_at > now() dans le WHERE clause.
+  const { data: stateRows, error: stateErr } = await supabase.rpc('consume_oauth_state', {
+    p_state: state,
+  })
 
-  if (stateErr || !stateRecord) {
-    // State déjà consommé ou inexistant → rejeu ou expiration DB
+  if (stateErr || !stateRows || stateRows.length === 0) {
+    // State inconnu, expiré ou déjà consommé
     return res.redirect(302, `/rdv?oauth_error=state_consumed&practitioner=${practitionerSlug}`)
   }
 
-  // Supprimer immédiatement pour garantir la consommation unique
-  await supabase.from('oauth_states').delete().eq('state', state)
-
-  // Double vérification de l'expiry en DB (le HMAC l'a déjà vérifiée, mais belt-and-suspenders)
-  if (new Date() > new Date(stateRecord.expires_at)) {
-    return res.redirect(302, `/rdv?oauth_error=state_expired&practitioner=${practitionerSlug}`)
-  }
+  const consumed = stateRows[0]
 
   // Cohérence praticien entre HMAC payload et DB record
-  if (stateRecord.practitioner_slug !== practitionerSlug) {
+  if (consumed.practitioner_slug !== practitionerSlug) {
     return res.redirect(302, '/rdv?oauth_error=state_mismatch')
   }
 
@@ -134,14 +126,19 @@ export default async function handler(req, res) {
   const accessTokenEnc = encrypt(tokenData.access_token)
   const tokenExpiry = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000).toISOString()
 
-  // ── Résolution de l'ID praticien depuis le slug ───────────────────────────────
-  const { data: practitioner, error: practErr } = await supabase
-    .from('booking_practitioners')
-    .select('id')
-    .eq('slug', practitionerSlug)
-    .single()
-
-  if (practErr || !practitioner) {
+  // ── Résolution de l'ID praticien ─────────────────────────────────────────────
+  // consumed.practitioner_id est disponible après migration oauth_states.
+  // Fallback par slug pour les states créés avant la migration.
+  let resolvedPractitionerId = consumed.practitioner_id
+  if (!resolvedPractitionerId) {
+    const { data: pData } = await supabase
+      .from('booking_practitioners')
+      .select('id')
+      .eq('slug', practitionerSlug)
+      .single()
+    resolvedPractitionerId = pData?.id
+  }
+  if (!resolvedPractitionerId) {
     return res.redirect(302, `/rdv?oauth_error=practitioner_not_found&practitioner=${practitionerSlug}`)
   }
 
@@ -153,7 +150,7 @@ export default async function handler(req, res) {
     const { data: existing } = await supabase
       .from('booking_calendar_connections')
       .select('refresh_token_enc')
-      .eq('practitioner_id', practitioner.id)
+      .eq('practitioner_id', resolvedPractitionerId)
       .single()
     refreshTokenEnc = existing?.refresh_token_enc
     if (!refreshTokenEnc) {
@@ -165,7 +162,7 @@ export default async function handler(req, res) {
   const { error: upsertErr } = await supabase
     .from('booking_calendar_connections')
     .upsert({
-      practitioner_id: practitioner.id,
+      practitioner_id: resolvedPractitionerId,
       google_email: googleEmail,
       google_calendar_id: 'primary',
       access_token_enc: accessTokenEnc,

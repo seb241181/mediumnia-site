@@ -113,7 +113,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                         )}
                       </div>
                       <div className="flex flex-wrap gap-3 font-georgia text-xs text-mist mb-2">
-                        <span>⏱ {svc.duration} min</span>
+                        <span>⏱ {svc.durationLabel}</span>
                         <span>·</span>
                         <span>{svc.priceLabel}</span>
                         <span>·</span>
@@ -159,9 +159,9 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
               <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-4">Paramètres</p>
               {[
                 ['Fuseau horaire', p.settings.timezone],
-                ['Tampon', `${p.settings.bufferMinutes} min`],
-                ['Délai minimum', `${p.settings.minAdvanceHours}h avant`],
-                ['Horizon', `${p.settings.weeksOpen} semaines`],
+                ['Tampon entre séances', 'À configurer'],
+                ['Délai minimum', 'À configurer'],
+                ['Horizon de réservation', 'À configurer'],
               ].map(([label, val]) => (
                 <div key={label} className="flex items-center justify-between py-2.5 border-b border-gold/10 last:border-0">
                   <span className="font-georgia text-xs text-mist">{label}</span>

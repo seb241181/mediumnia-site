@@ -42,7 +42,7 @@ function ServiceCard({ service, selected, onSelect }) {
       </div>
       <p className="font-georgia text-sm text-mist leading-relaxed mb-3">{service.description}</p>
       <div className="flex flex-wrap gap-4 font-georgia text-xs text-mist">
-        <span>⏱ {service.duration} min</span>
+        <span>⏱ {service.durationLabel}</span>
         <span>◈ {service.priceLabel}</span>
         <span>{service.modalityLabel}</span>
       </div>
@@ -131,7 +131,8 @@ function TimeSlots({ date, service, selected, onSelect }) {
   if (slots.length === 0) {
     return (
       <div className="rounded-xl border border-gold/20 px-5 py-8 text-center">
-        <p className="font-georgia text-sm text-mist">Aucun créneau disponible ce jour.</p>
+        <p className="font-georgia text-sm text-mist">Aucun créneau disponible ce jour en démonstration.</p>
+        <p className="font-georgia text-xs text-mist/50 mt-1 italic">Les horaires réels seront définis après connexion à Google Agenda.</p>
       </div>
     )
   }
@@ -160,7 +161,7 @@ function TimeSlots({ date, service, selected, onSelect }) {
         ))}
       </div>
       <p className="font-georgia text-xs text-mist/50 mt-3">
-        Durée : {service.duration} min · {service.modalityLabel}
+        {service.durationLabel} · {service.modalityLabel}
       </p>
     </div>
   )
@@ -244,7 +245,7 @@ function Summary({ practitioner, service, date, time }) {
         <div className="py-3 border-b border-gold/10">
           <p className="font-georgia text-[10px] uppercase tracking-wide text-mist mb-1">Prestation</p>
           <p className="font-georgia text-sm font-semibold">{service.title}</p>
-          <p className="font-georgia text-xs text-mist mt-0.5">{service.duration} min · {service.priceLabel}</p>
+          <p className="font-georgia text-xs text-mist mt-0.5">{service.durationLabel} · {service.priceLabel}</p>
           <p className="font-georgia text-xs text-mist">{service.modalityLabel}</p>
         </div>
       )}

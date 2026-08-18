@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { getPractitioner, generateDemoSlots } from '../../data/rdvData'
+import { useState, useEffect } from 'react'
+import { getPractitioner } from '../../data/rdvData'
 
 /* ── Step indicator ── */
 function StepBar({ step }) {
@@ -125,25 +125,62 @@ function CalendarPicker({ selected, onSelect }) {
 }
 
 /* ── Time slots ── */
-function TimeSlots({ date, service, selected, onSelect }) {
-  const slots = useMemo(() => generateDemoSlots(date), [date])
+function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
+  const [result, setResult] = useState(null)  // { mode, slots, notice }
+  const [loading, setLoading] = useState(true)
 
-  if (slots.length === 0) {
+  useEffect(() => {
+    if (!date) return
+    let cancelled = false
+    setLoading(true)
+    setResult(null)
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    fetch(`/api/rdv-availability?practitioner=${encodeURIComponent(practitionerSlug)}&date=${dateStr}`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) { setResult(data); setLoading(false) } })
+      .catch(() => {
+        if (!cancelled) {
+          setResult({ mode: 'error', slots: [], notice: 'Impossible de charger les créneaux. Réessayez.' })
+          setLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [practitionerSlug, date])
+
+  if (loading) {
     return (
       <div className="rounded-xl border border-gold/20 px-5 py-8 text-center">
-        <p className="font-georgia text-sm text-mist">Aucun créneau disponible ce jour en démonstration.</p>
-        <p className="font-georgia text-xs text-mist/50 mt-1 italic">Les horaires réels seront définis après connexion à Google Agenda.</p>
+        <p className="font-georgia text-sm text-mist">Chargement des créneaux…</p>
+      </div>
+    )
+  }
+
+  if (!result || result.slots.length === 0) {
+    return (
+      <div className="rounded-xl border border-gold/20 px-5 py-8 text-center">
+        <p className="font-georgia text-sm text-mist">
+          {result?.mode === 'error' && result.notice
+            ? result.notice
+            : 'Aucun créneau disponible ce jour.'}
+        </p>
+        {result?.mode === 'demo' && (
+          <p className="font-georgia text-xs text-mist/50 mt-1 italic">
+            {result.notice || 'Les horaires réels seront affichés après connexion à Google Agenda.'}
+          </p>
+        )}
       </div>
     )
   }
 
   return (
     <div>
-      <p className="font-georgia text-xs text-mist/70 italic mb-3">
-        Créneaux de démonstration — l'agenda réel sera affiché après connexion à Google Agenda.
-      </p>
+      {result.mode === 'demo' && (
+        <p className="font-georgia text-xs text-mist/70 italic mb-3">
+          {result.notice || 'Créneaux de démonstration — agenda Google non connecté.'}
+        </p>
+      )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        {slots.map(slot => (
+        {result.slots.map(slot => (
           <button
             key={slot.time}
             onClick={() => slot.available && onSelect(slot.time)}
@@ -379,7 +416,7 @@ export default function RdvPublic({ onBack }) {
                   <button onClick={() => setStep(1)} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Date</button>
                   <h2 className="font-georgia font-medium text-xl capitalize">{fmt(date)}</h2>
                 </div>
-                <TimeSlots date={date} service={service} selected={time} onSelect={selectTime} />
+                <TimeSlots practitionerSlug={slug} date={date} service={service} selected={time} onSelect={selectTime} />
                 {time && (
                   <button onClick={() => setStep(3)} className="mt-6 w-full font-georgia py-4 rounded-xl bg-gold text-deep font-bold hover:bg-gold/90 transition-colors">
                     Continuer — {time} →

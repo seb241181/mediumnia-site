@@ -150,6 +150,38 @@ CREATE POLICY "practitioner_own_bookings" ON bookings
     )
   );
 
+-- ── States OAuth (consommation unique — Production uniquement) ──────────────
+-- En Preview, la signature HMAC + expiry 5 min suffisent.
+-- En Production, stocker chaque state en DB garantit qu'il ne peut être rejoué.
+--
+-- Activer en Production :
+--   1. Appliquer cette table
+--   2. Dans api/google-calendar/connect.js : INSERT le state avant redirection
+--   3. Dans api/google-calendar/callback.js : SELECT + DELETE le state (consommation unique)
+--   4. Cron de purge : DELETE FROM oauth_states WHERE expires_at < now()
+
+CREATE TABLE IF NOT EXISTS oauth_states (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  state        TEXT        NOT NULL UNIQUE,
+  practitioner_slug TEXT   NOT NULL,
+  expires_at   TIMESTAMPTZ NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states (expires_at);
+ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
+-- Accessible uniquement via service_role (API serverless) — aucune policy authenticated.
+
+-- ── Données initiales — praticiens ──────────────────────────────────────────
+-- À appliquer après la création des tables.
+-- owner_id est NULL en Preview (aucun compte auth.users requis pour tester le flux).
+
+INSERT INTO booking_practitioners (slug, name, role, tagline, timezone, is_active)
+VALUES
+  ('sebastien-seguin', 'Sébastien Seguin', 'Médium & Accompagnant', 'Médium, fondateur de MediumIA', 'Europe/Paris', false),
+  ('aurelie-seguin',   'Aurélie Seguin',   'Thérapeute & Accompagnante', 'Thérapeute, co-fondatrice MediumIA', 'Europe/Paris', false)
+ON CONFLICT (slug) DO NOTHING;
+
 -- ── Notes sécurité avant Production ─────────────────────────────────────────
 -- 1. OAuth tokens Google : chiffrement AES-256 obligatoire au repos
 -- 2. /api/rdv-book : rate limiting 5 req/min/IP via Upstash Redis

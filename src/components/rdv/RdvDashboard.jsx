@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { rdvPractitioners } from '../../data/rdvData'
 
 function StatusBadge({ status }) {
@@ -9,8 +9,59 @@ function StatusBadge({ status }) {
 
 export default function RdvDashboard({ onBack, onOpenPublic }) {
   const slugs = Object.keys(rdvPractitioners)
-  const [activeSlug, setActiveSlug] = useState(slugs[0])
+
+  // Slug initial : depuis l'URL si présent (retour OAuth)
+  const urlParams = new URLSearchParams(window.location.search)
+  const urlPractitioner = urlParams.get('practitioner')
+  const initialSlug = slugs.includes(urlPractitioner) ? urlPractitioner : slugs[0]
+
+  const [activeSlug, setActiveSlug] = useState(initialSlug)
   const p = rdvPractitioners[activeSlug]
+  const [calStatus, setCalStatus] = useState(null)   // null=chargement, {connected, email, ...}
+  const [calLoading, setCalLoading] = useState(false)
+  const [oauthNotice, setOauthNotice] = useState(() => {
+    const success = urlParams.get('oauth_success')
+    const err = urlParams.get('oauth_error')
+    if (success) return { type: 'success', msg: 'Google Agenda connecté avec succès.' }
+    if (err) return { type: 'error', msg: `Erreur de connexion Google (${err}). Réessayez.` }
+    return null
+  })
+
+  useEffect(() => {
+    // Nettoyer les paramètres OAuth de l'URL sans recharger la page
+    if (urlParams.has('oauth_success') || urlParams.has('oauth_error')) {
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setCalStatus(null)
+    setCalLoading(true)
+    fetch(`/api/google-calendar/status?practitioner=${encodeURIComponent(activeSlug)}`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) { setCalStatus(data); setCalLoading(false) } })
+      .catch(() => { if (!cancelled) { setCalStatus({ connected: false, reason: 'fetch_error' }); setCalLoading(false) } })
+    return () => { cancelled = true }
+  }, [activeSlug])
+
+  async function handleDisconnect() {
+    if (!window.confirm('Déconnecter Google Agenda ? Les créneaux passeront en mode démonstration.')) return
+    try {
+      const res = await fetch('/api/google-calendar/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ practitioner: activeSlug }),
+      })
+      const data = await res.json()
+      if (data.disconnected) {
+        setCalStatus({ connected: false, reason: 'disconnected' })
+        setOauthNotice({ type: 'success', msg: 'Google Agenda déconnecté.' })
+      }
+    } catch {
+      setOauthNotice({ type: 'error', msg: 'Erreur lors de la déconnexion. Réessayez.' })
+    }
+  }
 
   return (
     <div className="min-h-screen bg-cream text-deep">
@@ -35,12 +86,24 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
       <main className="max-w-5xl mx-auto px-6 pt-10 pb-24">
 
         {/* Preview notice */}
-        <div className="rounded-xl border border-gold/25 bg-gold/5 px-5 py-3.5 mb-8 flex gap-3 items-start">
+        <div className="rounded-xl border border-gold/25 bg-gold/5 px-5 py-3.5 mb-4 flex gap-3 items-start">
           <span className="text-gold shrink-0 mt-0.5">◌</span>
           <p className="font-georgia text-xs text-mist leading-relaxed italic">
-            Version Preview — interface complète mais non fonctionnelle. Google Agenda, la persistance des réservations et les emails de confirmation nécessitent une configuration serveur avant mise en ligne.
+            Version Preview — la connexion Google Agenda est opérationnelle si les variables d'environnement sont configurées. La persistance des réservations et les emails de confirmation nécessitent une configuration Supabase supplémentaire.
           </p>
         </div>
+
+        {/* Notification OAuth */}
+        {oauthNotice && (
+          <div className={`rounded-xl border px-5 py-3.5 mb-4 flex items-center justify-between gap-4 ${
+            oauthNotice.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}>
+            <p className="font-georgia text-xs">{oauthNotice.msg}</p>
+            <button onClick={() => setOauthNotice(null)} className="font-georgia text-xs opacity-60 hover:opacity-100 shrink-0">✕</button>
+          </div>
+        )}
 
         {/* Page heading */}
         <div className="mb-8">
@@ -80,18 +143,48 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                   <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Synchronisation</p>
                   <h2 className="font-georgia text-lg font-medium">Google Agenda</h2>
                 </div>
-                <StatusBadge status="warn" />
+                {calLoading
+                  ? <span className="font-georgia text-[10px] uppercase tracking-wide text-mist bg-deep/5 border border-gold/20 rounded-full px-3 py-1">Chargement…</span>
+                  : <StatusBadge status={calStatus?.connected ? 'ok' : 'warn'} />
+                }
               </div>
-              <p className="font-georgia text-sm text-mist leading-relaxed mb-4">
-                Connectez votre compte Google pour que vos indisponibilités soient lues automatiquement et que chaque réservation confirme crée un événement dans votre agenda.
-              </p>
-              <div className="rounded-xl border border-gold/15 bg-deep/5 px-4 py-3 mb-4 font-georgia text-xs leading-relaxed">
-                <p className="text-mist mb-1">Variables d'environnement requises :</p>
-                <code className="text-deep font-mono">GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET · GOOGLE_REDIRECT_URI</code>
-              </div>
-              <button disabled className="font-georgia text-xs px-5 py-2.5 rounded-xl bg-deep/8 text-mist cursor-not-allowed border border-gold/15">
-                Connecter Google Agenda — disponible après configuration
-              </button>
+
+              {calStatus?.connected ? (
+                <>
+                  <p className="font-georgia text-sm text-mist leading-relaxed mb-2">
+                    Agenda connecté — les créneaux disponibles sont calculés en temps réel à partir de vos indisponibilités.
+                  </p>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 mb-4">
+                    <p className="font-georgia text-xs text-emerald-800 font-semibold mb-0.5">Compte Google connecté</p>
+                    <p className="font-georgia text-xs text-emerald-700">{calStatus.email}</p>
+                  </div>
+                  <button
+                    onClick={handleDisconnect}
+                    className="font-georgia text-xs px-5 py-2.5 rounded-xl border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+                  >
+                    Déconnecter Google Agenda
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="font-georgia text-sm text-mist leading-relaxed mb-4">
+                    Connectez votre compte Google pour que vos indisponibilités soient lues automatiquement. Seule la lecture des plages occupées est utilisée — aucun titre ni détail d'événement n'est accessible.
+                  </p>
+                  {calStatus?.reason === 'supabase_not_configured' && (
+                    <div className="rounded-xl border border-gold/15 bg-deep/5 px-4 py-3 mb-4 font-georgia text-xs leading-relaxed">
+                      <p className="text-mist mb-1">Variables manquantes :</p>
+                      <code className="text-deep font-mono">SUPABASE_URL · SUPABASE_SERVICE_ROLE_KEY · GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET · GOOGLE_REDIRECT_URI · CALENDAR_TOKEN_ENCRYPTION_KEY</code>
+                    </div>
+                  )}
+                  {/* Navigation réelle (non-SPA) pour lancer le flux OAuth côté serveur */}
+                  <a
+                    href={`/api/google-calendar/connect?practitioner=${encodeURIComponent(activeSlug)}`}
+                    className="inline-block font-georgia text-xs px-5 py-2.5 rounded-xl bg-deep text-gold hover:bg-deep/90 transition-colors"
+                  >
+                    Connecter Google Agenda →
+                  </a>
+                </>
+              )}
             </section>
 
             {/* Services */}

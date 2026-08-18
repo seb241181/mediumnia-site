@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase'
 async function getAuthHeaders() {
   if (!supabase) return {}
   try {
-    const { data: { session } } = await supabase.getSession()
+    const { data: { session } } = await supabase.auth.getSession()
     if (!session) return {}
     return { Authorization: `Bearer ${session.access_token}` }
   } catch {

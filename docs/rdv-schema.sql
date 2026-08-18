@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS booking_services (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   practitioner_id UUID        NOT NULL REFERENCES booking_practitioners(id) ON DELETE CASCADE,
+  -- Identifiant métier lisible, correspond à service.id dans rdvData.js
+  -- (ex. 'consultation-mediumnite', 'guidance-intuitive', 'soin-energetique').
+  -- Utilisé par /api/rdv-availability?service_slug=... pour éviter d'exposer l'UUID interne.
+  slug            TEXT        NOT NULL,
+  UNIQUE (practitioner_id, slug),
   title           TEXT        NOT NULL,
   description     TEXT        NOT NULL DEFAULT '',
   duration_min    INTEGER     NOT NULL CHECK (duration_min > 0),
@@ -41,6 +46,12 @@ CREATE TABLE IF NOT EXISTS booking_services (
   is_active       BOOLEAN     NOT NULL DEFAULT true,
   sort_order      INTEGER     NOT NULL DEFAULT 0
 );
+
+-- Si booking_services existait sans la colonne slug :
+-- ALTER TABLE booking_services ADD COLUMN IF NOT EXISTS slug TEXT;
+-- UPDATE booking_services SET slug = id::TEXT WHERE slug IS NULL; -- à adapter
+-- ALTER TABLE booking_services ALTER COLUMN slug SET NOT NULL;
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_booking_services_slug ON booking_services (practitioner_id, slug);
 
 CREATE INDEX IF NOT EXISTS idx_booking_services_practitioner ON booking_services (practitioner_id);
 ALTER TABLE booking_services ENABLE ROW LEVEL SECURITY;
@@ -166,11 +177,17 @@ CREATE TABLE IF NOT EXISTS oauth_states (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   state             TEXT        NOT NULL UNIQUE,
   practitioner_slug TEXT        NOT NULL,
-  practitioner_id   UUID        REFERENCES booking_practitioners(id) ON DELETE CASCADE,
-  user_id           UUID        REFERENCES auth.users(id) ON DELETE CASCADE,
+  -- NOT NULL : chaque state doit être lié au praticien et à l'utilisateur qui a initié le flux.
+  practitioner_id   UUID        NOT NULL REFERENCES booking_practitioners(id) ON DELETE CASCADE,
+  user_id           UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   expires_at        TIMESTAMPTZ NOT NULL,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Si oauth_states existait avec ces colonnes NULLables :
+-- ALTER TABLE oauth_states
+--   ALTER COLUMN practitioner_id SET NOT NULL,
+--   ALTER COLUMN user_id SET NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states (expires_at);
 ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
@@ -198,6 +215,12 @@ BEGIN
     oauth_states.user_id;
 END;
 $$;
+
+-- Restriction d'accès : seul service_role (API serverless) peut appeler ce RPC.
+-- anon et authenticated ne doivent jamais pouvoir consommer un state OAuth.
+REVOKE EXECUTE ON FUNCTION public.consume_oauth_state(TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.consume_oauth_state(TEXT) FROM anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.consume_oauth_state(TEXT) TO service_role;
 
 -- ── Données initiales — praticiens ──────────────────────────────────────────
 -- owner_id = NULL ici : la vérification requirePractitionerOwner refusera toute

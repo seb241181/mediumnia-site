@@ -1,9 +1,10 @@
 /**
- * GET /api/rdv-availability?practitioner=<slug>&date=YYYY-MM-DD&service_id=<uuid>
+ * GET /api/rdv-availability?practitioner=<slug>&date=YYYY-MM-DD&service_slug=<slug>
  *
  * Retourne les créneaux disponibles pour une date donnée.
- * En mode LIVE, service_id est obligatoire : la durée est lue depuis booking_services
- * côté serveur (jamais fournie par le client).
+ * En mode LIVE, service_slug est obligatoire : la durée est lue depuis
+ * booking_services.duration_min côté serveur (jamais fournie par le client).
+ * La colonne booking_services.slug doit être unique par (practitioner_id, slug).
  *
  * Modes de réponse :
  *   'demo'                 → Supabase absent, praticien inconnu, ou pas de connexion Google
@@ -31,9 +32,9 @@ import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/g
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import { generateDemoSlots } from '../src/data/rdvData.js'
 
-const SLUG_RE       = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
-const DATE_RE       = /^\d{4}-\d{2}-\d{2}$/
-const SERVICE_ID_RE = /^[a-zA-Z0-9_\-]{1,100}$/
+const SLUG_RE         = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
+const DATE_RE         = /^\d{4}-\d{2}-\d{2}$/
+const SERVICE_SLUG_RE = /^[a-zA-Z0-9_\-]{1,100}$/
 
 /**
  * Convertit une heure Paris (HH:MM) en Date UTC pour une date donnée.
@@ -105,7 +106,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { practitioner: slug, date, service_id: serviceIdParam } = req.query
+  const { practitioner: slug, date, service_slug: serviceSlugParam } = req.query
 
   if (!slug || !SLUG_RE.test(slug)) {
     return res.status(400).json({ error: 'Paramètre practitioner manquant ou invalide' })
@@ -113,9 +114,9 @@ export default async function handler(req, res) {
   if (!date || !DATE_RE.test(date)) {
     return res.status(400).json({ error: 'Paramètre date manquant ou invalide (YYYY-MM-DD attendu)' })
   }
-  // service_id est validé ici au format uniquement ; l'existence en DB est vérifiée dans le path LIVE
-  if (serviceIdParam && !SERVICE_ID_RE.test(serviceIdParam)) {
-    return res.status(400).json({ error: 'Paramètre service_id invalide' })
+  // service_slug validé au format uniquement ici ; l'existence en DB est vérifiée dans le path LIVE
+  if (serviceSlugParam && !SERVICE_SLUG_RE.test(serviceSlugParam)) {
+    return res.status(400).json({ error: 'Paramètre service_slug invalide' })
   }
 
   // ── Mode démo si Supabase absent ─────────────────────────────────────────────
@@ -161,18 +162,20 @@ export default async function handler(req, res) {
   }
 
   // ── Service : durée depuis la DB uniquement (jamais depuis le client) ────────
-  if (!serviceIdParam) {
+  // La recherche se fait par booking_services.slug (colonne métier unique par praticien),
+  // pas par l'UUID interne. La colonne slug doit exister (voir docs/rdv-schema.sql).
+  if (!serviceSlugParam) {
     return res.status(200).json({
       mode: 'configuration_required',
       slots: [],
-      notice: 'Paramètre service_id requis en mode LIVE.',
+      notice: 'Paramètre service_slug requis en mode LIVE.',
     })
   }
 
   const { data: svc, error: svcErr } = await supabase
     .from('booking_services')
     .select('duration_min')
-    .eq('id', serviceIdParam)
+    .eq('slug', serviceSlugParam)
     .eq('practitioner_id', practitioner.id)
     .eq('is_active', true)
     .single()
@@ -181,7 +184,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       mode: 'configuration_required',
       slots: [],
-      notice: 'Service introuvable ou inactif — configurez vos prestations dans booking_services.',
+      notice: 'Service introuvable ou inactif — configurez booking_services avec le bon slug.',
     })
   }
 

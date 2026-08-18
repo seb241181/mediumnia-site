@@ -75,6 +75,17 @@ function CalendarPicker({ selected, onSelect, config }) {
     )
   }
 
+  if (config.mode === 'configuration_required') {
+    return (
+      <div className="rounded-2xl border border-gold/25 bg-white/60 px-5 py-8 text-center">
+        <p className="font-georgia text-sm text-mist mb-2">Configuration requise</p>
+        <p className="font-georgia text-xs text-mist/50 italic leading-relaxed">
+          {config.notice || 'Les paramètres de disponibilité doivent être configurés par le praticien.'}
+        </p>
+      </div>
+    )
+  }
+
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
   const monthLabel = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(viewDate)
@@ -162,13 +173,14 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
       String(date.getMonth() + 1).padStart(2, '0'),
       String(date.getDate()).padStart(2, '0'),
     ].join('-')
-    // service_id transmis au serveur ; la durée est lue dans booking_services côté serveur.
-    // En mode DEMO (Google non connecté), service_id est ignoré et des créneaux fictifs
-    // sont retournés. En mode LIVE, le service doit exister dans booking_services.
+    // service_slug transmis au serveur ; la durée est lue dans booking_services.duration_min.
+    // En mode DEMO (Google non connecté), service_slug est ignoré et des créneaux fictifs
+    // sont retournés. En mode LIVE, le service doit exister dans booking_services avec
+    // la colonne slug correspondant à service.id (ex. 'consultation-mediumnite').
     const params = new URLSearchParams({
       practitioner: practitionerSlug,
       date: dateStr,
-      service_id: service.id,
+      service_slug: service.id,
     })
     fetch(`/api/rdv-availability?${params}`)
       .then(r => r.json())

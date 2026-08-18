@@ -158,6 +158,22 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── Vérification finale de propriété ─────────────────────────────────────────
+  // S'assure que practitioner_id appartient toujours à user_id au moment du callback.
+  // Garde contre une modification d'owner_id entre le début du flux OAuth et son retour.
+  if (consumed.practitioner_id && consumed.user_id) {
+    const { data: ownerCheck } = await supabase
+      .from('booking_practitioners')
+      .select('id')
+      .eq('id', consumed.practitioner_id)
+      .eq('owner_id', consumed.user_id)
+      .single()
+
+    if (!ownerCheck) {
+      return res.redirect(302, `/rdv?oauth_error=owner_mismatch&practitioner=${practitionerSlug}`)
+    }
+  }
+
   // ── Upsert dans booking_calendar_connections ──────────────────────────────────
   const { error: upsertErr } = await supabase
     .from('booking_calendar_connections')

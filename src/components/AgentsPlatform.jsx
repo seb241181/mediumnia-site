@@ -230,7 +230,7 @@ function AgentCreator({ initialMission = '', user, onRequireAuth, onCreated }) {
   </div>
 }
 
-export default function AgentsPlatform({ onBack, onOpenReseau }) {
+export default function AgentsPlatform({ onBack, onOpenReseau, onOpenRdv }) {
   const [category, setCategory] = useState('Tous')
   const [tab, setTab] = useState('explorer')
   const [starter, setStarter] = useState('')
@@ -269,6 +269,18 @@ export default function AgentsPlatform({ onBack, onOpenReseau }) {
     <main>
       {tab !== 'chat' && <section className="px-6 pt-16 pb-12 text-center max-w-4xl mx-auto"><p className="font-georgia text-gold tracking-[0.25em] text-xs uppercase mb-5">MediumIA · Assistants IA</p><h1 className="font-georgia text-4xl md:text-6xl leading-tight font-medium mb-6">Votre savoir. Votre façon de travailler.<br/><span className="text-gold">Votre assistant IA.</span></h1><p className="font-georgia text-mist text-base md:text-xl leading-relaxed max-w-2xl mx-auto mb-9">Choisissez un assistant prêt à l’emploi ou créez le vôtre. MediumIA lui transmet votre métier, vos documents, vos règles et votre manière d’accompagner.</p><div className="flex flex-col sm:flex-row gap-4 justify-center"><button onClick={() => setTab('explorer')} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Explorer les assistants</button><button onClick={() => openCreator('')} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">Créer mon assistant</button></div></section>}
       {tab === 'explorer' && <section className="px-6 pb-20 max-w-6xl mx-auto"><div className="flex gap-2 overflow-x-auto pb-5">{categories.map((item) => <button key={item} onClick={() => setCategory(item)} className={`shrink-0 font-georgia text-sm px-4 py-2 rounded-full border ${category === item ? 'bg-deep text-gold border-deep' : 'border-gold/30 text-mist'}`}>{item}</button>)}</div><div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">{visible.map((agent) => <article key={agent.id} className="rounded-2xl border border-gold/25 bg-white/55 p-6 flex flex-col min-h-[300px] shadow-sm"><div className="flex items-start justify-between mb-6"><span className="text-gold text-3xl">{agent.icon}</span><span className="font-georgia text-[11px] uppercase tracking-wider text-mist bg-deep/5 rounded-full px-3 py-1">{agent.category}</span></div><h2 className="font-georgia text-2xl mb-3">{agent.name}</h2><p className="font-georgia text-mist text-sm leading-relaxed flex-1">{agent.description}</p><div className="mt-6 pt-5 border-t border-gold/15 flex items-center justify-between gap-3"><span className="font-georgia text-xs text-gold">{agent.tag}</span><button onClick={() => openCreator(agent.starter)} className="font-georgia text-sm font-bold">Personnaliser →</button></div></article>)}</div>
+
+        {/* MediumIA Rendez-vous */}
+        <div className="mt-14 rounded-3xl border-2 border-gold/30 p-8 md:p-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-10" style={{ background: 'linear-gradient(135deg,rgba(26,21,53,.04),rgba(201,168,76,.06))' }}>
+          <div className="text-gold text-5xl md:text-6xl opacity-50 shrink-0">◈</div>
+          <div className="flex-1">
+            <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">Outil Pro</p>
+            <h2 className="font-georgia text-2xl md:text-3xl font-medium mb-3">MediumIA Rendez-vous</h2>
+            <p className="font-georgia text-mist leading-relaxed mb-5">Proposez vos disponibilités, recevez vos réservations et synchronisez votre agenda Google.</p>
+            <button onClick={onOpenRdv} className="font-georgia text-sm font-bold text-deep">Configurer mes rendez-vous →</button>
+          </div>
+        </div>
+
         <div className="mt-20 border-t-2 border-gold/20 pt-16 pb-4">
           <div className="max-w-2xl mx-auto text-center">
             <p className="text-gold text-2xl mb-4">◈</p>

@@ -7,6 +7,8 @@ import FormationPage from './components/FormationPage'
 import OraclePage from './components/OraclePage'
 import ReseauDirectory from './components/ReseauDirectory'
 import ReseauJoindre from './components/ReseauJoindre'
+import RdvDashboard from './components/rdv/RdvDashboard'
+import RdvPublic from './components/rdv/RdvPublic'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -178,7 +180,9 @@ const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
 
 export default function App() {
   const path = window.location.pathname
-  const initial = path.startsWith('/agents') ? 'agents'
+  const initial = path.startsWith('/rdv/') ? 'rdv-public'
+    : path === '/rdv' ? 'rdv-dashboard'
+    : path.startsWith('/agents') ? 'agents'
     : path.startsWith('/formation') ? 'formation'
     : path.startsWith('/oracle') ? 'oracle'
     : path.startsWith('/reseau/rejoindre') ? 'reseau-form'
@@ -190,15 +194,19 @@ export default function App() {
   const openPro        = () => nav('/agents',           'agents')
   const openFormation  = () => nav('/formation',        'formation')
   const openOracle     = () => nav('/oracle',           'oracle')
-  const openReseauDir  = () => nav('/reseau',           'reseau-dir')
-  const openReseauForm = () => nav('/reseau/rejoindre', 'reseau-form')
-  const backHome       = () => nav('/',                 'home')
+  const openReseauDir   = () => nav('/reseau',           'reseau-dir')
+  const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
+  const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
+  const openRdvPublic   = (slug) => nav(`/rdv/${slug}`,  'rdv-public')
+  const backHome        = () => nav('/',                 'home')
 
   if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} />
-  if (view === 'agents')      return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} />
-  if (view === 'formation')   return <FormationPage onBack={backHome} />
-  if (view === 'oracle')      return <OraclePage onBack={backHome} />
-  if (view === 'reseau-dir')  return <ReseauDirectory onBack={backHome} />
-  if (view === 'reseau-form') return <ReseauJoindre onBack={backHome} />
+  if (view === 'agents')        return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} onOpenRdv={openRdvDashboard} />
+  if (view === 'formation')    return <FormationPage onBack={backHome} />
+  if (view === 'oracle')       return <OraclePage onBack={backHome} />
+  if (view === 'reseau-dir')   return <ReseauDirectory onBack={backHome} />
+  if (view === 'reseau-form')  return <ReseauJoindre onBack={backHome} />
+  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
+  if (view === 'rdv-public')   return <RdvPublic onBack={backHome} />
   return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} />
 }

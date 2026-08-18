@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/test-paypal-mediumia-live-1eur-9f3b2c",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/rdv/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/rdv",
+      "destination": "/index.html"
+    }
+  ]
+}

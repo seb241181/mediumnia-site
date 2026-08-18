@@ -101,7 +101,7 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir, onOpenReseauForm }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir, onOpenReseauForm, onOpenRdv }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -153,7 +153,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
         </section>
 
         {/* ── Consulter ── */}
-        <ConsultationSection id="consulter" />
+        <ConsultationSection id="consulter" onOpenRdv={onOpenRdv} />
 
         {/* ── Boutique ── */}
         <section id="boutique" className="border-t border-gold/15">
@@ -200,7 +200,7 @@ export default function App() {
   const openRdvPublic   = (slug) => nav(`/rdv/${slug}`,  'rdv-public')
   const backHome        = () => nav('/',                 'home')
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} />
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} />
   if (view === 'agents')        return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} onOpenRdv={openRdvDashboard} />
   if (view === 'formation')    return <FormationPage onBack={backHome} />
   if (view === 'oracle')       return <OraclePage onBack={backHome} />
@@ -208,5 +208,5 @@ export default function App() {
   if (view === 'reseau-form')  return <ReseauJoindre onBack={backHome} />
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-public')   return <RdvPublic onBack={backHome} />
-  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} />
+  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} />
 }

@@ -12,6 +12,7 @@ export default function ConsultationSection({
   practitioners = consultationPractitioners,
   onBookingRequest,
   bookingEnabled = false,
+  onOpenRdv,
   id = 'consulter',
 }) {
   return (
@@ -29,6 +30,7 @@ export default function ConsultationSection({
             practitioner={practitioner}
             bookingEnabled={bookingEnabled}
             onBookingRequest={onBookingRequest}
+            onOpenRdv={onOpenRdv}
           />
         ))}
       </div>

@@ -18,6 +18,7 @@ export default function PractitionerCard({
   practitioner,
   bookingEnabled,
   onBookingRequest,
+  onOpenRdv,
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const servicesId = `consultation-services-${practitioner.id}`
@@ -34,6 +35,15 @@ export default function PractitionerCard({
         <p className="consultation-practitioner__role">{practitioner.role}</p>
         <p className="consultation-practitioner__intro">{practitioner.introduction}</p>
         <p className="consultation-practitioner__status">{practitioner.statusLabel}</p>
+        {onOpenRdv && practitioner.rdvSlug && (
+          <button
+            type="button"
+            className="consultation-practitioner__book"
+            onClick={() => onOpenRdv(practitioner.rdvSlug)}
+          >
+            Prendre rendez-vous →
+          </button>
+        )}
         <button
           type="button"
           className="consultation-practitioner__discover"

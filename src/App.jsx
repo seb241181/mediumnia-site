@@ -30,13 +30,16 @@ function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
 }
 
 function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, dark = false, badge }) {
-  const classes = dark ? 'bg-deep text-cream border-deep' : 'bg-white/55 text-deep border-gold/25'
-  const buttonClasses = dark ? 'text-gold' : 'text-deep'
+  const isDark = !!dark
+  const classes = typeof dark === 'string'
+    ? `${dark} text-cream`
+    : dark ? 'bg-deep text-cream border-deep' : 'bg-white/55 text-deep border-gold/25'
+  const buttonClasses = isDark ? 'text-gold' : 'text-deep'
   return (
     <article className={`rounded-3xl border p-7 md:p-8 shadow-sm flex flex-col min-h-[300px] ${classes}`}>
       <div className="flex items-start justify-between gap-4 mb-6">
         <span className="text-gold text-3xl">{icon}</span>
-        {badge && <span className={`font-georgia text-[10px] uppercase tracking-[0.16em] rounded-full px-3 py-1 ${dark ? 'bg-white/10 text-gold' : 'bg-deep/5 text-mist'}`}>{badge}</span>}
+        {badge && <span className={`font-georgia text-[10px] uppercase tracking-[0.16em] rounded-full px-3 py-1 ${isDark ? 'bg-white/10 text-gold' : 'bg-deep/5 text-mist'}`}>{badge}</span>}
       </div>
       <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-3">{eyebrow}</p>
       <h2 className="font-georgia text-2xl md:text-3xl leading-tight mb-4 font-medium">{title}</h2>
@@ -96,7 +99,7 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir, onOpenReseauForm }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -118,8 +121,8 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
             MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l'univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l'humain.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <a href="#decouvrir" className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir MediumIA</a>
-            <button onClick={onOpenPro} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">Je suis professionnel →</button>
+            <button onClick={onOpenFormation} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir l'accompagnement →</button>
+            <button onClick={onOpenReseauForm} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">Rejoindre le réseau →</button>
           </div>
         </section>
 
@@ -137,7 +140,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
               <FeaturedAccompagnement onOpen={onOpenFormation} />
             </div>
             <div className="grid md:grid-cols-2 gap-5">
-              <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>
+              <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir} dark="bg-mist border-mist">
                 Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
               </UniverseCard>
               <UniverseCard icon="✺" eyebrow="Espace Pro" title="Développer son activité sans perdre son identité" action="Entrer dans l'espace Pro" onClick={onOpenPro} dark badge="Prototype privé">
@@ -159,26 +162,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
             </h2>
           </div>
           <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} />
-        </section>
-
-        {/* ── Réseau ── */}
-        <section id="reseau" className="px-6 py-16 md:py-24 bg-deep text-cream mt-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le réseau MediumIA</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Trouver un praticien qui vous correspond</h2>
-            <p className="font-georgia text-cream/70 text-lg leading-relaxed max-w-2xl mx-auto mb-10">Découvrez des professionnels du spirituel, du bien-être et de l'accompagnement, avec des profils permettant de comprendre leur pratique et leur approche avant de les contacter.</p>
-            <button onClick={onOpenReseauDir} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">
-              Voir le réseau MediumIA →
-            </button>
-          </div>
-        </section>
-
-        {/* ── Espace Pro CTA ── */}
-        <section className="px-6 py-20 max-w-4xl mx-auto text-center">
-          <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Pour les professionnels</p>
-          <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">L'IA devient un outil. Votre pratique reste la vôtre.</h2>
-          <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto mb-8">Votre savoir reste le vôtre ; l'intelligence artificielle vous aide à le structurer, le transmettre et le faire circuler, sans jamais se substituer à votre pratique.</p>
-          <button onClick={onOpenPro} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir le prototype Pro →</button>
         </section>
 
       </main>
@@ -211,11 +194,11 @@ export default function App() {
   const openReseauForm = () => nav('/reseau/rejoindre', 'reseau-form')
   const backHome       = () => nav('/',                 'home')
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} />
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} />
   if (view === 'agents')      return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} />
   if (view === 'formation')   return <FormationPage onBack={backHome} />
   if (view === 'oracle')      return <OraclePage onBack={backHome} />
   if (view === 'reseau-dir')  return <ReseauDirectory onBack={backHome} />
   if (view === 'reseau-form') return <ReseauJoindre onBack={backHome} />
-  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} />
+  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} />
 }

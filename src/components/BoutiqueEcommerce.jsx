@@ -60,15 +60,15 @@ function ProductCard({ product, onOpen, onOpenOracle }) {
 
 function EchoFeesBanner() {
   return (
-    <div className="relative overflow-hidden rounded-2xl mb-10 border-2" style={{ borderColor: 'rgba(201,168,76,.4)', background: 'linear-gradient(140deg,#f9f4ea,#ede6d6 50%,#f9f4ea)' }}>
-      <div className="px-8 md:px-12 py-12 md:py-16 flex flex-col items-center text-center">
+    <div className="relative overflow-hidden rounded-2xl mb-4 border-2" style={{ borderColor: 'rgba(201,168,76,.4)', background: 'linear-gradient(140deg,#f9f4ea,#ede6d6 50%,#f9f4ea)' }}>
+      <div className="px-8 md:px-12 py-6 md:py-8 flex flex-col items-center text-center">
         <img
           src="/images/brand/LEcho_des_Fees_logo.png"
           alt="L'Écho des Fées"
-          className="h-24 md:h-32 w-auto object-contain mb-6"
+          className="h-40 md:h-56 w-auto object-contain mb-3"
         />
-        <p className="font-georgia text-xs tracking-[0.28em] uppercase mb-3" style={{ color: '#C9A84C' }}>L'univers boutique d'Aurélie Seguin</p>
-        <h3 className="font-georgia font-medium text-3xl md:text-5xl text-deep leading-tight mb-4">
+        <p className="font-georgia text-xs tracking-[0.28em] uppercase mb-2" style={{ color: '#C9A84C' }}>L'univers boutique d'Aurélie Seguin</p>
+        <h3 className="font-georgia font-medium text-3xl md:text-5xl text-deep leading-tight mb-3">
           L'Écho des Fées
         </h3>
         <p className="font-georgia text-base md:text-lg italic leading-relaxed max-w-xl" style={{ color: '#4A3F6B' }}>

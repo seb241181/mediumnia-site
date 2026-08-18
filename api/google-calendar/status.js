@@ -1,16 +1,17 @@
 /**
  * GET /api/google-calendar/status?practitioner=<slug>
+ * En-tête : Authorization: Bearer <supabase_access_token>
  *
- * Retourne l'état de la connexion Google Agenda pour un praticien.
+ * Vérification d'identité "douce" : si non authentifié ou non propriétaire,
+ * retourne { connected: false, reason } plutôt qu'un HTTP 401/403,
+ * pour que le dashboard puisse toujours s'afficher (avec bouton "Connecter").
+ *
  * Ne retourne JAMAIS de tokens (ni access_token, ni refresh_token).
  *
- * Réponse si connecté :
- *   { connected: true, email, calendarId, since }
- *
- * Réponse si non connecté ou erreur :
- *   { connected: false, reason }
+ * Réponse connecté :   { connected: true, email, calendarId, since }
+ * Réponse déconnecté : { connected: false, reason }
  */
-import { getSupabaseAdmin, isSupabaseConfigured } from '../../lib/supabaseAdmin.js'
+import { requirePractitionerOwner, isSupabaseConfigured, getSupabaseAdmin } from '../../lib/supabaseAdmin.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -30,22 +31,18 @@ export default async function handler(req, res) {
     return res.status(200).json({ connected: false, reason: 'supabase_not_configured' })
   }
 
-  const supabase = getSupabaseAdmin()
-
-  const { data: practitioner, error: practErr } = await supabase
-    .from('booking_practitioners')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-
-  if (practErr || !practitioner) {
-    return res.status(200).json({ connected: false, reason: 'practitioner_not_found' })
+  // Vérification douce : échec d'auth → connected: false (le dashboard peut se rendre)
+  const auth = await requirePractitionerOwner(req, slug)
+  if (auth.error) {
+    return res.status(200).json({ connected: false, reason: auth.error })
   }
+
+  const supabase = getSupabaseAdmin()
 
   const { data: conn, error: connErr } = await supabase
     .from('booking_calendar_connections')
     .select('google_email, google_calendar_id, created_at, is_active')
-    .eq('practitioner_id', practitioner.id)
+    .eq('practitioner_id', auth.practitionerId)
     .eq('is_active', true)
     .single()
 

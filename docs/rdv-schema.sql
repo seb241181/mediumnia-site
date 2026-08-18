@@ -173,14 +173,22 @@ ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
 -- Accessible uniquement via service_role (API serverless) — aucune policy authenticated.
 
 -- ── Données initiales — praticiens ──────────────────────────────────────────
--- À appliquer après la création des tables.
--- owner_id est NULL en Preview (aucun compte auth.users requis pour tester le flux).
+-- owner_id = NULL ici : la vérification requirePractitionerOwner refusera toute
+-- tentative de connexion OAuth (NULL ne matche jamais un user.id en SQL).
+--
+-- Étape obligatoire après création du compte Supabase :
+--   1. Récupérer votre UUID dans Authentication → Users → colonne "User UID"
+--   2. Exécuter les UPDATE ci-dessous avec votre UUID réel
 
 INSERT INTO booking_practitioners (slug, name, role, tagline, timezone, is_active)
 VALUES
   ('sebastien-seguin', 'Sébastien Seguin', 'Médium & Accompagnant', 'Médium, fondateur de MediumIA', 'Europe/Paris', false),
   ('aurelie-seguin',   'Aurélie Seguin',   'Thérapeute & Accompagnante', 'Thérapeute, co-fondatrice MediumIA', 'Europe/Paris', false)
 ON CONFLICT (slug) DO NOTHING;
+
+-- À personnaliser avec le vrai UUID Supabase (Authentication → Users → User UID) :
+-- UPDATE booking_practitioners SET owner_id = '<votre-uuid>' WHERE slug = 'sebastien-seguin';
+-- UPDATE booking_practitioners SET owner_id = '<votre-uuid>' WHERE slug = 'aurelie-seguin';
 
 -- ── Notes sécurité avant Production ─────────────────────────────────────────
 -- 1. OAuth tokens Google : chiffrement AES-256 obligatoire au repos

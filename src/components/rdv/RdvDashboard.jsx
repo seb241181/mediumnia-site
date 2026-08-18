@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react'
 import { rdvPractitioners } from '../../data/rdvData'
+import { supabase } from '../../lib/supabase'
+
+/**
+ * Retourne les headers Authorization Supabase si une session est active.
+ * En Preview (VITE_ vars vides), supabase est null → headers vides → API retourne
+ * { connected: false, reason: 'unauthenticated' } → bouton "Connecter" visible.
+ */
+async function getAuthHeaders() {
+  if (!supabase) return {}
+  try {
+    const { data: { session } } = await supabase.getSession()
+    if (!session) return {}
+    return { Authorization: `Bearer ${session.access_token}` }
+  } catch {
+    return {}
+  }
+}
 
 function StatusBadge({ status }) {
   if (status === 'ok') return <span className="font-georgia text-[10px] uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">✓ Actif</span>
@@ -38,21 +55,56 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
     let cancelled = false
     setCalStatus(null)
     setCalLoading(true)
-    fetch(`/api/google-calendar/status?practitioner=${encodeURIComponent(activeSlug)}`)
-      .then(r => r.json())
-      .then(data => { if (!cancelled) { setCalStatus(data); setCalLoading(false) } })
-      .catch(() => { if (!cancelled) { setCalStatus({ connected: false, reason: 'fetch_error' }); setCalLoading(false) } })
+    getAuthHeaders().then(headers => {
+      if (cancelled) return
+      fetch(`/api/google-calendar/status?practitioner=${encodeURIComponent(activeSlug)}`, { headers })
+        .then(r => r.json())
+        .then(data => { if (!cancelled) { setCalStatus(data); setCalLoading(false) } })
+        .catch(() => { if (!cancelled) { setCalStatus({ connected: false, reason: 'fetch_error' }); setCalLoading(false) } })
+    })
     return () => { cancelled = true }
   }, [activeSlug])
+
+  async function handleConnect() {
+    try {
+      const headers = await getAuthHeaders()
+      const res = await fetch(
+        `/api/google-calendar/connect?practitioner=${encodeURIComponent(activeSlug)}`,
+        { headers }
+      )
+      if (res.status === 401 || res.status === 403) {
+        setOauthNotice({ type: 'error', msg: 'Authentification Supabase requise. Connectez-vous à votre compte praticien.' })
+        return
+      }
+      if (res.status === 503) {
+        setOauthNotice({ type: 'error', msg: 'Variables serveur manquantes — configurez GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI et CALENDAR_TOKEN_ENCRYPTION_KEY dans Vercel.' })
+        return
+      }
+      if (!res.ok) {
+        setOauthNotice({ type: 'error', msg: 'Erreur lors de la préparation du flux OAuth. Réessayez.' })
+        return
+      }
+      const { url } = await res.json()
+      // Navigation réelle (hors SPA) vers Google OAuth
+      window.location.href = url
+    } catch {
+      setOauthNotice({ type: 'error', msg: 'Erreur réseau lors de la connexion Google. Réessayez.' })
+    }
+  }
 
   async function handleDisconnect() {
     if (!window.confirm('Déconnecter Google Agenda ? Les créneaux passeront en mode démonstration.')) return
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch('/api/google-calendar/disconnect', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...headers },
         body: JSON.stringify({ practitioner: activeSlug }),
       })
+      if (res.status === 401 || res.status === 403) {
+        setOauthNotice({ type: 'error', msg: 'Authentification requise pour déconnecter Google Agenda.' })
+        return
+      }
       const data = await res.json()
       if (data.disconnected) {
         setCalStatus({ connected: false, reason: 'disconnected' })
@@ -176,13 +228,13 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       <code className="text-deep font-mono">SUPABASE_URL · SUPABASE_SERVICE_ROLE_KEY · GOOGLE_CLIENT_ID · GOOGLE_CLIENT_SECRET · GOOGLE_REDIRECT_URI · CALENDAR_TOKEN_ENCRYPTION_KEY</code>
                     </div>
                   )}
-                  {/* Navigation réelle (non-SPA) pour lancer le flux OAuth côté serveur */}
-                  <a
-                    href={`/api/google-calendar/connect?practitioner=${encodeURIComponent(activeSlug)}`}
-                    className="inline-block font-georgia text-xs px-5 py-2.5 rounded-xl bg-deep text-gold hover:bg-deep/90 transition-colors"
+                  {/* Bouton async : vérifie l'auth Supabase, récupère l'URL OAuth, redirige */}
+                  <button
+                    onClick={handleConnect}
+                    className="font-georgia text-xs px-5 py-2.5 rounded-xl bg-deep text-gold hover:bg-deep/90 transition-colors"
                   >
                     Connecter Google Agenda →
-                  </a>
+                  </button>
                 </>
               )}
             </section>

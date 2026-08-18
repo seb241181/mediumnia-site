@@ -134,8 +134,19 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
     let cancelled = false
     setLoading(true)
     setResult(null)
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    fetch(`/api/rdv-availability?practitioner=${encodeURIComponent(practitionerSlug)}&date=${dateStr}`)
+    const dateStr = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-')
+    // duration (valeur interne de rdvData, utilisée en Preview ; sera remplacée par
+    // un lookup DB côté serveur une fois les services seedés dans booking_services)
+    const params = new URLSearchParams({
+      practitioner: practitionerSlug,
+      date: dateStr,
+      duration_min: String(service.duration),
+    })
+    fetch(`/api/rdv-availability?${params}`)
       .then(r => r.json())
       .then(data => { if (!cancelled) { setResult(data); setLoading(false) } })
       .catch(() => {
@@ -145,7 +156,7 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
         }
       })
     return () => { cancelled = true }
-  }, [practitionerSlug, date])
+  }, [practitionerSlug, date, service])
 
   if (loading) {
     return (
@@ -155,29 +166,30 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
     )
   }
 
+  // Modes sans créneaux affichables
   if (!result || result.slots.length === 0) {
+    let msg = 'Aucun créneau disponible ce jour.'
+    let sub = null
+    if (result?.mode === 'configuration_required') {
+      msg = 'Les horaires de ce praticien ne sont pas encore configurés.'
+      sub = 'La connexion Google Agenda et les règles de disponibilité doivent être activées.'
+    } else if (result?.mode === 'error') {
+      msg = result.notice || 'Impossible de synchroniser avec Google Agenda.'
+    } else if (result?.mode === 'demo') {
+      sub = result.notice || 'Créneaux de démonstration — agenda réel non connecté.'
+    }
     return (
       <div className="rounded-xl border border-gold/20 px-5 py-8 text-center">
-        <p className="font-georgia text-sm text-mist">
-          {result?.mode === 'error' && result.notice
-            ? result.notice
-            : 'Aucun créneau disponible ce jour.'}
-        </p>
-        {result?.mode === 'demo' && (
-          <p className="font-georgia text-xs text-mist/50 mt-1 italic">
-            {result.notice || 'Les horaires réels seront affichés après connexion à Google Agenda.'}
-          </p>
-        )}
+        <p className="font-georgia text-sm text-mist">{msg}</p>
+        {sub && <p className="font-georgia text-xs text-mist/50 mt-1 italic">{sub}</p>}
       </div>
     )
   }
 
   return (
     <div>
-      {result.mode === 'demo' && (
-        <p className="font-georgia text-xs text-mist/70 italic mb-3">
-          {result.notice || 'Créneaux de démonstration — agenda Google non connecté.'}
-        </p>
+      {result.mode === 'demo' && result.notice && (
+        <p className="font-georgia text-xs text-mist/70 italic mb-3">{result.notice}</p>
       )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {result.slots.map(slot => (

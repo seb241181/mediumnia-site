@@ -148,6 +148,7 @@ function ServiceModal({ service, practitionerId, session, onSave, onClose }) {
     modality: service?.modality || [],
     is_active: service?.is_active !== false,
     sort_order: service?.sort_order || 0,
+    booking_mode: service?.booking_mode || 'instant',
   })
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -178,6 +179,7 @@ function ServiceModal({ service, practitionerId, session, onSave, onClose }) {
       modality: form.modality,
       is_active: form.is_active,
       sort_order: Number(form.sort_order),
+      booking_mode: form.booking_mode,
     }
 
     if (!isNew) body.id = service.id
@@ -281,6 +283,23 @@ function ServiceModal({ service, practitionerId, session, onSave, onClose }) {
                 </label>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="font-georgia text-xs text-mist block mb-1.5">Mode de réservation</label>
+            <select
+              value={form.booking_mode}
+              onChange={e => setForm(f => ({ ...f, booking_mode: e.target.value }))}
+              className="w-full border border-gold/25 rounded-xl px-4 py-2.5 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60"
+            >
+              <option value="instant">Instant — créneau choisi par le client</option>
+              <option value="request">Sur demande — formulaire de demande (présentiel)</option>
+            </select>
+            {form.booking_mode === 'request' && (
+              <p className="font-georgia text-[10px] text-mist/70 mt-1.5 leading-relaxed">
+                Le client soumet une demande avec son adresse et ses coordonnées. Vous convenez de la date manuellement depuis le dashboard.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-between">
@@ -699,6 +718,228 @@ function ExceptionsEditor({ exceptions, practitionerId, session, onChanged }) {
           + Ajouter une exception
         </button>
       )}
+    </div>
+  )
+}
+
+// ── RequestsSection ───────────────────────────────────────────────────────────
+
+function RequestsSection({ requests, services, practitionerId, session, onChanged }) {
+  const [expandedId, setExpandedId] = useState(null)
+  const [form, setForm] = useState({ date: '', time: '', travelFee: '', finalPrice: '', notes: '' })
+  const [saving, setSaving] = useState(false)
+  const [updating, setUpdating] = useState(null)
+  const [error, setError] = useState(null)
+
+  const STATUS_CONFIG = {
+    pending:   { label: 'En attente', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    contacted: { label: 'Contacté',   cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+    scheduled: { label: 'Planifié',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    rejected:  { label: 'Refusé',     cls: 'bg-red-50 text-red-700 border-red-200' },
+    cancelled: { label: 'Annulé',     cls: 'bg-deep/5 text-mist border-gold/20' },
+  }
+
+  function statusBadge(status) {
+    const s = STATUS_CONFIG[status] || { label: status, cls: 'bg-deep/5 text-mist border-gold/20' }
+    return (
+      <span className={`font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-0.5 border ${s.cls}`}>
+        {s.label}
+      </span>
+    )
+  }
+
+  async function updateStatus(req, newStatus) {
+    setUpdating(req.id)
+    setError(null)
+    try {
+      const res = await fetch('/api/rdv-admin?action=requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader(session) },
+        body: JSON.stringify({ id: req.id, practitioner_id: practitionerId, status: newStatus }),
+      })
+      if (res.ok) { onChanged(); setExpandedId(null) }
+      else { const d = await res.json(); setError(d.error || 'Erreur') }
+    } catch { setError('Erreur réseau') }
+    finally { setUpdating(null) }
+  }
+
+  async function handleConfirm(req) {
+    if (!form.date || !form.time) { setError('Date et heure requises'); return }
+    setSaving(true)
+    setError(null)
+    try {
+      const scheduled_at = new Date(`${form.date}T${form.time}:00`).toISOString()
+      const res = await fetch('/api/rdv-admin?action=requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader(session) },
+        body: JSON.stringify({
+          id: req.id,
+          practitioner_id: practitionerId,
+          status: 'scheduled',
+          scheduled_at,
+          travel_fee_cents:  form.travelFee  ? Math.round(parseFloat(form.travelFee)  * 100) : 0,
+          final_price_cents: form.finalPrice ? Math.round(parseFloat(form.finalPrice) * 100) : null,
+          practitioner_notes: form.notes || null,
+        }),
+      })
+      const d = await res.json()
+      if (res.ok) {
+        onChanged()
+        setExpandedId(null)
+        setForm({ date: '', time: '', travelFee: '', finalPrice: '', notes: '' })
+      } else {
+        setError(d.error || 'Erreur lors de la confirmation')
+      }
+    } catch { setError('Erreur réseau') }
+    finally { setSaving(false) }
+  }
+
+  const inp = "border border-gold/20 rounded-xl px-3 py-2 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60 w-full"
+
+  if (!requests || requests.length === 0) {
+    return (
+      <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-8 text-center">
+        <p className="font-georgia text-sm text-mist">Aucune demande d'intervention en cours.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">{error}</div>
+      )}
+      {requests.map(req => {
+        const svc = services.find(s => s.id === req.service_id)
+        const isExpanded = expandedId === req.id
+        const canConfirm = req.status === 'pending' || req.status === 'contacted'
+
+        return (
+          <div key={req.id} className="rounded-xl border border-gold/20 bg-white/40 overflow-hidden">
+            <div
+              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/60 transition-colors"
+              onClick={() => {
+                const next = isExpanded ? null : req.id
+                setExpandedId(next)
+                setError(null)
+                if (next) setForm({ date: '', time: '', travelFee: '', finalPrice: '', notes: req.practitioner_notes || '' })
+              }}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-georgia text-sm font-semibold text-deep">{req.customer_first_name} {req.customer_last_name}</p>
+                <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {req.city} ({req.postal_code}) · {new Date(req.created_at).toLocaleDateString('fr-FR')}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {statusBadge(req.status)}
+                <span className="text-mist text-xs select-none">{isExpanded ? '▲' : '▼'}</span>
+              </div>
+            </div>
+
+            {isExpanded && (
+              <div className="border-t border-gold/15 px-4 py-4 space-y-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-georgia">
+                  <div><span className="text-mist">Email : </span><a href={`mailto:${req.customer_email}`} className="text-deep underline">{req.customer_email}</a></div>
+                  <div><span className="text-mist">Tél : </span><a href={`tel:${req.customer_phone}`} className="text-deep">{req.customer_phone}</a></div>
+                  <div className="col-span-2">
+                    <span className="text-mist">Adresse : </span>
+                    <span className="text-deep">{req.address_line1}{req.address_line2 ? `, ${req.address_line2}` : ''}, {req.postal_code} {req.city}</span>
+                  </div>
+                  {req.preferred_period && (
+                    <div className="col-span-2"><span className="text-mist">Préférence : </span><span className="text-deep italic">{req.preferred_period}</span></div>
+                  )}
+                  {req.customer_message && (
+                    <div className="col-span-2"><span className="text-mist">Message : </span><span className="text-deep italic">{req.customer_message}</span></div>
+                  )}
+                </div>
+
+                {canConfirm && (
+                  <div className="flex flex-wrap gap-2">
+                    {req.status === 'pending' && (
+                      <button
+                        onClick={() => updateStatus(req, 'contacted')}
+                        disabled={updating === req.id}
+                        className="font-georgia text-xs px-3 py-1.5 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+                      >
+                        Marquer comme contacté
+                      </button>
+                    )}
+                    <button
+                      onClick={() => updateStatus(req, 'rejected')}
+                      disabled={updating === req.id}
+                      className="font-georgia text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50"
+                    >
+                      Refuser
+                    </button>
+                    <button
+                      onClick={() => updateStatus(req, 'cancelled')}
+                      disabled={updating === req.id}
+                      className="font-georgia text-xs px-3 py-1.5 rounded-lg border border-gold/25 text-mist hover:text-deep disabled:opacity-50"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                )}
+
+                {canConfirm && (
+                  <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 space-y-3">
+                    <p className="font-georgia text-xs font-semibold text-deep">Planifier et confirmer l'intervention</p>
+                    <p className="font-georgia text-[11px] text-mist leading-relaxed">
+                      Un rendez-vous MediumIA sera créé et pris en compte dans vos disponibilités. Aucun événement Google Agenda n'est créé automatiquement à ce stade.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Date *</label>
+                        <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inp} />
+                      </div>
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Heure *</label>
+                        <input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} className={inp} />
+                      </div>
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Frais de déplacement (€)</label>
+                        <input type="number" min="0" step="0.01" value={form.travelFee} onChange={e => setForm(f => ({ ...f, travelFee: e.target.value }))} className={inp} placeholder="0" />
+                      </div>
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Montant total TTC (€)</label>
+                        <input type="number" min="0" step="0.01" value={form.finalPrice} onChange={e => setForm(f => ({ ...f, finalPrice: e.target.value }))} className={inp} placeholder={svc?.price_cents ? (svc.price_cents / 100).toFixed(0) : ''} />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Notes internes</label>
+                        <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className={inp} placeholder="Code d'accès, observations…" />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleConfirm(req)}
+                      disabled={saving}
+                      className="w-full font-georgia text-sm py-3 rounded-xl bg-deep text-gold hover:bg-deep/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                    >
+                      {saving && <Spinner />}
+                      {saving ? 'Confirmation…' : 'Créer le rendez-vous et confirmer →'}
+                    </button>
+                  </div>
+                )}
+
+                {req.status === 'scheduled' && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <p className="font-georgia text-xs text-emerald-800 font-semibold">
+                      Intervention planifiée le {req.scheduled_at
+                        ? new Date(req.scheduled_at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+                        : '—'}
+                      {req.scheduled_at ? ` à ${new Date(req.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                    </p>
+                    {req.final_price_cents != null && (
+                      <p className="font-georgia text-xs text-emerald-700 mt-1">Montant confirmé : {(req.final_price_cents / 100).toFixed(0)} €</p>
+                    )}
+                    {req.practitioner_notes && (
+                      <p className="font-georgia text-xs text-emerald-700 mt-1 italic">{req.practitioner_notes}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -1146,6 +1387,31 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       </div>
                     )}
                   </section>
+
+                  {/* Demandes de déplacement */}
+                  {(activePractitioner.pending_requests?.length > 0 ||
+                    activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
+                    <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Déplacements</p>
+                          <h2 className="font-georgia text-lg font-medium">Demandes d'intervention</h2>
+                        </div>
+                        {activePractitioner.pending_requests?.filter(r => r.status === 'pending').length > 0 && (
+                          <span className="font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                            {activePractitioner.pending_requests.filter(r => r.status === 'pending').length} en attente
+                          </span>
+                        )}
+                      </div>
+                      <RequestsSection
+                        requests={activePractitioner.pending_requests || []}
+                        services={activePractitioner.services || []}
+                        practitionerId={activePractitioner.id}
+                        session={session}
+                        onChanged={() => loadMe(session)}
+                      />
+                    </section>
+                  )}
 
                   {/* Upcoming bookings */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">

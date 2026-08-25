@@ -10,6 +10,7 @@ function formatService(svc) {
     durationLabel:  `${svc.duration_min} min`,
     priceLabel:     svc.price_cents != null ? `${(svc.price_cents / 100).toFixed(0)} €` : 'Tarif à confirmer',
     modalityLabel:  (svc.modality || []).map(m => MODALITY_LABELS[m] || m).join(' · ') || '—',
+    bookingMode:    svc.booking_mode || 'instant',
   }
 }
 
@@ -36,6 +37,29 @@ function StepBar({ step }) {
   )
 }
 
+// ── Step indicator (mode request) ────────────────────────────────────────────
+
+function RequestStepBar() {
+  const labels = ['Prestation', 'Votre demande', 'Envoyée']
+  return (
+    <div className="flex items-center gap-0 mb-8">
+      {labels.map((label, i) => (
+        <div key={label} className="flex items-center flex-1 last:flex-none">
+          <div className={`flex flex-col items-center gap-1 ${i === 1 ? 'opacity-100' : i < 1 ? 'opacity-60' : 'opacity-30'}`}>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-georgia font-bold transition-colors ${i < 1 ? 'bg-gold text-deep' : i === 1 ? 'bg-deep text-gold' : 'bg-deep/10 text-mist'}`}>
+              {i < 1 ? '✓' : i + 1}
+            </div>
+            <span className="font-georgia text-[10px] text-mist hidden sm:block whitespace-nowrap">{label}</span>
+          </div>
+          {i < labels.length - 1 && (
+            <div className={`flex-1 h-px mx-2 ${i < 1 ? 'bg-gold' : 'bg-gold/15'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Service card ──────────────────────────────────────────────────────────────
 
 function ServiceCard({ service, selected, onSelect }) {
@@ -48,12 +72,18 @@ function ServiceCard({ service, selected, onSelect }) {
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <h3 className="font-georgia text-base font-semibold text-deep leading-snug">{service.title}</h3>
+        {service.bookingMode === 'request' && (
+          <span className="font-georgia text-[10px] uppercase tracking-wide bg-gold/10 text-gold border border-gold/30 rounded-full px-2.5 py-0.5 shrink-0 mt-0.5">Sur demande</span>
+        )}
       </div>
       <p className="font-georgia text-sm text-mist leading-relaxed mb-3">{service.description}</p>
       <div className="flex flex-wrap gap-4 font-georgia text-xs text-mist">
         <span>⏱ {service.durationLabel}</span>
         <span>◈ {service.priceLabel}</span>
         <span>{service.modalityLabel}</span>
+        {service.bookingMode === 'request' && (
+          <span className="text-gold/70 italic">→ Réservation sur demande</span>
+        )}
       </div>
     </button>
   )
@@ -322,6 +352,119 @@ function ContactForm({ onSubmit, loading, error }) {
   )
 }
 
+// ── Request form (booking_mode='request') ─────────────────────────────────────
+
+function RequestForm({ service, onSubmit, loading, error }) {
+  const [form, setForm] = useState({
+    firstName: '', lastName: '', email: '', phone: '',
+    addressLine1: '', addressLine2: '', postalCode: '', city: '',
+    message: '', preferredPeriod: '',
+  })
+  const [errors, setErrors] = useState({})
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  function validate() {
+    const e = {}
+    if (!form.firstName.trim()) e.firstName = 'Prénom requis'
+    if (!form.lastName.trim())  e.lastName  = 'Nom requis'
+    if (!form.email.trim() || !form.email.includes('@')) e.email = 'Email invalide'
+    if (!form.phone.trim()) e.phone = 'Téléphone requis'
+    if (!form.addressLine1.trim()) e.addressLine1 = 'Adresse requise'
+    if (!form.postalCode.trim()) e.postalCode = 'Code postal requis'
+    if (!form.city.trim()) e.city = 'Ville requise'
+    return e
+  }
+
+  function handleSubmit(ev) {
+    ev.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    onSubmit(form)
+  }
+
+  const inp = "w-full font-georgia text-sm text-deep bg-white border border-gold/30 rounded-xl px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors placeholder:text-mist/40"
+  const lbl = "block font-georgia text-xs tracking-[0.12em] uppercase text-mist mb-1.5"
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-sm text-red-800">{error}</div>
+      )}
+      {service && (
+        <div className="rounded-xl border border-gold/20 bg-gold/5 px-4 py-3">
+          <p className="font-georgia text-xs text-mist leading-relaxed">
+            <strong className="text-deep">Tarif de base : {service.priceLabel}</strong> · Déplacement inclus jusqu'à 30 km autour de Lederzeele. Au-delà, des frais de déplacement seront définis et confirmés avant l'intervention.
+          </p>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={lbl}>Prénom <span className="text-gold">*</span></label>
+          <input type="text" value={form.firstName} onChange={e => set('firstName', e.target.value)} className={inp} placeholder="Marie" />
+          {errors.firstName && <p className="font-georgia text-xs text-red-500 mt-1">{errors.firstName}</p>}
+        </div>
+        <div>
+          <label className={lbl}>Nom <span className="text-gold">*</span></label>
+          <input type="text" value={form.lastName} onChange={e => set('lastName', e.target.value)} className={inp} placeholder="Dupont" />
+          {errors.lastName && <p className="font-georgia text-xs text-red-500 mt-1">{errors.lastName}</p>}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={lbl}>Email <span className="text-gold">*</span></label>
+          <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inp} placeholder="vous@exemple.fr" />
+          {errors.email && <p className="font-georgia text-xs text-red-500 mt-1">{errors.email}</p>}
+        </div>
+        <div>
+          <label className={lbl}>Téléphone <span className="text-gold">*</span></label>
+          <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={inp} placeholder="06 12 34 56 78" />
+          {errors.phone && <p className="font-georgia text-xs text-red-500 mt-1">{errors.phone}</p>}
+        </div>
+      </div>
+      <div>
+        <label className={lbl}>Adresse du lieu d'intervention <span className="text-gold">*</span></label>
+        <input type="text" value={form.addressLine1} onChange={e => set('addressLine1', e.target.value)} className={inp} placeholder="12 rue des Lilas" />
+        {errors.addressLine1 && <p className="font-georgia text-xs text-red-500 mt-1">{errors.addressLine1}</p>}
+      </div>
+      <div>
+        <label className={lbl}>Complément d'adresse <span className="text-mist font-georgia text-[10px] normal-case tracking-normal">(facultatif)</span></label>
+        <input type="text" value={form.addressLine2} onChange={e => set('addressLine2', e.target.value)} className={inp} placeholder="Appartement, bâtiment…" />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={lbl}>Code postal <span className="text-gold">*</span></label>
+          <input type="text" value={form.postalCode} onChange={e => set('postalCode', e.target.value)} className={inp} placeholder="59000" />
+          {errors.postalCode && <p className="font-georgia text-xs text-red-500 mt-1">{errors.postalCode}</p>}
+        </div>
+        <div>
+          <label className={lbl}>Ville <span className="text-gold">*</span></label>
+          <input type="text" value={form.city} onChange={e => set('city', e.target.value)} className={inp} placeholder="Lille" />
+          {errors.city && <p className="font-georgia text-xs text-red-500 mt-1">{errors.city}</p>}
+        </div>
+      </div>
+      <div>
+        <label className={lbl}>Préférence de période <span className="text-mist font-georgia text-[10px] normal-case tracking-normal">(facultatif)</span></label>
+        <input type="text" value={form.preferredPeriod} onChange={e => set('preferredPeriod', e.target.value)} className={inp} placeholder="En fin de journée de préférence, plutôt en semaine…" />
+      </div>
+      <div>
+        <label className={lbl}>Description de la situation <span className="text-mist font-georgia text-[10px] normal-case tracking-normal">(facultatif)</span></label>
+        <textarea rows={3} value={form.message} onChange={e => set('message', e.target.value)} className={inp} placeholder="Décrivez brièvement le contexte ou vos ressentis concernant le lieu…" />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full font-georgia py-4 rounded-xl bg-deep text-gold font-bold text-base hover:bg-deep/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+      >
+        {loading && <div className="w-4 h-4 border border-gold/40 border-t-gold rounded-full animate-spin" />}
+        {loading ? 'Envoi en cours…' : 'Envoyer ma demande →'}
+      </button>
+      <p className="font-georgia text-[10px] text-mist/60 text-center leading-relaxed">
+        Vos données sont utilisées uniquement pour traiter votre demande et ne sont pas transmises à des tiers.
+      </p>
+    </form>
+  )
+}
+
 // ── Summary sidebar ───────────────────────────────────────────────────────────
 
 function Summary({ practitioner, service, date, time }) {
@@ -414,9 +557,53 @@ export default function RdvPublic({ onBack }) {
 
   const fmt = (d) => d ? new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d) : null
 
-  function selectService(svc) { setService(svc); setDate(null); setTime(null); setStep(1) }
+  function selectService(svc) {
+    setService(svc); setDate(null); setTime(null); setBookingError(null)
+    if (svc.bookingMode === 'request') {
+      setStep('request-form')
+    } else {
+      setStep(1)
+    }
+  }
   function selectDate(d)      { setDate(d); setTime(null); setStep(2) }
   function selectTime(t)      { setTime(t); setStep(3) }
+
+  async function handleSubmitRequest(requestForm) {
+    setBookingLoading(true)
+    setBookingError(null)
+    try {
+      const res = await fetch('/api/rdv-book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          practitioner_slug: slug,
+          service_slug:      service.slug,
+          customer: {
+            firstName:       requestForm.firstName,
+            lastName:        requestForm.lastName,
+            email:           requestForm.email,
+            phone:           requestForm.phone,
+            address_line1:   requestForm.addressLine1,
+            address_line2:   requestForm.addressLine2 || null,
+            postal_code:     requestForm.postalCode,
+            city:            requestForm.city,
+            message:         requestForm.message || null,
+            preferred_period: requestForm.preferredPeriod || null,
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setBookingError(data.error || "Erreur lors de l'envoi. Réessayez.")
+        return
+      }
+      setStep('request-sent')
+    } catch {
+      setBookingError('Erreur réseau. Vérifiez votre connexion et réessayez.')
+    } finally {
+      setBookingLoading(false)
+    }
+  }
 
   async function handleConfirm(contactForm) {
     setBookingLoading(true)
@@ -463,6 +650,37 @@ export default function RdvPublic({ onBack }) {
     } finally {
       setBookingLoading(false)
     }
+  }
+
+  // ── Demande envoyée (step request-sent) ────────────────────────────────────
+
+  if (step === 'request-sent') {
+    return (
+      <div className="min-h-screen bg-cream flex flex-col">
+        <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+          <div className="max-w-5xl mx-auto px-6 py-4">
+            <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">✦ MEDIUMIA</button>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center px-6 py-16">
+          <div className="max-w-lg w-full text-center">
+            <p className="text-gold text-5xl mb-6">✦</p>
+            <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-4">Demande envoyée</p>
+            <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-4">Votre demande a bien été transmise.</h1>
+            <p className="font-georgia text-mist text-base mb-8 leading-relaxed">
+              Sébastien vous recontactera afin de convenir de la date de l'intervention et de vous confirmer le montant total, frais de déplacement éventuels compris.
+            </p>
+            {service && (
+              <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
+                <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.title}</strong></p>
+                <p className="font-georgia text-sm"><span className="text-mist">Tarif de base :</span> <strong>{service.priceLabel}</strong></p>
+              </div>
+            )}
+            <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">← Retour à MediumIA</button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // ── Confirmation (step 4) — UNIQUEMENT après INSERT réussi ─────────────────
@@ -533,7 +751,7 @@ export default function RdvPublic({ onBack }) {
 
           {/* Main booking flow */}
           <div className="md:col-span-2">
-            <StepBar step={step} />
+            {typeof step === 'number' ? <StepBar step={step} /> : <RequestStepBar />}
 
             {/* Step 0 — Service */}
             {step === 0 && (
@@ -588,6 +806,22 @@ export default function RdvPublic({ onBack }) {
                   <h2 className="font-georgia font-medium text-xl">Vos coordonnées</h2>
                 </div>
                 <ContactForm onSubmit={handleConfirm} loading={bookingLoading} error={bookingError} />
+              </div>
+            )}
+
+            {/* Step request-form — Demande de déplacement */}
+            {step === 'request-form' && (
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <button onClick={() => { setStep(0); setBookingError(null) }} className="font-georgia text-xs text-mist hover:text-deep">← Prestation</button>
+                  <h2 className="font-georgia font-medium text-xl">Votre demande</h2>
+                </div>
+                <RequestForm
+                  service={service}
+                  onSubmit={handleSubmitRequest}
+                  loading={bookingLoading}
+                  error={bookingError}
+                />
               </div>
             )}
           </div>

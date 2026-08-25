@@ -76,7 +76,7 @@ export default async function handler(req, res) {
 
   const { data: services } = await supabase
     .from('booking_services')
-    .select('id, slug, title, description, duration_min, price_cents, currency, modality, is_active, sort_order')
+    .select('id, slug, title, description, duration_min, price_cents, currency, modality, is_active, sort_order, booking_mode')
     .eq('practitioner_id', practitioner.id)
     .eq('is_active', true)
     .order('sort_order')

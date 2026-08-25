@@ -69,9 +69,10 @@ async function handleMe(req, res, supabase, userId) {
     { data: connections },
     { data: bookings },
     { data: exceptions },
+    { data: requests },
   ] = await Promise.all([
     supabase.from('booking_services')
-      .select('id, slug, title, description, duration_min, price_cents, currency, modality, is_active, sort_order, practitioner_id')
+      .select('id, slug, title, description, duration_min, price_cents, currency, modality, is_active, sort_order, booking_mode, practitioner_id')
       .in('practitioner_id', ids).order('sort_order'),
     supabase.from('booking_availability_rules')
       .select('id, practitioner_id, day_of_week, start_time, end_time')
@@ -86,6 +87,12 @@ async function handleMe(req, res, supabase, userId) {
     supabase.from('booking_exceptions')
       .select('id, practitioner_id, exception_date, exception_type, slots, note')
       .in('practitioner_id', ids).order('exception_date'),
+    supabase.from('booking_requests')
+      .select('id, service_id, status, customer_first_name, customer_last_name, customer_email, customer_phone, address_line1, address_line2, postal_code, city, customer_message, preferred_period, created_at, scheduled_at, travel_fee_cents, final_price_cents, practitioner_notes, practitioner_id')
+      .in('practitioner_id', ids)
+      .in('status', ['pending', 'contacted', 'scheduled'])
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
 
   const result = practitioners.map(p => ({
@@ -95,6 +102,7 @@ async function handleMe(req, res, supabase, userId) {
     calendar:          (connections || []).find(c  => c.practitioner_id  === p.id) || null,
     upcoming_bookings: (bookings    || []).filter(b => b.practitioner_id === p.id),
     exceptions:        (exceptions  || []).filter(e => e.practitioner_id === p.id),
+    pending_requests:  (requests    || []).filter(r => r.practitioner_id === p.id),
   }))
 
   return res.status(200).json({ practitioners: result })
@@ -113,16 +121,18 @@ async function handleServices(req, res, supabase, userId) {
   }
 
   if (req.method === 'POST') {
-    const { practitioner_id, title, slug, description, duration_min, price_cents, modality, is_active, sort_order } = req.body || {}
+    const { practitioner_id, title, slug, description, duration_min, price_cents, modality, is_active, sort_order, booking_mode } = req.body || {}
     if (!practitioner_id || !title || !slug || !duration_min) return res.status(400).json({ error: 'practitioner_id, title, slug, duration_min requis' })
     if (!SLUG_RE.test(slug)) return res.status(400).json({ error: 'slug invalide (a-z, 0-9, tirets, 2-60 chars)' })
     if (typeof duration_min !== 'number' || duration_min <= 0) return res.status(400).json({ error: 'duration_min doit être un entier positif' })
     if (modality && !modality.every(m => ALLOWED_MODALITIES.includes(m))) return res.status(400).json({ error: 'modality invalide' })
+    if (booking_mode && !['instant', 'request'].includes(booking_mode)) return res.status(400).json({ error: 'booking_mode invalide (instant | request)' })
     if (!await verifyOwner(supabase, userId, practitioner_id)) return res.status(403).json({ error: 'forbidden' })
     const { data, error } = await supabase.from('booking_services').insert({
       practitioner_id, title, slug, description: description || '',
       duration_min, price_cents: price_cents ?? null, currency: 'EUR',
       modality: modality || [], is_active: is_active !== false, sort_order: sort_order || 0,
+      booking_mode: booking_mode || 'instant',
     }).select().single()
     if (error) return res.status(400).json({ error: error.message, code: error.code })
     return res.status(201).json({ service: data })
@@ -132,11 +142,12 @@ async function handleServices(req, res, supabase, userId) {
     const { id, practitioner_id, ...fields } = req.body || {}
     if (!id || !practitioner_id) return res.status(400).json({ error: 'id et practitioner_id requis' })
     if (!await verifyOwner(supabase, userId, practitioner_id)) return res.status(403).json({ error: 'forbidden' })
-    const ALLOWED = ['title', 'slug', 'description', 'duration_min', 'price_cents', 'modality', 'is_active', 'sort_order']
+    const ALLOWED = ['title', 'slug', 'description', 'duration_min', 'price_cents', 'modality', 'is_active', 'sort_order', 'booking_mode']
     const update = {}
     for (const k of ALLOWED) if (k in fields) update[k] = fields[k]
     if (update.slug && !SLUG_RE.test(update.slug)) return res.status(400).json({ error: 'slug invalide' })
     if (update.modality && !update.modality.every(m => ALLOWED_MODALITIES.includes(m))) return res.status(400).json({ error: 'modality invalide' })
+    if (update.booking_mode && !['instant', 'request'].includes(update.booking_mode)) return res.status(400).json({ error: 'booking_mode invalide (instant | request)' })
     const { data, error } = await supabase.from('booking_services')
       .update({ ...update, updated_at: new Date().toISOString() })
       .eq('id', id).eq('practitioner_id', practitioner_id).select().single()
@@ -273,6 +284,90 @@ async function handleExceptions(req, res, supabase, userId) {
   return res.status(405).json({ error: 'Method not allowed' })
 }
 
+// ── action=requests ───────────────────────────────────────────────────────────
+
+async function handleRequests(req, res, supabase, userId) {
+  const pid = req.query.practitioner_id || req.body?.practitioner_id
+  if (!pid) return res.status(400).json({ error: 'practitioner_id requis' })
+  if (!await verifyOwner(supabase, userId, pid)) return res.status(403).json({ error: 'forbidden' })
+
+  if (req.method === 'GET') {
+    const status = req.query.status
+    let q = supabase.from('booking_requests').select('*').eq('practitioner_id', pid)
+    if (status) q = q.eq('status', status)
+    q = q.order('created_at', { ascending: false }).limit(100)
+    const { data, error } = await q
+    if (error) return res.status(500).json({ error: 'db_error', code: error.code })
+    return res.status(200).json({ requests: data || [] })
+  }
+
+  if (req.method === 'PUT') {
+    const { id, status, practitioner_notes, travel_fee_cents, final_price_cents, scheduled_at } = req.body || {}
+    if (!id) return res.status(400).json({ error: 'id requis' })
+
+    const VALID_STATUSES = ['pending', 'contacted', 'scheduled', 'rejected', 'cancelled']
+    if (status && !VALID_STATUSES.includes(status)) return res.status(400).json({ error: 'status invalide' })
+
+    const { data: request, error: reqErr } = await supabase
+      .from('booking_requests').select('*').eq('id', id).eq('practitioner_id', pid).single()
+    if (reqErr || !request) return res.status(404).json({ error: 'Demande introuvable' })
+
+    if (status === 'scheduled') {
+      if (!scheduled_at) return res.status(400).json({ error: 'scheduled_at requis pour confirmer le RDV' })
+      const scheduledDate = new Date(scheduled_at)
+      if (isNaN(scheduledDate.getTime())) return res.status(400).json({ error: 'scheduled_at invalide (ISO 8601 attendu)' })
+
+      const { data: svc } = await supabase.from('booking_services')
+        .select('id, duration_min').eq('id', request.service_id).single()
+      if (!svc) return res.status(500).json({ error: 'Service introuvable' })
+
+      const endsAt = new Date(scheduledDate.getTime() + svc.duration_min * 60_000)
+
+      const { data: booking, error: bookingErr } = await supabase.from('bookings').insert({
+        practitioner_id:     request.practitioner_id,
+        service_id:          request.service_id,
+        starts_at:           scheduledDate.toISOString(),
+        ends_at:             endsAt.toISOString(),
+        timezone:            'Europe/Paris',
+        customer_first_name: request.customer_first_name,
+        customer_last_name:  request.customer_last_name,
+        customer_email:      request.customer_email,
+        customer_phone:      request.customer_phone || null,
+        customer_message:    request.customer_message || null,
+        status:              'confirmed',
+      }).select('id').single()
+
+      if (bookingErr) return res.status(500).json({ error: 'Erreur lors de la création du RDV', code: bookingErr.code })
+
+      const { data: updated, error: updErr } = await supabase.from('booking_requests').update({
+        status:              'scheduled',
+        confirmed_booking_id: booking.id,
+        scheduled_at:        scheduledDate.toISOString(),
+        travel_fee_cents:    travel_fee_cents != null ? Number(travel_fee_cents) : 0,
+        final_price_cents:   final_price_cents != null ? Number(final_price_cents) : null,
+        practitioner_notes:  practitioner_notes ?? null,
+        updated_at:          new Date().toISOString(),
+      }).eq('id', id).select().single()
+
+      if (updErr) return res.status(500).json({ error: 'db_error', code: updErr.code })
+      return res.status(200).json({ request: updated, booking_id: booking.id })
+    }
+
+    const update = { updated_at: new Date().toISOString() }
+    if (status) update.status = status
+    if ('practitioner_notes' in (req.body || {})) update.practitioner_notes = practitioner_notes ?? null
+    if ('travel_fee_cents'   in (req.body || {})) update.travel_fee_cents = travel_fee_cents != null ? Number(travel_fee_cents) : 0
+    if ('final_price_cents'  in (req.body || {})) update.final_price_cents = final_price_cents != null ? Number(final_price_cents) : null
+
+    const { data, error } = await supabase.from('booking_requests')
+      .update(update).eq('id', id).select().single()
+    if (error) return res.status(400).json({ error: error.message, code: error.code })
+    return res.status(200).json({ request: data })
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' })
+}
+
 // ── Router principal ──────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -291,6 +386,7 @@ export default async function handler(req, res) {
     case 'availability': return handleAvailability(req, res, supabase, userId)
     case 'settings':     return handleSettings(req, res, supabase, userId)
     case 'exceptions':   return handleExceptions(req, res, supabase, userId)
+    case 'requests':     return handleRequests(req, res, supabase, userId)
     default:             return res.status(400).json({ error: `action inconnue: ${action}` })
   }
 }

@@ -44,6 +44,38 @@ function parisTimeToUTC(dateStr, timeStr, offsetMs) {
   return new Date(parisMidnightUTC + h * 3600_000 + m * 60_000)
 }
 
+async function handleBookingRequest(req, res, supabase, practitioner, service, customer) {
+  const { phone, address_line1, address_line2, postal_code, city, preferred_period, message } = customer
+  if (!phone?.trim()) return res.status(400).json({ error: 'Téléphone requis pour cette prestation' })
+  if (!address_line1?.trim()) return res.status(400).json({ error: 'Adresse requise pour cette prestation en présentiel' })
+  if (!postal_code?.trim()) return res.status(400).json({ error: 'Code postal requis' })
+  if (!city?.trim()) return res.status(400).json({ error: 'Ville requise' })
+
+  const { data, error } = await supabase.from('booking_requests').insert({
+    practitioner_id:     practitioner.id,
+    service_id:          service.id,
+    customer_first_name: customer.firstName.trim(),
+    customer_last_name:  customer.lastName.trim(),
+    customer_email:      customer.email.trim().toLowerCase(),
+    customer_phone:      phone.trim(),
+    address_line1:       address_line1.trim(),
+    address_line2:       address_line2?.trim() || null,
+    postal_code:         postal_code.trim(),
+    city:                city.trim(),
+    customer_message:    message?.trim() || null,
+    preferred_period:    preferred_period?.trim() || null,
+    status:              'pending',
+  }).select('id').single()
+
+  if (error) {
+    if (error.code === '42P01') {
+      return res.status(503).json({ error: 'Table booking_requests non créée — appliquez la migration docs/rdv-requests-migration.sql.' })
+    }
+    return res.status(500).json({ error: "Erreur lors de l'enregistrement de la demande." })
+  }
+  return res.status(202).json({ request_id: data.id })
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
 
@@ -57,11 +89,9 @@ export default async function handler(req, res) {
 
   const { practitioner_slug, service_slug, date, time, customer } = req.body || {}
 
-  if (!practitioner_slug || !service_slug || !date || !time || !customer) {
-    return res.status(400).json({ error: 'Champs requis : practitioner_slug, service_slug, date, time, customer' })
+  if (!practitioner_slug || !service_slug || !customer) {
+    return res.status(400).json({ error: 'Champs requis : practitioner_slug, service_slug, customer' })
   }
-  if (!DATE_RE.test(date)) return res.status(400).json({ error: 'date invalide (YYYY-MM-DD)' })
-  if (!TIME_RE.test(time)) return res.status(400).json({ error: 'time invalide (HH:MM)' })
   if (!customer.firstName?.trim()) return res.status(400).json({ error: 'customer.firstName requis' })
   if (!customer.lastName?.trim())  return res.status(400).json({ error: 'customer.lastName requis' })
   if (!EMAIL_RE.test(customer.email?.trim())) return res.status(400).json({ error: 'customer.email invalide' })
@@ -96,7 +126,7 @@ export default async function handler(req, res) {
 
   const { data: service, error: svcErr } = await supabase
     .from('booking_services')
-    .select('id, title, duration_min')
+    .select('id, title, duration_min, booking_mode')
     .eq('slug', service_slug)
     .eq('practitioner_id', practitioner.id)
     .eq('is_active', true)
@@ -105,6 +135,15 @@ export default async function handler(req, res) {
   if (svcErr || !service) {
     return res.status(404).json({ error: 'Service introuvable ou inactif' })
   }
+
+  // ── 5b. Mode "request" : formulaire de demande ────────────────────────────
+  if (service.booking_mode === 'request') {
+    return handleBookingRequest(req, res, supabase, practitioner, service, customer)
+  }
+
+  // ── 5c. Mode "instant" : valider date/time ────────────────────────────────
+  if (!date || !DATE_RE.test(date)) return res.status(400).json({ error: 'date invalide (YYYY-MM-DD)' })
+  if (!time || !TIME_RE.test(time)) return res.status(400).json({ error: 'time invalide (HH:MM)' })
 
   // ── 6. Calcul des bornes UTC ──────────────────────────────────────────────
 

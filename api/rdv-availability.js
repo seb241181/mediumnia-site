@@ -2,22 +2,31 @@
  * GET /api/rdv-availability?practitioner=<slug>&date=YYYY-MM-DD&service_slug=<slug>
  *
  * Retourne les créneaux disponibles pour une date donnée.
- * En mode LIVE, service_slug est obligatoire : la durée est lue depuis
- * booking_services.duration_min côté serveur (jamais fournie par le client).
+ * service_slug est obligatoire : la durée est lue depuis booking_services côté serveur.
  *
  * Modes de réponse :
- *   'live'                 → créneaux calculés via Google Calendar freeBusy + règles
- *   'configuration_required' → Supabase absent, praticien inconnu, Google non connecté,
- *                              service/rules non configurés, ou FreeBusy inaccessible
- *   'error'                → (conservé pour les cas de token invalide explicitement détecté)
+ *   'live'                   → créneaux calculés (certains peuvent être indisponibles)
+ *   'configuration_required' → Supabase absent, praticien non configuré, Google non connecté,
+ *                              service/rules absents, ou booking_enabled false.
+ *   'error'                  → token Google invalide (refresh échoué explicitement)
  *
- * Aucun créneau fictif n'est retourné. Si la configuration est incomplète,
- * slots: [] avec mode 'configuration_required'.
+ * Aucun créneau fictif retourné. Si la configuration est incomplète → slots: [].
  *
- * Ordre de priorité pour les créneaux bloqués :
- *   1. Exception (congé/fermeture) → bloque toute la journée ou restreint les horaires
- *   2. Google FreeBusy → plages occupées dans Google Calendar
- *   3. Bookings MediumIA existants → réservations déjà confirmées dans Supabase
+ * Sémantique identique au RPC create_booking pour les vérifications :
+ *
+ *   Buffer : un créneau [S, E] est bloqué par une réservation existante b si leurs
+ *     zones tampon se chevauchent :
+ *       (b.starts_at - buf_before) < (E + buf_after)
+ *       AND (b.ends_at + buf_after) > (S - buf_before)
+ *     Les événements Google sont vérifiés contre la zone tampon du créneau :
+ *       GS < E + buf_after  AND  GE > S - buf_before
+ *
+ *   max_per_day : si le maximum de RDV confirmés du jour est atteint,
+ *     aucun créneau n'est disponible (message explicite).
+ *
+ *   FreeBusy window étendue : la requête Google est faite sur
+ *     [timeMin - buf_before, timeMax + buf_after] pour attraper les événements
+ *     qui débordent dans la zone tampon des créneaux de bord.
  */
 import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
@@ -38,7 +47,21 @@ function parisTimeToUTC(dateStr, timeStr, offsetMs) {
   return new Date(parisMidnightUTC + h * 3600_000 + m * 60_000)
 }
 
-function generateLiveSlotsFromRules(dateStr, rules, busyPeriods, offsetMs, durationMin) {
+/**
+ * Génère les créneaux disponibles.
+ *
+ * googleBusy     : événements Google bruts [{ start, end }] (non étendus)
+ * existingBusy   : réservations MediumIA [{ start, end }] avec buffers déjà appliqués
+ *                  (start = b.starts_at - buf_before, end = b.ends_at + buf_after)
+ * bufBeforeMs, bufAfterMs : buffers du praticien en ms
+ *
+ * Pour chaque créneau [S, E], est bloqué si :
+ *   - événement Google [GS, GE] : GS < E + bufAfter  AND  GE > S - bufBefore
+ *   - réservation étendue [bS, bE] : bS < E + bufAfter  AND  bE > S - bufBefore
+ * → même condition unifiée, car existingBusy est déjà étendu d'un côté et on
+ *   étend le créneau de l'autre côté → équivalent à l'overlap des deux zones tampon.
+ */
+function generateSlots(dateStr, rules, googleBusy, existingBusy, offsetMs, durationMin, bufBeforeMs, bufAfterMs) {
   const slots = []
   const durationMs = durationMin * 60_000
 
@@ -50,15 +73,26 @@ function generateLiveSlotsFromRules(dateStr, rules, busyPeriods, offsetMs, durat
     while (cursor + durationMs <= ruleEndUTC) {
       const slotStart = cursor
       const slotEnd   = cursor + durationMs
-      const isBusy = busyPeriods.some(({ start, end }) => {
-        const bStart = new Date(start).getTime()
-        const bEnd   = new Date(end).getTime()
-        return bStart < slotEnd && bEnd > slotStart
+
+      // Vérifier contre événements Google (bruts) et réservations étendues :
+      // conflit si bStart < slotEnd + bufAfter  AND  bEnd > slotStart - bufBefore
+      const checkEnd   = slotEnd   + bufAfterMs
+      const checkStart = slotStart - bufBeforeMs
+
+      const isGoogleBusy = googleBusy.some(({ start, end }) => {
+        const gS = new Date(start).getTime()
+        const gE = new Date(end).getTime()
+        return gS < checkEnd && gE > checkStart
       })
+
+      const isBookingBusy = !isGoogleBusy && existingBusy.some(b => {
+        return b.start < checkEnd && b.end > checkStart
+      })
+
       const parisDate = new Date(slotStart - offsetMs)
       const hh = String(parisDate.getUTCHours()).padStart(2, '0')
       const mm = String(parisDate.getUTCMinutes()).padStart(2, '0')
-      slots.push({ time: `${hh}:${mm}`, available: !isBusy })
+      slots.push({ time: `${hh}:${mm}`, available: !isGoogleBusy && !isBookingBusy })
       cursor = slotEnd
     }
   }
@@ -91,7 +125,7 @@ export default async function handler(req, res) {
 
   const { data: practitioner } = await supabase
     .from('booking_practitioners')
-    .select('id, timezone, is_active, booking_enabled, buffer_before_min, buffer_after_min')
+    .select('id, timezone, is_active, booking_enabled, buffer_before_min, buffer_after_min, max_per_day')
     .eq('slug', slug)
     .single()
 
@@ -99,7 +133,10 @@ export default async function handler(req, res) {
     return res.status(200).json(CONFIG_REQUIRED())
   }
 
-  // ── Connexion Google ──────────────────────────────────────────────────────
+  const bufBeforeMs = (practitioner.buffer_before_min ?? 0) * 60_000
+  const bufAfterMs  = (practitioner.buffer_after_min  ?? 0) * 60_000
+
+  // ── Connexion Google (obligatoire — cohérence avec rdv-book) ──────────────
 
   const { data: conn } = await supabase
     .from('booking_calendar_connections')
@@ -131,6 +168,7 @@ export default async function handler(req, res) {
   }
 
   const durationMin = svc.duration_min
+  const offsetMs    = parisUTCOffsetMs(date)
 
   // ── Exception du jour ─────────────────────────────────────────────────────
 
@@ -146,15 +184,13 @@ export default async function handler(req, res) {
   }
 
   // ── Règles de disponibilité ───────────────────────────────────────────────
-  // Si exception.type = 'modified' → utiliser exception.slots comme règles
-  // Sinon → lire booking_availability_rules pour le jour de la semaine
 
   let rules
   if (exception?.exception_type === 'modified' && exception.slots?.length) {
     rules = exception.slots
   } else {
     const jsDay = new Date(date + 'T12:00:00Z').getDay()
-    const dbDay = (jsDay + 6) % 7   // 0=Dim JS → 6=DB, 1=Lun JS → 0=DB
+    const dbDay = (jsDay + 6) % 7  // 0=Dim JS → 6=DB, 1=Lun JS → 0=DB
 
     const { data: dbRules, error: rulesErr } = await supabase
       .from('booking_availability_rules')
@@ -167,6 +203,31 @@ export default async function handler(req, res) {
       return res.status(200).json(CONFIG_REQUIRED('Aucune disponibilité configurée pour ce jour.'))
     }
     rules = dbRules
+  }
+
+  // ── max_per_day : vérification avant de calculer les créneaux ─────────────
+  // Compte les RDV confirmés dans la journée Paris (minuit Paris → minuit+1j Paris en UTC).
+
+  const parisMidnightUTC    = new Date(date + 'T00:00:00Z').getTime() + offsetMs
+  const parisMidnightEndUTC = parisMidnightUTC + 86_400_000
+
+  if (practitioner.max_per_day != null) {
+    const { data: todayBookings } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('practitioner_id', practitioner.id)
+      .eq('status', 'confirmed')
+      .gte('starts_at', new Date(parisMidnightUTC).toISOString())
+      .lt('starts_at',  new Date(parisMidnightEndUTC).toISOString())
+
+    if ((todayBookings?.length ?? 0) >= practitioner.max_per_day) {
+      return res.status(200).json({
+        mode: 'live',
+        slots: [],
+        notice: `Nombre maximum de rendez-vous atteint pour ce jour (${practitioner.max_per_day}).`,
+        full: true,
+      })
+    }
   }
 
   // ── Rafraîchissement du token ─────────────────────────────────────────────
@@ -189,20 +250,23 @@ export default async function handler(req, res) {
     return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de rafraîchir le token Google — reconnectez votre agenda.' })
   }
 
-  const offsetMs   = parisUTCOffsetMs(date)
-  const timeMinUTC = parisTimeToUTC(date, rules[0].start_time, offsetMs).toISOString()
-  const timeMaxUTC = parisTimeToUTC(date, rules[rules.length - 1].end_time, offsetMs).toISOString()
+  // Fenêtre de la journée (bornes des règles) + extension par les buffers
+  // pour attraper les événements Google qui débordent dans les zones tampon des créneaux de bord.
+  const timeMinUTC     = parisTimeToUTC(date, rules[0].start_time,              offsetMs).toISOString()
+  const timeMaxUTC     = parisTimeToUTC(date, rules[rules.length - 1].end_time, offsetMs).toISOString()
+  const timeMinFB      = new Date(new Date(timeMinUTC).getTime() - bufBeforeMs).toISOString()
+  const timeMaxFB      = new Date(new Date(timeMaxUTC).getTime() + bufAfterMs).toISOString()
 
   // ── Google FreeBusy ───────────────────────────────────────────────────────
 
-  let busyPeriods = []
+  let googleBusy = []
   try {
     const freeBusyRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        timeMin: timeMinUTC,
-        timeMax: timeMaxUTC,
+        timeMin: timeMinFB,
+        timeMax: timeMaxFB,
         timeZone: 'Europe/Paris',
         items: [{ id: conn.google_calendar_id || 'primary' }],
       }),
@@ -212,36 +276,36 @@ export default async function handler(req, res) {
     }
     const freeBusyData = await freeBusyRes.json()
     const calKey = conn.google_calendar_id || 'primary'
-    busyPeriods = freeBusyData.calendars?.[calKey]?.busy ?? []
+    googleBusy = freeBusyData.calendars?.[calKey]?.busy ?? []
   } catch {
     return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
   }
 
-  // ── Réservations MediumIA existantes (anti-double-booking visuel) ─────────
+  // ── Réservations MediumIA existantes ─────────────────────────────────────
+  // Stockées pré-étendues [b.starts_at - buf_before, b.ends_at + buf_after]
+  // pour être homogènes avec la vérification unifiée dans generateSlots.
 
-  const bufferBefore = practitioner.buffer_before_min ?? 0
-  const bufferAfter  = practitioner.buffer_after_min  ?? 0
-
+  const existingBusy = []
   const { data: existingBookings } = await supabase
     .from('bookings')
     .select('starts_at, ends_at')
     .eq('practitioner_id', practitioner.id)
     .eq('status', 'confirmed')
-    .gte('starts_at', timeMinUTC)
-    .lte('starts_at', timeMaxUTC)
+    .gte('starts_at', new Date(parisMidnightUTC).toISOString())
+    .lt('starts_at',  new Date(parisMidnightEndUTC).toISOString())
 
   if (existingBookings) {
     for (const b of existingBookings) {
-      busyPeriods.push({
-        start: new Date(new Date(b.starts_at).getTime() - bufferBefore * 60_000).toISOString(),
-        end:   new Date(new Date(b.ends_at).getTime()   + bufferAfter  * 60_000).toISOString(),
+      existingBusy.push({
+        start: new Date(new Date(b.starts_at).getTime() - bufBeforeMs).getTime(),
+        end:   new Date(new Date(b.ends_at).getTime()   + bufAfterMs).getTime(),
       })
     }
   }
 
   // ── Calcul des créneaux ───────────────────────────────────────────────────
 
-  const slots = generateLiveSlotsFromRules(date, rules, busyPeriods, offsetMs, durationMin)
+  const slots = generateSlots(date, rules, googleBusy, existingBusy, offsetMs, durationMin, bufBeforeMs, bufAfterMs)
 
   return res.status(200).json({ mode: 'live', slots, notice: null })
 }

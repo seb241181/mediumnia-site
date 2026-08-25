@@ -183,9 +183,10 @@ export default async function handler(req, res) {
   }
 
   // ── 11. Google FreeBusy — FAIL CLOSED ─────────────────────────────────────
-  // Si une connexion Google active existe, FreeBusy DOIT répondre OK.
-  // Toute erreur (token, réseau, timeout, refresh impossible) → refus de la réservation.
-  // On ne crée jamais un RDV potentiellement en conflit avec l'agenda Google.
+  // Une connexion Google active EST OBLIGATOIRE pour confirmer une réservation.
+  // Cohérence avec rdv-config et rdv-availability : si Google n'est pas connecté,
+  // aucun créneau n'est affiché → aucune réservation ne doit pouvoir aboutir.
+  // Toute erreur (token, réseau, timeout, refresh) → refus. Jamais de fallback silencieux.
 
   const { data: conn } = await supabase
     .from('booking_calendar_connections')
@@ -194,7 +195,13 @@ export default async function handler(req, res) {
     .eq('is_active', true)
     .single()
 
-  if (conn) {
+  if (!conn) {
+    return res.status(503).json({
+      error: 'Réservations temporairement indisponibles — Google Agenda n\'est pas connecté.',
+    })
+  }
+
+  {
     let accessToken
     try {
       const expiry = new Date(conn.token_expiry).getTime()

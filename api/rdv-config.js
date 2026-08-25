@@ -6,7 +6,7 @@
  *
  * Réponse :
  *   {
- *     mode: 'demo' | 'live' | 'configuration_required',
+ *     mode: 'live' | 'configuration_required',
  *     availableWeekdays: number[] | null,   // JS getDay() (0=Dim..6=Sam)
  *     horizonDays: number | null,
  *     notice: string | null,
@@ -14,9 +14,9 @@
  *     services: Service[] | []              // actifs uniquement, triés par sort_order
  *   }
  *
- * mode 'demo'  → Supabase absent, praticien inconnu ou Google non connecté.
- * mode 'configuration_required' → Google connecté mais booking_horizon_days absent
- *                                  ou aucune règle de disponibilité.
+ * mode 'configuration_required' → Supabase absent, praticien inconnu, Google non connecté,
+ *                                  booking_horizon_days absent, ou aucune règle.
+ *                                  Aucun créneau fictif n'est jamais retourné.
  * mode 'live'  → tout configuré, créneaux calculables côté serveur.
  *
  * Endpoint public — aucune donnée sensible (tokens, emails pro, etc.) n'est exposée.
@@ -24,6 +24,15 @@
 import { isSupabaseConfigured, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
+
+const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
+  mode: 'configuration_required',
+  availableWeekdays: null,
+  horizonDays: null,
+  notice: notice || 'Réservations temporairement indisponibles — configuration en cours.',
+  practitioner,
+  services,
+})
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
@@ -37,25 +46,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Paramètre practitioner manquant ou invalide' })
   }
 
-  const demoBase = {
-    mode: 'demo',
-    availableWeekdays: null,
-    horizonDays: 42,
-    notice: null,
-    practitioner: null,
-    services: [],
-  }
-  const configRequired = (notice) => ({
-    mode: 'configuration_required',
-    availableWeekdays: null,
-    horizonDays: null,
-    notice,
-    practitioner: null,
-    services: [],
-  })
-
   if (!isSupabaseConfigured()) {
-    return res.status(200).json(demoBase)
+    return res.status(200).json(CONFIG_REQUIRED('Réservations temporairement indisponibles — configuration en cours.'))
   }
 
   const supabase = getSupabaseAdmin()
@@ -64,12 +56,12 @@ export default async function handler(req, res) {
 
   const { data: practitioner } = await supabase
     .from('booking_practitioners')
-    .select('id, name, role, photo_url, tagline, booking_horizon_days, is_active')
+    .select('id, name, role, photo_url, tagline, booking_horizon_days, is_active, booking_enabled')
     .eq('slug', slug)
     .single()
 
   if (!practitioner || !practitioner.is_active) {
-    return res.status(200).json(demoBase)
+    return res.status(200).json(CONFIG_REQUIRED('Réservations temporairement indisponibles — configuration en cours.'))
   }
 
   // Données publiques du praticien (jamais de données sensibles ici)
@@ -89,6 +81,18 @@ export default async function handler(req, res) {
     .eq('is_active', true)
     .order('sort_order')
 
+  const activeServices = services || []
+
+  // ── booking_enabled ───────────────────────────────────────────────────────
+
+  if (!practitioner.booking_enabled) {
+    return res.status(200).json(CONFIG_REQUIRED(
+      'Les réservations sont actuellement fermées.',
+      practitionerPublic,
+      activeServices,
+    ))
+  }
+
   // ── Connexion Google ──────────────────────────────────────────────────────
 
   const { data: conn } = await supabase
@@ -99,21 +103,21 @@ export default async function handler(req, res) {
     .single()
 
   if (!conn) {
-    return res.status(200).json({
-      ...demoBase,
-      practitioner: practitionerPublic,
-      services: services || [],
-    })
+    return res.status(200).json(CONFIG_REQUIRED(
+      'Réservations temporairement indisponibles — configuration en cours.',
+      practitionerPublic,
+      activeServices,
+    ))
   }
 
   // ── Horizon de réservation ────────────────────────────────────────────────
 
   if (!practitioner.booking_horizon_days) {
-    return res.status(200).json({
-      ...configRequired('booking_horizon_days non configuré — appliquez la migration docs/rdv-migration-v2.sql.'),
-      practitioner: practitionerPublic,
-      services: services || [],
-    })
+    return res.status(200).json(CONFIG_REQUIRED(
+      'Réservations temporairement indisponibles — configuration en cours.',
+      practitionerPublic,
+      activeServices,
+    ))
   }
 
   // ── Règles de disponibilité ───────────────────────────────────────────────
@@ -124,11 +128,11 @@ export default async function handler(req, res) {
     .eq('practitioner_id', practitioner.id)
 
   if (rulesErr || !rules?.length) {
-    return res.status(200).json({
-      ...configRequired('Aucune règle de disponibilité — configurez vos plages horaires dans le dashboard.'),
-      practitioner: practitionerPublic,
-      services: services || [],
-    })
+    return res.status(200).json(CONFIG_REQUIRED(
+      'Réservations temporairement indisponibles — configuration en cours.',
+      practitionerPublic,
+      activeServices,
+    ))
   }
 
   // Conversion DB 0=Lun → JS getDay() 0=Dim : (dbDay + 1) % 7
@@ -140,6 +144,6 @@ export default async function handler(req, res) {
     horizonDays: practitioner.booking_horizon_days,
     notice: null,
     practitioner: practitionerPublic,
-    services: services || [],
+    services: activeServices,
   })
 }

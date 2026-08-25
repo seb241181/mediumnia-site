@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react'
-import { getPractitioner } from '../../data/rdvData'
 
-/* ── Step indicator ── */
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const MODALITY_LABELS = { video: 'Vidéo', phone: 'Téléphone', 'in-person': 'Présentiel' }
+
+function formatService(svc) {
+  return {
+    ...svc,
+    durationLabel:  `${svc.duration_min} min`,
+    priceLabel:     svc.price_cents != null ? `${(svc.price_cents / 100).toFixed(0)} €` : 'Tarif à confirmer',
+    modalityLabel:  (svc.modality || []).map(m => MODALITY_LABELS[m] || m).join(' · ') || '—',
+  }
+}
+
+// ── Step indicator ────────────────────────────────────────────────────────────
+
 function StepBar({ step }) {
   const labels = ['Prestation', 'Date', 'Créneau', 'Coordonnées']
   return (
@@ -23,7 +36,8 @@ function StepBar({ step }) {
   )
 }
 
-/* ── Service card ── */
+// ── Service card ──────────────────────────────────────────────────────────────
+
 function ServiceCard({ service, selected, onSelect }) {
   return (
     <button
@@ -34,11 +48,6 @@ function ServiceCard({ service, selected, onSelect }) {
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <h3 className="font-georgia text-base font-semibold text-deep leading-snug">{service.title}</h3>
-        {service.provisional && (
-          <span className="font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 shrink-0 mt-0.5">
-            À confirmer
-          </span>
-        )}
       </div>
       <p className="font-georgia text-sm text-mist leading-relaxed mb-3">{service.description}</p>
       <div className="flex flex-wrap gap-4 font-georgia text-xs text-mist">
@@ -50,17 +59,14 @@ function ServiceCard({ service, selected, onSelect }) {
   )
 }
 
-/* ── Calendar picker ── */
-// config = { mode, availableWeekdays, horizonDays, notice } | null (chargement)
-// mode 'demo'  → availableWeekdays null → règles DEMO : Lun-Ven, 42 j
-// mode 'live'  → availableWeekdays [0..6] JS day numbers depuis booking_availability_rules
+// ── Calendar picker ───────────────────────────────────────────────────────────
+
 function CalendarPicker({ selected, onSelect, config }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const minDate = new Date(today)
   minDate.setDate(minDate.getDate() + 1)
 
-  // Horizon : config DB en mode LIVE, 42 jours en mode DEMO, 42 par défaut pendant le chargement
   const horizonDays = config?.horizonDays ?? 42
   const maxDate = new Date(today)
   maxDate.setDate(maxDate.getDate() + horizonDays)
@@ -80,7 +86,7 @@ function CalendarPicker({ selected, onSelect, config }) {
       <div className="rounded-2xl border border-gold/25 bg-white/60 px-5 py-8 text-center">
         <p className="font-georgia text-sm text-mist mb-2">Configuration requise</p>
         <p className="font-georgia text-xs text-mist/50 italic leading-relaxed">
-          {config.notice || 'Les paramètres de disponibilité doivent être configurés par le praticien.'}
+          {config.notice || 'Les paramètres de disponibilité doivent être configurés.'}
         </p>
       </div>
     )
@@ -94,11 +100,7 @@ function CalendarPicker({ selected, onSelect, config }) {
 
   function isDayDisabled(date) {
     if (date < minDate || date > maxDate) return true
-    if (config.availableWeekdays === null) {
-      // Mode DEMO : week-ends désactivés (comportement d'origine préservé)
-      return date.getDay() === 0 || date.getDay() === 6
-    }
-    // Mode LIVE : seuls les jours ayant des règles en DB sont sélectionnables
+    if (config.availableWeekdays === null) return date.getDay() === 0 || date.getDay() === 6
     return !config.availableWeekdays.includes(date.getDay())
   }
 
@@ -158,9 +160,10 @@ function CalendarPicker({ selected, onSelect, config }) {
   )
 }
 
-/* ── Time slots ── */
+// ── Time slots ────────────────────────────────────────────────────────────────
+
 function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
-  const [result, setResult] = useState(null)  // { mode, slots, notice }
+  const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -173,21 +176,17 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
       String(date.getMonth() + 1).padStart(2, '0'),
       String(date.getDate()).padStart(2, '0'),
     ].join('-')
-    // service_slug transmis au serveur ; la durée est lue dans booking_services.duration_min.
-    // En mode DEMO (Google non connecté), service_slug est ignoré et des créneaux fictifs
-    // sont retournés. En mode LIVE, le service doit exister dans booking_services avec
-    // la colonne slug correspondant à service.id (ex. 'consultation-mediumnite').
     const params = new URLSearchParams({
       practitioner: practitionerSlug,
       date: dateStr,
-      service_slug: service.id,
+      service_slug: service.slug,
     })
     fetch(`/api/rdv-availability?${params}`)
       .then(r => r.json())
       .then(data => { if (!cancelled) { setResult(data); setLoading(false) } })
       .catch(() => {
         if (!cancelled) {
-          setResult({ mode: 'error', slots: [], notice: 'Impossible de charger les créneaux. Réessayez.' })
+          setResult({ mode: 'error', slots: [], notice: 'Impossible de charger les créneaux.' })
           setLoading(false)
         }
       })
@@ -202,17 +201,16 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
     )
   }
 
-  // Modes sans créneaux affichables
   if (!result || result.slots.length === 0) {
     let msg = 'Aucun créneau disponible ce jour.'
     let sub = null
     if (result?.mode === 'configuration_required') {
-      msg = 'Les horaires de ce praticien ne sont pas encore configurés.'
-      sub = 'La connexion Google Agenda et les règles de disponibilité doivent être activées.'
+      msg = 'Les horaires ne sont pas encore configurés.'
+      sub = 'Connectez Google Agenda et configurez vos disponibilités dans le dashboard.'
     } else if (result?.mode === 'error') {
       msg = result.notice || 'Impossible de synchroniser avec Google Agenda.'
-    } else if (result?.mode === 'demo') {
-      sub = result.notice || 'Créneaux de démonstration — agenda réel non connecté.'
+    } else if (result?.closed) {
+      msg = 'Fermé ce jour (fermeture exceptionnelle).'
     }
     return (
       <div className="rounded-xl border border-gold/20 px-5 py-8 text-center">
@@ -224,8 +222,8 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
 
   return (
     <div>
-      {result.mode === 'demo' && result.notice && (
-        <p className="font-georgia text-xs text-mist/70 italic mb-3">{result.notice}</p>
+      {result.mode === 'demo' && (
+        <p className="font-georgia text-xs text-mist/70 italic mb-3">Créneaux de démonstration — agenda réel non connecté.</p>
       )}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {result.slots.map(slot => (
@@ -252,8 +250,9 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
   )
 }
 
-/* ── Contact form ── */
-function ContactForm({ onSubmit }) {
+// ── Contact form ──────────────────────────────────────────────────────────────
+
+function ContactForm({ onSubmit, loading, error }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', message: '' })
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -261,7 +260,7 @@ function ContactForm({ onSubmit }) {
   function validate() {
     const e = {}
     if (!form.firstName.trim()) e.firstName = 'Prénom requis'
-    if (!form.lastName.trim()) e.lastName = 'Nom requis'
+    if (!form.lastName.trim())  e.lastName  = 'Nom requis'
     if (!form.email.trim() || !form.email.includes('@')) e.email = 'Email invalide'
     return e
   }
@@ -278,6 +277,11 @@ function ContactForm({ onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-sm text-red-800">
+          {error}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={label}>Prénom <span className="text-gold">*</span></label>
@@ -303,8 +307,13 @@ function ContactForm({ onSubmit }) {
         <label className={label}>Message <span className="text-mist">(facultatif)</span></label>
         <textarea rows={3} value={form.message} onChange={e => set('message', e.target.value)} className={input} placeholder="Un mot sur votre démarche..." />
       </div>
-      <button type="submit" className="w-full font-georgia py-4 rounded-xl bg-deep text-gold font-bold text-base hover:bg-deep/90 transition-colors">
-        Confirmer la réservation →
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full font-georgia py-4 rounded-xl bg-deep text-gold font-bold text-base hover:bg-deep/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+      >
+        {loading && <div className="w-4 h-4 border border-gold/40 border-t-gold rounded-full animate-spin" />}
+        {loading ? 'Confirmation en cours…' : 'Confirmer la réservation →'}
       </button>
       <p className="font-georgia text-[10px] text-mist/60 text-center leading-relaxed">
         Vos données sont utilisées uniquement pour ce rendez-vous et ne sont pas transmises à des tiers.
@@ -313,19 +322,24 @@ function ContactForm({ onSubmit }) {
   )
 }
 
-/* ── Summary sidebar ── */
+// ── Summary sidebar ───────────────────────────────────────────────────────────
+
 function Summary({ practitioner, service, date, time }) {
   const fmt = (d) => d ? new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d) : null
   return (
     <div className="rounded-2xl border border-gold/25 bg-white/60 p-5">
       <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-4">Récapitulatif</p>
-      <div className="flex items-center gap-3 pb-4 border-b border-gold/10">
-        <img src={practitioner.photo} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
-        <div>
-          <p className="font-georgia text-sm font-semibold leading-snug">{practitioner.name}</p>
-          <p className="font-georgia text-xs text-mist">{practitioner.role}</p>
+      {practitioner && (
+        <div className="flex items-center gap-3 pb-4 border-b border-gold/10">
+          {practitioner.photo_url && (
+            <img src={practitioner.photo_url} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+          )}
+          <div>
+            <p className="font-georgia text-sm font-semibold leading-snug">{practitioner.name}</p>
+            <p className="font-georgia text-xs text-mist">{practitioner.role}</p>
+          </div>
         </div>
-      </div>
+      )}
       {service && (
         <div className="py-3 border-b border-gold/10">
           <p className="font-georgia text-[10px] uppercase tracking-wide text-mist mb-1">Prestation</p>
@@ -345,25 +359,47 @@ function Summary({ practitioner, service, date, time }) {
   )
 }
 
-/* ── Main component ── */
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function RdvPublic({ onBack }) {
   const slug = window.location.pathname.replace(/^\/rdv\//, '').replace(/\/$/, '')
-  const practitioner = getPractitioner(slug)
 
-  const [step, setStep] = useState(0)
-  const [service, setService] = useState(null)
-  const [date, setDate] = useState(null)
-  const [time, setTime] = useState(null)
-  const [calConfig, setCalConfig] = useState(null)
+  // Config + données publiques chargées depuis /api/rdv-config
+  const [configData, setConfigData]     = useState(null)   // null = chargement
+  const [configLoading, setConfigLoading] = useState(true)
+
+  // Booking flow
+  const [step, setStep]           = useState(0)
+  const [service, setService]     = useState(null)
+  const [date, setDate]           = useState(null)
+  const [time, setTime]           = useState(null)
+  const [bookingResult, setBookingResult] = useState(null)
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const [bookingError, setBookingError]     = useState(null)
 
   useEffect(() => {
-    fetch(`/api/rdv-config?practitioner=${slug}`)
+    fetch(`/api/rdv-config?practitioner=${encodeURIComponent(slug)}`)
       .then(r => r.json())
-      .then(data => setCalConfig(data))
-      .catch(() => setCalConfig({ mode: 'demo', availableWeekdays: null, horizonDays: 42, notice: null }))
+      .then(data => { setConfigData(data); setConfigLoading(false) })
+      .catch(() => {
+        setConfigData({ mode: 'demo', availableWeekdays: null, horizonDays: 42, notice: null, practitioner: null, services: [] })
+        setConfigLoading(false)
+      })
   }, [slug])
 
-  if (!practitioner) {
+  // ── Chargement ──────────────────────────────────────────────────────────────
+
+  if (configLoading) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // ── Praticien introuvable ───────────────────────────────────────────────────
+
+  if (!configData?.practitioner && configData?.mode !== 'demo') {
     return (
       <div className="min-h-screen bg-cream flex flex-col items-center justify-center px-6 text-center">
         <p className="text-gold text-4xl mb-4">◌</p>
@@ -373,14 +409,65 @@ export default function RdvPublic({ onBack }) {
     )
   }
 
+  const practitioner = configData.practitioner
+  const services     = (configData.services || []).map(formatService)
+
   const fmt = (d) => d ? new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d) : null
 
   function selectService(svc) { setService(svc); setDate(null); setTime(null); setStep(1) }
-  function selectDate(d) { setDate(d); setTime(null); setStep(2) }
-  function selectTime(t) { setTime(t); setStep(3) }
-  function handleConfirm() { setStep(4) }
+  function selectDate(d)      { setDate(d); setTime(null); setStep(2) }
+  function selectTime(t)      { setTime(t); setStep(3) }
 
-  if (step === 4) {
+  async function handleConfirm(contactForm) {
+    setBookingLoading(true)
+    setBookingError(null)
+
+    const dateStr = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-')
+
+    try {
+      const res = await fetch('/api/rdv-book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          practitioner_slug: slug,
+          service_slug:      service.slug,
+          date:              dateStr,
+          time,
+          customer: {
+            firstName: contactForm.firstName,
+            lastName:  contactForm.lastName,
+            email:     contactForm.email,
+            phone:     contactForm.phone || null,
+            message:   contactForm.message || null,
+          },
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setBookingError(data.error || 'Erreur lors de la réservation. Réessayez.')
+        setBookingLoading(false)
+        return
+      }
+
+      // Succès confirmé par le serveur (INSERT bookings réalisé)
+      setBookingResult(data)
+      setStep(4)
+    } catch {
+      setBookingError('Erreur réseau. Vérifiez votre connexion et réessayez.')
+    } finally {
+      setBookingLoading(false)
+    }
+  }
+
+  // ── Confirmation (step 4) — UNIQUEMENT après INSERT réussi ─────────────────
+
+  if (step === 4 && bookingResult) {
     return (
       <div className="min-h-screen bg-cream flex flex-col">
         <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
@@ -391,20 +478,15 @@ export default function RdvPublic({ onBack }) {
         <div className="flex-1 flex items-center justify-center px-6 py-16">
           <div className="max-w-lg w-full text-center">
             <p className="text-gold text-5xl mb-6">✦</p>
-            <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-4">Réservation enregistrée</p>
-            <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-2">Votre demande a bien été prise en compte.</h1>
-            <p className="font-georgia text-mist text-base mb-8">Un email de confirmation vous sera envoyé.</p>
-            <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-6 text-left space-y-2.5">
-              <p className="font-georgia text-sm"><span className="text-mist">Praticien :</span> <strong>{practitioner.name}</strong></p>
+            <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-4">Réservation confirmée</p>
+            <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-2">Votre rendez-vous est enregistré.</h1>
+            <p className="font-georgia text-mist text-base mb-8">Un email de confirmation vous sera envoyé prochainement.</p>
+            <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
+              {practitioner && <p className="font-georgia text-sm"><span className="text-mist">Praticien :</span> <strong>{practitioner.name}</strong></p>}
               <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.title}</strong></p>
               <p className="font-georgia text-sm capitalize"><span className="text-mist">Date :</span> <strong>{fmt(date)}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Heure :</span> <strong>{time}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Modalité :</span> <strong>{service.modalityLabel}</strong></p>
-            </div>
-            <div className="rounded-xl border border-gold/20 bg-gold/5 px-5 py-4 mb-8">
-              <p className="font-georgia text-xs text-mist leading-relaxed italic">
-                Version Preview — la réservation n'est pas encore persistée et aucun email n'est envoyé. Ces fonctionnalités seront actives après configuration de Supabase et du service d'email.
-              </p>
             </div>
             <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
               ← Retour à MediumIA
@@ -428,13 +510,24 @@ export default function RdvPublic({ onBack }) {
 
         {/* Practitioner hero */}
         <div className="flex items-center gap-5 mb-10">
-          <img src={practitioner.photo} alt={practitioner.name} className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover shadow-sm" />
+          {practitioner?.photo_url && (
+            <img src={practitioner.photo_url} alt={practitioner?.name || slug} className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover shadow-sm" />
+          )}
           <div>
             <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-1">Prendre rendez-vous</p>
-            <h1 className="font-georgia font-medium text-2xl md:text-3xl text-deep leading-tight">{practitioner.name}</h1>
-            <p className="font-georgia text-mist text-sm">{practitioner.tagline}</p>
+            <h1 className="font-georgia font-medium text-2xl md:text-3xl text-deep leading-tight">{practitioner?.name || slug}</h1>
+            <p className="font-georgia text-mist text-sm">{practitioner?.tagline || ''}</p>
           </div>
         </div>
+
+        {/* Mode demo notice */}
+        {configData.mode === 'demo' && (
+          <div className="rounded-xl border border-gold/20 bg-gold/5 px-5 py-3.5 mb-6">
+            <p className="font-georgia text-xs text-mist/80 italic">
+              Mode démonstration — la connexion Google Agenda et la configuration des disponibilités sont requises pour activer les réservations réelles.
+            </p>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-3 gap-8">
 
@@ -446,11 +539,17 @@ export default function RdvPublic({ onBack }) {
             {step === 0 && (
               <div>
                 <h2 className="font-georgia font-medium text-xl mb-5">Choisissez une prestation</h2>
-                <div className="space-y-3">
-                  {practitioner.services.map(svc => (
-                    <ServiceCard key={svc.id} service={svc} selected={service?.id === svc.id} onSelect={selectService} />
-                  ))}
-                </div>
+                {services.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-gold/25 px-6 py-10 text-center">
+                    <p className="font-georgia text-sm text-mist">Aucune prestation disponible pour le moment.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {services.map(svc => (
+                      <ServiceCard key={svc.id} service={svc} selected={service?.id === svc.id} onSelect={selectService} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -458,10 +557,10 @@ export default function RdvPublic({ onBack }) {
             {step === 1 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => setStep(0)} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Prestation</button>
+                  <button onClick={() => setStep(0)} className="font-georgia text-xs text-mist hover:text-deep">← Prestation</button>
                   <h2 className="font-georgia font-medium text-xl">Choisissez une date</h2>
                 </div>
-                <CalendarPicker selected={date} onSelect={selectDate} config={calConfig} />
+                <CalendarPicker selected={date} onSelect={selectDate} config={configData} />
               </div>
             )}
 
@@ -469,7 +568,7 @@ export default function RdvPublic({ onBack }) {
             {step === 2 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => setStep(1)} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Date</button>
+                  <button onClick={() => setStep(1)} className="font-georgia text-xs text-mist hover:text-deep">← Date</button>
                   <h2 className="font-georgia font-medium text-xl capitalize">{fmt(date)}</h2>
                 </div>
                 <TimeSlots practitionerSlug={slug} date={date} service={service} selected={time} onSelect={selectTime} />
@@ -485,10 +584,10 @@ export default function RdvPublic({ onBack }) {
             {step === 3 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => setStep(2)} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Créneau</button>
+                  <button onClick={() => setStep(2)} className="font-georgia text-xs text-mist hover:text-deep">← Créneau</button>
                   <h2 className="font-georgia font-medium text-xl">Vos coordonnées</h2>
                 </div>
-                <ContactForm onSubmit={handleConfirm} />
+                <ContactForm onSubmit={handleConfirm} loading={bookingLoading} error={bookingError} />
               </div>
             )}
           </div>
@@ -497,7 +596,6 @@ export default function RdvPublic({ onBack }) {
           <div>
             <Summary practitioner={practitioner} service={service} date={date} time={time} />
           </div>
-
         </div>
       </main>
     </div>

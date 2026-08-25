@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../lib/useAuth'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ function ServiceModal({ service, practitionerId, session, onSave, onClose }) {
 
     const method = isNew ? 'POST' : 'PUT'
     try {
-      const res = await fetch('/api/rdv/services', {
+      const res = await fetch('/api/rdv-admin?action=services', {
         method,
         headers: { 'Content-Type': 'application/json', ...authHeader(session) },
         body: JSON.stringify(body),
@@ -348,7 +348,7 @@ function AvailabilityEditor({ rules, practitionerId, session, onSave, onCancel }
     setError(null)
     setSaving(true)
     try {
-      const res = await fetch('/api/rdv/availability', {
+      const res = await fetch('/api/rdv-admin?action=availability', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader(session) },
         body: JSON.stringify({ practitioner_id: practitionerId, rules: draft }),
@@ -469,7 +469,7 @@ function SettingsEditor({ practitioner, session, onSave, onCancel }) {
       timezone: form.timezone,
     }
     try {
-      const res = await fetch('/api/rdv/settings', {
+      const res = await fetch('/api/rdv-admin?action=settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeader(session) },
         body: JSON.stringify(body),
@@ -556,6 +556,153 @@ function SettingsEditor({ practitioner, session, onSave, onCancel }) {
   )
 }
 
+// ── ExceptionsEditor ──────────────────────────────────────────────────────────
+
+function ExceptionsEditor({ exceptions, practitionerId, session, onChanged }) {
+  const [list, setList] = useState(exceptions || [])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [form, setForm] = useState({ exception_date: '', exception_type: 'closed', note: '', slots: [] })
+  const [showForm, setShowForm] = useState(false)
+  const dateRef = useRef()
+
+  useEffect(() => { setList(exceptions || []) }, [exceptions])
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    if (!form.exception_date) { setError('Date requise'); return }
+    setError(null)
+    setSaving(true)
+    try {
+      const body = {
+        practitioner_id: practitionerId,
+        exception_date: form.exception_date,
+        exception_type: form.exception_type,
+        note: form.note || null,
+        slots: form.exception_type === 'modified' && form.slots.length ? form.slots : null,
+      }
+      const res = await fetch('/api/rdv-admin?action=exceptions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader(session) },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Erreur'); setSaving(false); return }
+      const updated = data.exception
+      setList(prev => {
+        const idx = prev.findIndex(x => x.exception_date === updated.exception_date)
+        return idx >= 0 ? prev.map((x, i) => i === idx ? updated : x) : [...prev, updated]
+          .sort((a, b) => a.exception_date.localeCompare(b.exception_date))
+      })
+      setForm({ exception_date: '', exception_type: 'closed', note: '', slots: [] })
+      setShowForm(false)
+      if (onChanged) onChanged()
+    } catch {
+      setError('Erreur réseau')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(exc) {
+    if (!window.confirm(`Supprimer l'exception du ${exc.exception_date} ?`)) return
+    try {
+      const res = await fetch(`/api/rdv-admin?action=exceptions&id=${exc.id}`, {
+        method: 'DELETE',
+        headers: authHeader(session),
+      })
+      if (res.ok) {
+        setList(prev => prev.filter(x => x.id !== exc.id))
+        if (onChanged) onChanged()
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  const inputCls = "border border-gold/20 rounded-xl px-3 py-2 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60 w-full"
+
+  return (
+    <div>
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800 mb-3">{error}</div>
+      )}
+
+      {list.length === 0 && !showForm && (
+        <p className="font-georgia text-xs text-mist/50 italic mb-3">Aucune exception — congés, jours fériés, fermetures ponctuelles.</p>
+      )}
+
+      {list.length > 0 && (
+        <div className="space-y-2 mb-3">
+          {list.map(exc => (
+            <div key={exc.id} className="rounded-xl border border-gold/15 bg-white/30 px-4 py-3 flex items-center justify-between gap-3">
+              <div>
+                <span className="font-georgia text-sm font-semibold text-deep mr-3">{exc.exception_date}</span>
+                <span className={`font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-0.5 ${
+                  exc.exception_type === 'closed' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  {exc.exception_type === 'closed' ? 'Fermé' : 'Horaires modifiés'}
+                </span>
+                {exc.note && <span className="font-georgia text-xs text-mist ml-2 italic">{exc.note}</span>}
+              </div>
+              <button
+                onClick={() => handleDelete(exc)}
+                className="font-georgia text-xs text-red-500 border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-50 shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm ? (
+        <form onSubmit={handleAdd} className="rounded-xl border border-gold/20 bg-white/30 p-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-georgia text-[11px] text-mist block mb-1">Date *</label>
+              <input type="date" ref={dateRef} value={form.exception_date}
+                onChange={e => setForm(f => ({ ...f, exception_date: e.target.value }))}
+                className={inputCls} required />
+            </div>
+            <div>
+              <label className="font-georgia text-[11px] text-mist block mb-1">Type</label>
+              <select value={form.exception_type}
+                onChange={e => setForm(f => ({ ...f, exception_type: e.target.value }))}
+                className={inputCls}>
+                <option value="closed">Fermeture complète</option>
+                <option value="modified">Horaires modifiés</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="font-georgia text-[11px] text-mist block mb-1">Note <span className="opacity-60">(facultatif)</span></label>
+            <input type="text" value={form.note}
+              onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+              className={inputCls} placeholder="Congés d'été, jour férié…" />
+          </div>
+          <div className="flex gap-2">
+            <button type="submit" disabled={saving}
+              className="flex-1 bg-deep text-gold font-georgia text-xs py-2.5 rounded-xl hover:bg-deep/90 disabled:opacity-60 flex items-center justify-center gap-2">
+              {saving ? <Spinner /> : null}
+              {saving ? 'Ajout…' : 'Ajouter l\'exception'}
+            </button>
+            <button type="button" onClick={() => { setShowForm(false); setError(null) }}
+              className="px-4 py-2.5 rounded-xl border border-gold/25 font-georgia text-xs text-mist hover:text-deep">
+              Annuler
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button onClick={() => setShowForm(true)}
+          className="font-georgia text-xs text-gold border border-gold/30 px-4 py-2 rounded-xl hover:bg-gold/10 transition-colors">
+          + Ajouter une exception
+        </button>
+      )}
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function RdvDashboard({ onBack, onOpenPublic }) {
@@ -595,7 +742,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
     if (!sess) { setMeData(null); return }
     setMeLoading(true)
     try {
-      const res = await fetch('/api/rdv/me', { headers: authHeader(sess) })
+      const res = await fetch('/api/rdv-admin?action=me', { headers: authHeader(sess) })
       const data = await res.json()
       if (res.ok) {
         setMeData(data)
@@ -715,7 +862,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
   async function handleDeleteService(svc) {
     if (!window.confirm(`Supprimer "${svc.title}" ? Cette action est irréversible.`)) return
     try {
-      const res = await fetch(`/api/rdv/services?id=${svc.id}&practitioner_id=${activePractitioner.id}`, {
+      const res = await fetch(`/api/rdv-admin?action=services&id=${svc.id}&practitioner_id=${activePractitioner.id}`, {
         method: 'DELETE',
         headers: authHeader(session),
       })
@@ -1040,6 +1187,21 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                         })}
                       </div>
                     )}
+                  </section>
+
+                  {/* Exceptions / congés */}
+                  <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                    <div className="mb-5">
+                      <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Fermetures & Congés</p>
+                      <h2 className="font-georgia text-lg font-medium">Exceptions ponctuelles</h2>
+                      <p className="font-georgia text-xs text-mist mt-1">Ces jours seront bloqués dans le calendrier de réservation.</p>
+                    </div>
+                    <ExceptionsEditor
+                      exceptions={activePractitioner.exceptions || []}
+                      practitionerId={activePractitioner.id}
+                      session={session}
+                      onChanged={() => loadMe(session)}
+                    />
                   </section>
                 </div>
 

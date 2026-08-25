@@ -19,7 +19,12 @@ CREATE TABLE IF NOT EXISTS booking_practitioners (
   intro                 TEXT        NOT NULL DEFAULT '',
   timezone              TEXT        NOT NULL DEFAULT 'Europe/Paris',
   is_active             BOOLEAN     NOT NULL DEFAULT false,
-  booking_horizon_days  INTEGER     NOT NULL DEFAULT 60  -- horizon de réservation en jours (api/rdv-config.js)
+  booking_horizon_days  INTEGER     NOT NULL DEFAULT 60,  -- horizon de réservation en jours (api/rdv-config.js)
+  buffer_before_min     INTEGER     NOT NULL DEFAULT 0,   -- tampon avant séance (minutes)
+  buffer_after_min      INTEGER     NOT NULL DEFAULT 15,  -- tampon après séance (minutes)
+  min_advance_hours     INTEGER     NOT NULL DEFAULT 24,  -- délai minimum avant réservation
+  max_per_day           INTEGER,                          -- max réservations/jour (NULL = illimité)
+  booking_enabled       BOOLEAN     NOT NULL DEFAULT false -- réservations ouvertes ou non
 );
 
 CREATE INDEX IF NOT EXISTS idx_booking_practitioners_slug ON booking_practitioners (slug);
@@ -240,11 +245,14 @@ ON CONFLICT (slug) DO NOTHING;
 -- UPDATE booking_practitioners SET owner_id = '<votre-uuid>' WHERE slug = 'sebastien-seguin';
 -- UPDATE booking_practitioners SET owner_id = '<votre-uuid>' WHERE slug = 'aurelie-seguin';
 
--- ── Migration booking_practitioners (si table existante sans horizon) ────────
+-- ── Migration booking_practitioners (si table existante) ─────────────────────
 -- ALTER TABLE booking_practitioners
---   ADD COLUMN IF NOT EXISTS booking_horizon_days INTEGER NOT NULL DEFAULT 60;
--- Une fois appliquée, api/rdv-config.js peut lire booking_horizon_days depuis la DB
--- (voir TODO dans le fichier).
+--   ADD COLUMN IF NOT EXISTS booking_horizon_days INTEGER NOT NULL DEFAULT 60,
+--   ADD COLUMN IF NOT EXISTS buffer_before_min    INTEGER NOT NULL DEFAULT 0,
+--   ADD COLUMN IF NOT EXISTS buffer_after_min     INTEGER NOT NULL DEFAULT 15,
+--   ADD COLUMN IF NOT EXISTS min_advance_hours    INTEGER NOT NULL DEFAULT 24,
+--   ADD COLUMN IF NOT EXISTS max_per_day          INTEGER,
+--   ADD COLUMN IF NOT EXISTS booking_enabled      BOOLEAN NOT NULL DEFAULT false;
 
 -- ── Notes sécurité avant Production ─────────────────────────────────────────
 -- 1. OAuth tokens Google : chiffrement AES-256 obligatoire au repos

@@ -36,7 +36,13 @@ export default async function handler(req, res) {
   const missing = []
   if (!process.env.GOOGLE_CLIENT_ID) missing.push('GOOGLE_CLIENT_ID')
   if (!process.env.GOOGLE_REDIRECT_URI) missing.push('GOOGLE_REDIRECT_URI')
-  if (!process.env.CALENDAR_TOKEN_ENCRYPTION_KEY) missing.push('CALENDAR_TOKEN_ENCRYPTION_KEY')
+  const encKey = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+  if (!encKey) {
+    missing.push('CALENDAR_TOKEN_ENCRYPTION_KEY')
+  } else if (!/^[0-9a-fA-F]{64}$/.test(encKey)) {
+    // getKey() lance une erreur si la clé n'est pas exactement 64 hex chars
+    missing.push('CALENDAR_TOKEN_ENCRYPTION_KEY (doit être 64 caractères hexadécimaux)')
+  }
   if (missing.length) {
     return res.status(503).json({
       error: 'Google OAuth non configuré',
@@ -72,8 +78,10 @@ export default async function handler(req, res) {
     })
 
   if (insertErr) {
-    // Ne pas exposer les détails Supabase
-    return res.status(500).json({ error: 'Erreur interne — stockage du state OAuth' })
+    return res.status(500).json({
+      error: 'Erreur interne — stockage du state OAuth',
+      supabase_code: insertErr.code || null,
+    })
   }
 
   // Construction de l'URL OAuth Google

@@ -144,7 +144,7 @@ function ServiceModal({ service, practitionerId, session, onSave, onClose }) {
     slug: service?.slug || '',
     description: service?.description || '',
     duration_min: service?.duration_min || 60,
-    price_cents: service?.price_cents ?? '',
+    price_euros: service?.price_cents != null ? service.price_cents / 100 : '',
     modality: service?.modality || [],
     is_active: service?.is_active !== false,
     sort_order: service?.sort_order || 0,
@@ -175,7 +175,7 @@ function ServiceModal({ service, practitionerId, session, onSave, onClose }) {
       slug: form.slug,
       description: form.description,
       duration_min: Number(form.duration_min),
-      price_cents: form.price_cents === '' ? null : Number(form.price_cents) * 100,
+      price_cents: form.price_euros === '' ? null : Math.round(Number(form.price_euros) * 100),
       modality: form.modality,
       is_active: form.is_active,
       sort_order: Number(form.sort_order),
@@ -249,8 +249,8 @@ function ServiceModal({ service, practitionerId, session, onSave, onClose }) {
               <label className="font-georgia text-xs text-mist block mb-1.5">Prix (€) <span className="opacity-60">optionnel</span></label>
               <input
                 type="number"
-                value={form.price_cents}
-                onChange={e => setForm(f => ({ ...f, price_cents: e.target.value }))}
+                value={form.price_euros}
+                onChange={e => setForm(f => ({ ...f, price_euros: e.target.value }))}
                 min="0" step="0.01"
                 className="w-full border border-gold/25 rounded-xl px-4 py-2.5 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60"
                 placeholder="80"

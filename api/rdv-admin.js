@@ -23,6 +23,7 @@
  * que booking_practitioners.owner_id === auth.userId avant toute mutation.
  */
 import { requireAuth, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
+import { decrypt, encrypt, refreshGoogleToken } from '../lib/googleOAuth.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$|^[a-z0-9]{2}$/
 const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/
@@ -317,47 +318,119 @@ async function handleRequests(req, res, supabase, userId) {
       const scheduledDate = new Date(scheduled_at)
       if (isNaN(scheduledDate.getTime())) return res.status(400).json({ error: 'scheduled_at invalide (ISO 8601 attendu)' })
 
-      const { data: svc } = await supabase.from('booking_services')
-        .select('id, duration_min').eq('id', request.service_id).single()
-      if (!svc) return res.status(500).json({ error: 'Service introuvable' })
+      // Validation des montants
+      const travelFee  = travel_fee_cents  != null ? Math.round(Number(travel_fee_cents))  : 0
+      const finalPrice = final_price_cents != null ? Math.round(Number(final_price_cents)) : null
+      if (isNaN(travelFee) || travelFee < 0)                       return res.status(400).json({ error: 'travel_fee_cents invalide (entier >= 0)' })
+      if (finalPrice != null && (isNaN(finalPrice) || finalPrice < 0)) return res.status(400).json({ error: 'final_price_cents invalide (entier >= 0)' })
 
-      const endsAt = new Date(scheduledDate.getTime() + svc.duration_min * 60_000)
+      // Garde anti-double-confirmation (le RPC refait cette vérification sous verrou)
+      if (request.confirmed_booking_id || request.status === 'scheduled') {
+        return res.status(409).json({ error: 'Cette demande a déjà été confirmée.', booking_id: request.confirmed_booking_id })
+      }
+      if (['rejected', 'cancelled'].includes(request.status)) {
+        return res.status(409).json({ error: `Impossible de confirmer une demande en statut "${request.status}".` })
+      }
 
-      const { data: booking, error: bookingErr } = await supabase.from('bookings').insert({
-        practitioner_id:     request.practitioner_id,
-        service_id:          request.service_id,
-        starts_at:           scheduledDate.toISOString(),
-        ends_at:             endsAt.toISOString(),
-        timezone:            'Europe/Paris',
-        customer_first_name: request.customer_first_name,
-        customer_last_name:  request.customer_last_name,
-        customer_email:      request.customer_email,
-        customer_phone:      request.customer_phone || null,
-        customer_message:    request.customer_message || null,
-        status:              'confirmed',
-      }).select('id').single()
+      // ── Google FreeBusy (optionnel — fail open si non connecté ou erreur réseau) ──
+      const { data: conn } = await supabase.from('booking_calendar_connections')
+        .select('access_token_enc, refresh_token_enc, token_expiry, google_calendar_id')
+        .eq('practitioner_id', pid).eq('is_active', true).single()
 
-      if (bookingErr) return res.status(500).json({ error: 'Erreur lors de la création du RDV', code: bookingErr.code })
+      if (conn) {
+        try {
+          const [{ data: svcFB }, { data: practFB }] = await Promise.all([
+            supabase.from('booking_services').select('duration_min').eq('id', request.service_id).single(),
+            supabase.from('booking_practitioners').select('buffer_before_min, buffer_after_min').eq('id', pid).single(),
+          ])
+          const durationMin = svcFB?.duration_min || 60
+          const endsAtFB    = new Date(scheduledDate.getTime() + durationMin * 60_000)
+          const bufBefore   = (practFB?.buffer_before_min ?? 0) * 60_000
+          const bufAfter    = (practFB?.buffer_after_min  ?? 0) * 60_000
 
-      const { data: updated, error: updErr } = await supabase.from('booking_requests').update({
-        status:              'scheduled',
-        confirmed_booking_id: booking.id,
-        scheduled_at:        scheduledDate.toISOString(),
-        travel_fee_cents:    travel_fee_cents != null ? Number(travel_fee_cents) : 0,
-        final_price_cents:   final_price_cents != null ? Number(final_price_cents) : null,
-        practitioner_notes:  practitioner_notes ?? null,
-        updated_at:          new Date().toISOString(),
-      }).eq('id', id).select().single()
+          let accessToken
+          if (Date.now() > new Date(conn.token_expiry).getTime() - 60_000) {
+            const refreshed = await refreshGoogleToken(conn.refresh_token_enc)
+            accessToken = refreshed.access_token
+            await supabase.from('booking_calendar_connections').update({
+              access_token_enc: encrypt(accessToken),
+              token_expiry:     refreshed.expires_at,
+              updated_at:       new Date().toISOString(),
+            }).eq('practitioner_id', pid)
+          } else {
+            accessToken = decrypt(conn.access_token_enc)
+          }
 
-      if (updErr) return res.status(500).json({ error: 'db_error', code: updErr.code })
-      return res.status(200).json({ request: updated, booking_id: booking.id })
+          const fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timeMin:  new Date(scheduledDate.getTime() - bufBefore).toISOString(),
+              timeMax:  new Date(endsAtFB.getTime()     + bufAfter).toISOString(),
+              timeZone: 'Europe/Paris',
+              items: [{ id: conn.google_calendar_id || 'primary' }],
+            }),
+          })
+          if (fbRes.ok) {
+            const fbData = await fbRes.json()
+            const busy = fbData.calendars?.[conn.google_calendar_id || 'primary']?.busy ?? []
+            if (busy.length > 0) {
+              return res.status(409).json({ error: 'Ce créneau est déjà occupé dans votre Google Agenda. Choisissez une autre plage.' })
+            }
+          }
+          // Si FreeBusy échoue (réseau, token) : on laisse passer — planification manuelle
+        } catch { /* fail open */ }
+      }
+
+      // ── Confirmation atomique via RPC (verrou + anti-doublons + anti-chevauchement) ─
+      const { data: rpcResult, error: rpcErr } = await supabase.rpc('confirm_booking_request', {
+        p_request_id:         id,
+        p_practitioner_id:    pid,
+        p_scheduled_at:       scheduledDate.toISOString(),
+        p_travel_fee_cents:   travelFee,
+        p_final_price_cents:  finalPrice,
+        p_practitioner_notes: practitioner_notes?.trim() || null,
+      })
+
+      if (rpcErr) {
+        if (rpcErr.code === 'PGRST202') {
+          return res.status(503).json({ error: 'Fonction confirm_booking_request non créée — appliquez docs/rdv-confirm-request-migration.sql.' })
+        }
+        return res.status(500).json({ error: 'Erreur lors de la confirmation.', code: rpcErr.code })
+      }
+
+      if (rpcResult?.error) {
+        const MAP = {
+          already_confirmed: [409, 'Cette demande a déjà été confirmée.'],
+          request_not_found: [404, 'Demande introuvable.'],
+          request_closed:    [409, 'Impossible de confirmer une demande clôturée.'],
+          service_not_found: [500, 'Service introuvable.'],
+          conflict:          [409, rpcResult.message || 'Conflit de créneau MediumIA.'],
+        }
+        const [httpStatus, msg] = MAP[rpcResult.error] || [500, rpcResult.error]
+        return res.status(httpStatus).json({ error: msg })
+      }
+
+      return res.status(200).json({ booking_id: rpcResult.booking_id, scheduled_at: scheduledDate.toISOString() })
     }
 
     const update = { updated_at: new Date().toISOString() }
     if (status) update.status = status
     if ('practitioner_notes' in (req.body || {})) update.practitioner_notes = practitioner_notes ?? null
-    if ('travel_fee_cents'   in (req.body || {})) update.travel_fee_cents = travel_fee_cents != null ? Number(travel_fee_cents) : 0
-    if ('final_price_cents'  in (req.body || {})) update.final_price_cents = final_price_cents != null ? Number(final_price_cents) : null
+    if ('travel_fee_cents' in (req.body || {})) {
+      const v = travel_fee_cents != null ? Math.round(Number(travel_fee_cents)) : 0
+      if (isNaN(v) || v < 0) return res.status(400).json({ error: 'travel_fee_cents invalide (entier >= 0)' })
+      update.travel_fee_cents = v
+    }
+    if ('final_price_cents' in (req.body || {})) {
+      if (final_price_cents == null) {
+        update.final_price_cents = null
+      } else {
+        const v = Math.round(Number(final_price_cents))
+        if (isNaN(v) || v < 0) return res.status(400).json({ error: 'final_price_cents invalide (entier >= 0)' })
+        update.final_price_cents = v
+      }
+    }
 
     const { data, error } = await supabase.from('booking_requests')
       .update(update).eq('id', id).select().single()

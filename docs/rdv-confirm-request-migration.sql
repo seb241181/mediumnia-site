@@ -28,6 +28,14 @@ BEGIN
   -- 1. Verrou anti-concurrence sur le praticien (évite les double-clics)
   PERFORM pg_advisory_xact_lock(hashtext(p_practitioner_id::TEXT));
 
+  -- 1b. Validation défensive des montants (l'API vérifie en amont, mais en sécurité)
+  IF p_travel_fee_cents < 0 THEN
+    RETURN jsonb_build_object('error', 'invalid_amount', 'field', 'travel_fee_cents');
+  END IF;
+  IF p_final_price_cents IS NOT NULL AND p_final_price_cents < 0 THEN
+    RETURN jsonb_build_object('error', 'invalid_amount', 'field', 'final_price_cents');
+  END IF;
+
   -- 2. Charger la demande avec verrou ligne-par-ligne
   SELECT * INTO v_request
   FROM booking_requests

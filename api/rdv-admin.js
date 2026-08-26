@@ -318,11 +318,17 @@ async function handleRequests(req, res, supabase, userId) {
       const scheduledDate = new Date(scheduled_at)
       if (isNaN(scheduledDate.getTime())) return res.status(400).json({ error: 'scheduled_at invalide (ISO 8601 attendu)' })
 
-      // Validation des montants
-      const travelFee  = travel_fee_cents  != null ? Math.round(Number(travel_fee_cents))  : 0
-      const finalPrice = final_price_cents != null ? Math.round(Number(final_price_cents)) : null
-      if (isNaN(travelFee) || travelFee < 0)                       return res.status(400).json({ error: 'travel_fee_cents invalide (entier >= 0)' })
-      if (finalPrice != null && (isNaN(finalPrice) || finalPrice < 0)) return res.status(400).json({ error: 'final_price_cents invalide (entier >= 0)' })
+      // Validation des montants — entier strict (1250.7 est refusé, pas arrondi)
+      const travelFeeRaw  = travel_fee_cents  != null ? Number(travel_fee_cents)  : 0
+      const finalPriceRaw = final_price_cents != null ? Number(final_price_cents) : null
+      if (!Number.isFinite(travelFeeRaw) || !Number.isInteger(travelFeeRaw) || travelFeeRaw < 0) {
+        return res.status(400).json({ error: 'travel_fee_cents invalide (entier >= 0 requis)' })
+      }
+      if (finalPriceRaw != null && (!Number.isFinite(finalPriceRaw) || !Number.isInteger(finalPriceRaw) || finalPriceRaw < 0)) {
+        return res.status(400).json({ error: 'final_price_cents invalide (entier >= 0 requis)' })
+      }
+      const travelFee  = travelFeeRaw
+      const finalPrice = finalPriceRaw
 
       // Garde anti-double-confirmation (le RPC refait cette vérification sous verrou)
       if (request.confirmed_booking_id || request.status === 'scheduled') {
@@ -418,16 +424,20 @@ async function handleRequests(req, res, supabase, userId) {
     if (status) update.status = status
     if ('practitioner_notes' in (req.body || {})) update.practitioner_notes = practitioner_notes ?? null
     if ('travel_fee_cents' in (req.body || {})) {
-      const v = travel_fee_cents != null ? Math.round(Number(travel_fee_cents)) : 0
-      if (isNaN(v) || v < 0) return res.status(400).json({ error: 'travel_fee_cents invalide (entier >= 0)' })
+      const v = travel_fee_cents != null ? Number(travel_fee_cents) : 0
+      if (!Number.isFinite(v) || !Number.isInteger(v) || v < 0) {
+        return res.status(400).json({ error: 'travel_fee_cents invalide (entier >= 0 requis)' })
+      }
       update.travel_fee_cents = v
     }
     if ('final_price_cents' in (req.body || {})) {
       if (final_price_cents == null) {
         update.final_price_cents = null
       } else {
-        const v = Math.round(Number(final_price_cents))
-        if (isNaN(v) || v < 0) return res.status(400).json({ error: 'final_price_cents invalide (entier >= 0)' })
+        const v = Number(final_price_cents)
+        if (!Number.isFinite(v) || !Number.isInteger(v) || v < 0) {
+          return res.status(400).json({ error: 'final_price_cents invalide (entier >= 0 requis)' })
+        }
         update.final_price_cents = v
       }
     }

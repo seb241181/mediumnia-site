@@ -445,8 +445,14 @@ async function handleRequests(req, res, supabase, userId) {
         },
       })
 
-      const gStatus = (syncResult.status === 'synced' || syncResult.status === 'already_synced')
-        ? 'synced' : syncResult.status
+      let gStatus
+      if (syncResult.status === 'synced' || syncResult.status === 'already_synced') {
+        gStatus = 'synced'
+      } else if (syncResult.reason === 'insufficientPermissions' || syncResult.reason === 'forbidden') {
+        gStatus = 'permission_missing'
+      } else {
+        gStatus = syncResult.status // not_connected | failed
+      }
       return res.status(200).json({ google_sync: gStatus, google_event_id: syncResult.google_event_id })
     }
 

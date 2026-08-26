@@ -815,8 +815,13 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
       if (res.ok && d.google_sync === 'synced') {
         onChanged()
       } else {
-        const msg = d.error
-          || (d.google_sync === 'not_connected' ? 'Google Agenda non connecté.' : 'Synchronisation échouée.')
+        const msg = d.error || (
+          d.google_sync === 'permission_missing'
+            ? "Google Agenda n'autorise pas encore MediumIA à créer des événements. Déconnectez puis reconnectez Google Agenda."
+            : d.google_sync === 'not_connected'
+              ? 'Google Agenda non connecté.'
+              : 'Synchronisation Google échouée — réessayez.'
+        )
         setError(msg)
       }
     } catch { setError('Erreur réseau lors de la synchronisation Google.') }
@@ -1017,7 +1022,12 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
     const err = urlParams.get('oauth_error')
     const practSlug = urlParams.get('practitioner')
     if (success) setNotice({ type: 'success', msg: 'Google Agenda connecté avec succès.' })
-    if (err) setNotice({ type: 'error', msg: `Erreur de connexion Google (${err}). Réessayez.` })
+    if (err) {
+      const msg = err === 'calendar_write_scope_missing'
+        ? "Google Agenda est connecté sans autorisation d'écriture. Déconnectez puis reconnectez Google Agenda et acceptez l'autorisation de gestion des événements."
+        : `Erreur de connexion Google (${err}). Réessayez.`
+      setNotice({ type: 'error', msg })
+    }
     if (success || err) window.history.replaceState({}, '', window.location.pathname)
     if (practSlug) setActiveSlug(practSlug)
   }, [])

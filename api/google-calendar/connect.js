@@ -95,7 +95,8 @@ export default async function handler(req, res) {
       'https://www.googleapis.com/auth/userinfo.email',
     ].join(' '),
     access_type: 'offline',
-    prompt: 'consent',   // Force l'envoi du refresh_token à chaque connexion
+    prompt: 'consent',              // Force refresh_token + consentement explicite
+    include_granted_scopes: 'true', // Google retourne tokenData.scope dans la réponse
     state,
   })
 

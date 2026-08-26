@@ -103,6 +103,38 @@ export default async function handler(req, res) {
     return res.redirect(302, `/rdv?oauth_error=no_access_token&practitioner=${practitionerSlug}`)
   }
 
+  // ── Validation du scope calendar.events ──────────────────────────────────────
+  // Google peut retourner un token sans calendar.events si le flux a été servi
+  // par une ancienne version du code (sans ce scope) ou si l'utilisateur a refusé.
+  if (tokenData.scope) {
+    const hasWriteScope =
+      tokenData.scope.includes('https://www.googleapis.com/auth/calendar.events') ||
+      tokenData.scope.includes('https://www.googleapis.com/auth/calendar ')       ||
+      tokenData.scope.endsWith('https://www.googleapis.com/auth/calendar')
+    if (!hasWriteScope) {
+      return res.redirect(302, `/rdv?oauth_error=calendar_write_scope_missing&practitioner=${practitionerSlug}`)
+    }
+  } else {
+    // scope absent dans la réponse : sonde minimale via events.list (1 résultat, champs réduits)
+    // 403 insufficientPermissions → scope manquant ; 200/404 → scope présent
+    try {
+      const probeRes = await fetch(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=1&fields=kind',
+        { headers: { Authorization: `Bearer ${tokenData.access_token}` } }
+      )
+      if (probeRes.status === 403) {
+        const probeBody = await probeRes.json().catch(() => null)
+        const reason = probeBody?.error?.errors?.[0]?.reason
+        if (reason === 'insufficientPermissions' || reason === 'forbidden') {
+          return res.redirect(302, `/rdv?oauth_error=calendar_write_scope_missing&practitioner=${practitionerSlug}`)
+        }
+      }
+      // 200, 401, 404, 5xx : fail open — on ne bloque pas la connexion sur une erreur réseau
+    } catch {
+      // fail open
+    }
+  }
+
   // ── Récupération de l'email Google via userinfo ───────────────────────────────
   let googleEmail
   try {

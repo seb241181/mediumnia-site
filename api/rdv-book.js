@@ -33,6 +33,7 @@
  */
 import { decrypt, refreshGoogleToken, encrypt, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
+import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_RE  = /^\d{4}-\d{2}-\d{2}$/
@@ -44,12 +45,114 @@ function parisTimeToUTC(dateStr, timeStr, offsetMs) {
   return new Date(parisMidnightUTC + h * 3600_000 + m * 60_000)
 }
 
+// ── Email templates ───────────────────────────────────────────────────────────
+
+function buildClientEmailHtml(firstName, svcTitle) {
+  const BASE = 'font-family:Georgia,serif;color:#1A1535;'
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Votre demande MediumIA</title></head>
+<body style="margin:0;padding:0;background:#FAFAF7;">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px;${BASE}">
+  <p style="font-size:20px;font-weight:700;margin:0 0 32px;letter-spacing:0.12em;color:#C9A84C;">✦ MEDIUMIA</p>
+  <p style="font-size:15px;line-height:1.75;margin:0 0 16px;">Bonjour ${firstName},</p>
+  <p style="font-size:15px;line-height:1.75;margin:0 0 16px;">
+    Votre demande pour <strong>« ${svcTitle} »</strong> a bien été reçue.
+  </p>
+  <p style="font-size:15px;line-height:1.75;margin:0 0 16px;">
+    Sébastien va prendre connaissance de votre demande et vous recontactera afin de convenir avec vous de la date et de l'heure de l'intervention.
+  </p>
+  <p style="font-size:15px;line-height:1.75;margin:0 0 16px;">
+    Le tarif de base de la prestation est celui indiqué lors de votre demande. Si des frais de déplacement sont nécessaires, le montant total vous sera confirmé avant la validation définitive du rendez-vous.
+  </p>
+  <p style="font-size:15px;line-height:1.75;margin:0 0 32px;">
+    Vous n'avez rien d'autre à faire pour le moment.
+  </p>
+  <p style="font-size:15px;line-height:1.75;margin:0;">À bientôt,<br><strong>Sébastien</strong><br>MediumIA</p>
+</div>
+</body></html>`
+}
+
+function buildClientEmailText(firstName, svcTitle) {
+  return `Bonjour ${firstName},
+
+Votre demande pour « ${svcTitle} » a bien été reçue.
+
+Sébastien va prendre connaissance de votre demande et vous recontactera afin de convenir avec vous de la date et de l'heure de l'intervention.
+
+Le tarif de base de la prestation est celui indiqué lors de votre demande. Si des frais de déplacement sont nécessaires, le montant total vous sera confirmé avant la validation définitive du rendez-vous.
+
+Vous n'avez rien d'autre à faire pour le moment.
+
+À bientôt,
+Sébastien
+MediumIA`
+}
+
+function buildPractitionerEmailHtml({ firstName, lastName, emailDisplay, phoneDisplay, addr1, addr2, cpDisplay, cityDisplay, periodDisplay, msgDisplay, svcTitle, requestId }) {
+  const row = (label, value) =>
+    `<tr><td style="padding:6px 12px 6px 0;font-size:13px;color:#4A3F6B;white-space:nowrap;vertical-align:top;">${label}</td><td style="padding:6px 0;font-size:14px;color:#1A1535;">${value}</td></tr>`
+
+  const addrLines = addr2
+    ? `${addr1}<br>${addr2}<br>${cpDisplay} ${cityDisplay}`
+    : `${addr1}<br>${cpDisplay} ${cityDisplay}`
+
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nouvelle demande MediumIA</title></head>
+<body style="margin:0;padding:0;background:#FAFAF7;font-family:Georgia,serif;color:#1A1535;">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+  <p style="font-size:20px;font-weight:700;margin:0 0 8px;letter-spacing:0.12em;color:#C9A84C;">✦ MEDIUMIA</p>
+  <h1 style="font-size:18px;font-weight:600;margin:0 0 28px;color:#1A1535;">Nouvelle demande reçue</h1>
+  <table style="border-collapse:collapse;width:100%;">
+    ${row('Client', `${firstName} ${lastName}`)}
+    ${row('Téléphone', phoneDisplay)}
+    ${row('Email', emailDisplay)}
+    ${row('Lieu', addrLines)}
+    ${row('Prestation', `<strong>${svcTitle}</strong>`)}
+    ${row('Préférence', periodDisplay)}
+    ${row('Message', msgDisplay.replace(/\n/g, '<br>'))}
+    ${row('Identifiant', `<span style="font-size:12px;font-family:monospace;">${escapeHtml(requestId)}</span>`)}
+  </table>
+</div>
+</body></html>`
+}
+
+function buildPractitionerEmailText({ firstName, lastName, email, phone, addr1, addr2, postalCode, city, period, msg, svcTitle, requestId }) {
+  const addrLines = [addr1, addr2, `${postalCode} ${city}`].filter(Boolean).join('\n')
+  return `Nouvelle demande reçue
+
+Client :
+${firstName} ${lastName}
+
+Téléphone :
+${phone}
+
+Email :
+${email}
+
+Lieu :
+${addrLines}
+
+Prestation :
+${svcTitle}
+
+Préférence :
+${period}
+
+Message :
+${msg}
+
+Identifiant demande :
+${requestId}`
+}
+
+// ── handleBookingRequest ──────────────────────────────────────────────────────
+
 async function handleBookingRequest(req, res, supabase, practitioner, service, customer) {
   const { phone, address_line1, address_line2, postal_code, city, preferred_period, message } = customer
   if (!phone?.trim()) return res.status(400).json({ error: 'Téléphone requis pour cette prestation' })
   if (!address_line1?.trim()) return res.status(400).json({ error: 'Adresse requise pour cette prestation en présentiel' })
   if (!postal_code?.trim()) return res.status(400).json({ error: 'Code postal requis' })
   if (!city?.trim()) return res.status(400).json({ error: 'Ville requise' })
+
+  // ── 1. INSERT booking_request ─────────────────────────────────────────────
 
   const { data, error } = await supabase.from('booking_requests').insert({
     practitioner_id:     practitioner.id,
@@ -73,7 +176,74 @@ async function handleBookingRequest(req, res, supabase, practitioner, service, c
     }
     return res.status(500).json({ error: "Erreur lors de l'enregistrement de la demande." })
   }
-  return res.status(202).json({ request_id: data.id })
+
+  const requestId = data.id
+
+  // ── 2. Emails transactionnels (après INSERT réussi) ───────────────────────
+  // Une panne Resend ne doit jamais masquer le succès de l'enregistrement.
+
+  try {
+    // Adresse du praticien : variable d'env en priorité, sinon google_email
+    let practitionerTo = process.env.BOOKING_NOTIFICATION_EMAIL || null
+    if (!practitionerTo) {
+      const { data: conn } = await supabase
+        .from('booking_calendar_connections')
+        .select('google_email')
+        .eq('practitioner_id', practitioner.id)
+        .eq('is_active', true)
+        .maybeSingle()
+      practitionerTo = conn?.google_email || null
+    }
+    if (!practitionerTo) {
+      console.warn(`[rdv-book] Aucune adresse praticien pour la demande ${requestId} — email praticien ignoré.`)
+    }
+
+    // Données échappées pour le HTML
+    const firstName    = escapeHtml(customer.firstName.trim())
+    const lastName     = escapeHtml(customer.lastName.trim())
+    const emailDisplay = escapeHtml(customer.email.trim().toLowerCase())
+    const phoneDisplay = escapeHtml(phone.trim())
+    const addr1        = escapeHtml(address_line1.trim())
+    const addr2        = address_line2?.trim() ? escapeHtml(address_line2.trim()) : null
+    const cpDisplay    = escapeHtml(postal_code.trim())
+    const cityDisplay  = escapeHtml(city.trim())
+    const periodDisplay = preferred_period?.trim() ? escapeHtml(preferred_period.trim()) : 'Non précisée'
+    const msgDisplay   = message?.trim() ? escapeHtml(message.trim()) : 'Aucun message'
+    const svcTitle     = escapeHtml(service.title)
+
+    const emailTasks = [
+      sendEmail({
+        to:             customer.email.trim().toLowerCase(),
+        subject:        'MediumIA — Votre demande a bien été reçue',
+        html:           buildClientEmailHtml(firstName, svcTitle),
+        text:           buildClientEmailText(customer.firstName.trim(), service.title),
+        idempotencyKey: `booking-request-client/${requestId}`,
+      }),
+    ]
+
+    if (practitionerTo) {
+      emailTasks.push(sendEmail({
+        to:             practitionerTo,
+        subject:        `Nouvelle demande MediumIA — ${service.title}`,
+        html:           buildPractitionerEmailHtml({ firstName, lastName, emailDisplay, phoneDisplay, addr1, addr2, cpDisplay, cityDisplay, periodDisplay, msgDisplay, svcTitle, requestId }),
+        text:           buildPractitionerEmailText({ firstName: customer.firstName.trim(), lastName: customer.lastName.trim(), email: customer.email.trim().toLowerCase(), phone: phone.trim(), addr1: address_line1.trim(), addr2: address_line2?.trim() || null, postalCode: postal_code.trim(), city: city.trim(), period: preferred_period?.trim() || 'Non précisée', msg: message?.trim() || 'Aucun message', svcTitle: service.title, requestId }),
+        idempotencyKey: `booking-request-practitioner/${requestId}`,
+      }))
+    }
+
+    const results = await Promise.allSettled(emailTasks)
+    for (const r of results) {
+      if (r.status === 'rejected') {
+        console.error(`[rdv-book] Email rejeté (inattendu) pour la demande ${requestId}:`, r.reason)
+      } else if (r.value?.status === 'error') {
+        console.error(`[rdv-book] Échec email pour la demande ${requestId}:`, r.value.httpStatus ?? r.value.message)
+      }
+    }
+  } catch (emailErr) {
+    console.error(`[rdv-book] Exception bloc emails pour la demande ${requestId}:`, emailErr?.message)
+  }
+
+  return res.status(202).json({ request_id: requestId })
 }
 
 export default async function handler(req, res) {

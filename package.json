@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/apply-rdv-next-availability.mjs",
+    "predev": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/apply-rdv-next-availability.mjs",
+    "prebuild": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

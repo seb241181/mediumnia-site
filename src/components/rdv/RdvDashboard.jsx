@@ -729,6 +729,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
   const [form, setForm] = useState({ date: '', time: '', travelFee: '', finalPrice: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [updating, setUpdating] = useState(null)
+  const [syncingId, setSyncingId] = useState(null)
   const [error, setError] = useState(null)
 
   const STATUS_CONFIG = {
@@ -787,11 +788,39 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
         onChanged()
         setExpandedId(null)
         setForm({ date: '', time: '', travelFee: '', finalPrice: '', notes: '' })
+        if (d.google_sync && d.google_sync !== 'synced') {
+          setError(
+            d.google_sync === 'not_connected'
+              ? 'Rendez-vous confirmé. Google Agenda non connecté — synchronisez manuellement depuis la fiche.'
+              : 'Rendez-vous confirmé. La synchronisation Google a échoué — relancez-la depuis la fiche.'
+          )
+        }
       } else {
         setError(d.error || 'Erreur lors de la confirmation')
       }
     } catch { setError('Erreur réseau') }
     finally { setSaving(false) }
+  }
+
+  async function handleSyncGoogle(req) {
+    setSyncingId(req.id)
+    setError(null)
+    try {
+      const res = await fetch('/api/rdv-admin?action=requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader(session) },
+        body: JSON.stringify({ id: req.id, practitioner_id: practitionerId, operation: 'sync_google' }),
+      })
+      const d = await res.json()
+      if (res.ok && d.google_sync === 'synced') {
+        onChanged()
+      } else {
+        const msg = d.error
+          || (d.google_sync === 'not_connected' ? 'Google Agenda non connecté.' : 'Synchronisation échouée.')
+        setError(msg)
+      }
+    } catch { setError('Erreur réseau lors de la synchronisation Google.') }
+    finally { setSyncingId(null) }
   }
 
   const inp = "border border-gold/20 rounded-xl px-3 py-2 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60 w-full"
@@ -884,7 +913,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                   <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 space-y-3">
                     <p className="font-georgia text-xs font-semibold text-deep">Planifier et confirmer l'intervention</p>
                     <p className="font-georgia text-[11px] text-mist leading-relaxed">
-                      Un rendez-vous MediumIA sera créé et pris en compte dans vos disponibilités. Aucun événement Google Agenda n'est créé automatiquement à ce stade.
+                      Un rendez-vous MediumIA sera créé, pris en compte dans vos disponibilités, synchronisé avec Google Agenda (si connecté) et un email de confirmation sera envoyé au client.
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -920,7 +949,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                 )}
 
                 {req.status === 'scheduled' && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 space-y-1.5">
                     <p className="font-georgia text-xs text-emerald-800 font-semibold">
                       Intervention planifiée le {req.scheduled_at
                         ? new Date(req.scheduled_at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -928,10 +957,25 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                       {req.scheduled_at ? ` à ${new Date(req.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : ''}
                     </p>
                     {req.final_price_cents != null && (
-                      <p className="font-georgia text-xs text-emerald-700 mt-1">Montant confirmé : {(req.final_price_cents / 100).toFixed(0)} €</p>
+                      <p className="font-georgia text-xs text-emerald-700">Montant confirmé : {(req.final_price_cents / 100).toFixed(0)} €</p>
                     )}
                     {req.practitioner_notes && (
-                      <p className="font-georgia text-xs text-emerald-700 mt-1 italic">{req.practitioner_notes}</p>
+                      <p className="font-georgia text-xs text-emerald-700 italic">{req.practitioner_notes}</p>
+                    )}
+                    {req.google_event_id ? (
+                      <p className="font-georgia text-xs text-emerald-600">✓ Google Agenda synchronisé</p>
+                    ) : (
+                      <div className="pt-1">
+                        <p className="font-georgia text-xs text-amber-700 mb-1.5">Non synchronisé avec Google Agenda.</p>
+                        <button
+                          onClick={() => handleSyncGoogle(req)}
+                          disabled={syncingId === req.id}
+                          className="font-georgia text-xs px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {syncingId === req.id && <Spinner />}
+                          Synchroniser avec Google
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}

@@ -24,6 +24,8 @@
  */
 import { requireAuth, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { decrypt, encrypt, refreshGoogleToken } from '../lib/googleOAuth.js'
+import { sendEmail, escapeHtml } from '../lib/transactionalEmail.js'
+import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$|^[a-z0-9]{2}$/
 const TIME_RE = /^\d{2}:\d{2}(:\d{2})?$/
@@ -89,12 +91,23 @@ async function handleMe(req, res, supabase, userId) {
       .select('id, practitioner_id, exception_date, exception_type, slots, note')
       .in('practitioner_id', ids).order('exception_date'),
     supabase.from('booking_requests')
-      .select('id, service_id, status, customer_first_name, customer_last_name, customer_email, customer_phone, address_line1, address_line2, postal_code, city, customer_message, preferred_period, created_at, scheduled_at, travel_fee_cents, final_price_cents, practitioner_notes, practitioner_id')
+      .select('id, service_id, status, customer_first_name, customer_last_name, customer_email, customer_phone, address_line1, address_line2, postal_code, city, customer_message, preferred_period, created_at, scheduled_at, travel_fee_cents, final_price_cents, practitioner_notes, practitioner_id, confirmed_booking_id')
       .in('practitioner_id', ids)
       .in('status', ['pending', 'contacted', 'scheduled'])
       .order('created_at', { ascending: false })
       .limit(100),
   ])
+
+  // Phase 2 : récupérer google_event_id pour les demandes planifiées
+  const scheduledWithBooking = (requests || []).filter(r => r.status === 'scheduled' && r.confirmed_booking_id)
+  let googleEventMap = {}
+  if (scheduledWithBooking.length) {
+    const { data: syncedBookings } = await supabase
+      .from('bookings')
+      .select('id, google_event_id')
+      .in('id', scheduledWithBooking.map(r => r.confirmed_booking_id))
+    googleEventMap = Object.fromEntries((syncedBookings || []).map(b => [b.id, b.google_event_id || null]))
+  }
 
   const result = practitioners.map(p => ({
     ...p,
@@ -103,7 +116,10 @@ async function handleMe(req, res, supabase, userId) {
     calendar:          (connections || []).find(c  => c.practitioner_id  === p.id) || null,
     upcoming_bookings: (bookings    || []).filter(b => b.practitioner_id === p.id),
     exceptions:        (exceptions  || []).filter(e => e.practitioner_id === p.id),
-    pending_requests:  (requests    || []).filter(r => r.practitioner_id === p.id),
+    pending_requests:  (requests    || []).filter(r => r.practitioner_id === p.id).map(r => ({
+      ...r,
+      google_event_id: r.confirmed_booking_id ? (googleEventMap[r.confirmed_booking_id] ?? null) : null,
+    })),
   }))
 
   return res.status(200).json({ practitioners: result })
@@ -285,6 +301,77 @@ async function handleExceptions(req, res, supabase, userId) {
   return res.status(405).json({ error: 'Method not allowed' })
 }
 
+// ── Emails de confirmation booking (action=requests confirm) ──────────────────
+
+function buildConfirmationHtml({ firstName, svcTitle, dateStr, timeStr, location, finalPrice }) {
+  const locLine = location
+    ? `<p style="margin:8px 0 0;font-size:13px;color:#4A3F6B;"><strong>Lieu :</strong><br>${escapeHtml(location)}</p>`
+    : ''
+  const priceLine = finalPrice != null
+    ? `<p style="margin:8px 0 0;font-size:13px;color:#4A3F6B;"><strong>Montant total :</strong> ${(finalPrice / 100).toFixed(2)} € TTC</p>`
+    : ''
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Rendez-vous confirmé</title></head>
+<body style="margin:0;padding:0;background:#F5F4EF;font-family:Georgia,serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F4EF;padding:32px 16px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#FAFAF7;border-radius:16px;overflow:hidden;border:1px solid #E8E2D9;">
+<tr><td style="background:#1A1535;padding:28px 32px;">
+<p style="margin:0;font-size:22px;color:#C9A84C;font-family:Georgia,serif;">MediumIA</p>
+</td></tr>
+<tr><td style="padding:32px;">
+<h1 style="margin:0 0 8px;font-size:20px;color:#1A1535;font-family:Georgia,serif;">Votre rendez-vous est confirmé</h1>
+<p style="margin:0 0 24px;font-size:14px;color:#4A3F6B;">Bonjour ${escapeHtml(firstName)},</p>
+<div style="background:#F0EDE8;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+<p style="margin:0;font-size:14px;color:#1A1535;font-weight:bold;">${escapeHtml(svcTitle)}</p>
+<p style="margin:8px 0 0;font-size:13px;color:#4A3F6B;"><strong>Date :</strong> ${escapeHtml(dateStr)}</p>
+<p style="margin:4px 0 0;font-size:13px;color:#4A3F6B;"><strong>Heure :</strong> ${escapeHtml(timeStr)}</p>
+${locLine}${priceLine}
+</div>
+<p style="margin:0;font-size:13px;color:#4A3F6B;line-height:1.6;">
+Si vous avez des questions, n'hésitez pas à nous contacter en répondant directement à cet email.
+</p>
+<p style="margin:24px 0 0;font-size:13px;color:#4A3F6B;">À bientôt,<br><strong>L'équipe MediumIA</strong></p>
+</td></tr>
+<tr><td style="background:#F0EDE8;padding:16px 32px;">
+<p style="margin:0;font-size:11px;color:#9C8E7A;text-align:center;">Vous recevez cet email car vous avez effectué une demande de rendez-vous sur notre plateforme.</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`
+}
+
+function buildConfirmationText({ firstName, svcTitle, dateStr, timeStr, location, finalPrice }) {
+  const lines = [
+    `Bonjour ${firstName},`,
+    '',
+    'Votre rendez-vous est confirmé.',
+    '',
+    `Prestation : ${svcTitle}`,
+    `Date : ${dateStr}`,
+    `Heure : ${timeStr}`,
+  ]
+  if (location) lines.push(`Lieu : ${location}`)
+  if (finalPrice != null) lines.push(`Montant total : ${(finalPrice / 100).toFixed(2)} € TTC`)
+  lines.push('', 'Pour toute question, répondez directement à cet email.', '', "L'équipe MediumIA")
+  return lines.join('\n')
+}
+
+async function sendConfirmationEmailClient({ customerEmail, firstName, svcTitle, startsAt, timezone, location, finalPrice, bookingId }) {
+  const tz = timezone || 'Europe/Paris'
+  const d = new Date(startsAt)
+  const dateStr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz }).format(d)
+  const timeStr = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(d)
+  const capDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1)
+  return sendEmail({
+    to:             customerEmail,
+    subject:        'MediumIA — Votre rendez-vous est confirmé',
+    html:           buildConfirmationHtml({ firstName, svcTitle, dateStr: capDate, timeStr, location, finalPrice }),
+    text:           buildConfirmationText({ firstName, svcTitle, dateStr: capDate, timeStr, location, finalPrice }),
+    idempotencyKey: `booking-confirmation-client/${bookingId}`,
+  })
+}
+
 // ── action=requests ───────────────────────────────────────────────────────────
 
 async function handleRequests(req, res, supabase, userId) {
@@ -303,7 +390,7 @@ async function handleRequests(req, res, supabase, userId) {
   }
 
   if (req.method === 'PUT') {
-    const { id, status, practitioner_notes, travel_fee_cents, final_price_cents, scheduled_at } = req.body || {}
+    const { id, status, operation, practitioner_notes, travel_fee_cents, final_price_cents, scheduled_at } = req.body || {}
     if (!id) return res.status(400).json({ error: 'id requis' })
 
     const VALID_STATUSES = ['pending', 'contacted', 'scheduled', 'rejected', 'cancelled']
@@ -312,6 +399,56 @@ async function handleRequests(req, res, supabase, userId) {
     const { data: request, error: reqErr } = await supabase
       .from('booking_requests').select('*').eq('id', id).eq('practitioner_id', pid).single()
     if (reqErr || !request) return res.status(404).json({ error: 'Demande introuvable' })
+
+    // ── operation=sync_google : retry synchronisation Google Calendar ──────────
+    if (operation === 'sync_google') {
+      if (!request.confirmed_booking_id || request.status !== 'scheduled') {
+        return res.status(400).json({ error: 'Demande non confirmée ou déjà planifiée introuvable.' })
+      }
+
+      const [{ data: booking }, { data: svcSync }] = await Promise.all([
+        supabase.from('bookings')
+          .select('id, google_event_id, customer_first_name, customer_last_name, customer_phone, customer_email, starts_at, ends_at, timezone')
+          .eq('id', request.confirmed_booking_id).single(),
+        supabase.from('booking_services').select('title').eq('id', request.service_id).single(),
+      ])
+
+      if (!booking) return res.status(404).json({ error: 'Booking introuvable.' })
+
+      let locationSync = null
+      if (request.address_line1) {
+        locationSync = [request.address_line1, request.address_line2, `${request.postal_code} ${request.city}`]
+          .filter(Boolean).join(', ')
+      }
+
+      const descSync = [
+        'MediumIA Rendez-vous', '',
+        `Client : ${booking.customer_first_name} ${booking.customer_last_name}`,
+        `Téléphone : ${booking.customer_phone || 'Non renseigné'}`,
+        `Email : ${booking.customer_email}`,
+        `Prestation : ${svcSync?.title || ''}`,
+        `Identifiant MediumIA : ${booking.id}`,
+      ].join('\n')
+
+      const syncResult = await syncBookingToGoogleCalendar({
+        supabase,
+        practitionerId:       pid,
+        bookingId:            booking.id,
+        currentGoogleEventId: booking.google_event_id || null,
+        event: {
+          title:       `${svcSync?.title || 'Rendez-vous'} — ${booking.customer_first_name} ${booking.customer_last_name}`,
+          startsAt:    booking.starts_at,
+          endsAt:      booking.ends_at,
+          timezone:    booking.timezone || 'Europe/Paris',
+          location:    locationSync,
+          description: descSync,
+        },
+      })
+
+      const gStatus = (syncResult.status === 'synced' || syncResult.status === 'already_synced')
+        ? 'synced' : syncResult.status
+      return res.status(200).json({ google_sync: gStatus, google_event_id: syncResult.google_event_id })
+    }
 
     if (status === 'scheduled') {
       if (!scheduled_at) return res.status(400).json({ error: 'scheduled_at requis pour confirmer le RDV' })
@@ -417,7 +554,73 @@ async function handleRequests(req, res, supabase, userId) {
         return res.status(httpStatus).json({ error: msg })
       }
 
-      return res.status(200).json({ booking_id: rpcResult.booking_id, scheduled_at: scheduledDate.toISOString() })
+      // ── Post-confirmation : Google Calendar + email client ─────────────────
+      const bookingId = rpcResult.booking_id
+
+      const [{ data: confirmedBooking }, { data: confirmedSvc }] = await Promise.all([
+        supabase.from('bookings')
+          .select('id, google_event_id, customer_first_name, customer_last_name, customer_email, customer_phone, starts_at, ends_at, timezone')
+          .eq('id', bookingId).single(),
+        supabase.from('booking_services').select('title').eq('id', request.service_id).single(),
+      ])
+
+      let locationConf = null
+      if (request.address_line1) {
+        locationConf = [request.address_line1, request.address_line2, `${request.postal_code} ${request.city}`]
+          .filter(Boolean).join(', ')
+      }
+
+      const descConf = [
+        'MediumIA Rendez-vous', '',
+        `Client : ${confirmedBooking?.customer_first_name} ${confirmedBooking?.customer_last_name}`,
+        `Téléphone : ${confirmedBooking?.customer_phone || 'Non renseigné'}`,
+        `Email : ${confirmedBooking?.customer_email}`,
+        `Prestation : ${confirmedSvc?.title || ''}`,
+        ...(finalPrice != null ? [`Montant : ${(finalPrice / 100).toFixed(2)} € TTC`] : []),
+        `Identifiant MediumIA : ${bookingId}`,
+      ].join('\n')
+
+      const googleSync = await syncBookingToGoogleCalendar({
+        supabase,
+        practitionerId:       pid,
+        bookingId,
+        currentGoogleEventId: confirmedBooking?.google_event_id || null,
+        event: {
+          title:       `${confirmedSvc?.title || 'Rendez-vous'} — ${confirmedBooking?.customer_first_name} ${confirmedBooking?.customer_last_name}`,
+          startsAt:    confirmedBooking?.starts_at,
+          endsAt:      confirmedBooking?.ends_at,
+          timezone:    confirmedBooking?.timezone || 'Europe/Paris',
+          location:    locationConf,
+          description: descConf,
+        },
+      })
+
+      let emailStatus = 'skipped'
+      if (confirmedBooking?.customer_email) {
+        const emailRes = await sendConfirmationEmailClient({
+          customerEmail: confirmedBooking.customer_email,
+          firstName:     confirmedBooking.customer_first_name,
+          svcTitle:      confirmedSvc?.title || '',
+          startsAt:      confirmedBooking.starts_at,
+          timezone:      confirmedBooking.timezone || 'Europe/Paris',
+          location:      locationConf,
+          finalPrice,
+          bookingId,
+        })
+        emailStatus = emailRes.status === 'sent' ? 'sent' : emailRes.status === 'not_configured' ? 'not_configured' : 'error'
+      }
+
+      const gSyncStatus = (googleSync.status === 'synced' || googleSync.status === 'already_synced')
+        ? 'synced'
+        : googleSync.status === 'not_connected' ? 'not_connected' : 'failed'
+
+      return res.status(200).json({
+        booking_id:         bookingId,
+        scheduled_at:       scheduledDate.toISOString(),
+        google_sync:        gSyncStatus,
+        google_event_id:    googleSync.google_event_id,
+        email_confirmation: emailStatus,
+      })
     }
 
     const update = { updated_at: new Date().toISOString() }

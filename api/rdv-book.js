@@ -34,6 +34,7 @@
 import { decrypt, refreshGoogleToken, encrypt, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
+import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_RE  = /^\d{4}-\d{2}-\d{2}$/
@@ -505,11 +506,39 @@ export default async function handler(req, res) {
 
   // ── 13. Succès — INSERT confirmé ──────────────────────────────────────────
 
+  // Sync Google Calendar (fail open — ne bloque pas la réponse 201)
+  const instantBookingId = rpcResult.booking_id
+  const googleSync = await syncBookingToGoogleCalendar({
+    supabase,
+    practitionerId:       practitioner.id,
+    bookingId:            instantBookingId,
+    currentGoogleEventId: null,
+    event: {
+      title:       `${service.title} — ${customer.firstName.trim()} ${customer.lastName.trim()}`,
+      startsAt:    startsAtUTC.toISOString(),
+      endsAt:      endsAtUTC.toISOString(),
+      timezone:    practitioner.timezone || 'Europe/Paris',
+      description: [
+        'MediumIA Rendez-vous', '',
+        `Client : ${customer.firstName.trim()} ${customer.lastName.trim()}`,
+        `Téléphone : ${customer.phone?.trim() || 'Non renseigné'}`,
+        `Email : ${customer.email.trim()}`,
+        `Prestation : ${service.title}`,
+        `Identifiant MediumIA : ${instantBookingId}`,
+      ].join('\n'),
+    },
+  })
+
+  const gStatus = (googleSync.status === 'synced' || googleSync.status === 'already_synced')
+    ? 'synced' : googleSync.status
+
   return res.status(201).json({
-    booking_id:   rpcResult.booking_id,
-    starts_at:    startsAtUTC.toISOString(),
-    ends_at:      endsAtUTC.toISOString(),
-    practitioner: practitioner.name,
-    service:      service.title,
+    booking_id:      instantBookingId,
+    starts_at:       startsAtUTC.toISOString(),
+    ends_at:         endsAtUTC.toISOString(),
+    practitioner:    practitioner.name,
+    service:         service.title,
+    google_sync:     gStatus,
+    google_event_id: googleSync.google_event_id,
   })
 }

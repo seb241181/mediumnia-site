@@ -91,6 +91,7 @@ export default async function handler(req, res) {
     response_type: 'code',
     scope: [
       'https://www.googleapis.com/auth/calendar.freebusy',
+      'https://www.googleapis.com/auth/calendar.events',
       'https://www.googleapis.com/auth/userinfo.email',
     ].join(' '),
     access_type: 'offline',

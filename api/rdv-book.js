@@ -111,18 +111,15 @@ export default async function handler(req, res) {
   }
 
   // ── 3. is_active ──────────────────────────────────────────────────────────
+  // Obligatoire pour tous les modes — un profil inactif ne reçoit rien.
 
   if (!practitioner.is_active) {
     return res.status(409).json({ error: 'Ce profil praticien n\'est pas actif.' })
   }
 
-  // ── 4. booking_enabled ────────────────────────────────────────────────────
-
-  if (!practitioner.booking_enabled) {
-    return res.status(409).json({ error: 'Les réservations sont actuellement fermées pour ce praticien.' })
-  }
-
-  // ── 5. Service ────────────────────────────────────────────────────────────
+  // ── 4. Service ────────────────────────────────────────────────────────────
+  // Chargé avant booking_enabled : le mode (instant/request) détermine
+  // si booking_enabled est pertinent.
 
   const { data: service, error: svcErr } = await supabase
     .from('booking_services')
@@ -136,12 +133,19 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Service introuvable ou inactif' })
   }
 
-  // ── 5b. Mode "request" : formulaire de demande ────────────────────────────
+  // ── 4b. Mode "request" : formulaire de demande (booking_enabled ignoré) ──
+  // Les demandes sur site ne dépendent pas du calendrier en ligne.
   if (service.booking_mode === 'request') {
     return handleBookingRequest(req, res, supabase, practitioner, service, customer)
   }
 
-  // ── 5c. Mode "instant" : valider date/time ────────────────────────────────
+  // ── 4c. booking_enabled — réservations instantanées uniquement ───────────
+
+  if (!practitioner.booking_enabled) {
+    return res.status(409).json({ error: 'Les réservations sont actuellement fermées pour ce praticien.' })
+  }
+
+  // ── 4d. Mode "instant" : valider date/time ────────────────────────────────
   if (!date || !DATE_RE.test(date)) return res.status(400).json({ error: 'date invalide (YYYY-MM-DD)' })
   if (!time || !TIME_RE.test(time)) return res.status(400).json({ error: 'time invalide (HH:MM)' })
 

@@ -4,7 +4,10 @@ const decode = value => Buffer.from(value, 'base64').toString('utf8')
 
 function replaceOnce(path, before64, after64) {
   const before = decode(before64)
-  const after = decode(after64)
+  const after = decode(after64).replace(
+    "Voir d'autres dates</button>",
+    "Voir d'autres dates disponibles</button>",
+  )
   let text = fs.readFileSync(path, 'utf8')
   if (text.includes(after)) return
   if (!text.includes(before)) {

@@ -6,13 +6,7 @@ let text = fs.readFileSync(path, 'utf8')
 const oldViewState = "  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))"
 const newViewState = `  const [viewDate, setViewDate] = useState(() => selected
     ? new Date(selected.getFullYear(), selected.getMonth(), 1)
-    : new Date(today.getFullYear(), today.getMonth(), 1))
-
-  useEffect(() => {
-    if (selected) {
-      setViewDate(new Date(selected.getFullYear(), selected.getMonth(), 1))
-    }
-  }, [selected])`
+    : new Date(today.getFullYear(), today.getMonth(), 1))`
 
 if (!text.includes(newViewState)) {
   if (!text.includes(oldViewState)) {

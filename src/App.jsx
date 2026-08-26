@@ -9,6 +9,7 @@ import ReseauDirectory from './components/ReseauDirectory'
 import ReseauJoindre from './components/ReseauJoindre'
 import RdvDashboard from './components/rdv/RdvDashboard'
 import RdvPublic from './components/rdv/RdvPublic'
+import RdvCancellation from './components/rdv/RdvCancellation'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -180,7 +181,8 @@ const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
 
 export default function App() {
   const path = window.location.pathname
-  const initial = path.startsWith('/rdv/') ? 'rdv-public'
+  const initial = path === '/rdv/annuler' ? 'rdv-cancellation'
+    : path.startsWith('/rdv/') ? 'rdv-public'
     : path === '/rdv' ? 'rdv-dashboard'
     : path.startsWith('/agents') ? 'agents'
     : path.startsWith('/formation') ? 'formation'
@@ -207,6 +209,7 @@ export default function App() {
   if (view === 'reseau-dir')   return <ReseauDirectory onBack={backHome} />
   if (view === 'reseau-form')  return <ReseauJoindre onBack={backHome} />
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
+  if (view === 'rdv-cancellation') return <RdvCancellation onBack={backHome} />
   if (view === 'rdv-public')   return <RdvPublic onBack={backHome} />
   return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} />
 }

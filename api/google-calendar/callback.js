@@ -11,7 +11,7 @@
  *
  * Aucun token ne doit apparaître dans les logs, réponses ou URLs.
  */
-import { validateState, encrypt, decrypt } from '../../lib/googleOAuth.js'
+import { validateState, encrypt } from '../../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../../lib/supabaseAdmin.js'
 
 export default async function handler(req, res) {
@@ -174,17 +174,27 @@ export default async function handler(req, res) {
     return res.redirect(302, `/rdv?oauth_error=practitioner_not_found&practitioner=${practitionerSlug}`)
   }
 
+  // ── Conservation de la configuration existante ───────────────────────────────
+  // Une reconnexion OAuth renouvelle les jetons mais ne doit jamais remettre le
+  // calendrier sur `primary`. Le calendrier métier est choisi séparément et son
+  // identifiant existant reste la source de vérité.
+  const { data: existingConnection } = await supabase
+    .from('booking_calendar_connections')
+    .select('refresh_token_enc, google_calendar_id')
+    .eq('practitioner_id', resolvedPractitionerId)
+    .maybeSingle()
+
+  const selectedCalendarId = existingConnection?.google_calendar_id || process.env.GOOGLE_CALENDAR_ID?.trim()
+  if (!selectedCalendarId || selectedCalendarId === 'primary') {
+    return res.redirect(302, `/rdv?oauth_error=calendar_not_selected&practitioner=${practitionerSlug}`)
+  }
+
   // ── Conservation du refresh_token si Google n'en renvoie pas ─────────────────
   let refreshTokenEnc
   if (tokenData.refresh_token) {
     refreshTokenEnc = encrypt(tokenData.refresh_token)
   } else {
-    const { data: existing } = await supabase
-      .from('booking_calendar_connections')
-      .select('refresh_token_enc')
-      .eq('practitioner_id', resolvedPractitionerId)
-      .single()
-    refreshTokenEnc = existing?.refresh_token_enc
+    refreshTokenEnc = existingConnection?.refresh_token_enc
     if (!refreshTokenEnc) {
       return res.redirect(302, `/rdv?oauth_error=no_refresh_token&practitioner=${practitionerSlug}`)
     }
@@ -212,7 +222,7 @@ export default async function handler(req, res) {
     .upsert({
       practitioner_id: resolvedPractitionerId,
       google_email: googleEmail,
-      google_calendar_id: 'primary',
+      google_calendar_id: selectedCalendarId,
       access_token_enc: accessTokenEnc,
       refresh_token_enc: refreshTokenEnc,
       token_expiry: tokenExpiry,

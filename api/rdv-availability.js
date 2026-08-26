@@ -125,7 +125,7 @@ export default async function handler(req, res) {
 
   const { data: practitioner } = await supabase
     .from('booking_practitioners')
-    .select('id, timezone, is_active, booking_enabled, buffer_before_min, buffer_after_min, max_per_day')
+    .select('id, timezone, is_active, booking_enabled, min_advance_hours, buffer_before_min, buffer_after_min, max_per_day')
     .eq('slug', slug)
     .single()
 
@@ -145,7 +145,7 @@ export default async function handler(req, res) {
     .eq('is_active', true)
     .single()
 
-  if (!conn) {
+  if (!conn || !conn.google_calendar_id || conn.google_calendar_id === 'primary') {
     return res.status(200).json(CONFIG_REQUIRED())
   }
 
@@ -268,14 +268,14 @@ export default async function handler(req, res) {
         timeMin: timeMinFB,
         timeMax: timeMaxFB,
         timeZone: 'Europe/Paris',
-        items: [{ id: conn.google_calendar_id || 'primary' }],
+        items: [{ id: conn.google_calendar_id }],
       }),
     })
     if (!freeBusyRes.ok) {
       return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de synchroniser avec Google Agenda.' })
     }
     const freeBusyData = await freeBusyRes.json()
-    const calKey = conn.google_calendar_id || 'primary'
+    const calKey = conn.google_calendar_id
     googleBusy = freeBusyData.calendars?.[calKey]?.busy ?? []
   } catch {
     return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
@@ -305,7 +305,14 @@ export default async function handler(req, res) {
 
   // ── Calcul des créneaux ───────────────────────────────────────────────────
 
+  const minAdvanceMs = (practitioner.min_advance_hours ?? 0) * 3600_000
+  const earliestBookableAt = Date.now() + minAdvanceMs
+
   const slots = generateSlots(date, rules, googleBusy, existingBusy, offsetMs, durationMin, bufBeforeMs, bufAfterMs)
+    .map(slot => {
+      const slotStart = parisTimeToUTC(date, slot.time, offsetMs).getTime()
+      return { ...slot, available: slot.available && slotStart >= earliestBookableAt }
+    })
 
   return res.status(200).json({ mode: 'live', slots, notice: null })
 }

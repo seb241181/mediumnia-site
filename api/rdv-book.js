@@ -34,7 +34,14 @@
 import { decrypt, refreshGoogleToken, encrypt, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
-import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
+import { deleteBookingFromGoogleCalendar, syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
+import {
+  bookingCancellationUrl,
+  cancellationCutoff,
+  canSelfCancel,
+  createCancellationToken,
+  hashCancellationToken,
+} from '../lib/bookingCancellation.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_RE  = /^\d{4}-\d{2}-\d{2}$/
@@ -144,6 +151,178 @@ Identifiant demande :
 ${requestId}`
 }
 
+// ── Confirmations et annulation client ───────────────────────────────────────
+
+function formatBookingDate(startsAt, timezone = 'Europe/Paris') {
+  const date = new Date(startsAt)
+  const dateText = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: timezone,
+  }).format(date)
+  const timeText = new Intl.DateTimeFormat('fr-FR', {
+    hour: '2-digit', minute: '2-digit', timeZone: timezone,
+  }).format(date)
+  return { dateText: dateText.charAt(0).toUpperCase() + dateText.slice(1), timeText }
+}
+
+function paymentInstructions(modality = []) {
+  if (modality.includes('video')) {
+    return 'Le règlement doit être effectué au plus tard 48 h avant la séance. Les informations nécessaires vous seront communiquées séparément.'
+  }
+  if (modality.includes('in-person')) return 'Vous pourrez régler sur place, notamment en espèces.'
+  return null
+}
+
+function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl }) {
+  const { dateText, timeText } = formatBookingDate(startsAt, timezone)
+  const payment = paymentInstructions(modality)
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rendez-vous confirmé</title></head>
+<body style="margin:0;padding:0;background:#FAFAF7;font-family:Georgia,serif;color:#1A1535;">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+  <p style="font-size:20px;font-weight:700;margin:0 0 28px;letter-spacing:0.12em;color:#C9A84C;">✦ MEDIUMIA</p>
+  <h1 style="font-size:22px;margin:0 0 20px;">Votre rendez-vous est confirmé</h1>
+  <p style="font-size:15px;line-height:1.7;">Bonjour ${escapeHtml(firstName)},</p>
+  <div style="background:#F0EDE8;border-radius:12px;padding:20px 24px;margin:22px 0;">
+    <p style="margin:0;font-size:15px;font-weight:bold;">${escapeHtml(svcTitle)}</p>
+    <p style="margin:8px 0 0;font-size:14px;color:#4A3F6B;"><strong>Date :</strong> ${escapeHtml(dateText)}</p>
+    <p style="margin:4px 0 0;font-size:14px;color:#4A3F6B;"><strong>Heure :</strong> ${escapeHtml(timeText)}</p>
+  </div>
+  ${payment ? `<p style="font-size:14px;line-height:1.7;color:#4A3F6B;">${escapeHtml(payment)}</p>` : ''}
+  <p style="font-size:14px;line-height:1.7;color:#4A3F6B;margin-top:24px;">Vous pouvez annuler vous-même jusqu’à 24 heures avant le rendez-vous.</p>
+  <p style="margin:22px 0 30px;"><a href="${escapeHtml(cancelUrl)}" style="display:inline-block;background:#1A1535;color:#C9A84C;text-decoration:none;padding:13px 20px;border-radius:9px;font-weight:bold;">Annuler mon rendez-vous</a></p>
+  <p style="font-size:12px;line-height:1.6;color:#756B89;">À moins de 24 heures, l’annulation automatique est bloquée. Contactez directement Sébastien.</p>
+  <p style="font-size:15px;line-height:1.7;margin-top:28px;">À bientôt,<br><strong>Sébastien</strong><br>MediumIA</p>
+</div></body></html>`
+}
+
+function buildInstantConfirmationText({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl }) {
+  const { dateText, timeText } = formatBookingDate(startsAt, timezone)
+  const payment = paymentInstructions(modality)
+  return [
+    `Bonjour ${firstName},`, '', 'Votre rendez-vous est confirmé.', '',
+    `Prestation : ${svcTitle}`, `Date : ${dateText}`, `Heure : ${timeText}`,
+    ...(payment ? ['', payment] : []), '',
+    'Vous pouvez annuler vous-même jusqu’à 24 heures avant le rendez-vous :', cancelUrl, '',
+    'À moins de 24 heures, contactez directement Sébastien.', '',
+    'À bientôt,', 'Sébastien', 'MediumIA',
+  ].join('\n')
+}
+
+function buildCancellationConfirmationHtml({ firstName, svcTitle, startsAt, timezone }) {
+  const { dateText, timeText } = formatBookingDate(startsAt, timezone)
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Rendez-vous annulé</title></head>
+<body style="margin:0;padding:0;background:#FAFAF7;font-family:Georgia,serif;color:#1A1535;">
+<div style="max-width:560px;margin:0 auto;padding:40px 24px;">
+  <p style="font-size:20px;font-weight:700;margin:0 0 28px;letter-spacing:0.12em;color:#C9A84C;">✦ MEDIUMIA</p>
+  <h1 style="font-size:22px;margin:0 0 20px;">Votre rendez-vous est annulé</h1>
+  <p style="font-size:15px;line-height:1.7;">Bonjour ${escapeHtml(firstName)},</p>
+  <p style="font-size:15px;line-height:1.7;">Le rendez-vous « ${escapeHtml(svcTitle)} » prévu le ${escapeHtml(dateText)} à ${escapeHtml(timeText)} a bien été annulé. Le créneau est désormais libéré.</p>
+  <p style="font-size:15px;line-height:1.7;margin-top:28px;">Sébastien<br>MediumIA</p>
+</div></body></html>`
+}
+
+function buildCancellationConfirmationText({ firstName, svcTitle, startsAt, timezone }) {
+  const { dateText, timeText } = formatBookingDate(startsAt, timezone)
+  return `Bonjour ${firstName},\n\nLe rendez-vous « ${svcTitle} » prévu le ${dateText} à ${timeText} a bien été annulé. Le créneau est désormais libéré.\n\nSébastien\nMediumIA`
+}
+
+async function loadCancellationBooking(supabase, token) {
+  const tokenHash = hashCancellationToken(token)
+  if (!tokenHash) return null
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('id, practitioner_id, service_id, customer_first_name, customer_email, starts_at, ends_at, timezone, status, cancelled_at, google_event_id')
+    .eq('cancellation_token_hash', tokenHash)
+    .maybeSingle()
+  if (!booking) return null
+
+  const { data: service } = await supabase
+    .from('booking_services')
+    .select('title')
+    .eq('id', booking.service_id)
+    .maybeSingle()
+  return { ...booking, service_title: service?.title || 'Rendez-vous MediumIA' }
+}
+
+function publicCancellationState(booking) {
+  const cutoff = cancellationCutoff(booking.starts_at)
+  return {
+    status: booking.status,
+    first_name: booking.customer_first_name,
+    service: booking.service_title,
+    starts_at: booking.starts_at,
+    timezone: booking.timezone || 'Europe/Paris',
+    cancellation_cutoff: cutoff?.toISOString() || null,
+    can_cancel: booking.status === 'confirmed' && canSelfCancel(booking.starts_at),
+  }
+}
+
+async function handleCancellation(req, res, supabase) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  const token = req.body?.token
+  const intent = req.body?.intent
+  const booking = await loadCancellationBooking(supabase, token)
+  if (!booking) return res.status(404).json({ error: 'Lien d’annulation invalide ou expiré.' })
+
+  if (intent === 'inspect') return res.status(200).json(publicCancellationState(booking))
+  if (intent !== 'cancel') return res.status(400).json({ error: 'Action d’annulation invalide.' })
+  if (booking.status === 'cancelled') {
+    return res.status(200).json({ ...publicCancellationState(booking), already_cancelled: true })
+  }
+  if (booking.status !== 'confirmed') {
+    return res.status(409).json({ error: 'Ce rendez-vous ne peut plus être annulé automatiquement.' })
+  }
+  if (!canSelfCancel(booking.starts_at)) {
+    return res.status(409).json({
+      error: 'L’annulation automatique est fermée à moins de 24 heures du rendez-vous. Contactez directement Sébastien.',
+      code: 'cancellation_too_late',
+    })
+  }
+
+  // Supprimer Google d'abord. Si la DB échoue ensuite, MediumIA garde le
+  // créneau bloqué : c'est le sens d'échec le plus sûr contre le double RDV.
+  const googleDelete = await deleteBookingFromGoogleCalendar({
+    supabase,
+    practitionerId: booking.practitioner_id,
+    googleEventId: booking.google_event_id,
+  })
+  if (booking.google_event_id && !['deleted', 'already_deleted'].includes(googleDelete.status)) {
+    return res.status(503).json({
+      error: 'Impossible de finaliser l’annulation dans Google Agenda pour le moment. Réessayez ou contactez Sébastien.',
+      code: 'google_delete_failed',
+    })
+  }
+
+  const cancelledAt = new Date().toISOString()
+  const { data: cancelled, error: cancelErr } = await supabase
+    .from('bookings')
+    .update({ status: 'cancelled', cancelled_at: cancelledAt, cancel_reason: 'client_self_service', updated_at: cancelledAt })
+    .eq('id', booking.id)
+    .eq('status', 'confirmed')
+    .select('id')
+    .maybeSingle()
+  if (cancelErr || !cancelled) {
+    return res.status(503).json({
+      error: 'L’annulation n’a pas pu être enregistrée. Le créneau reste bloqué ; contactez Sébastien.',
+      code: 'booking_update_failed',
+    })
+  }
+
+  const email = await sendEmail({
+    to: booking.customer_email,
+    subject: 'MediumIA — Votre rendez-vous est annulé',
+    html: buildCancellationConfirmationHtml({ firstName: booking.customer_first_name, svcTitle: booking.service_title, startsAt: booking.starts_at, timezone: booking.timezone }),
+    text: buildCancellationConfirmationText({ firstName: booking.customer_first_name, svcTitle: booking.service_title, startsAt: booking.starts_at, timezone: booking.timezone }),
+    idempotencyKey: `booking-cancellation-client/${booking.id}`,
+  })
+
+  return res.status(200).json({
+    ...publicCancellationState({ ...booking, status: 'cancelled', cancelled_at: cancelledAt }),
+    cancelled: true,
+    google_status: googleDelete.status,
+    email_status: email.status,
+  })
+}
+
 // ── handleBookingRequest ──────────────────────────────────────────────────────
 
 async function handleBookingRequest(req, res, supabase, practitioner, service, customer) {
@@ -250,11 +429,14 @@ async function handleBookingRequest(req, res, supabase, practitioner, service, c
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
 
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-
   if (!isSupabaseConfigured()) {
     return res.status(503).json({ error: 'supabase_not_configured' })
   }
+
+  const supabase = getSupabaseAdmin()
+  const action = req.query?.action || req.body?.action
+  if (action === 'cancel') return handleCancellation(req, res, supabase)
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   // ── 1. Validation des champs ──────────────────────────────────────────────
 
@@ -266,8 +448,6 @@ export default async function handler(req, res) {
   if (!customer.firstName?.trim()) return res.status(400).json({ error: 'customer.firstName requis' })
   if (!customer.lastName?.trim())  return res.status(400).json({ error: 'customer.lastName requis' })
   if (!EMAIL_RE.test(customer.email?.trim())) return res.status(400).json({ error: 'customer.email invalide' })
-
-  const supabase = getSupabaseAdmin()
 
   // ── 2. Praticien ──────────────────────────────────────────────────────────
 
@@ -294,7 +474,7 @@ export default async function handler(req, res) {
 
   const { data: service, error: svcErr } = await supabase
     .from('booking_services')
-    .select('id, title, duration_min, booking_mode')
+    .select('id, title, duration_min, price_cents, modality, booking_mode')
     .eq('slug', service_slug)
     .eq('practitioner_id', practitioner.id)
     .eq('is_active', true)
@@ -414,6 +594,11 @@ export default async function handler(req, res) {
       error: 'Réservations temporairement indisponibles — Google Agenda n\'est pas connecté.',
     })
   }
+  if (!conn.google_calendar_id || conn.google_calendar_id === 'primary') {
+    return res.status(503).json({
+      error: 'Réservations temporairement indisponibles — aucun calendrier Google n’est configuré.',
+    })
+  }
 
   {
     let accessToken
@@ -451,7 +636,7 @@ export default async function handler(req, res) {
           timeMin: checkStart,
           timeMax: checkEnd,
           timeZone: 'Europe/Paris',
-          items: [{ id: conn.google_calendar_id || 'primary' }],
+          items: [{ id: conn.google_calendar_id }],
         }),
       })
 
@@ -467,7 +652,7 @@ export default async function handler(req, res) {
       })
     }
 
-    const calKey = conn.google_calendar_id || 'primary'
+    const calKey = conn.google_calendar_id
     const busy   = freeBusyData.calendars?.[calKey]?.busy ?? []
     if (busy.length > 0) {
       return res.status(409).json({ error: 'Ce créneau est déjà occupé dans votre Google Agenda.' })
@@ -506,8 +691,18 @@ export default async function handler(req, res) {
 
   // ── 13. Succès — INSERT confirmé ──────────────────────────────────────────
 
-  // Sync Google Calendar (fail open — ne bloque pas la réponse 201)
   const instantBookingId = rpcResult.booking_id
+  const cancellation = createCancellationToken()
+  const { error: tokenErr } = await supabase
+    .from('bookings')
+    .update({
+      cancellation_token_hash: cancellation.tokenHash,
+      cancellation_token_created_at: new Date().toISOString(),
+    })
+    .eq('id', instantBookingId)
+    .eq('practitioner_id', practitioner.id)
+
+  // Sync Google Calendar (fail open — ne bloque pas la réponse 201)
   const googleSync = await syncBookingToGoogleCalendar({
     supabase,
     practitionerId:       practitioner.id,
@@ -532,6 +727,37 @@ export default async function handler(req, res) {
   const gStatus = (googleSync.status === 'synced' || googleSync.status === 'already_synced')
     ? 'synced' : googleSync.status
 
+  // L'email avec lien secret n'est envoyé que si le hash a bien été stocké.
+  // Le token brut n'est jamais écrit en base ni journalisé.
+  let emailStatus = 'not_sent_token_error'
+  if (!tokenErr) {
+    const cancelUrl = bookingCancellationUrl(cancellation.token)
+    const confirmationEmail = await sendEmail({
+      to: customer.email.trim().toLowerCase(),
+      subject: 'MediumIA — Votre rendez-vous est confirmé',
+      html: buildInstantConfirmationHtml({
+        firstName: customer.firstName.trim(),
+        svcTitle: service.title,
+        startsAt: startsAtUTC.toISOString(),
+        timezone: practitioner.timezone || 'Europe/Paris',
+        modality: service.modality || [],
+        cancelUrl,
+      }),
+      text: buildInstantConfirmationText({
+        firstName: customer.firstName.trim(),
+        svcTitle: service.title,
+        startsAt: startsAtUTC.toISOString(),
+        timezone: practitioner.timezone || 'Europe/Paris',
+        modality: service.modality || [],
+        cancelUrl,
+      }),
+      idempotencyKey: `booking-confirmation-client/${instantBookingId}`,
+    })
+    emailStatus = confirmationEmail.status
+  } else {
+    console.error(`[rdv-book] Échec stockage token d'annulation pour booking ${instantBookingId}: ${tokenErr.code}`)
+  }
+
   return res.status(201).json({
     booking_id:      instantBookingId,
     starts_at:       startsAtUTC.toISOString(),
@@ -540,5 +766,6 @@ export default async function handler(req, res) {
     service:         service.title,
     google_sync:     gStatus,
     google_event_id: googleSync.google_event_id,
+    email_confirmation: emailStatus,
   })
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -101,7 +101,9 @@ function CalendarPicker({ selected, onSelect, config }) {
   const maxDate = new Date(today)
   maxDate.setDate(maxDate.getDate() + horizonDays)
 
-  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [viewDate, setViewDate] = useState(() => selected
+    ? new Date(selected.getFullYear(), selected.getMonth(), 1)
+    : new Date(today.getFullYear(), today.getMonth(), 1))
 
   if (config === null) {
     return (
@@ -519,6 +521,10 @@ export default function RdvPublic({ onBack }) {
   const [bookingResult, setBookingResult] = useState(null)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError]     = useState(null)
+  const [findingNext, setFindingNext]       = useState(false)
+  const [nextSearchError, setNextSearchError] = useState(null)
+  const [autoSuggested, setAutoSuggested]   = useState(false)
+  const nextSearchSeq = useRef(0)
 
   useEffect(() => {
     fetch(`/api/rdv-config?practitioner=${encodeURIComponent(slug)}`)
@@ -557,15 +563,97 @@ export default function RdvPublic({ onBack }) {
 
   const fmt = (d) => d ? new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d) : null
 
+  async function findNextAvailableDate(svc, seq) {
+    setFindingNext(true)
+    setNextSearchError(null)
+    setAutoSuggested(false)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const horizonDays = configData?.horizonDays ?? 42
+    const availableWeekdays = configData?.availableWeekdays
+    const candidates = []
+
+    for (let offset = 1; offset <= horizonDays; offset++) {
+      const candidate = new Date(today)
+      candidate.setDate(candidate.getDate() + offset)
+      const jsDay = candidate.getDay()
+      const weeklyOpen = availableWeekdays === null
+        ? jsDay !== 0 && jsDay !== 6
+        : availableWeekdays.includes(jsDay)
+      if (weeklyOpen) candidates.push(candidate)
+    }
+
+    try {
+      const batchSize = 5
+      for (let i = 0; i < candidates.length; i += batchSize) {
+        const batch = candidates.slice(i, i + batchSize)
+        const checked = await Promise.all(batch.map(async candidate => {
+          const dateStr = [
+            candidate.getFullYear(),
+            String(candidate.getMonth() + 1).padStart(2, '0'),
+            String(candidate.getDate()).padStart(2, '0'),
+          ].join('-')
+          const params = new URLSearchParams({
+            practitioner: slug,
+            date: dateStr,
+            service_slug: svc.slug,
+          })
+          const response = await fetch(`/api/rdv-availability?${params}`)
+          if (!response.ok) throw new Error('availability_http_error')
+          const data = await response.json()
+          return { candidate, data }
+        }))
+
+        if (seq !== nextSearchSeq.current) return
+
+        const blockingError = checked.find(({ data }) =>
+          data?.mode === 'error' || data?.mode === 'configuration_required'
+        )
+        if (blockingError) {
+          throw new Error(blockingError.data?.notice || 'availability_configuration_error')
+        }
+
+        const found = checked.find(({ data }) =>
+          Array.isArray(data?.slots) && data.slots.some(slot => slot.available)
+        )
+
+        if (found) {
+          setDate(found.candidate)
+          setTime(null)
+          setAutoSuggested(true)
+          setStep(2)
+          return
+        }
+      }
+
+      if (seq === nextSearchSeq.current) {
+        setNextSearchError("Aucun créneau disponible dans la période de réservation actuelle.")
+        setStep(1)
+      }
+    } catch {
+      if (seq === nextSearchSeq.current) {
+        setNextSearchError('Impossible de rechercher la prochaine disponibilité pour le moment. Vous pouvez choisir une date manuellement.')
+        setStep(1)
+      }
+    } finally {
+      if (seq === nextSearchSeq.current) setFindingNext(false)
+    }
+  }
+
   function selectService(svc) {
+    const seq = ++nextSearchSeq.current
     setService(svc); setDate(null); setTime(null); setBookingError(null)
+    setNextSearchError(null); setAutoSuggested(false)
     if (svc.bookingMode === 'request') {
+      setFindingNext(false)
       setStep('request-form')
     } else {
       setStep(1)
+      void findNextAvailableDate(svc, seq)
     }
   }
-  function selectDate(d)      { setDate(d); setTime(null); setStep(2) }
+  function selectDate(d)      { ++nextSearchSeq.current; setFindingNext(false); setAutoSuggested(false); setDate(d); setTime(null); setStep(2) }
   function selectTime(t)      { setTime(t); setStep(3) }
 
   async function handleSubmitRequest(requestForm) {
@@ -775,20 +863,43 @@ export default function RdvPublic({ onBack }) {
             {step === 1 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => setStep(0)} className="font-georgia text-xs text-mist hover:text-deep">← Prestation</button>
+                  <button onClick={() => { ++nextSearchSeq.current; setFindingNext(false); setStep(0) }} className="font-georgia text-xs text-mist hover:text-deep">← Prestation</button>
                   <h2 className="font-georgia font-medium text-xl">Choisissez une date</h2>
                 </div>
-                <CalendarPicker selected={date} onSelect={selectDate} config={configData} />
+                {findingNext ? (
+                  <div className="rounded-2xl border border-gold/25 bg-white/60 px-5 py-10 text-center">
+                    <div className="w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto mb-3" />
+                    <p className="font-georgia text-sm text-deep">Recherche de la prochaine disponibilité…</p>
+                    <p className="font-georgia text-xs text-mist/60 mt-1">Vérification de l'agenda en temps réel.</p>
+                  </div>
+                ) : (
+                  <>
+                    {nextSearchError && (
+                      <div className="rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 mb-4">
+                        <p className="font-georgia text-xs text-mist">{nextSearchError}</p>
+                      </div>
+                    )}
+                    <CalendarPicker selected={date} onSelect={selectDate} config={configData} />
+                  </>
+                )}
               </div>
             )}
 
             {/* Step 2 — Time */}
             {step === 2 && (
               <div>
-                <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => setStep(1)} className="font-georgia text-xs text-mist hover:text-deep">← Date</button>
-                  <h2 className="font-georgia font-medium text-xl capitalize">{fmt(date)}</h2>
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => { setAutoSuggested(false); setStep(1) }} className="font-georgia text-xs text-mist hover:text-deep">← Date</button>
+                    <h2 className="font-georgia font-medium text-xl capitalize">{fmt(date)}</h2>
+                  </div>
+                  <button onClick={() => { setAutoSuggested(false); setStep(1) }} className="font-georgia text-xs text-gold hover:text-deep transition-colors">Voir d'autres dates disponibles</button>
                 </div>
+                {autoSuggested && (
+                  <div className="rounded-xl border border-gold/25 bg-gold/5 px-4 py-3 mb-4">
+                    <p className="font-georgia text-xs text-mist"><strong className="text-deep">Prochaine disponibilité trouvée</strong> — choisissez l'heure qui vous convient.</p>
+                  </div>
+                )}
                 <TimeSlots practitionerSlug={slug} date={date} service={service} selected={time} onSelect={selectTime} />
                 {time && (
                   <button onClick={() => setStep(3)} className="mt-6 w-full font-georgia py-4 rounded-xl bg-gold text-deep font-bold hover:bg-gold/90 transition-colors">

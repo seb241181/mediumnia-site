@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS booking_calendar_connections (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   practitioner_id  UUID        NOT NULL UNIQUE REFERENCES booking_practitioners(id) ON DELETE CASCADE,
   google_email     TEXT        NOT NULL,
-  google_calendar_id TEXT      NOT NULL DEFAULT 'primary',
+  -- Calendrier choisi explicitement : aucun fallback silencieux vers `primary`.
+  google_calendar_id TEXT      NOT NULL,
   -- Tokens chiffrés AES-256 côté serveur — JAMAIS en clair
   access_token_enc TEXT        NOT NULL,
   refresh_token_enc TEXT       NOT NULL,

@@ -338,7 +338,7 @@ async function handleCancellation(req, res, supabase) {
   })
   if (booking.google_event_id && !['deleted', 'already_deleted'].includes(googleDelete.status)) {
     return res.status(503).json({
-      error: 'Impossible de finaliser l’annulation dans Google Agenda pour le moment. Réessayez ou contactez Sébastien.',
+      error: 'Impossible de finaliser l’annulation pour le moment. Réessayez ou contactez Sébastien.',
       code: 'google_delete_failed',
     })
   }

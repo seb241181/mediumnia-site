@@ -116,7 +116,7 @@ export default function RdvCancellation({ onBack }) {
                 </div>
               ) : confirming ? (
                 <div>
-                  <p className="font-georgia text-sm text-mist mb-5">Cette action supprimera aussi l’événement de Google Agenda et libérera immédiatement le créneau.</p>
+                  <p className="font-georgia text-sm text-mist mb-5">Une fois l’annulation confirmée, le créneau sera immédiatement libéré.</p>
                   {error && <p className="font-georgia text-sm text-red-600 mb-4">{error}</p>}
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button onClick={() => { setConfirming(false); setError(null) }} disabled={cancelling} className="flex-1 font-georgia py-3 rounded-xl border border-gold/30 text-mist hover:text-deep disabled:opacity-50">Garder le rendez-vous</button>

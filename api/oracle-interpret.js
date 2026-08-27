@@ -206,9 +206,8 @@ Puis conclus par :
       body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], temperature: 0.85, max_tokens: 1500 }),
     })
     if (!response.ok) {
-      const errText = await response.text()
-      console.error('OpenAI error:', errText)
-      return res.status(502).json({ error: 'OpenAI request failed', detail: errText })
+      console.error('[oracle] OpenAI HTTP', response.status)
+      return res.status(502).json({ error: 'Oracle interpretation unavailable' })
     }
     const data = await response.json()
     const interpretation = data.choices[0].message.content
@@ -232,8 +231,8 @@ Puis conclus par :
       emailStatus: 'sent',
     })
   } catch (error) {
-    console.error('Handler error:', String(error))
-    return res.status(500).json({ error: 'Failed', detail: String(error) })
+    console.error('[oracle] Handler error:', error?.name || 'Error')
+    return res.status(500).json({ error: 'Oracle interpretation unavailable' })
   } finally {
     if (shouldReleaseReservation) {
       await releaseOracleFreeDraw(supabase, reservation.id)

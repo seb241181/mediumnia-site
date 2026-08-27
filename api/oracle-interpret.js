@@ -1,9 +1,97 @@
 /* global process */
+import { createHash } from 'node:crypto'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
+import { getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }
 
 const cardsById = new Map(oracleCards.map((card) => [card.id, card]))
 const cardLabels = ['Ombre', 'Passage', 'Guérison']
+const pendingReservationTtlMs = 15 * 60 * 1000
+
+function hashEmail(normalizedEmail) {
+  return createHash('sha256').update(normalizedEmail).digest('hex')
+}
+
+async function insertPendingReservation(supabase, emailHash) {
+  const { data, error } = await supabase
+    .from('oracle_free_draws')
+    .insert({ email_hash: emailHash, status: 'pending' })
+    .select('id, status, created_at')
+    .single()
+
+  if (!error) return { reservation: data }
+  if (error.code === '23505') return { conflict: true }
+  throw new Error('Oracle reservation failed')
+}
+
+async function findReservation(supabase, emailHash) {
+  const { data, error } = await supabase
+    .from('oracle_free_draws')
+    .select('id, status, created_at')
+    .eq('email_hash', emailHash)
+    .maybeSingle()
+
+  if (error) throw new Error('Oracle reservation lookup failed')
+  return data
+}
+
+async function reserveOracleFreeDraw(supabase, emailHash, now = new Date()) {
+  const firstAttempt = await insertPendingReservation(supabase, emailHash)
+  if (firstAttempt.reservation) return firstAttempt
+
+  const existing = await findReservation(supabase, emailHash)
+  if (!existing) {
+    const retry = await insertPendingReservation(supabase, emailHash)
+    if (retry.reservation) return retry
+    return { conflict: 'pending' }
+  }
+  if (existing.status === 'completed') return { conflict: 'completed' }
+
+  const staleBefore = new Date(now.getTime() - pendingReservationTtlMs).toISOString()
+  const { data: deleted, error: deleteError } = await supabase
+    .from('oracle_free_draws')
+    .delete()
+    .eq('id', existing.id)
+    .eq('status', 'pending')
+    .lt('created_at', staleBefore)
+    .select('id')
+    .maybeSingle()
+
+  if (deleteError) throw new Error('Oracle stale reservation cleanup failed')
+  if (!deleted) return { conflict: 'pending' }
+
+  const retry = await insertPendingReservation(supabase, emailHash)
+  if (retry.reservation) return retry
+
+  const current = await findReservation(supabase, emailHash)
+  return { conflict: current?.status === 'completed' ? 'completed' : 'pending' }
+}
+
+async function releaseOracleFreeDraw(supabase, reservationId) {
+  try {
+    const { error } = await supabase
+      .from('oracle_free_draws')
+      .delete()
+      .eq('id', reservationId)
+      .eq('status', 'pending')
+
+    if (error) console.error('[oracle] Pending reservation cleanup failed')
+  } catch {
+    console.error('[oracle] Pending reservation cleanup failed')
+  }
+}
+
+async function completeOracleFreeDraw(supabase, reservationId) {
+  const { data, error } = await supabase
+    .from('oracle_free_draws')
+    .update({ status: 'completed', completed_at: new Date().toISOString() })
+    .eq('id', reservationId)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle()
+
+  if (error || !data) throw new Error('Oracle reservation completion failed')
+}
 
 function buildOracleEmail(cards, interpretation) {
   const cardRows = cards.map((card, index) => {
@@ -64,6 +152,30 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid cardIds' })
   }
 
+  const emailHash = hashEmail(normalizedEmail)
+  const supabase = getSupabaseAdmin()
+  let reservation
+
+  try {
+    const reservationResult = await reserveOracleFreeDraw(supabase, emailHash)
+    if (reservationResult.conflict === 'completed') {
+      return res.status(409).json({
+        error: 'oracle_free_draw_already_used',
+        message: 'Un tirage gratuit a déjà été réalisé avec cette adresse e-mail.',
+      })
+    }
+    if (reservationResult.conflict) {
+      return res.status(409).json({
+        error: 'oracle_free_draw_in_progress',
+        message: 'Un tirage gratuit est déjà en cours avec cette adresse e-mail.',
+      })
+    }
+    reservation = reservationResult.reservation
+  } catch (error) {
+    console.error('[oracle] Reservation error:', String(error))
+    return res.status(503).json({ error: 'Oracle reservation unavailable' })
+  }
+
   const cardLines = cards.map((c, i) => {
     const kw = c.keywords ? ` — mots-clés : ${c.keywords}` : ''
     return `Carte ${i + 1} (${cardLabels[i]}) : n°${c.id} « ${c.name} »${kw}`
@@ -86,6 +198,7 @@ Termine par :
 
 Puis conclus par :
 "Je suis Lumïa, gardienne du pont entre l'âme et la lumière."`
+  let shouldReleaseReservation = true
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -107,12 +220,23 @@ Puis conclus par :
       text: emailContent.text,
     })
 
+    if (emailResult.status !== 'sent') {
+      return res.status(200).json({ interpretation, emailStatus: 'failed' })
+    }
+
+    await completeOracleFreeDraw(supabase, reservation.id)
+    shouldReleaseReservation = false
+
     return res.status(200).json({
       interpretation,
-      emailStatus: emailResult.status === 'sent' ? 'sent' : 'failed',
+      emailStatus: 'sent',
     })
   } catch (error) {
     console.error('Handler error:', String(error))
     return res.status(500).json({ error: 'Failed', detail: String(error) })
+  } finally {
+    if (shouldReleaseReservation) {
+      await releaseOracleFreeDraw(supabase, reservation.id)
+    }
   }
 }

@@ -1,10 +1,6 @@
 import { useState } from 'react'
 import oracleCards from '../data/oracleCards.json'
 
-function storageKey(email) {
-  return `oracle_test_${email.toLowerCase().trim()}`
-}
-
 export default function OracleTest() {
   const [email, setEmail]     = useState('')
   const [numbers, setNumbers] = useState(['', '', ''])
@@ -27,11 +23,6 @@ export default function OracleTest() {
     setIsError(false)
     setResult(null)
     const trimmedEmail = email.toLowerCase().trim()
-    if (localStorage.getItem(storageKey(trimmedEmail))) {
-      setIsError(true)
-      setMessage('Cet email a déjà utilisé le tirage test. Un seul tirage par email est offert.')
-      return
-    }
     const ids = numbers.map(n => parseInt(n, 10))
     if (ids.some(isNaN) || ids.some(n => n < 0 || n > 44)) {
       setIsError(true)
@@ -46,12 +37,16 @@ export default function OracleTest() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmedEmail, cardIds: ids }),
       })
+      if (apiRes.status === 409) {
+        setIsError(true)
+        setMessage('Un tirage gratuit a déjà été réalisé avec cette adresse e-mail.')
+        return
+      }
       if (!apiRes.ok) {
         const errData = await apiRes.json().catch(() => ({}))
         throw new Error(errData.detail || errData.error || 'Erreur API')
       }
       const { interpretation, emailStatus } = await apiRes.json()
-      localStorage.setItem(storageKey(trimmedEmail), new Date().toISOString())
       setResult({ cards: drawnCards, interpretation })
       if (emailStatus === 'sent') {
         setMessage("Tirage effectué — votre interprétation est ci-dessous et a été envoyée par e-mail.")

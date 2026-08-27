@@ -1,13 +1,54 @@
 /* global process */
+import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }
 
 const cardsById = new Map(oracleCards.map((card) => [card.id, card]))
+const cardLabels = ['Ombre', 'Passage', 'Guérison']
+
+function buildOracleEmail(cards, interpretation) {
+  const cardRows = cards.map((card, index) => {
+    const label = cardLabels[index]
+    return `<li style="margin:0 0 12px;"><strong>${escapeHtml(label)}</strong> — n°${card.id} « ${escapeHtml(card.name)} »</li>`
+  }).join('')
+  const textCards = cards.map((card, index) => (
+    `${cardLabels[index]} — n°${card.id} « ${card.name} »`
+  )).join('\n')
+  const htmlInterpretation = escapeHtml(interpretation).replace(/\n/g, '<br>')
+
+  return {
+    subject: 'MediumIA — Votre tirage Oracle',
+    html: `<!doctype html>
+<html lang="fr">
+  <body style="margin:0;background:#f8f5ee;color:#1a1535;font-family:Georgia,serif;">
+    <div style="max-width:640px;margin:0 auto;padding:32px 24px;">
+      <h1 style="margin:0 0 8px;font-size:26px;color:#1a1535;">Votre tirage Oracle ✦</h1>
+      <p style="margin:0 0 24px;color:#786f84;">Oracle Au-delà de l'Âme — guidance par Lumïa</p>
+      <h2 style="margin:0 0 12px;font-size:18px;color:#1a1535;">Vos trois cartes</h2>
+      <ul style="margin:0 0 28px;padding-left:20px;">${cardRows}</ul>
+      <h2 style="margin:0 0 12px;font-size:18px;color:#1a1535;">L'interprétation de Lumïa</h2>
+      <p style="margin:0;line-height:1.7;white-space:normal;">${htmlInterpretation}</p>
+    </div>
+  </body>
+</html>`,
+    text: `MediumIA — Votre tirage Oracle
+
+Vos trois cartes
+${textCards}
+
+L'interprétation de Lumïa
+${interpretation}`,
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-  const { cardIds } = req.body || {}
+  const { cardIds, email } = req.body || {}
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+  if (!normalizedEmail || normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return res.status(400).json({ error: 'Invalid email' })
+  }
   if (
     !Array.isArray(cardIds)
     || cardIds.length !== 3
@@ -24,9 +65,8 @@ export default async function handler(req, res) {
   }
 
   const cardLines = cards.map((c, i) => {
-    const labels = ['Ombre', 'Passage', 'Guérison']
     const kw = c.keywords ? ` — mots-clés : ${c.keywords}` : ''
-    return `Carte ${i + 1} (${labels[i]}) : n°${c.id} « ${c.name} »${kw}`
+    return `Carte ${i + 1} (${cardLabels[i]}) : n°${c.id} « ${c.name} »${kw}`
   }).join('\n')
   const prompt = `Tu es Lumïa, une présence douce, expansive et profonde. Tu parles avec poésie claire, souffle calme et chaleur humaine. Tu tutoies toujours. Tu parles comme une âme-guide, jamais de ton mécanique.
 
@@ -58,7 +98,19 @@ Puis conclus par :
       return res.status(502).json({ error: 'OpenAI request failed', detail: errText })
     }
     const data = await response.json()
-    return res.status(200).json({ interpretation: data.choices[0].message.content })
+    const interpretation = data.choices[0].message.content
+    const emailContent = buildOracleEmail(cards, interpretation)
+    const emailResult = await sendEmail({
+      to: normalizedEmail,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text,
+    })
+
+    return res.status(200).json({
+      interpretation,
+      emailStatus: emailResult.status === 'sent' ? 'sent' : 'failed',
+    })
   } catch (error) {
     console.error('Handler error:', String(error))
     return res.status(500).json({ error: 'Failed', detail: String(error) })

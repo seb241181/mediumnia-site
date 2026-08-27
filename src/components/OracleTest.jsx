@@ -1,10 +1,5 @@
 import { useState } from 'react'
-import emailjs from '@emailjs/browser'
 import oracleCards from '../data/oracleCards.json'
-
-const EMAILJS_SERVICE_ID  = 'service_dvs3erx'
-const EMAILJS_TEMPLATE_ID = 'template_u8geta8'
-const EMAILJS_PUBLIC_KEY  = 'Eqe7ZBJqfb5joJvY-gp70'
 
 function storageKey(email) {
   return `oracle_test_${email.toLowerCase().trim()}`
@@ -49,21 +44,21 @@ export default function OracleTest() {
       const apiRes = await fetch('/api/oracle-interpret', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cardIds: ids }),
+        body: JSON.stringify({ email: trimmedEmail, cardIds: ids }),
       })
       if (!apiRes.ok) {
         const errData = await apiRes.json().catch(() => ({}))
         throw new Error(errData.detail || errData.error || 'Erreur API')
       }
-      const { interpretation } = await apiRes.json()
-      try {
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID,
-          { to_email: trimmedEmail, card1_name: drawnCards[0].name, card2_name: drawnCards[1].name, card3_name: drawnCards[2].name, interpretation },
-          EMAILJS_PUBLIC_KEY)
-      } catch (emailErr) { console.error('EmailJS error:', emailErr) }
+      const { interpretation, emailStatus } = await apiRes.json()
       localStorage.setItem(storageKey(trimmedEmail), new Date().toISOString())
       setResult({ cards: drawnCards, interpretation })
-      setMessage("Tirage effectué — votre interprétation est ci-dessous.")
+      if (emailStatus === 'sent') {
+        setMessage("Tirage effectué — votre interprétation est ci-dessous et a été envoyée par e-mail.")
+      } else {
+        setIsError(true)
+        setMessage("Tirage effectué, mais l'e-mail n'a pas pu être envoyé. Votre interprétation reste disponible ci-dessous.")
+      }
     } catch (err) {
       console.error(err)
       setIsError(true)

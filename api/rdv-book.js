@@ -169,7 +169,7 @@ function paymentInstructions(modality = []) {
   if (modality.includes('video')) {
     return 'Le règlement doit être effectué au plus tard 48 h avant la séance. Les informations nécessaires vous seront communiquées séparément.'
   }
-  if (modality.includes('in-person')) return 'Vous pourrez régler sur place, notamment en espèces.'
+  if (modality.includes('in-person')) return 'Vous pourrez régler sur place par chèque ou en espèces.'
   return null
 }
 

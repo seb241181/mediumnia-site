@@ -46,6 +46,13 @@ async function verifyOwner(supabase, userId, practitionerId) {
   return !!data
 }
 
+function resendSenderUsesVerifiedDomain() {
+  const configured = process.env.RESEND_FROM_EMAIL?.trim() || ''
+  const bracketed = configured.match(/<\s*([^<>]+)\s*>$/)
+  const address = (bracketed?.[1] || configured).trim().toLowerCase()
+  return address.endsWith('@mail.mediumia.fr')
+}
+
 // ── action=me ─────────────────────────────────────────────────────────────────
 
 async function handleMe(req, res, supabase, userId) {
@@ -362,7 +369,7 @@ function buildConfirmationText({ firstName, svcTitle, dateStr, timeStr, location
   return lines.join('\n')
 }
 
-async function sendConfirmationEmailClient({ customerEmail, firstName, svcTitle, startsAt, timezone, location, finalPrice, bookingId, cancelUrl }) {
+async function sendConfirmationEmailClient({ customerEmail, firstName, svcTitle, startsAt, timezone, location, finalPrice, bookingId, cancelUrl, idempotencyKey }) {
   const tz = timezone || 'Europe/Paris'
   const d = new Date(startsAt)
   const dateStr = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz }).format(d)
@@ -373,7 +380,103 @@ async function sendConfirmationEmailClient({ customerEmail, firstName, svcTitle,
     subject:        'MediumIA — Votre rendez-vous est confirmé',
     html:           buildConfirmationHtml({ firstName, svcTitle, dateStr: capDate, timeStr, location, finalPrice, cancelUrl }),
     text:           buildConfirmationText({ firstName, svcTitle, dateStr: capDate, timeStr, location, finalPrice, cancelUrl }),
-    idempotencyKey: `booking-confirmation-client/${bookingId}`,
+    idempotencyKey: idempotencyKey || `booking-confirmation-client/${bookingId}`,
+  })
+}
+
+// ── action=bookings ───────────────────────────────────────────────────────────
+
+async function handleBookings(req, res, supabase, userId) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  if (process.env.VERCEL_ENV !== 'preview') {
+    return res.status(403).json({ error: 'Cette opération est réservée à la Preview.' })
+  }
+
+  const { id, practitioner_id, operation } = req.body || {}
+  if (operation !== 'resend_confirmation') {
+    return res.status(400).json({ error: 'operation invalide' })
+  }
+  if (!id || !practitioner_id) {
+    return res.status(400).json({ error: 'id et practitioner_id requis' })
+  }
+  if (!await verifyOwner(supabase, userId, practitioner_id)) {
+    return res.status(403).json({ error: 'forbidden' })
+  }
+
+  // Contrôle booléen uniquement : l'adresse complète n'est jamais renvoyée ni journalisée.
+  if (!resendSenderUsesVerifiedDomain()) {
+    return res.status(503).json({
+      error: 'L’expéditeur Resend Preview n’utilise pas le domaine vérifié mail.mediumia.fr.',
+      sender_domain_valid: false,
+    })
+  }
+
+  const { data: booking, error: bookingErr } = await supabase
+    .from('bookings')
+    .select('id, practitioner_id, service_id, customer_first_name, customer_email, starts_at, timezone, status')
+    .eq('id', id)
+    .eq('practitioner_id', practitioner_id)
+    .single()
+
+  if (bookingErr || !booking) return res.status(404).json({ error: 'Rendez-vous introuvable.' })
+  if (booking.status !== 'confirmed') {
+    return res.status(409).json({ error: 'Seul un rendez-vous confirmé peut recevoir une nouvelle confirmation.' })
+  }
+  if (!booking.customer_email) {
+    return res.status(409).json({ error: 'Aucune adresse e-mail n’est associée à ce rendez-vous.' })
+  }
+
+  const { data: service } = await supabase
+    .from('booking_services')
+    .select('title')
+    .eq('id', booking.service_id)
+    .maybeSingle()
+
+  // Le token brut ne quitte jamais cette invocation serveur. Seul son hash est stocké.
+  const cancellation = createCancellationToken()
+  const tokenCreatedAt = new Date().toISOString()
+  const { data: updatedBooking, error: tokenErr } = await supabase
+    .from('bookings')
+    .update({
+      cancellation_token_hash: cancellation.tokenHash,
+      cancellation_token_created_at: tokenCreatedAt,
+    })
+    .eq('id', booking.id)
+    .eq('practitioner_id', practitioner_id)
+    .eq('status', 'confirmed')
+    .select('id, cancellation_token_created_at')
+    .single()
+
+  if (tokenErr || !updatedBooking) {
+    return res.status(500).json({ error: 'Impossible de régénérer le lien d’annulation.' })
+  }
+
+  const emailResult = await sendConfirmationEmailClient({
+    customerEmail: booking.customer_email,
+    firstName: booking.customer_first_name,
+    svcTitle: service?.title || 'Rendez-vous MediumIA',
+    startsAt: booking.starts_at,
+    timezone: booking.timezone || 'Europe/Paris',
+    location: null,
+    finalPrice: null,
+    bookingId: booking.id,
+    cancelUrl: bookingCancellationUrl(cancellation.token),
+    idempotencyKey: `booking-confirmation-client/${booking.id}/resend/${cancellation.tokenHash.slice(0, 16)}`,
+  })
+
+  if (emailResult.status !== 'sent') {
+    return res.status(502).json({
+      error: 'Le nouveau lien a été sécurisé, mais Resend n’a pas accepté l’e-mail.',
+      sender_domain_valid: true,
+      token_hash_updated: true,
+      email_confirmation: emailResult.status,
+    })
+  }
+
+  return res.status(200).json({
+    sender_domain_valid: true,
+    token_hash_updated: true,
+    email_confirmation: 'sent',
   })
 }
 
@@ -696,6 +799,7 @@ export default async function handler(req, res) {
     case 'settings':     return handleSettings(req, res, supabase, userId)
     case 'exceptions':   return handleExceptions(req, res, supabase, userId)
     case 'requests':     return handleRequests(req, res, supabase, userId)
+    case 'bookings':     return handleBookings(req, res, supabase, userId)
     default:             return res.status(400).json({ error: `action inconnue: ${action}` })
   }
 }

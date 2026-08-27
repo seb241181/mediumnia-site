@@ -5,6 +5,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/oracle",
+      "destination": "/index.html"
+    },
+    {
       "source": "/rdv/:slug",
       "destination": "/index.html"
     },

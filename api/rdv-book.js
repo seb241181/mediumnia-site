@@ -1,3 +1,4 @@
+/* global process */
 /**
  * POST /api/rdv-book
  *
@@ -237,10 +238,14 @@ async function loadCancellationBooking(supabase, token) {
 
   const { data: service } = await supabase
     .from('booking_services')
-    .select('title')
+    .select('title, modality')
     .eq('id', booking.service_id)
     .maybeSingle()
-  return { ...booking, service_title: service?.title || 'Rendez-vous MediumIA' }
+  return {
+    ...booking,
+    service_title: service?.title || 'Rendez-vous MediumIA',
+    service_modality: service?.modality || [],
+  }
 }
 
 function publicCancellationState(booking) {
@@ -264,6 +269,52 @@ async function handleCancellation(req, res, supabase) {
   if (!booking) return res.status(404).json({ error: 'Lien d’annulation invalide ou expiré.' })
 
   if (intent === 'inspect') return res.status(200).json(publicCancellationState(booking))
+
+  // Passage de maintenance limité aux déploiements Preview. Le token secret
+  // authentifie le rendez-vous et l'adresse destinataire vient exclusivement
+  // de la réservation : aucun envoi vers une adresse fournie par la requête.
+  if (intent === 'resend_confirmation') {
+    if (process.env.VERCEL_ENV !== 'preview') {
+      return res.status(404).json({ error: 'Action indisponible.' })
+    }
+    if (booking.status !== 'confirmed' || !booking.customer_email) {
+      return res.status(409).json({ error: 'Ce rendez-vous ne peut pas recevoir de nouvelle confirmation.' })
+    }
+
+    const tokenHash = hashCancellationToken(token)
+    const cancelUrl = bookingCancellationUrl(token)
+    const email = await sendEmail({
+      to: booking.customer_email,
+      subject: 'MediumIA — Votre rendez-vous est confirmé',
+      html: buildInstantConfirmationHtml({
+        firstName: booking.customer_first_name,
+        svcTitle: booking.service_title,
+        startsAt: booking.starts_at,
+        timezone: booking.timezone || 'Europe/Paris',
+        modality: booking.service_modality,
+        cancelUrl,
+      }),
+      text: buildInstantConfirmationText({
+        firstName: booking.customer_first_name,
+        svcTitle: booking.service_title,
+        startsAt: booking.starts_at,
+        timezone: booking.timezone || 'Europe/Paris',
+        modality: booking.service_modality,
+        cancelUrl,
+      }),
+      idempotencyKey: `booking-confirmation-resend/${booking.id}/${tokenHash.slice(0, 16)}`,
+    })
+
+    if (email.status !== 'sent') {
+      return res.status(502).json({
+        error: 'La confirmation n’a pas pu être envoyée.',
+        email_status: email.status,
+        http_status: email.httpStatus || null,
+      })
+    }
+    return res.status(200).json({ email_status: 'sent' })
+  }
+
   if (intent !== 'cancel') return res.status(400).json({ error: 'Action d’annulation invalide.' })
   if (booking.status === 'cancelled') {
     return res.status(200).json({ ...publicCancellationState(booking), already_cancelled: true })

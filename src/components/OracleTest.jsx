@@ -49,7 +49,7 @@ export default function OracleTest() {
       const apiRes = await fetch('/api/oracle-interpret', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cards: drawnCards }),
+        body: JSON.stringify({ cardIds: ids }),
       })
       if (!apiRes.ok) {
         const errData = await apiRes.json().catch(() => ({}))

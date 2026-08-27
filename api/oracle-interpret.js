@@ -1,11 +1,27 @@
+/* global process */
+import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }
+
+const cardsById = new Map(oracleCards.map((card) => [card.id, card]))
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-  const { cards } = req.body
-  if (!cards || cards.length !== 3) {
-    return res.status(400).json({ error: 'Missing cards' })
+  const { cardIds } = req.body || {}
+  if (
+    !Array.isArray(cardIds)
+    || cardIds.length !== 3
+    || !cardIds.every(Number.isInteger)
+    || cardIds.some((id) => id < 0 || id > 44)
+  ) {
+    return res.status(400).json({ error: 'Invalid cardIds' })
   }
+
+  const cards = cardIds.map((id) => cardsById.get(id))
+  if (cards.some((card) => !card)) {
+    return res.status(400).json({ error: 'Invalid cardIds' })
+  }
+
   const cardLines = cards.map((c, i) => {
     const labels = ['Ombre', 'Passage', 'Guérison']
     const kw = c.keywords ? ` — mots-clés : ${c.keywords}` : ''

@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     || cardIds.length !== 3
     || !cardIds.every(Number.isInteger)
     || cardIds.some((id) => id < 0 || id > 44)
+    || new Set(cardIds).size !== cardIds.length
   ) {
     return res.status(400).json({ error: 'Invalid cardIds' })
   }

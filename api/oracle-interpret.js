@@ -1,5 +1,5 @@
 /* global process */
-import { createHash } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import { getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }
@@ -7,6 +7,30 @@ import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }
 const cardsById = new Map(oracleCards.map((card) => [card.id, card]))
 const cardLabels = ['Ombre', 'Passage', 'Guérison']
 const pendingReservationTtlMs = 15 * 60 * 1000
+const HOURLY_LIMIT = 10
+const DAILY_LIMIT = 30
+
+function extractClientIp(req) {
+  const xff = req.headers['x-forwarded-for']
+  if (!xff) return null
+  return xff.split(',')[0].trim().toLowerCase()
+}
+
+function hashIp(ip) {
+  const secret = process.env.ORACLE_RATE_LIMIT_SECRET
+  if (!secret) return null
+  return createHmac('sha256', secret).update(ip).digest('hex')
+}
+
+async function checkIpRateLimit(supabase, ipHash) {
+  const { data, error } = await supabase.rpc('consume_oracle_rate_limit', {
+    p_ip_hash: ipHash,
+    p_hourly_limit: HOURLY_LIMIT,
+    p_daily_limit: DAILY_LIMIT,
+  })
+  if (error) throw new Error('Rate limit check failed')
+  return data
+}
 
 function hashEmail(normalizedEmail) {
   return createHash('sha256').update(normalizedEmail).digest('hex')
@@ -174,6 +198,25 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('[oracle] Reservation error:', String(error))
     return res.status(503).json({ error: 'Oracle reservation unavailable' })
+  }
+
+  const clientIp = extractClientIp(req)
+  const ipHash = clientIp ? hashIp(clientIp) : null
+  if (ipHash) {
+    try {
+      const rl = await checkIpRateLimit(supabase, ipHash)
+      if (!rl || !rl.allowed) {
+        await releaseOracleFreeDraw(supabase, reservation.id)
+        return res.status(429).json({
+          error: 'oracle_rate_limit_exceeded',
+          message: 'Trop de tentatives ont été effectuées depuis cette connexion. Merci de réessayer plus tard.',
+        })
+      }
+    } catch {
+      console.error('[oracle] Rate limit check failed')
+      await releaseOracleFreeDraw(supabase, reservation.id)
+      return res.status(503).json({ error: 'Oracle temporarily unavailable' })
+    }
   }
 
   const cardLines = cards.map((c, i) => {

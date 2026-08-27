@@ -42,6 +42,12 @@ export default function OracleTest() {
         setMessage('Un tirage gratuit a déjà été réalisé avec cette adresse e-mail.')
         return
       }
+      if (apiRes.status === 429) {
+        const body = await apiRes.json().catch(() => ({}))
+        setIsError(true)
+        setMessage(body.message || 'Trop de tentatives. Merci de réessayer plus tard.')
+        return
+      }
       if (!apiRes.ok) {
         const errData = await apiRes.json().catch(() => ({}))
         throw new Error(errData.detail || errData.error || 'Erreur API')

@@ -1009,6 +1009,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
 
   // Notifications
   const [notice, setNotice] = useState(null)
+  const [resendingBookingId, setResendingBookingId] = useState(null)
 
   // Editing state
   const [editingService, setEditingService] = useState(null)   // null | 'new' | service object
@@ -1053,6 +1054,33 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
       setMeLoading(false)
     }
   }, [activeSlug])
+
+  async function handleResendConfirmation(booking) {
+    if (!window.confirm('Régénérer le lien d’annulation et renvoyer la confirmation à cette personne ?')) return
+    setResendingBookingId(booking.id)
+    setNotice(null)
+    try {
+      const response = await fetch('/api/rdv-admin?action=bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader(session) },
+        body: JSON.stringify({
+          id: booking.id,
+          practitioner_id: booking.practitioner_id,
+          operation: 'resend_confirmation',
+        }),
+      })
+      const data = await response.json()
+      if (response.ok && data.email_confirmation === 'sent') {
+        setNotice({ type: 'success', msg: 'Confirmation renvoyée. Un nouveau lien d’annulation sécurisé a été créé.' })
+      } else {
+        setNotice({ type: 'error', msg: data.error || 'Impossible de renvoyer la confirmation.' })
+      }
+    } catch {
+      setNotice({ type: 'error', msg: 'Erreur réseau lors du renvoi de la confirmation.' })
+    } finally {
+      setResendingBookingId(null)
+    }
+  }
 
   useEffect(() => { loadMe(session) }, [session]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1497,6 +1525,14 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                                 <p className="font-georgia text-sm font-semibold text-deep">{b.customer_first_name} {b.customer_last_name}</p>
                                 <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
                               </div>
+                              <button
+                                onClick={() => handleResendConfirmation(b)}
+                                disabled={resendingBookingId === b.id}
+                                className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                              >
+                                {resendingBookingId === b.id && <Spinner />}
+                                Renvoyer la confirmation
+                              </button>
                               {b.google_meet_link && (
                                 <a href={b.google_meet_link} target="_blank" rel="noreferrer" className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 shrink-0">
                                   Meet →

@@ -2,8 +2,8 @@
 import { createHmac } from 'node:crypto'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 
-const HOURLY_LIMIT = 20
-const DAILY_LIMIT = 60
+const HOURLY_LIMIT = 10
+const DAILY_LIMIT = 30
 
 const SYSTEM = `Tu es MediumIA, un assistant dédié à l'accompagnement à la médiumnité consciente.
 
@@ -78,8 +78,8 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Assistant temporairement indisponible.' })
   }
 
-  const rateLimitSecret = process.env.TRIAL_RATE_LIMIT_SECRET
-  if (!rateLimitSecret) {
+  const rateLimitSecret = (process.env.TRIAL_RATE_LIMIT_SECRET || '').trim()
+  if (!/^[0-9a-fA-F]{64}$/.test(rateLimitSecret)) {
     return res.status(503).json({ error: 'Assistant temporairement indisponible.' })
   }
 
@@ -93,9 +93,9 @@ export default async function handler(req, res) {
   }
 
   const ipHash = hashIp(clientIp, rateLimitSecret)
-  const supabase = getSupabaseAdmin()
 
   try {
+    const supabase = getSupabaseAdmin()
     const rl = await checkRateLimit(supabase, ipHash)
     if (!rl || !rl.allowed) {
       return res.status(429).json({

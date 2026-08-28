@@ -109,18 +109,17 @@ async function callAnthropic({ apiKey, model, instructions, history }) {
   })
 
   if (!response.ok) {
-    const detail = await response.text()
-    let errorType = 'unknown'
-    try { errorType = JSON.parse(detail)?.error?.type || 'unknown' } catch { /* corps non-JSON */ }
+    let errorType = ‘unknown’
+    try {
+      const body = await response.json()
+      errorType = body?.error?.type || ‘unknown’
+    } catch { /* corps non-JSON */ }
     console.error(
-      'MediumIA Anthropic error:',
-      'status=' + response.status,
-      'type=' + errorType,
-      'model=' + model,
-      'request_id=' + (response.headers.get('request-id') || 'n/a'),
-      'body=' + detail,
+      ‘[agent-chat] Anthropic provider error’,
+      ‘status=’ + response.status,
+      ‘type=’ + errorType,
     )
-    return { error: 'Le cerveau Anthropic n’a pas pu répondre.' }
+    return { error: ‘Le cerveau Anthropic n’a pas pu répondre.’ }
   }
 
   const data = await response.json()
@@ -145,9 +144,8 @@ async function callOpenAI({ apiKey, model, instructions, history }) {
   })
 
   if (!response.ok) {
-    const detail = await response.text()
-    console.error('MediumIA OpenAI error:', response.status, detail)
-    return { error: 'Le cerveau OpenAI n’a pas pu répondre.' }
+    console.error(‘[agent-chat] OpenAI provider error’, ‘status=’ + response.status)
+    return { error: ‘Le cerveau OpenAI n’a pas pu répondre.’ }
   }
 
   const data = await response.json()
@@ -245,7 +243,7 @@ export default async function handler(req, res) {
     p_limit: 6,
   })
   if (knowledgeError) {
-    console.error('MediumIA knowledge search error:', knowledgeError.message)
+    console.error('[agent-chat] Knowledge search error')
   } else {
     knowledgeMatches = matchedChunks || []
   }
@@ -280,7 +278,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: `Fournisseur IA non pris en charge : ${provider}`, conversationId, messageSaved: true })
     }
   } catch (error) {
-    console.error('MediumIA provider network error:', String(error))
+    console.error('[agent-chat] Provider network error', error?.name || 'Error')
     return res.status(502).json({ error: 'Le cerveau IA est momentanément indisponible.', conversationId, messageSaved: true })
   }
 
@@ -294,7 +292,7 @@ export default async function handler(req, res) {
     model: result.model,
     sources: knowledge.sources,
   })
-  if (assistantMessageError) console.error('MediumIA assistant message persistence error:', assistantMessageError)
+  if (assistantMessageError) console.error('[agent-chat] Assistant message persistence error')
 
   await db.from('agent_audit_events').insert({
     owner_id: user.id,

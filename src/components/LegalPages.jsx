@@ -477,6 +477,9 @@ export function Retractation({ onBack, onNavigate }) {
             <p><strong className="text-deep">Référence de commande / transaction :</strong> {form.reference}</p>
             <p><strong className="text-deep">Date d'achat :</strong> {form.dateAchat}</p>
           </div>
+          <p className="italic mt-4">
+            Je vous informe de ma décision de me rétracter du contrat portant sur l'Oracle Au-delà de l'Âme identifié par les informations ci-dessus.
+          </p>
         </Section>
         {apiError && (
           <p className="font-georgia text-sm text-red-500">{apiError}</p>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import LegalFooter from './LegalFooter'
 
 function LegalShell({ onBack, onNavigate, title, children }) {
@@ -122,6 +123,18 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
         <p>
           L'achat de l'Oracle est traité par PayPal. Nous n'avons pas accès à vos données bancaires.
           Les données de commande (nom, email, adresse de livraison) sont utilisées pour le traitement et l'expédition.
+        </p>
+      </Section>
+
+      <Section title="Données collectées — Rétractation">
+        <p>
+          Lors d'une demande de rétractation en ligne, les données suivantes sont collectées :
+          prénom, nom, email, email utilisé lors de l'achat, référence de commande, date d'achat.
+          La date et l'heure de réception de la demande sont horodatées côté serveur.
+        </p>
+        <p>
+          Finalité : traitement de la demande de rétractation et envoi de l'accusé de réception via Resend.
+          Ces données ne sont pas stockées en base de données.
         </p>
       </Section>
 
@@ -371,9 +384,125 @@ export function CgvOracle({ onBack, onNavigate }) {
 }
 
 /* ─────────────────────────────────────
-   RÉTRACTATION (page informative)
+   RÉTRACTATION (page fonctionnelle)
    ───────────────────────────────────── */
 export function Retractation({ onBack, onNavigate }) {
+  const [form, setForm] = useState({
+    prenom: '', nom: '', email: '', emailAchat: '',
+    reference: '', dateAchat: '',
+  })
+  const [errors, setErrors] = useState({})
+  const [step, setStep] = useState('form')
+  const [loading, setLoading] = useState(false)
+  const [apiError, setApiError] = useState('')
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const inputCls = "w-full font-georgia text-sm text-deep bg-white border border-gold/30 rounded-xl px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors placeholder:text-mist/40"
+  const labelCls = "block font-georgia text-xs tracking-[0.15em] uppercase text-mist mb-2"
+
+  function validate() {
+    const e = {}
+    if (!form.prenom.trim()) e.prenom = 'Requis'
+    if (!form.nom.trim()) e.nom = 'Requis'
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Email invalide'
+    if (!form.emailAchat.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.emailAchat)) e.emailAchat = 'Email invalide'
+    if (!form.reference.trim()) e.reference = 'Requis'
+    if (!form.dateAchat.trim()) e.dateAchat = 'Requis'
+    return e
+  }
+
+  function handleReview(ev) {
+    ev.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
+    setStep('review')
+    window.scrollTo(0, 0)
+  }
+
+  async function handleConfirm() {
+    setLoading(true)
+    setApiError('')
+    try {
+      const res = await fetch('/api/retractation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setApiError(data.error || 'Une erreur est survenue. Veuillez réessayer.')
+        setLoading(false)
+        return
+      }
+      setStep('done')
+      window.scrollTo(0, 0)
+    } catch {
+      setApiError('Impossible de contacter le serveur. Veuillez réessayer.')
+      setLoading(false)
+    }
+  }
+
+  if (step === 'done') {
+    return (
+      <LegalShell onBack={onBack} onNavigate={onNavigate} title="Droit de rétractation">
+        <div className="text-center py-8">
+          <p className="text-gold text-4xl mb-6">✦</p>
+          <p className="font-georgia text-gold tracking-[0.2em] text-xs uppercase mb-4">Demande transmise</p>
+          <h2 className="font-georgia font-medium text-2xl text-deep mb-6">
+            Votre demande de rétractation a bien été transmise.
+          </h2>
+          <p className="font-georgia text-mist leading-relaxed mb-8">
+            Un accusé de réception vient de vous être envoyé par email.
+          </p>
+          <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
+            ← Retour à MediumIA
+          </button>
+        </div>
+      </LegalShell>
+    )
+  }
+
+  if (step === 'review') {
+    return (
+      <LegalShell onBack={onBack} onNavigate={onNavigate} title="Droit de rétractation">
+        <Section title="Récapitulatif de votre demande">
+          <div className="bg-white/60 border border-gold/20 rounded-xl p-6 space-y-3">
+            <p><strong className="text-deep">Produit :</strong> Oracle Au-delà de l'Âme</p>
+            <p><strong className="text-deep">Prénom :</strong> {form.prenom}</p>
+            <p><strong className="text-deep">Nom :</strong> {form.nom}</p>
+            <p><strong className="text-deep">Email pour l'accusé :</strong> {form.email}</p>
+            <p><strong className="text-deep">Email utilisé lors de l'achat :</strong> {form.emailAchat}</p>
+            <p><strong className="text-deep">Référence de commande / transaction :</strong> {form.reference}</p>
+            <p><strong className="text-deep">Date d'achat :</strong> {form.dateAchat}</p>
+          </div>
+        </Section>
+        {apiError && (
+          <p className="font-georgia text-sm text-red-500">{apiError}</p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            type="button"
+            onClick={() => { setStep('form'); setApiError('') }}
+            className="font-georgia text-sm text-mist hover:text-deep transition-colors py-3 px-6"
+          >
+            ← Modifier
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={loading}
+            className="flex-1 font-georgia py-4 px-8 rounded-xl bg-deep text-gold font-bold text-base hover:bg-deep/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {loading && <div className="w-4 h-4 border border-gold/40 border-t-gold rounded-full animate-spin" />}
+            {loading ? 'Envoi en cours…' : 'Confirmer la rétractation'}
+          </button>
+        </div>
+      </LegalShell>
+    )
+  }
+
   return (
     <LegalShell onBack={onBack} onNavigate={onNavigate} title="Droit de rétractation">
 
@@ -386,24 +515,76 @@ export function Retractation({ onBack, onNavigate }) {
         </p>
       </Section>
 
-      <Section title="Comment exercer votre droit">
+      <Section title="Autres moyens d'exercer votre droit">
         <p>
-          Pour exercer votre droit de rétractation, contactez-nous par email
+          Vous pouvez également nous contacter par email
           à <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline">contact@mediumia.fr</a>,
           par téléphone au 06 29 97 38 78, ou par courrier à l'adresse :
-          Sébastien Seguin, 1 Chemin des Capucines, 59143 Lederzeele, en indiquant :
+          Sébastien Seguin, 1 Chemin des Capucines, 59143 Lederzeele.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
-          <li>Votre nom</li>
-          <li>Le produit concerné</li>
-          <li>La date de commande et de réception</li>
-          <li>Votre souhait de vous rétracter</li>
-        </ul>
         <p>
-          Vous pouvez également utiliser le modèle de formulaire de rétractation figurant dans
+          Le modèle de formulaire de rétractation figure également dans
           nos <a href="/cgv-oracle" onClick={(e) => { e.preventDefault(); onNavigate('/cgv-oracle') }} className="text-gold hover:underline">Conditions Générales de Vente</a>.
         </p>
       </Section>
+
+      <div className="border-t border-gold/20 pt-8 mt-4">
+        <h2 className="font-georgia font-medium text-deep text-lg mb-2">Renoncer au contrat ici</h2>
+        <p className="font-georgia text-sm text-mist leading-relaxed mb-6">
+          Remplissez le formulaire ci-dessous pour notifier votre rétractation en ligne.
+        </p>
+
+        <form onSubmit={handleReview} noValidate className="space-y-5">
+          <div className="grid md:grid-cols-2 gap-5">
+            <div>
+              <label className={labelCls}>Prénom <span className="text-gold">*</span></label>
+              <input type="text" value={form.prenom} onChange={e => set('prenom', e.target.value)} className={inputCls} placeholder="Marie" />
+              {errors.prenom && <p className="font-georgia text-xs text-red-500 mt-1">{errors.prenom}</p>}
+            </div>
+            <div>
+              <label className={labelCls}>Nom <span className="text-gold">*</span></label>
+              <input type="text" value={form.nom} onChange={e => set('nom', e.target.value)} className={inputCls} placeholder="Dupont" />
+              {errors.nom && <p className="font-georgia text-xs text-red-500 mt-1">{errors.nom}</p>}
+            </div>
+          </div>
+
+          <div>
+            <label className={labelCls}>Email pour recevoir l'accusé <span className="text-gold">*</span></label>
+            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputCls} placeholder="vous@exemple.fr" />
+            {errors.email && <p className="font-georgia text-xs text-red-500 mt-1">{errors.email}</p>}
+          </div>
+
+          <div>
+            <label className={labelCls}>Email utilisé lors de l'achat <span className="text-gold">*</span></label>
+            <input type="email" value={form.emailAchat} onChange={e => set('emailAchat', e.target.value)} className={inputCls} placeholder="achat@exemple.fr" />
+            {errors.emailAchat && <p className="font-georgia text-xs text-red-500 mt-1">{errors.emailAchat}</p>}
+          </div>
+
+          <div>
+            <label className={labelCls}>Référence de commande / transaction PayPal <span className="text-gold">*</span></label>
+            <input type="text" value={form.reference} onChange={e => set('reference', e.target.value)} className={inputCls} placeholder="Ex : 5GH12345AB678901C" />
+            {errors.reference && <p className="font-georgia text-xs text-red-500 mt-1">{errors.reference}</p>}
+          </div>
+
+          <div>
+            <label className={labelCls}>Date d'achat <span className="text-gold">*</span></label>
+            <input type="date" value={form.dateAchat} onChange={e => set('dateAchat', e.target.value)} className={inputCls} />
+            {errors.dateAchat && <p className="font-georgia text-xs text-red-500 mt-1">{errors.dateAchat}</p>}
+          </div>
+
+          <div>
+            <label className={labelCls}>Produit</label>
+            <input type="text" value="Oracle Au-delà de l'Âme" disabled className={`${inputCls} bg-cream/80 text-mist cursor-not-allowed`} />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full font-georgia py-4 px-8 rounded-xl bg-deep text-gold font-bold text-base hover:bg-deep/90 transition-colors"
+          >
+            Vérifier et continuer →
+          </button>
+        </form>
+      </div>
 
       <Section title="Retour du produit">
         <p>

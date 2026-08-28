@@ -15,6 +15,22 @@
     {
       "source": "/rdv",
       "destination": "/index.html"
+    },
+    {
+      "source": "/mentions",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/confidentialite",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cgv-oracle",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/retractation",
+      "destination": "/index.html"
     }
   ]
 }

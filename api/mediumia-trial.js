@@ -1,3 +1,10 @@
+/* global process */
+import { createHmac } from 'node:crypto'
+import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
+
+const HOURLY_LIMIT = 20
+const DAILY_LIMIT = 60
+
 const SYSTEM = `Tu es MediumIA, un assistant dédié à l'accompagnement à la médiumnité consciente.
 
 Tu réponds aux questions des visiteurs sur le parcours MEDIUMIA — Accompagnement à la Médiumnité Consciente, créé par Sébastien Seguin, médium professionnel depuis plus de douze ans.
@@ -30,6 +37,27 @@ LIMITES
 - Reste concis : 3 à 5 phrases maximum par réponse.
 - Après plusieurs échanges, invite naturellement à découvrir le parcours complet.`
 
+function extractClientIp(req) {
+  const xff = req.headers['x-forwarded-for']
+  if (!xff) return null
+  return xff.split(',')[0].trim().toLowerCase()
+}
+
+function hashIp(ip, secret) {
+  return createHmac('sha256', secret).update(ip).digest('hex')
+}
+
+async function checkRateLimit(supabase, ipHash) {
+  const { data, error } = await supabase.rpc('consume_api_rate_limit', {
+    p_ip_hash: ipHash,
+    p_endpoint: 'mediumia_trial',
+    p_hourly_limit: HOURLY_LIMIT,
+    p_daily_limit: DAILY_LIMIT,
+  })
+  if (error) throw new Error('Rate limit check failed')
+  return data
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
@@ -47,6 +75,36 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.CLE_API_ANTHROPIC
   if (!apiKey) {
+    return res.status(503).json({ error: 'Assistant temporairement indisponible.' })
+  }
+
+  const rateLimitSecret = process.env.TRIAL_RATE_LIMIT_SECRET
+  if (!rateLimitSecret) {
+    return res.status(503).json({ error: 'Assistant temporairement indisponible.' })
+  }
+
+  if (!isSupabaseConfigured()) {
+    return res.status(503).json({ error: 'Assistant temporairement indisponible.' })
+  }
+
+  const clientIp = extractClientIp(req)
+  if (!clientIp) {
+    return res.status(503).json({ error: 'Assistant temporairement indisponible.' })
+  }
+
+  const ipHash = hashIp(clientIp, rateLimitSecret)
+  const supabase = getSupabaseAdmin()
+
+  try {
+    const rl = await checkRateLimit(supabase, ipHash)
+    if (!rl || !rl.allowed) {
+      return res.status(429).json({
+        error: 'rate_limit_exceeded',
+        message: 'Trop de requêtes. Merci de réessayer plus tard.',
+      })
+    }
+  } catch {
+    console.error('[mediumia-trial] Rate limit check failed')
     return res.status(503).json({ error: 'Assistant temporairement indisponible.' })
   }
 
@@ -72,8 +130,7 @@ export default async function handler(req, res) {
     })
 
     if (!response.ok) {
-      const err = await response.text()
-      console.error('mediumia-trial error:', response.status, err.slice(0, 200))
+      console.error('[mediumia-trial] Provider error:', response.status)
       return res.status(502).json({ error: 'Je suis momentanément indisponible. Réessayez dans quelques instants.' })
     }
 
@@ -86,7 +143,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ reply })
   } catch (err) {
-    console.error('mediumia-trial network error:', String(err))
+    console.error('[mediumia-trial] Network error:', err?.name || 'Error')
     return res.status(500).json({ error: 'Une erreur est survenue. Réessayez dans quelques instants.' })
   }
 }

@@ -24,7 +24,8 @@ export default function TrialChat() {
     const text = input.trim()
     if (!text || loading || exhausted) return
 
-    const newMessages = [...messages, { role: 'user', content: text }]
+    const userMessage = { role: 'user', content: text }
+    const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')
     setLoading(true)
@@ -39,6 +40,20 @@ export default function TrialChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ history: newMessages }),
       })
+
+      if (res.status === 429 || res.status === 503) {
+        const rollback = newCount - 1
+        setUserCount(rollback)
+        sessionStorage.setItem(STORAGE_KEY, String(rollback))
+        setMessages(prev => prev.filter(m => m !== userMessage))
+        const body = await res.json().catch(() => ({}))
+        const msg = res.status === 429
+          ? (body.message || 'Trop de requêtes. Merci de réessayer plus tard.')
+          : 'Assistant temporairement indisponible. Réessayez dans quelques instants.'
+        setMessages(prev => [...prev, { role: 'assistant', content: msg }])
+        return
+      }
+
       const data = await res.json()
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply || data.error || 'Une erreur est survenue.' }])
     } catch {

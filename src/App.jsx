@@ -4,6 +4,8 @@ import AgentsPlatform from './components/AgentsPlatform'
 import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'
 import FormationPage from './components/FormationPage'
+import LegalFooter from './components/LegalFooter'
+import { MentionsLegales, PolitiqueConfidentialite, CgvOracle, Retractation } from './components/LegalPages'
 import OraclePage from './components/OraclePage'
 import ReseauDirectory from './components/ReseauDirectory'
 import ReseauJoindre from './components/ReseauJoindre'
@@ -102,7 +104,7 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir, onOpenReseauForm, onOpenRdv }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -169,10 +171,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
 
       </main>
 
-      <footer className="border-t border-gold/20 px-6 py-8 text-center">
-        <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-40 md:w-52 mx-auto mb-4" />
-        <p className="font-georgia text-mist text-xs">Monde spirituel · Accompagnement · Réseau · Outils professionnels</p>
-      </footer>
+      <LegalFooter onNavigate={onNavigate} />
     </div>
   )
 }
@@ -189,6 +188,10 @@ export default function App() {
     : path.startsWith('/oracle') ? 'oracle'
     : path.startsWith('/reseau/rejoindre') ? 'reseau-form'
     : path.startsWith('/reseau') ? 'reseau-dir'
+    : path === '/mentions' ? 'mentions'
+    : path === '/confidentialite' ? 'confidentialite'
+    : path === '/cgv-oracle' ? 'cgv-oracle'
+    : path === '/retractation' ? 'retractation'
     : 'home'
   const [view, setView] = useState(initial)
 
@@ -202,14 +205,24 @@ export default function App() {
   const openRdvPublic   = (slug) => nav(`/rdv/${slug}`,  'rdv-public')
   const backHome        = () => nav('/',                 'home')
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} />
+  const legalNav = (p) => {
+    const viewMap = { '/mentions': 'mentions', '/confidentialite': 'confidentialite', '/cgv-oracle': 'cgv-oracle', '/retractation': 'retractation' }
+    if (viewMap[p]) nav(p, viewMap[p])
+    else backHome()
+  }
+
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />
+  if (view === 'mentions')       return <MentionsLegales onBack={backHome} onNavigate={legalNav} />
+  if (view === 'confidentialite') return <PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />
+  if (view === 'cgv-oracle')     return <CgvOracle onBack={backHome} onNavigate={legalNav} />
+  if (view === 'retractation')   return <Retractation onBack={backHome} onNavigate={legalNav} />
   if (view === 'agents')        return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} onOpenRdv={openRdvDashboard} />
-  if (view === 'formation')    return <FormationPage onBack={backHome} />
-  if (view === 'oracle')       return <OraclePage onBack={backHome} />
-  if (view === 'reseau-dir')   return <ReseauDirectory onBack={backHome} />
-  if (view === 'reseau-form')  return <ReseauJoindre onBack={backHome} />
+  if (view === 'formation')    return <FormationPage onBack={backHome} onNavigate={legalNav} />
+  if (view === 'oracle')       return <OraclePage onBack={backHome} onNavigate={legalNav} />
+  if (view === 'reseau-dir')   return <ReseauDirectory onBack={backHome} onNavigate={legalNav} />
+  if (view === 'reseau-form')  return <ReseauJoindre onBack={backHome} onNavigate={legalNav} />
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-cancellation') return <RdvCancellation onBack={backHome} />
-  if (view === 'rdv-public')   return <RdvPublic onBack={backHome} />
-  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} />
+  if (view === 'rdv-public')   return <RdvPublic onBack={backHome} onNavigate={legalNav} />
+  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />
 }

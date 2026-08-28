@@ -1,6 +1,7 @@
+import LegalFooter from './LegalFooter'
 import OracleTest from './OracleTest'
 
-export default function OraclePage({ onBack }) {
+export default function OraclePage({ onBack, onNavigate }) {
   return (
     <div className="bg-cream min-h-screen text-deep">
 
@@ -13,7 +14,7 @@ export default function OraclePage({ onBack }) {
           <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold hidden md:block">Oracle Au-delà de l'Âme</span>
           <a href="https://www.paypal.com/ncp/payment/7B25CPZQBT9SJ" target="_blank" rel="noopener noreferrer"
             className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-gold text-deep font-bold">
-            Commander →
+            Commander et payer — 34,69 € TTC →
           </a>
         </div>
       </header>
@@ -36,16 +37,23 @@ export default function OraclePage({ onBack }) {
               <h1 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-2">Oracle Au-delà de l'Âme</h1>
               <p className="font-georgia text-mist text-base mb-1">Jeu de 45 Cartes d'Éveil Intuitif</p>
               <p className="font-georgia text-xs text-gold italic mb-6">Guidance · Développement personnel · Connexion intérieure</p>
-              <div className="flex items-baseline gap-3 mb-8">
+              <div className="flex items-baseline gap-3 mb-1">
                 <span className="font-georgia text-4xl text-deep font-medium">29,90 €</span>
-                <span className="font-georgia text-sm text-mist">+ 4,79 € de port</span>
+                <span className="font-georgia text-sm text-mist">+ 4,79 € de livraison</span>
               </div>
+              <p className="font-georgia text-sm text-deep font-medium mb-1">Total : 34,69 € TTC livraison comprise en France métropolitaine</p>
+              <p className="font-georgia text-xs text-mist mb-6">Expédition sous 5 jours ouvrés · Livraison France métropolitaine · <a href="/cgv-oracle" onClick={(e) => { e.preventDefault(); onNavigate('/cgv-oracle') }} className="text-gold hover:underline">Délais détaillés dans les CGV</a></p>
               <a href="https://www.paypal.com/ncp/payment/7B25CPZQBT9SJ" target="_blank" rel="noopener noreferrer"
                 className="inline-block font-georgia px-8 py-4 rounded-lg font-bold hover:opacity-90 transition-opacity"
                 style={{ backgroundColor: '#C9A84C', color: '#1A1535' }}>
-                Commander l'Oracle →
+                Commander et payer — 34,69 € TTC
               </a>
-              <p className="font-georgia text-xs text-mist mt-3">Livraison France · Expédition sous 5 jours ouvrés</p>
+              <p className="font-georgia text-[11px] text-mist mt-2">Livraison comprise en France métropolitaine · Paiement sécurisé via PayPal</p>
+              <div className="mt-4 space-y-1">
+                <p className="font-georgia text-[11px] text-mist leading-relaxed">
+                  Droit de rétractation de 14 jours · <a href="/cgv-oracle" onClick={(e) => { e.preventDefault(); onNavigate('/cgv-oracle') }} className="text-gold hover:underline">CGV</a> · <a href="/confidentialite" onClick={(e) => { e.preventDefault(); onNavigate('/confidentialite') }} className="text-gold hover:underline">Confidentialité</a> · <a href="/retractation" onClick={(e) => { e.preventDefault(); onNavigate('/retractation') }} className="text-gold hover:underline">Rétractation</a>
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -140,8 +148,9 @@ export default function OraclePage({ onBack }) {
           <a href="https://www.paypal.com/ncp/payment/7B25CPZQBT9SJ" target="_blank" rel="noopener noreferrer"
             className="inline-block font-georgia px-10 py-4 rounded-lg font-bold hover:opacity-90 transition-opacity text-lg"
             style={{ backgroundColor: '#C9A84C', color: '#1A1535' }}>
-            Commander l'Oracle — 29,90 € →
+            Commander et payer — 34,69 € TTC
           </a>
+          <p className="font-georgia text-xs text-mist mt-2">Livraison comprise en France métropolitaine · Paiement sécurisé via PayPal</p>
           <div className="mt-6">
             <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
               ← Retour à MediumIA
@@ -151,10 +160,7 @@ export default function OraclePage({ onBack }) {
 
       </main>
 
-      <footer className="border-t border-gold/20 px-6 py-8 text-center">
-        <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-32 md:w-40 mx-auto mb-4" />
-        <p className="font-georgia text-mist text-xs">Oracle Au-delà de l'Âme · Sébastien Seguin · MediumIA</p>
-      </footer>
+      <LegalFooter onNavigate={onNavigate} />
     </div>
   )
 }

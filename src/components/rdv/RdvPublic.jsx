@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import LegalFooter from '../LegalFooter'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -348,7 +349,7 @@ function ContactForm({ onSubmit, loading, error }) {
         {loading ? 'Confirmation en cours…' : 'Confirmer la réservation →'}
       </button>
       <p className="font-georgia text-[10px] text-mist/60 text-center leading-relaxed">
-        Vos données sont utilisées uniquement pour ce rendez-vous et ne sont pas transmises à des tiers.
+        Vos données sont utilisées pour gérer votre rendez-vous et peuvent être traitées par les prestataires techniques nécessaires au service. Consultez notre <a href="/confidentialite" className="text-gold hover:underline">politique de confidentialité</a>.
       </p>
     </form>
   )
@@ -461,7 +462,7 @@ function RequestForm({ service, onSubmit, loading, error }) {
         {loading ? 'Envoi en cours…' : 'Envoyer ma demande →'}
       </button>
       <p className="font-georgia text-[10px] text-mist/60 text-center leading-relaxed">
-        Vos données sont utilisées uniquement pour traiter votre demande et ne sont pas transmises à des tiers.
+        Vos données sont utilisées pour gérer votre rendez-vous et peuvent être traitées par les prestataires techniques nécessaires au service. Consultez notre <a href="/confidentialite" className="text-gold hover:underline">politique de confidentialité</a>.
       </p>
     </form>
   )
@@ -506,7 +507,7 @@ function Summary({ practitioner, service, date, time }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function RdvPublic({ onBack }) {
+export default function RdvPublic({ onBack, onNavigate }) {
   const slug = window.location.pathname.replace(/^\/rdv\//, '').replace(/\/$/, '')
 
   // Config + données publiques chargées depuis /api/rdv-config
@@ -943,6 +944,7 @@ export default function RdvPublic({ onBack }) {
           </div>
         </div>
       </main>
+      <LegalFooter onNavigate={onNavigate} />
     </div>
   )
 }

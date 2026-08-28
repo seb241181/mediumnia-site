@@ -1,4 +1,6 @@
-export default function ReseauDirectory({ onBack }) {
+import LegalFooter from './LegalFooter'
+
+export default function ReseauDirectory({ onBack, onNavigate }) {
   const disciplines = [
     'Tous', 'Médiumnité', 'Guidance', 'Bien-être', 'EFT',
     'Réflexologie', 'Naturopathie', 'Accompagnement intérieur',
@@ -110,16 +112,7 @@ export default function ReseauDirectory({ onBack }) {
 
       </main>
 
-      <footer className="border-t border-gold/20 px-6 py-8 text-center">
-        <img
-          src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"
-          alt="MediumIA"
-          className="w-32 md:w-40 mx-auto mb-4"
-        />
-        <p className="font-georgia text-mist text-xs">
-          Réseau MediumIA · Praticiens du spirituel et du bien-être
-        </p>
-      </footer>
+      <LegalFooter onNavigate={onNavigate} />
 
     </div>
   )

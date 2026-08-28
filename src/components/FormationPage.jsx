@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import LegalFooter from './LegalFooter'
 import TrialChat from './TrialChat'
 
 const NIVEAUX = [
@@ -86,7 +87,7 @@ function FAQAccordion() {
   )
 }
 
-export default function FormationPage({ onBack }) {
+export default function FormationPage({ onBack, onNavigate }) {
   return (
     <div className="bg-cream min-h-screen text-deep">
 
@@ -293,10 +294,7 @@ export default function FormationPage({ onBack }) {
 
       </main>
 
-      <footer className="border-t border-gold/20 px-6 py-8 text-center">
-        <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-32 md:w-40 mx-auto mb-4" />
-        <p className="font-georgia text-mist text-xs">Accompagnement MediumIA · Médiumnité Consciente · <a href="https://mediumia.fr" className="hover:text-deep transition-colors">mediumia.fr</a></p>
-      </footer>
+      <LegalFooter onNavigate={onNavigate} />
     </div>
   )
 }

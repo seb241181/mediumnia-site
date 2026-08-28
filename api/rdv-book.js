@@ -32,6 +32,7 @@
  *       (pg_advisory_xact_lock + buffer + max_per_day en base)
  *   13. Retour { booking_id, starts_at, ends_at, practitioner, service }
  */
+import { createHmac } from 'node:crypto'
 import { decrypt, refreshGoogleToken, encrypt, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
@@ -47,6 +48,51 @@ import {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_RE  = /^\d{4}-\d{2}-\d{2}$/
 const TIME_RE  = /^\d{2}:\d{2}$/
+
+const RDV_HOURLY_LIMIT = 5
+const RDV_DAILY_LIMIT = 15
+
+function extractClientIp(req) {
+  const xff = req.headers['x-forwarded-for']
+  if (!xff) return null
+  return xff.split(',')[0].trim().toLowerCase()
+}
+
+async function checkBookingRateLimit(req, res, supabase) {
+  const secret = (process.env.RDV_RATE_LIMIT_SECRET || '').trim()
+  if (!/^[0-9a-fA-F]{64}$/.test(secret)) {
+    res.status(503).json({ error: 'Le service de réservation est temporairement indisponible. Merci de réessayer dans quelques instants.' })
+    return true
+  }
+
+  const clientIp = extractClientIp(req)
+  if (!clientIp) {
+    res.status(503).json({ error: 'Le service de réservation est temporairement indisponible. Merci de réessayer dans quelques instants.' })
+    return true
+  }
+
+  const ipHash = createHmac('sha256', secret).update(clientIp).digest('hex')
+
+  try {
+    const { data, error } = await supabase.rpc('consume_api_rate_limit', {
+      p_ip_hash: ipHash,
+      p_endpoint: 'rdv_book',
+      p_hourly_limit: RDV_HOURLY_LIMIT,
+      p_daily_limit: RDV_DAILY_LIMIT,
+    })
+    if (error) throw error
+    if (!data || !data.allowed) {
+      res.status(429).json({ error: 'Trop de demandes ont été envoyées. Merci de réessayer plus tard.' })
+      return true
+    }
+  } catch {
+    console.error('[rdv-book] Rate limit check failed')
+    res.status(503).json({ error: 'Le service de réservation est temporairement indisponible. Merci de réessayer dans quelques instants.' })
+    return true
+  }
+
+  return false
+}
 
 function parisTimeToUTC(dateStr, timeStr, offsetMs) {
   const [h, m] = timeStr.split(':').map(Number)
@@ -383,6 +429,9 @@ async function handleBookingRequest(req, res, supabase, practitioner, service, c
   if (!postal_code?.trim()) return res.status(400).json({ error: 'Code postal requis' })
   if (!city?.trim()) return res.status(400).json({ error: 'Ville requise' })
 
+  // ── Rate limit — avant tout INSERT ou email ───────────────────────────────
+  if (await checkBookingRateLimit(req, res, supabase)) return
+
   // ── 1. INSERT booking_request ─────────────────────────────────────────────
 
   const { data, error } = await supabase.from('booking_requests').insert({
@@ -626,6 +675,9 @@ export default async function handler(req, res) {
   if (!fitsInRule) {
     return res.status(409).json({ error: 'Ce créneau ne correspond pas aux horaires de disponibilité.' })
   }
+
+  // ── 10b. Rate limit — avant tout effet externe ────────────────────────────
+  if (await checkBookingRateLimit(req, res, supabase)) return
 
   // ── 11. Google FreeBusy — FAIL CLOSED ─────────────────────────────────────
   // Une connexion Google active EST OBLIGATOIRE pour confirmer une réservation.

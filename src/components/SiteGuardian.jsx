@@ -44,10 +44,10 @@ export default function SiteGuardian() {
     const history = newMessages.filter((_, i) => i > 0).slice(-(MAX_MESSAGES))
 
     try {
-      const res = await fetch('/api/guardian-chat', {
+      const res = await fetch('/api/mediumia-trial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history }),
+        body: JSON.stringify({ mode: 'guardian', history }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {

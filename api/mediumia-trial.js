@@ -154,8 +154,9 @@ async function handleGuardian(req, res) {
         model,
         instructions: GUARDIAN_SYSTEM,
         input: validatedHistory,
-        max_output_tokens: 500,
+        max_output_tokens: 1200,
         store: false,
+        reasoning: { effort: 'low' },
       }),
     })
 
@@ -165,6 +166,23 @@ async function handleGuardian(req, res) {
     }
 
     const data = await response.json()
+
+    const incompleteReason = data.incomplete_details?.reason
+    if (data.status) {
+      console.info('[guardian] response status=%s incomplete_reason=%s output_tokens=%s reasoning_tokens=%s',
+        data.status,
+        incompleteReason || 'none',
+        data.usage?.output_tokens ?? '?',
+        data.usage?.output_tokens_details?.reasoning_tokens ?? '?',
+      )
+    }
+
+    if (data.status === 'incomplete' && incompleteReason === 'max_output_tokens') {
+      return res.status(200).json({
+        reply: 'Un léger voile technique m\'empêche de vous répondre correctement. Pouvez-vous reformuler votre question en quelques mots ?',
+      })
+    }
+
     const reply = textFromOpenAIResponse(data)
 
     return res.status(200).json({

@@ -80,7 +80,7 @@ async function handleGuardian(req, res) {
   if (!Array.isArray(history) || history.length === 0) {
     return res.status(400).json({ error: 'Historique manquant.' })
   }
-  if (history.length > 12) {
+  if (history.length > 20) {
     return res.status(400).json({ error: 'Conversation trop longue.' })
   }
   const last = history[history.length - 1]
@@ -94,8 +94,9 @@ async function handleGuardian(req, res) {
       return res.status(400).json({ error: 'Rôle de message invalide.' })
     }
     const content = typeof msg.content === 'string' ? msg.content : ''
-    if (content.length > 600) {
-      return res.status(400).json({ error: 'Message trop long (maximum 600 caractères).' })
+    const maxLen = msg.role === 'user' ? 1200 : 2000
+    if (content.length > maxLen) {
+      return res.status(400).json({ error: `Message trop long (maximum ${maxLen} caractères).` })
     }
     validatedHistory.push({ role: msg.role, content })
   }

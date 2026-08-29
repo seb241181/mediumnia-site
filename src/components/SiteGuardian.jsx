@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 
-const MAX_CHARS = 600
-const MAX_MESSAGES = 12
+const MAX_CHARS = 1200
+const MAX_MESSAGES = 20
 const WELCOME = 'Bienvenue. Je suis le Gardien de MediumIA.\nJe peux vous guider, répondre à vos questions et vous aider à trouver ce que vous cherchez.'
 
 export default function SiteGuardian() {
@@ -41,7 +41,11 @@ export default function SiteGuardian() {
     setError('')
     setLoading(true)
 
-    const history = newMessages.filter((_, i) => i > 0).slice(-(MAX_MESSAGES))
+    const history = newMessages.filter((_, i) => i > 0).slice(-(MAX_MESSAGES)).map(m =>
+      m.role === 'assistant' && m.content.length > 2000
+        ? { ...m, content: m.content.slice(0, 2000) }
+        : m
+    )
 
     try {
       const res = await fetch('/api/mediumia-trial', {

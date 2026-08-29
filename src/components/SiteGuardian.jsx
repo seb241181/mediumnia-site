@@ -88,12 +88,12 @@ export default function SiteGuardian() {
       <style>{`
         @keyframes guardian-breathe {
           0%, 100% {
-            box-shadow: 0 0 14px 3px rgba(201,168,76,0.2), 0 0 40px 8px rgba(26,21,53,0.15);
+            box-shadow: 0 0 18px 5px rgba(201,168,76,0.3), 0 0 40px 10px rgba(90,60,140,0.15), 0 0 60px 16px rgba(26,21,53,0.12);
             transform: scale(1);
           }
           50% {
-            box-shadow: 0 0 20px 6px rgba(201,168,76,0.35), 0 0 50px 12px rgba(26,21,53,0.2);
-            transform: scale(1.015);
+            box-shadow: 0 0 28px 10px rgba(201,168,76,0.45), 0 0 52px 16px rgba(90,60,140,0.22), 0 0 72px 22px rgba(26,21,53,0.15);
+            transform: scale(1.025);
           }
         }
         @keyframes guardian-appear {
@@ -101,23 +101,23 @@ export default function SiteGuardian() {
           to   { opacity: 1; transform: scale(1); }
         }
         @keyframes guardian-halo {
-          0%, 100% { box-shadow: 0 0 4px 1px rgba(201,168,76,0.15); }
-          50% { box-shadow: 0 0 10px 4px rgba(201,168,76,0.4); }
+          0%, 100% { box-shadow: 0 0 6px 2px rgba(201,168,76,0.2), 0 0 14px 5px rgba(90,60,140,0.1); }
+          50% { box-shadow: 0 0 14px 6px rgba(201,168,76,0.45), 0 0 22px 8px rgba(90,60,140,0.18); }
         }
         @keyframes guardian-thinking {
-          0%, 100% { filter: brightness(1); box-shadow: 0 0 4px 1px rgba(201,168,76,0.15); }
-          50% { filter: brightness(1.12); box-shadow: 0 0 10px 4px rgba(201,168,76,0.4); }
+          0%, 100% { filter: brightness(1); box-shadow: 0 0 6px 2px rgba(201,168,76,0.2), 0 0 14px 5px rgba(90,60,140,0.1); }
+          50% { filter: brightness(1.12); box-shadow: 0 0 14px 6px rgba(201,168,76,0.45), 0 0 22px 8px rgba(90,60,140,0.18); }
         }
         .guardian-fab {
           animation: guardian-appear 700ms ease-out both, guardian-breathe 5s ease-in-out 700ms infinite;
         }
         .guardian-fab:hover {
           animation: guardian-appear 700ms ease-out both;
-          transform: scale(1.04);
-          box-shadow: 0 0 24px 8px rgba(201,168,76,0.4), 0 0 50px 14px rgba(26,21,53,0.2);
+          transform: scale(1.05);
+          box-shadow: 0 0 32px 12px rgba(201,168,76,0.5), 0 0 56px 18px rgba(90,60,140,0.25), 0 0 72px 24px rgba(26,21,53,0.15);
         }
         .guardian-header-avatar {
-          box-shadow: 0 0 12px 4px rgba(201,168,76,0.25);
+          box-shadow: 0 0 14px 5px rgba(201,168,76,0.3), 0 0 24px 8px rgba(90,60,140,0.12);
         }
         .guardian-mini-halo {
           animation: guardian-thinking 4s ease-in-out infinite;

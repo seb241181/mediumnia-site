@@ -207,13 +207,15 @@ const VALID_NEEDS = [
 const WAITLIST_HOURLY = 3
 const WAITLIST_DAILY = 10
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 async function handleProWaitlist(req, res) {
   const { firstName, email, activity, primaryNeed, message, consent, sourcePage, utmSource, utmMedium, utmCampaign } = req.body || {}
 
   if (typeof firstName !== 'string' || !firstName.trim() || firstName.trim().length > 80) {
     return res.status(400).json({ error: 'Prénom invalide.' })
   }
-  if (typeof email !== 'string' || !email.trim() || email.trim().length > 254 || !email.includes('@')) {
+  if (typeof email !== 'string' || !email.trim() || email.trim().length > 254 || !EMAIL_RE.test(email.trim())) {
     return res.status(400).json({ error: 'Email invalide.' })
   }
   if (typeof activity !== 'string' || !activity.trim() || activity.trim().length > 120) {
@@ -245,7 +247,12 @@ async function handleProWaitlist(req, res) {
 
   const ipHash = createHmac('sha256', rateLimitSecret).update('pro_waitlist:' + clientIp).digest('hex')
 
-  const supabase = getSupabaseAdmin()
+  let supabase
+  try {
+    supabase = getSupabaseAdmin()
+  } catch {
+    return res.status(503).json({ error: 'Service temporairement indisponible.' })
+  }
 
   try {
     const rl = await checkRateLimit(supabase, ipHash, 'pro_waitlist', WAITLIST_HOURLY, WAITLIST_DAILY)
@@ -266,39 +273,56 @@ async function handleProWaitlist(req, res) {
   const cleanUtmMedium = typeof utmMedium === 'string' ? utmMedium.slice(0, 200) : null
   const cleanUtmCampaign = typeof utmCampaign === 'string' ? utmCampaign.slice(0, 200) : null
 
-  try {
-    const { error: upsertError } = await supabase
-      .from('pro_waitlist')
-      .upsert({
-        first_name: cleanFirst,
-        email: cleanEmail,
-        email_normalized: emailNormalized,
-        activity: cleanActivity,
-        primary_need: primaryNeed,
-        message: cleanMessage,
-        consent_at: new Date().toISOString(),
-        source_page: cleanSource,
-        utm_source: cleanUtmSource,
-        utm_medium: cleanUtmMedium,
-        utm_campaign: cleanUtmCampaign,
-      }, { onConflict: 'email_normalized', ignoreDuplicates: false })
+  const row = {
+    first_name: cleanFirst,
+    email: cleanEmail,
+    email_normalized: emailNormalized,
+    activity: cleanActivity,
+    primary_need: primaryNeed,
+    message: cleanMessage,
+    consent_at: new Date().toISOString(),
+    source_page: cleanSource,
+    utm_source: cleanUtmSource,
+    utm_medium: cleanUtmMedium,
+    utm_campaign: cleanUtmCampaign,
+  }
 
-    if (upsertError) {
-      console.error('[pro-waitlist] Upsert failed')
-      return res.status(500).json({ error: 'Une erreur est survenue.' })
+  let isNewLead = true
+
+  try {
+    const { error: insertError } = await supabase.from('pro_waitlist').insert(row)
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        isNewLead = false
+        const { email_normalized: _drop, ...updateFields } = row
+        const { error: updateError } = await supabase
+          .from('pro_waitlist')
+          .update(updateFields)
+          .eq('email_normalized', emailNormalized)
+        if (updateError) {
+          console.error('[pro-waitlist] Update on duplicate failed')
+        }
+      } else {
+        console.error('[pro-waitlist] Insert failed')
+        return res.status(500).json({ error: 'Une erreur est survenue.' })
+      }
     }
   } catch {
     console.error('[pro-waitlist] DB error')
     return res.status(500).json({ error: 'Une erreur est survenue.' })
   }
 
-  const ownerEmail = 'contact@mediumia.fr'
-  const h = escapeHtml
+  if (isNewLead) {
+    const h = escapeHtml
+    const ownerIdempotency = createHmac('sha256', rateLimitSecret).update('pro-waitlist-owner:' + emailNormalized).digest('hex')
+    const prospectIdempotency = createHmac('sha256', rateLimitSecret).update('pro-waitlist-prospect:' + emailNormalized).digest('hex')
 
-  sendEmail({
-    to: ownerEmail,
-    subject: `Nouveau prospect MediumIA Pro — ${cleanActivity}`,
-    html: `<div style="font-family:Georgia,serif;color:#1A1535;max-width:600px">
+    const [ownerResult, prospectResult] = await Promise.all([
+      sendEmail({
+        to: 'contact@mediumia.fr',
+        subject: `Nouveau prospect MediumIA Pro — ${cleanActivity}`,
+        html: `<div style="font-family:Georgia,serif;color:#1A1535;max-width:600px">
 <h2 style="color:#C9A84C">Nouveau prospect MediumIA Pro</h2>
 <p><strong>Prénom :</strong> ${h(cleanFirst)}</p>
 <p><strong>Email :</strong> ${h(cleanEmail)}</p>
@@ -308,21 +332,26 @@ ${cleanMessage ? `<p><strong>Message :</strong> ${h(cleanMessage)}</p>` : ''}
 ${cleanSource ? `<p><strong>Source :</strong> ${h(cleanSource)}</p>` : ''}
 ${cleanUtmSource ? `<p><strong>UTM :</strong> ${h(cleanUtmSource)} / ${h(cleanUtmMedium || '')} / ${h(cleanUtmCampaign || '')}</p>` : ''}
 </div>`,
-    text: `Nouveau prospect MediumIA Pro\n\nPrénom : ${cleanFirst}\nEmail : ${cleanEmail}\nActivité : ${cleanActivity}\nBesoin : ${primaryNeed}\n${cleanMessage ? `Message : ${cleanMessage}\n` : ''}`,
-  }).catch(() => {})
-
-  sendEmail({
-    to: cleanEmail,
-    subject: 'Votre inscription à la liste prioritaire MediumIA Pro',
-    html: `<div style="font-family:Georgia,serif;color:#1A1535;max-width:600px">
+        text: `Nouveau prospect MediumIA Pro\n\nPrénom : ${cleanFirst}\nEmail : ${cleanEmail}\nActivité : ${cleanActivity}\nBesoin : ${primaryNeed}\n${cleanMessage ? `Message : ${cleanMessage}\n` : ''}`,
+        idempotencyKey: ownerIdempotency,
+      }),
+      sendEmail({
+        to: cleanEmail,
+        subject: 'Votre inscription à la liste prioritaire MediumIA Pro',
+        html: `<div style="font-family:Georgia,serif;color:#1A1535;max-width:600px">
 <h2 style="color:#C9A84C">MediumIA Pro — Liste prioritaire</h2>
 <p>Bonjour ${h(cleanFirst)},</p>
 <p>Votre demande d'accès prioritaire à MediumIA Pro est bien enregistrée.</p>
 <p>Vous ferez partie des premiers professionnels informés de l'ouverture.</p>
 <p style="color:#6f687c;font-size:13px;margin-top:24px">MediumIA · mediumia.fr</p>
 </div>`,
-    text: `Bonjour ${cleanFirst},\n\nVotre demande d'accès prioritaire à MediumIA Pro est bien enregistrée.\nVous ferez partie des premiers professionnels informés de l'ouverture.\n\nMediumIA · mediumia.fr`,
-  }).catch(() => {})
+        text: `Bonjour ${cleanFirst},\n\nVotre demande d'accès prioritaire à MediumIA Pro est bien enregistrée.\nVous ferez partie des premiers professionnels informés de l'ouverture.\n\nMediumIA · mediumia.fr`,
+        idempotencyKey: prospectIdempotency,
+      }),
+    ])
+
+    console.info('[pro-waitlist] emails owner=%s prospect=%s', ownerResult.status, prospectResult.status)
+  }
 
   return res.status(200).json({ success: true })
 }

@@ -12,6 +12,7 @@ import ReseauJoindre from './components/ReseauJoindre'
 import RdvDashboard from './components/rdv/RdvDashboard'
 import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
+import SiteGuardian from './components/SiteGuardian'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -211,18 +212,22 @@ export default function App() {
     else backHome()
   }
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />
-  if (view === 'mentions')       return <MentionsLegales onBack={backHome} onNavigate={legalNav} />
-  if (view === 'confidentialite') return <PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />
-  if (view === 'cgv-oracle')     return <CgvOracle onBack={backHome} onNavigate={legalNav} />
-  if (view === 'retractation')   return <Retractation onBack={backHome} onNavigate={legalNav} />
+  const showGuardian = view !== 'agents' && view !== 'rdv-dashboard'
+
+  const guardian = showGuardian ? <SiteGuardian /> : null
+
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
+  if (view === 'mentions')       return <><MentionsLegales onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'confidentialite') return <><PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'cgv-oracle')     return <><CgvOracle onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'retractation')   return <><Retractation onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'agents')        return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} onOpenRdv={openRdvDashboard} />
-  if (view === 'formation')    return <FormationPage onBack={backHome} onNavigate={legalNav} />
-  if (view === 'oracle')       return <OraclePage onBack={backHome} onNavigate={legalNav} />
-  if (view === 'reseau-dir')   return <ReseauDirectory onBack={backHome} onNavigate={legalNav} />
-  if (view === 'reseau-form')  return <ReseauJoindre onBack={backHome} onNavigate={legalNav} />
+  if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
-  if (view === 'rdv-cancellation') return <RdvCancellation onBack={backHome} />
-  if (view === 'rdv-public')   return <RdvPublic onBack={backHome} onNavigate={legalNav} />
-  return <PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />
+  if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
+  if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
 }

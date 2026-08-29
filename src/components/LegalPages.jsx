@@ -163,6 +163,14 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
         </p>
       </Section>
 
+      <Section title="Données collectées — Le Gardien de MediumIA">
+        <p>
+          Les messages échangés avec Le Gardien (assistant IA public du site) sont transmis à OpenAI pour générer la réponse.
+          MediumIA ne les enregistre pas dans sa base de données (store:false côté OpenAI).
+          L'adresse IP est pseudonymisée par HMAC uniquement pour le mécanisme anti-abus décrit ci-dessous.
+        </p>
+      </Section>
+
       <Section title="Mécanisme anti-abus (rate limiting)">
         <p>
           Pour protéger le service, l'adresse IP est pseudonymisée via un mécanisme HMAC-SHA256 avant tout enregistrement.

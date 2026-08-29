@@ -60,7 +60,10 @@ export default function SiteGuardian() {
         setLoading(false)
         return
       }
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      const reply = (typeof data.reply === 'string' && data.reply.trim())
+        ? data.reply.trim()
+        : 'Un léger voile technique m’empêche de vous répondre correctement. Pouvez-vous reformuler votre question en quelques mots ?'
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch {
       setError('Impossible de contacter le Gardien. Réessayez.')
     }
@@ -84,38 +87,67 @@ export default function SiteGuardian() {
     <>
       <style>{`
         @keyframes guardian-breathe {
-          0%, 100% { box-shadow: 0 0 12px 2px rgba(201,168,76,0.25), 0 4px 16px rgba(26,21,53,0.3); transform: scale(1); }
-          50% { box-shadow: 0 0 20px 5px rgba(201,168,76,0.4), 0 4px 20px rgba(26,21,53,0.35); transform: scale(1.02); }
+          0%, 100% {
+            box-shadow: 0 0 14px 3px rgba(201,168,76,0.2), 0 0 40px 8px rgba(26,21,53,0.15);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 20px 6px rgba(201,168,76,0.35), 0 0 50px 12px rgba(26,21,53,0.2);
+            transform: scale(1.015);
+          }
+        }
+        @keyframes guardian-appear {
+          from { opacity: 0; transform: scale(0.92); }
+          to   { opacity: 1; transform: scale(1); }
         }
         @keyframes guardian-halo {
-          0%, 100% { box-shadow: 0 0 4px 1px rgba(201,168,76,0.2); }
-          50% { box-shadow: 0 0 8px 3px rgba(201,168,76,0.45); }
+          0%, 100% { box-shadow: 0 0 4px 1px rgba(201,168,76,0.15); }
+          50% { box-shadow: 0 0 10px 4px rgba(201,168,76,0.4); }
+        }
+        @keyframes guardian-thinking {
+          0%, 100% { filter: brightness(1); box-shadow: 0 0 4px 1px rgba(201,168,76,0.15); }
+          50% { filter: brightness(1.12); box-shadow: 0 0 10px 4px rgba(201,168,76,0.4); }
         }
         .guardian-fab {
-          animation: guardian-breathe 4s ease-in-out infinite;
+          animation: guardian-appear 700ms ease-out both, guardian-breathe 5s ease-in-out 700ms infinite;
         }
         .guardian-fab:hover {
-          animation: none;
-          transform: scale(1.05);
-          box-shadow: 0 0 22px 6px rgba(201,168,76,0.45), 0 4px 20px rgba(26,21,53,0.4);
+          animation: guardian-appear 700ms ease-out both;
+          transform: scale(1.04);
+          box-shadow: 0 0 24px 8px rgba(201,168,76,0.4), 0 0 50px 14px rgba(26,21,53,0.2);
+        }
+        .guardian-header-avatar {
+          box-shadow: 0 0 12px 4px rgba(201,168,76,0.25);
         }
         .guardian-mini-halo {
-          animation: guardian-halo 4s ease-in-out infinite;
+          animation: guardian-thinking 4s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .guardian-fab {
+            animation: none;
+          }
+          .guardian-fab:hover {
+            animation: none;
+          }
+          .guardian-mini-halo {
+            animation: none;
+          }
         }
       `}</style>
 
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="guardian-fab fixed bottom-6 right-6 z-[60] w-16 h-16 md:w-[72px] md:h-[72px] rounded-full flex items-center justify-center transition-all overflow-hidden"
-          style={{ border: '2px solid rgba(201,168,76,0.6)' }}
+          className="guardian-fab fixed bottom-5 right-5 z-[60] w-[84px] h-[84px] md:w-[100px] md:h-[100px] rounded-full flex items-center justify-center transition-all overflow-hidden"
+          style={{ border: '1.5px solid rgba(201,168,76,0.45)' }}
           aria-label="Ouvrir le Gardien de MediumIA"
           title="Le Gardien de MediumIA"
         >
           <img
             src={AVATAR}
             alt="Le Gardien de MediumIA"
-            className="w-full h-full object-cover rounded-full"
+            className="rounded-full object-cover"
+            style={{ width: '130%', height: '130%', objectPosition: '50% 38%' }}
           />
         </button>
       )}
@@ -128,12 +160,16 @@ export default function SiteGuardian() {
             style={{ background: 'linear-gradient(135deg, #1A1535, #2A2050)' }}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <img
-                src={AVATAR}
-                alt="Le Gardien de MediumIA"
-                className="w-11 h-11 rounded-full object-cover shrink-0"
-                style={{ border: '1.5px solid rgba(201,168,76,0.5)' }}
-              />
+              <div className="guardian-header-avatar shrink-0 rounded-full overflow-hidden w-[54px] h-[54px] md:w-[60px] md:h-[60px]"
+                style={{ border: '1.5px solid rgba(201,168,76,0.45)' }}
+              >
+                <img
+                  src={AVATAR}
+                  alt="Le Gardien de MediumIA"
+                  className="object-cover"
+                  style={{ width: '130%', height: '130%', objectPosition: '50% 38%', marginLeft: '-15%', marginTop: '-8%' }}
+                />
+              </div>
               <div className="min-w-0">
                 <h3 className="font-georgia text-cream text-sm font-semibold tracking-wide">Le Gardien de MediumIA</h3>
                 <p className="font-georgia text-cream/50 text-[11px] mt-0.5">Je peux vous guider dans cet univers.</p>
@@ -152,15 +188,19 @@ export default function SiteGuardian() {
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && isFirstAssistant(i) && (
-                  <img
-                    src={AVATAR}
-                    alt=""
-                    className="w-6 h-6 rounded-full object-cover shrink-0 mt-1 mr-2"
+                  <div className="w-[30px] h-[30px] rounded-full overflow-hidden shrink-0 mt-1 mr-2"
                     style={{ border: '1px solid rgba(201,168,76,0.3)' }}
-                  />
+                  >
+                    <img
+                      src={AVATAR}
+                      alt=""
+                      className="object-cover"
+                      style={{ width: '140%', height: '140%', objectPosition: '50% 35%', marginLeft: '-20%', marginTop: '-10%' }}
+                    />
+                  </div>
                 )}
                 {msg.role === 'assistant' && !isFirstAssistant(i) && (
-                  <div className="w-6 shrink-0 mr-2" />
+                  <div className="w-[30px] shrink-0 mr-2" />
                 )}
                 <div
                   className={`font-georgia text-sm leading-relaxed rounded-2xl px-4 py-3 max-w-[80%] whitespace-pre-wrap ${
@@ -175,12 +215,16 @@ export default function SiteGuardian() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <img
-                  src={AVATAR}
-                  alt=""
-                  className="guardian-mini-halo w-6 h-6 rounded-full object-cover shrink-0 mt-1 mr-2"
+                <div className="guardian-mini-halo w-[30px] h-[30px] rounded-full overflow-hidden shrink-0 mt-1 mr-2"
                   style={{ border: '1px solid rgba(201,168,76,0.3)' }}
-                />
+                >
+                  <img
+                    src={AVATAR}
+                    alt=""
+                    className="object-cover"
+                    style={{ width: '140%', height: '140%', objectPosition: '50% 35%', marginLeft: '-20%', marginTop: '-10%' }}
+                  />
+                </div>
                 <div className="bg-gold/10 border border-gold/15 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-1.5 h-1.5 bg-gold/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

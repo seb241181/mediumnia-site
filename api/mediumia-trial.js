@@ -64,11 +64,17 @@ async function checkRateLimit(supabase, ipHash, endpoint, hourly, daily) {
 }
 
 function textFromOpenAIResponse(data) {
+  if (typeof data?.output_text === 'string' && data.output_text.trim()) {
+    return data.output_text.trim()
+  }
   const parts = []
   for (const item of data?.output || []) {
-    if (item?.type !== 'message') continue
-    for (const part of item.content || []) {
-      if (part?.type === 'output_text' && part.text) parts.push(part.text)
+    if (item?.type === 'message') {
+      for (const part of item.content || []) {
+        if ((part?.type === 'output_text' || part?.type === 'text') && part.text) {
+          parts.push(part.text)
+        }
+      }
     }
   }
   return parts.join('\n').trim()
@@ -161,11 +167,9 @@ async function handleGuardian(req, res) {
     const data = await response.json()
     const reply = textFromOpenAIResponse(data)
 
-    if (!reply) {
-      return res.status(502).json({ error: 'Le Gardien n\'a pas pu formuler de réponse.' })
-    }
-
-    return res.status(200).json({ reply })
+    return res.status(200).json({
+      reply: reply || 'Un léger voile technique m\'empêche de vous répondre correctement. Pouvez-vous reformuler votre question en quelques mots ?',
+    })
   } catch (err) {
     console.error('[guardian] Network error:', err?.name || 'Error')
     return res.status(500).json({ error: 'Une erreur est survenue. Réessayez dans quelques instants.' })

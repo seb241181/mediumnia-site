@@ -15,16 +15,18 @@ export default function ConsultationSection({
   onOpenRdv,
   id = 'consulter',
 }) {
+  const visiblePractitioners = practitioners.filter(p => p.publicVisible !== false)
+
   return (
     <section className="consultation-module" id={id} aria-labelledby={`${id}-title`}>
       <header className="consultation-module__header">
         <p className="consultation-eyebrow">Consulter chez MediumIA</p>
         <h2 id={`${id}-title`}>Rencontrer, ressentir,<br /><em>être accompagné.</em></h2>
-        <p>MediumIA est aussi né de pratiques humaines réelles. Deux univers complémentaires, deux manières d’écouter et d’accompagner ce qui demande de l’attention.</p>
+        <p>MediumIA est aussi né de pratiques humaines réelles — une écoute attentive et un accompagnement ancré dans l’expérience.</p>
       </header>
 
       <div className="consultation-module__practitioners">
-        {practitioners.map((practitioner) => (
+        {visiblePractitioners.map((practitioner) => (
           <PractitionerCard
             key={practitioner.id}
             practitioner={practitioner}

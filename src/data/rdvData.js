@@ -52,6 +52,7 @@ export const rdvPractitioners = {
   },
 
   'aurelie-seguin': {
+    publicVisible: false,
     slug: 'aurelie-seguin',
     name: 'Aurélie Seguin',
     role: 'Praticienne bien-être',

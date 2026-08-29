@@ -68,6 +68,7 @@ export const boutiqueProducts = [
   },
   {
     id: 'echo-des-fees-objet',
+    publicVisible: false,
     name: 'Objet de la sélection',
     category: 'echo-des-fees',
     categoryLabel: "L'Écho des Fées",
@@ -81,6 +82,7 @@ export const boutiqueProducts = [
   },
   {
     id: 'echo-des-fees-collection',
+    publicVisible: false,
     name: "Collection L'Écho des Fées",
     category: 'echo-des-fees',
     categoryLabel: "L'Écho des Fées",

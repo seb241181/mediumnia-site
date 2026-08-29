@@ -5,6 +5,7 @@
 export const consultationPractitioners = [
   {
     id: 'sebastien-seguin',
+    publicVisible: true,
     firstName: 'Sébastien',
     name: 'Sébastien Seguin',
     role: 'Médium professionnel',
@@ -33,6 +34,7 @@ export const consultationPractitioners = [
   },
   {
     id: 'aurelie-seguin',
+    publicVisible: false,
     firstName: 'Aurélie',
     name: 'Aurélie Seguin',
     role: "Praticienne bien-être · L'Écho des Fées",

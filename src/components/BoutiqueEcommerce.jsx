@@ -84,13 +84,18 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle }) {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [notice, setNotice] = useState('')
 
-  const visibleProducts = activeCategory === 'all'
-    ? boutiqueProducts
-    : boutiqueProducts.filter(p => p.category === activeCategory)
+  const publicProducts = boutiqueProducts.filter(p => p.publicVisible !== false)
+  const hasEchoProducts = publicProducts.some(p => p.category === 'echo-des-fees')
+  const publicCategories = boutiqueCategories.filter(c => c.id !== 'echo-des-fees' || hasEchoProducts)
 
-  const showEchoBanner =
+  const visibleProducts = activeCategory === 'all'
+    ? publicProducts
+    : publicProducts.filter(p => p.category === activeCategory)
+
+  const showEchoBanner = hasEchoProducts && (
     activeCategory === 'echo-des-fees' ||
-    (activeCategory === 'all' && boutiqueProducts.some(p => p.category === 'echo-des-fees'))
+    activeCategory === 'all'
+  )
 
   const handlePurchaseRequest = (product) => {
     setSelectedProduct(null)
@@ -103,7 +108,7 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle }) {
 
       {/* Filtres */}
       <div className="flex gap-2 flex-wrap mb-8">
-        {boutiqueCategories.map(cat => (
+        {publicCategories.map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCategory(cat.id)}

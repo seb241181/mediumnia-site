@@ -109,7 +109,7 @@ export default function SiteGuardian() {
           50% { filter: brightness(1.12); box-shadow: 0 0 14px 6px rgba(201,168,76,0.45), 0 0 22px 8px rgba(90,60,140,0.18); }
         }
         .guardian-fab {
-          animation: guardian-appear 700ms ease-out both, guardian-breathe 5s ease-in-out 700ms infinite;
+          animation: guardian-appear 700ms ease-out both, guardian-breathe 4s ease-in-out 700ms infinite;
         }
         .guardian-fab:hover {
           animation: guardian-appear 700ms ease-out both;

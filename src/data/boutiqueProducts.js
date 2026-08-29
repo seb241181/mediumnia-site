@@ -29,6 +29,7 @@ export const boutiqueProducts = [
   },
   {
     id: 'oracle-lignes-temps',
+    publicVisible: false,
     name: 'Oracle des Lignes de Temps',
     category: 'oracles',
     categoryLabel: 'Oracles',
@@ -42,6 +43,7 @@ export const boutiqueProducts = [
   },
   {
     id: 'le-codex',
+    publicVisible: false,
     name: 'Le Codex',
     category: 'livres',
     categoryLabel: 'Livres',

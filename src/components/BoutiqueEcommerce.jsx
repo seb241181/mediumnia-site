@@ -3,13 +3,16 @@ import { boutiqueCategories, boutiqueProducts } from '../data/boutiqueProducts'
 import ProductDetail from './ProductDetail'
 import BoutiqueProductArt from './BoutiqueProductArt'
 
-function ProductCard({ product, onOpen, onOpenOracle }) {
+function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   const isOracle = product.id === 'oracle-au-dela-ame'
+  const isFormation = product.id === 'formation-mediumia'
   const isEcho = product.category === 'echo-des-fees'
 
   const handleClick = () => {
     if (isOracle && onOpenOracle) {
       onOpenOracle()
+    } else if (isFormation && onOpenFormation) {
+      onOpenFormation()
     } else {
       onOpen(product)
     }
@@ -79,20 +82,20 @@ function EchoFeesBanner() {
   )
 }
 
-export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle }) {
+export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpenFormation }) {
   const [activeCategory, setActiveCategory] = useState('all')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [notice, setNotice] = useState('')
 
   const publicProducts = boutiqueProducts.filter(p => p.publicVisible !== false)
-  const hasEchoProducts = publicProducts.some(p => p.category === 'echo-des-fees')
-  const publicCategories = boutiqueCategories.filter(c => c.id !== 'echo-des-fees' || hasEchoProducts)
+  const activeCategoryIds = new Set(publicProducts.map(p => p.category))
+  const publicCategories = boutiqueCategories.filter(c => c.id === 'all' || activeCategoryIds.has(c.id))
 
   const visibleProducts = activeCategory === 'all'
     ? publicProducts
     : publicProducts.filter(p => p.category === activeCategory)
 
-  const showEchoBanner = hasEchoProducts && (
+  const showEchoBanner = activeCategoryIds.has('echo-des-fees') && (
     activeCategory === 'echo-des-fees' ||
     activeCategory === 'all'
   )
@@ -134,6 +137,7 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle }) {
             product={product}
             onOpen={setSelectedProduct}
             onOpenOracle={onOpenOracle}
+            onOpenFormation={onOpenFormation}
           />
         ))}
       </div>

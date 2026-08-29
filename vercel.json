@@ -5,7 +5,27 @@
       "destination": "/index.html"
     },
     {
+      "source": "/pro",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/agents",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/formation",
+      "destination": "/index.html"
+    },
+    {
       "source": "/oracle",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reseau/rejoindre",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reseau",
       "destination": "/index.html"
     },
     {

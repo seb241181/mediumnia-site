@@ -2,6 +2,7 @@
 import { createHmac } from 'node:crypto'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import { GUARDIAN_SYSTEM } from '../lib/guardianKnowledge.js'
+import { sendEmail, escapeHtml } from '../lib/transactionalEmail.js'
 
 const HOURLY_LIMIT = 10
 const DAILY_LIMIT = 30
@@ -194,6 +195,138 @@ async function handleGuardian(req, res) {
   }
 }
 
+const VALID_NEEDS = [
+  'Assistant IA pour mes clients',
+  'Rendez-vous et organisation',
+  'Communication / réseaux',
+  'Documents et mémoire métier',
+  'Automatisations',
+  'Autre',
+]
+
+const WAITLIST_HOURLY = 3
+const WAITLIST_DAILY = 10
+
+async function handleProWaitlist(req, res) {
+  const { firstName, email, activity, primaryNeed, message, consent, sourcePage, utmSource, utmMedium, utmCampaign } = req.body || {}
+
+  if (typeof firstName !== 'string' || !firstName.trim() || firstName.trim().length > 80) {
+    return res.status(400).json({ error: 'Prénom invalide.' })
+  }
+  if (typeof email !== 'string' || !email.trim() || email.trim().length > 254 || !email.includes('@')) {
+    return res.status(400).json({ error: 'Email invalide.' })
+  }
+  if (typeof activity !== 'string' || !activity.trim() || activity.trim().length > 120) {
+    return res.status(400).json({ error: 'Activité invalide.' })
+  }
+  if (!VALID_NEEDS.includes(primaryNeed)) {
+    return res.status(400).json({ error: 'Besoin principal invalide.' })
+  }
+  if (message != null && (typeof message !== 'string' || message.length > 1000)) {
+    return res.status(400).json({ error: 'Message trop long.' })
+  }
+  if (consent !== true) {
+    return res.status(400).json({ error: 'Le consentement est obligatoire.' })
+  }
+
+  const rateLimitSecret = (process.env.TRIAL_RATE_LIMIT_SECRET || '').trim()
+  if (!/^[0-9a-fA-F]{64}$/.test(rateLimitSecret)) {
+    return res.status(503).json({ error: 'Service temporairement indisponible.' })
+  }
+
+  if (!isSupabaseConfigured()) {
+    return res.status(503).json({ error: 'Service temporairement indisponible.' })
+  }
+
+  const clientIp = extractClientIp(req)
+  if (!clientIp) {
+    return res.status(503).json({ error: 'Service temporairement indisponible.' })
+  }
+
+  const ipHash = createHmac('sha256', rateLimitSecret).update('pro_waitlist:' + clientIp).digest('hex')
+
+  const supabase = getSupabaseAdmin()
+
+  try {
+    const rl = await checkRateLimit(supabase, ipHash, 'pro_waitlist', WAITLIST_HOURLY, WAITLIST_DAILY)
+    if (!rl || !rl.allowed) {
+      return res.status(429).json({ error: 'Trop de demandes. Merci de réessayer plus tard.' })
+    }
+  } catch {
+    return res.status(503).json({ error: 'Service temporairement indisponible.' })
+  }
+
+  const cleanFirst = firstName.trim().slice(0, 80)
+  const cleanEmail = email.trim().slice(0, 254)
+  const emailNormalized = cleanEmail.toLowerCase()
+  const cleanActivity = activity.trim().slice(0, 120)
+  const cleanMessage = message ? String(message).trim().slice(0, 1000) || null : null
+  const cleanSource = typeof sourcePage === 'string' ? sourcePage.slice(0, 200) : null
+  const cleanUtmSource = typeof utmSource === 'string' ? utmSource.slice(0, 200) : null
+  const cleanUtmMedium = typeof utmMedium === 'string' ? utmMedium.slice(0, 200) : null
+  const cleanUtmCampaign = typeof utmCampaign === 'string' ? utmCampaign.slice(0, 200) : null
+
+  try {
+    const { error: upsertError } = await supabase
+      .from('pro_waitlist')
+      .upsert({
+        first_name: cleanFirst,
+        email: cleanEmail,
+        email_normalized: emailNormalized,
+        activity: cleanActivity,
+        primary_need: primaryNeed,
+        message: cleanMessage,
+        consent_at: new Date().toISOString(),
+        source_page: cleanSource,
+        utm_source: cleanUtmSource,
+        utm_medium: cleanUtmMedium,
+        utm_campaign: cleanUtmCampaign,
+      }, { onConflict: 'email_normalized', ignoreDuplicates: false })
+
+    if (upsertError) {
+      console.error('[pro-waitlist] Upsert failed')
+      return res.status(500).json({ error: 'Une erreur est survenue.' })
+    }
+  } catch {
+    console.error('[pro-waitlist] DB error')
+    return res.status(500).json({ error: 'Une erreur est survenue.' })
+  }
+
+  const ownerEmail = 'contact@mediumia.fr'
+  const h = escapeHtml
+
+  sendEmail({
+    to: ownerEmail,
+    subject: `Nouveau prospect MediumIA Pro — ${cleanActivity}`,
+    html: `<div style="font-family:Georgia,serif;color:#1A1535;max-width:600px">
+<h2 style="color:#C9A84C">Nouveau prospect MediumIA Pro</h2>
+<p><strong>Prénom :</strong> ${h(cleanFirst)}</p>
+<p><strong>Email :</strong> ${h(cleanEmail)}</p>
+<p><strong>Activité :</strong> ${h(cleanActivity)}</p>
+<p><strong>Besoin principal :</strong> ${h(primaryNeed)}</p>
+${cleanMessage ? `<p><strong>Message :</strong> ${h(cleanMessage)}</p>` : ''}
+${cleanSource ? `<p><strong>Source :</strong> ${h(cleanSource)}</p>` : ''}
+${cleanUtmSource ? `<p><strong>UTM :</strong> ${h(cleanUtmSource)} / ${h(cleanUtmMedium || '')} / ${h(cleanUtmCampaign || '')}</p>` : ''}
+</div>`,
+    text: `Nouveau prospect MediumIA Pro\n\nPrénom : ${cleanFirst}\nEmail : ${cleanEmail}\nActivité : ${cleanActivity}\nBesoin : ${primaryNeed}\n${cleanMessage ? `Message : ${cleanMessage}\n` : ''}`,
+  }).catch(() => {})
+
+  sendEmail({
+    to: cleanEmail,
+    subject: 'Votre inscription à la liste prioritaire MediumIA Pro',
+    html: `<div style="font-family:Georgia,serif;color:#1A1535;max-width:600px">
+<h2 style="color:#C9A84C">MediumIA Pro — Liste prioritaire</h2>
+<p>Bonjour ${h(cleanFirst)},</p>
+<p>Votre demande d'accès prioritaire à MediumIA Pro est bien enregistrée.</p>
+<p>Vous ferez partie des premiers professionnels informés de l'ouverture.</p>
+<p style="color:#6f687c;font-size:13px;margin-top:24px">MediumIA · mediumia.fr</p>
+</div>`,
+    text: `Bonjour ${cleanFirst},\n\nVotre demande d'accès prioritaire à MediumIA Pro est bien enregistrée.\nVous ferez partie des premiers professionnels informés de l'ouverture.\n\nMediumIA · mediumia.fr`,
+  }).catch(() => {})
+
+  return res.status(200).json({ success: true })
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
@@ -201,6 +334,10 @@ export default async function handler(req, res) {
 
   if (mode === 'guardian') {
     return handleGuardian(req, res)
+  }
+
+  if (mode === 'pro-waitlist') {
+    return handleProWaitlist(req, res)
   }
 
   const { history } = req.body || {}

@@ -25,7 +25,7 @@ export default function ConsultationSection({
         <p>MediumIA est aussi né de pratiques humaines réelles — une écoute attentive et un accompagnement ancré dans l’expérience.</p>
       </header>
 
-      <div className="consultation-module__practitioners">
+      <div className={`consultation-module__practitioners${visiblePractitioners.length === 1 ? ' consultation-module__practitioners--single' : ''}`}>
         {visiblePractitioners.map((practitioner) => (
           <PractitionerCard
             key={practitioner.id}

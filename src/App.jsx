@@ -7,6 +7,7 @@ import FormationPage from './components/FormationPage'
 import LegalFooter from './components/LegalFooter'
 import { MentionsLegales, PolitiqueConfidentialite, CgvOracle, Retractation } from './components/LegalPages'
 import OraclePage from './components/OraclePage'
+import ProWaitlistPage from './components/ProWaitlistPage'
 import ReseauDirectory from './components/ReseauDirectory'
 import ReseauJoindre from './components/ReseauJoindre'
 import RdvDashboard from './components/rdv/RdvDashboard'
@@ -17,19 +18,19 @@ import SiteGuardian from './components/SiteGuardian'
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-      <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
-        <a href="#top" className="shrink-0 flex items-center gap-2" aria-label="MediumIA — retour en haut">
-          <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-8 md:h-10 w-auto" />
-          <span className="font-georgia text-deep tracking-[0.2em] text-base font-semibold">MEDIUMIA</span>
+      <div className="max-w-6xl mx-auto px-5 md:px-6 py-4 md:py-5 flex items-center justify-between gap-5">
+        <a href="#top" className="shrink-0 flex items-center gap-2.5" aria-label="MediumIA — retour en haut">
+          <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-9 md:h-12 w-auto" />
+          <span className="font-georgia text-deep tracking-[0.2em] text-base md:text-lg font-semibold">MEDIUMIA</span>
         </a>
-        <nav className="hidden md:flex items-center gap-6 font-georgia text-sm text-deep font-medium">
+        <nav className="hidden md:flex items-center gap-7 font-georgia text-[15px] text-deep font-medium">
           <a href="#decouvrir" className="hover:text-gold transition-colors">Découvrir</a>
           <button onClick={onOpenFormation} className="hover:text-gold transition-colors">Se former</button>
           <a href="#consulter" className="hover:text-gold transition-colors">Consulter</a>
           <a href="#boutique" className="hover:text-gold transition-colors">Boutique</a>
           <button onClick={onOpenReseauDir} className="hover:text-gold transition-colors">Trouver un praticien</button>
         </nav>
-        <button onClick={onOpenPro} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">Espace Pro →</button>
+        <button onClick={onOpenPro} className="font-georgia text-xs md:text-sm tracking-wide px-5 py-3 md:px-6 rounded-lg bg-deep text-gold font-bold">Espace Pro →</button>
       </div>
     </header>
   )
@@ -113,22 +114,22 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
 
         {/* ── Hero ── */}
         <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-6 pt-28 pb-16">
-          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-3">Le monde spirituel, relié autrement</p>
+          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-4">Le monde spirituel, relié autrement</p>
           <img
             src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"
             alt="MediumIA — Le monde spirituel, relié autrement"
-            className="w-64 md:w-96 mx-auto mb-4"
+            className="w-80 md:w-[32rem] mx-auto mb-5"
           />
-          <p className="font-bodoni text-deep text-xl md:text-3xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-6">
+          <p className="font-bodoni text-deep text-2xl md:text-4xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-7">
             Comprendre. Apprendre. Rencontrer.<br/>
             <span className="text-gold">Exercer autrement.</span>
           </p>
-          <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">
+          <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-[700px] mx-auto mb-10">
             MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l'univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l'humain.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <button onClick={onOpenFormation} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Découvrir l'accompagnement →</button>
-            <button onClick={onOpenReseauForm} className="font-georgia px-8 py-4 rounded-lg border border-gold/50 text-deep font-bold">Rejoindre le réseau →</button>
+            <button onClick={onOpenFormation} className="font-georgia px-9 py-4 rounded-lg bg-gold text-deep font-bold text-base">Découvrir l'accompagnement →</button>
+            <button onClick={onOpenReseauForm} className="font-georgia px-9 py-4 rounded-lg border border-gold/50 text-deep font-bold text-base">Rejoindre le réseau →</button>
           </div>
         </section>
 
@@ -149,8 +150,8 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
               <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir} dark="bg-mist border-mist">
                 Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
               </UniverseCard>
-              <UniverseCard icon="✺" eyebrow="Espace Pro" title="Développer son activité sans perdre son identité" action="Entrer dans l'espace Pro" onClick={onOpenPro} dark badge="Prototype privé">
-                Assistants IA métier, documents et mémoire professionnelle, aide à la communication, futurs profils du réseau et outils pensés spécialement pour les professionnels de l'accompagnement spirituel.
+              <UniverseCard icon="✺" eyebrow="MediumIA Pro" title="Votre pratique, amplifiée par des outils qui vous ressemblent" action="Découvrir MediumIA Pro" onClick={onOpenPro} dark badge="Bientôt disponible">
+                Assistants IA métier, mémoire professionnelle, aide à la communication, rendez-vous et automatisations — des outils pensés pour les professionnels de l'accompagnement.
               </UniverseCard>
             </div>
           </div>
@@ -167,7 +168,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
               Créations &amp; sélection
             </h2>
           </div>
-          <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} />
+          <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} onOpenFormation={onOpenFormation} />
         </section>
 
       </main>
@@ -184,7 +185,7 @@ export default function App() {
   const initial = path === '/rdv/annuler' ? 'rdv-cancellation'
     : path.startsWith('/rdv/') ? 'rdv-public'
     : path === '/rdv' ? 'rdv-dashboard'
-    : path.startsWith('/agents') ? 'agents'
+    : path === '/pro' || path.startsWith('/agents') ? 'pro'
     : path.startsWith('/formation') ? 'formation'
     : path.startsWith('/oracle') ? 'oracle'
     : path.startsWith('/reseau/rejoindre') ? 'reseau-form'
@@ -196,8 +197,8 @@ export default function App() {
     : 'home'
   const [view, setView] = useState(initial)
 
-  const nav = (p, v) => { window.history.pushState({}, '', p); window.scrollTo(0, 0); setView(v) }
-  const openPro        = () => nav('/agents',           'agents')
+  const nav = (p, v) => { window.history.pushState({}, '', p); setView(v); requestAnimationFrame(() => window.scrollTo(0, 0)) }
+  const openPro        = () => nav('/pro',              'pro')
   const openFormation  = () => nav('/formation',        'formation')
   const openOracle     = () => nav('/oracle',           'oracle')
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
@@ -212,7 +213,7 @@ export default function App() {
     else backHome()
   }
 
-  const showGuardian = view !== 'agents' && view !== 'rdv-dashboard'
+  const showGuardian = view !== 'rdv-dashboard'
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 
@@ -221,7 +222,7 @@ export default function App() {
   if (view === 'confidentialite') return <><PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cgv-oracle')     return <><CgvOracle onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'retractation')   return <><Retractation onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  if (view === 'agents')        return <AgentsPlatform onBack={backHome} onOpenReseau={openReseauForm} onOpenRdv={openRdvDashboard} />
+  if (view === 'pro')           return <><ProWaitlistPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>

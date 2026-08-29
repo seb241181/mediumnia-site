@@ -163,6 +163,22 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
         </p>
       </Section>
 
+      <Section title="Données collectées — Liste prioritaire MediumIA Pro">
+        <p>
+          Le formulaire d'inscription à la liste prioritaire MediumIA Pro collecte les données suivantes :
+          prénom, adresse email, activité ou métier, besoin principal et un message facultatif.
+        </p>
+        <p>
+          Ces données sont utilisées pour gérer votre demande d'accès prioritaire et vous informer du lancement
+          de MediumIA Pro. Elles sont stockées dans Supabase et un email de confirmation est envoyé via Resend.
+        </p>
+        <p>
+          Base légale : consentement fourni via le formulaire.
+          Vous pouvez retirer votre consentement à tout moment en écrivant à{' '}
+          <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline">contact@mediumia.fr</a>.
+        </p>
+      </Section>
+
       <Section title="Données collectées — Le Gardien de MediumIA">
         <p>
           Les messages échangés avec Le Gardien (assistant IA public du site) sont transmis à OpenAI pour générer la réponse.

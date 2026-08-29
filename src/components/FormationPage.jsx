@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import LegalFooter from './LegalFooter'
 import TrialChat from './TrialChat'
 
@@ -88,6 +88,10 @@ function FAQAccordion() {
 }
 
 export default function FormationPage({ onBack, onNavigate }) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [])
+
   return (
     <div className="bg-cream min-h-screen text-deep">
 

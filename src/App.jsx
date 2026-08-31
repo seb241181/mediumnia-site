@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './index.css'
 import AgentsPlatform from './components/AgentsPlatform'
 import BoutiqueEcommerce from './components/BoutiqueEcommerce'
@@ -180,22 +180,30 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
 
 const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
 
-export default function App() {
-  const path = window.location.pathname
-  const initial = path === '/rdv/annuler' ? 'rdv-cancellation'
-    : path.startsWith('/rdv/') ? 'rdv-public'
-    : path === '/rdv' ? 'rdv-dashboard'
-    : path === '/pro' || path.startsWith('/agents') ? 'pro'
-    : path.startsWith('/formation') ? 'formation'
-    : path.startsWith('/oracle') ? 'oracle'
-    : path.startsWith('/reseau/rejoindre') ? 'reseau-form'
-    : path.startsWith('/reseau') ? 'reseau-dir'
-    : path === '/mentions' ? 'mentions'
-    : path === '/confidentialite' ? 'confidentialite'
-    : path === '/cgv-oracle' ? 'cgv-oracle'
-    : path === '/retractation' ? 'retractation'
+function pathToView(p) {
+  return p === '/rdv/annuler' ? 'rdv-cancellation'
+    : p.startsWith('/rdv/') ? 'rdv-public'
+    : p === '/rdv' ? 'rdv-dashboard'
+    : p === '/pro' || p.startsWith('/agents') ? 'pro'
+    : p.startsWith('/formation') ? 'formation'
+    : p.startsWith('/oracle') ? 'oracle'
+    : p.startsWith('/reseau/rejoindre') ? 'reseau-form'
+    : p.startsWith('/reseau') ? 'reseau-dir'
+    : p === '/mentions' ? 'mentions'
+    : p === '/confidentialite' ? 'confidentialite'
+    : p === '/cgv-oracle' ? 'cgv-oracle'
+    : p === '/retractation' ? 'retractation'
     : 'home'
-  const [view, setView] = useState(initial)
+}
+
+export default function App() {
+  const [view, setView] = useState(() => pathToView(window.location.pathname))
+
+  useEffect(() => {
+    const onPop = () => setView(pathToView(window.location.pathname))
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   const nav = (p, v) => { window.history.pushState({}, '', p); setView(v); requestAnimationFrame(() => window.scrollTo(0, 0)) }
   const openPro        = () => nav('/pro',              'pro')

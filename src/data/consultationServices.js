@@ -17,7 +17,6 @@ export const consultationPractitioners = [
     intention: 'Médiumnité, guidance intuitive et accompagnement autour des perceptions.',
     detailsLabel: 'Découvrir les consultations',
     statusLabel: null,
-    reservationUrl: 'https://sebastien-seguin.reservio.com',
     accent: 'deep',
     services: [
       {

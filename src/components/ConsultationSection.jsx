@@ -4,9 +4,6 @@ import '../styles/consultation.css'
 
 /**
  * Module Consulter autonome.
- *
- * La réservation reste désactivée par défaut. Une intégration future pourra
- * fournir onBookingRequest(practitioner, service) et bookingEnabled=true.
  */
 export default function ConsultationSection({
   practitioners = consultationPractitioners,
@@ -16,6 +13,7 @@ export default function ConsultationSection({
   id = 'consulter',
 }) {
   const visiblePractitioners = practitioners.filter(p => p.publicVisible !== false)
+  const bookablePractitioner = visiblePractitioners.find(p => p.rdvSlug)
 
   return (
     <section className="consultation-module" id={id} aria-labelledby={`${id}-title`}>
@@ -37,14 +35,20 @@ export default function ConsultationSection({
         ))}
       </div>
 
-      <aside className="consultation-module__booking-note" aria-label="Information sur la prise de rendez-vous">
+      <aside className="consultation-module__booking-note" aria-label="Prise de rendez-vous MediumIA">
         <span aria-hidden="true">✦</span>
         <div>
           <p className="consultation-eyebrow">MediumIA Rendez-vous</p>
           <h3>La rencontre commence toujours par une présence.</h3>
-          <p>La prise de rendez-vous en ligne sera proposée ultérieurement. Aucun créneau, paiement ou réservation n’est actif dans cette maquette.</p>
+          <p>Consultez les disponibilités en temps réel et réservez directement votre créneau dans l’agenda MediumIA.</p>
         </div>
-        <button type="button" disabled>Prendre rendez-vous · bientôt</button>
+        <button
+          type="button"
+          disabled={!bookablePractitioner || !onOpenRdv}
+          onClick={() => bookablePractitioner && onOpenRdv?.(bookablePractitioner.rdvSlug)}
+        >
+          Prendre rendez-vous →
+        </button>
       </aside>
     </section>
   )

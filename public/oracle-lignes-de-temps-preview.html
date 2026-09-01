@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHRONOSPHERE 999 — Preview</title>
+  <style>
+    :root{--cream:#f8f5ee;--deep:#1a1535;--gold:#c9a84c;--mist:#756f81}
+    *{box-sizing:border-box} body{margin:0;background:var(--cream);color:var(--deep);font-family:Georgia,serif}
+    header{padding:18px 24px;border-bottom:1px solid rgba(201,168,76,.3);display:flex;justify-content:space-between;gap:20px}
+    main{max-width:820px;margin:0 auto;padding:56px 22px 90px}.eyebrow{text-align:center;text-transform:uppercase;letter-spacing:.25em;color:var(--gold);font-size:12px}
+    h1{text-align:center;font-size:clamp(38px,8vw,68px);font-weight:400;margin:12px 0}.intro{text-align:center;color:var(--mist);line-height:1.7;max-width:650px;margin:0 auto 34px}
+    .card{border:2px solid rgba(201,168,76,.28);background:rgba(255,255,255,.65);border-radius:24px;padding:28px;box-shadow:0 8px 30px rgba(26,21,53,.05)}
+    label{display:block;font-size:12px;color:var(--mist);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}select,input{width:100%;padding:14px;border:2px solid rgba(201,168,76,.25);border-radius:12px;background:white;color:var(--deep);font:16px Georgia,serif;outline:none}
+    .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.nums input{text-align:center;font-size:22px}.nums small{display:block;text-align:center;color:var(--mist);margin-bottom:6px}
+    button{width:100%;padding:16px;border:0;border-radius:12px;background:var(--gold);color:var(--deep);font:bold 16px Georgia,serif;cursor:pointer}button:disabled{opacity:.55}
+    #err{color:#b42318;text-align:center;margin-top:14px}.results{display:none;margin-top:30px}.drawn{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.drawn article{border:1px solid rgba(201,168,76,.35);border-radius:18px;padding:18px;background:white}.drawn article:first-child{border:2px solid var(--gold);background:rgba(201,168,76,.09)}
+    .drawn b{display:block;font-size:18px;margin:6px 0}.drawn span{font-size:11px;color:var(--mist)}.reading{white-space:pre-line;line-height:1.85;margin-top:18px;background:white;border:2px solid rgba(201,168,76,.25);border-radius:24px;padding:28px}.act{margin-top:18px;background:var(--deep);color:#f7f2e8;border-radius:20px;padding:24px}.act em{color:var(--gold);font-size:18px;line-height:1.6;display:block;margin-top:12px}
+    @media(max-width:620px){.nums,.drawn{grid-template-columns:1fr}.nums{gap:14px}}
+  </style>
+</head>
+<body>
+<header><span>← MediumIA</span><span style="color:#c9a84c;font-size:12px;letter-spacing:.18em">PREVIEW PRIVÉE · MOTEUR V1</span></header>
+<main>
+  <div class="eyebrow">Oracle des Lignes de Temps</div>
+  <h1>CHRONOSPHERE 999</h1>
+  <p class="intro">Laboratoire du moteur secret 58 cartes. Cette étape teste uniquement les cartes et leurs résonances. L’astrologie natale et les transits seront branchés à l’étape suivante.</p>
+  <form id="form" class="card">
+    <label for="theme">Thème du tirage</label>
+    <select id="theme"><option>amour</option><option>travail</option><option>finances</option><option>energie</option><option>direction de vie</option><option>projet</option></select>
+    <div class="nums">
+      <div><small>Carte principale</small><input id="n1" type="number" min="1" max="58" required placeholder="1–58"></div>
+      <div><small>Résonance I</small><input id="n2" type="number" min="1" max="58" required placeholder="1–58"></div>
+      <div><small>Résonance II</small><input id="n3" type="number" min="1" max="58" required placeholder="1–58"></div>
+    </div>
+    <button id="go" type="submit">Ouvrir ma ligne de temps →</button>
+    <div id="err"></div>
+  </form>
+  <section id="results" class="results">
+    <div id="drawn" class="drawn"></div>
+    <div id="reading" class="reading"></div>
+    <div id="act" class="act"></div>
+  </section>
+</main>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const form=document.getElementById('form'),go=document.getElementById('go'),err=document.getElementById('err'),results=document.getElementById('results');
+form.addEventListener('submit',async e=>{e.preventDefault();err.textContent='';results.style.display='none';const numbers=['n1','n2','n3'].map(id=>parseInt(document.getElementById(id).value,10));if(new Set(numbers).size!==3){err.textContent='Choisissez trois nombres différents.';return}go.disabled=true;go.textContent='Lecture de la ligne de temps…';try{const r=await fetch('/api/oracle-interpret',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme:document.getElementById('theme').value,numbers})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||'Erreur moteur');document.getElementById('drawn').innerHTML=d.cards.map((c,i)=>`<article><span>${i===0?'FRÉQUENCE PRINCIPALE':'RÉSONANCE '+i} · N°${String(c.number).padStart(2,'0')}</span><b>${esc(c.name)}</b><span>${esc(c.block)} · ${esc(c.density)}${c.astre?' · '+esc(c.astre):''}</span></article>`).join('');document.getElementById('reading').textContent=d.interpretation;document.getElementById('act').innerHTML=`<strong>Acte de réalignement</strong><div style="margin-top:10px;line-height:1.6">Geste : ${esc(d.cards[0].gesture)}</div><em>${esc(d.cards[0].decree)}</em>`;results.style.display='block';results.scrollIntoView({behavior:'smooth',block:'start'});}catch(x){err.textContent=x.message||'Erreur';}finally{go.disabled=false;go.textContent='Ouvrir ma ligne de temps →';}});
+</script>
+</body>
+</html>

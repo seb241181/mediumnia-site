@@ -61,7 +61,7 @@
 
     async function boot() {
       try {
-        const { clientId } = await jsonFetch('/api/paypal-sandbox-config')
+        const { clientId } = await jsonFetch('/api/rdv-config?paypalSandboxAction=config')
         await loadPayPal(clientId)
 
         if (!window.paypal?.Buttons) throw new Error('paypal_buttons_unavailable')
@@ -71,12 +71,12 @@
         await window.paypal.Buttons({
           createOrder: async () => {
             setStatus('Création de la commande Sandbox…')
-            const order = await jsonFetch('/api/paypal-sandbox-create-order', { method: 'POST', body: '{}' })
+            const order = await jsonFetch('/api/rdv-config?paypalSandboxAction=create', { method: 'POST', body: '{}' })
             return order.id
           },
           onApprove: async (data) => {
             setStatus('Paiement approuvé. Capture Sandbox en cours…')
-            const result = await jsonFetch('/api/paypal-sandbox-capture-order', {
+            const result = await jsonFetch('/api/rdv-config?paypalSandboxAction=capture', {
               method: 'POST',
               body: JSON.stringify({ orderId: data.orderID }),
             })

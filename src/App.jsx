@@ -30,7 +30,15 @@ function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
           <a href="#boutique" className="hover:text-gold transition-colors">Boutique</a>
           <button onClick={onOpenReseauDir} className="hover:text-gold transition-colors">Trouver un praticien</button>
         </nav>
-        <button onClick={onOpenPro} className="font-georgia text-xs md:text-sm tracking-wide px-5 py-3 md:px-6 rounded-lg bg-deep text-gold font-bold">Espace Pro →</button>
+        <div className="shrink-0 flex items-center gap-2">
+          <a
+            href="https://espace.mediumia.fr"
+            className="font-georgia text-[10px] sm:text-xs md:text-sm tracking-wide px-3 py-3 sm:px-4 md:px-5 rounded-lg border border-gold/60 text-deep font-bold whitespace-nowrap hover:bg-gold/10 transition-colors"
+          >
+            Espace élèves →
+          </a>
+          <button onClick={onOpenPro} className="font-georgia text-[10px] sm:text-xs md:text-sm tracking-wide px-3 py-3 sm:px-4 md:px-5 rounded-lg bg-deep text-gold font-bold whitespace-nowrap">Espace Pro →</button>
+        </div>
       </div>
     </header>
   )

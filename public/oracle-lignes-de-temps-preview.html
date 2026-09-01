@@ -13,9 +13,10 @@
     h1{text-align:center;font-size:clamp(38px,8vw,68px);font-weight:400;margin:12px 0}.intro{text-align:center;color:var(--mist);line-height:1.7;max-width:680px;margin:0 auto 34px}
     .card{border:2px solid rgba(201,168,76,.28);background:rgba(255,255,255,.65);border-radius:24px;padding:28px;box-shadow:0 8px 30px rgba(26,21,53,.05)}
     .section-title{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin:4px 0 18px}.identity{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin-bottom:24px}.wide{grid-column:1/-1}
-    label{display:block;font-size:12px;color:var(--mist);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}select,input{width:100%;padding:14px;border:2px solid rgba(201,168,76,.25);border-radius:12px;background:white;color:var(--deep);font:16px Georgia,serif;outline:none}
+    label{display:block;font-size:12px;color:var(--mist);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}select,input,textarea{width:100%;padding:14px;border:2px solid rgba(201,168,76,.25);border-radius:12px;background:white;color:var(--deep);font:16px Georgia,serif;outline:none}textarea{resize:vertical;min-height:92px;line-height:1.45}
     .hint{font-size:12px;color:var(--mist);line-height:1.5;margin-top:6px}.divider{height:1px;background:rgba(201,168,76,.22);margin:26px 0}
     .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.nums input{text-align:center;font-size:22px}.nums small{display:block;text-align:center;color:var(--mist);margin-bottom:6px}
+    .custom-theme{display:none;margin-top:14px}.custom-theme.visible{display:block}.counter{text-align:right;font-size:11px;color:var(--mist);margin-top:5px}
     button{width:100%;padding:16px;border:0;border-radius:12px;background:var(--gold);color:var(--deep);font:bold 16px Georgia,serif;cursor:pointer}button:disabled{opacity:.55}
     #err{color:#b42318;text-align:center;margin-top:14px}.results{display:none;margin-top:30px}.context{font-size:13px;color:var(--mist);line-height:1.65;margin:0 0 16px;padding:14px 16px;border-left:3px solid var(--gold);background:rgba(255,255,255,.6);border-radius:0 12px 12px 0}.drawn{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.drawn article{border:1px solid rgba(201,168,76,.35);border-radius:18px;padding:18px;background:white}.drawn article:first-child{border:2px solid var(--gold);background:rgba(201,168,76,.09)}
     .drawn b{display:block;font-size:18px;margin:6px 0}.drawn span{font-size:11px;color:var(--mist)}.reading{white-space:pre-line;line-height:1.85;margin-top:18px;background:white;border:2px solid rgba(201,168,76,.25);border-radius:24px;padding:28px}.act{margin-top:18px;background:var(--deep);color:#f7f2e8;border-radius:20px;padding:24px}.act em{color:var(--gold);font-size:18px;line-height:1.6;display:block;margin-top:12px}
@@ -23,11 +24,11 @@
   </style>
 </head>
 <body>
-<header><span>← MediumIA</span><span style="color:#c9a84c;font-size:12px;letter-spacing:.18em">PREVIEW PRIVÉE · MOTEUR V3</span></header>
+<header><span>← MediumIA</span><span style="color:#c9a84c;font-size:12px;letter-spacing:.18em">PREVIEW PRIVÉE · MOTEUR V4</span></header>
 <main>
   <div class="eyebrow">Oracle des Lignes de Temps</div>
   <h1>CHRONOSPHERE 999</h1>
-  <p class="intro">Le laboratoire croise les 58 cartes secrètes avec le ciel natal, les transits exacts du tirage, l’Ascendant, le Milieu du Ciel et les maisons astrologiques calculées depuis le lieu et l’heure de naissance.</p>
+  <p class="intro">Le laboratoire croise les 58 cartes secrètes avec le ciel natal, les transits exacts du tirage, l’Ascendant, le Milieu du Ciel, les maisons astrologiques et les fenêtres d’action calculées dans les 120 jours suivant le tirage.</p>
   <form id="form" class="card">
     <div class="section-title">Empreinte de naissance</div>
     <div class="identity">
@@ -39,7 +40,21 @@
     <div class="divider"></div>
     <div class="section-title">Tirage</div>
     <label for="theme">Thème du tirage</label>
-    <select id="theme"><option>amour</option><option>travail</option><option>finances</option><option>energie</option><option>direction de vie</option><option>projet</option></select>
+    <select id="theme">
+      <option value="amour">amour</option>
+      <option value="travail">travail</option>
+      <option value="finances">finances</option>
+      <option value="energie">énergie</option>
+      <option value="direction de vie">direction de vie</option>
+      <option value="projet">projet</option>
+      <option value="autre">autre — question personnelle</option>
+    </select>
+    <div id="customThemeWrap" class="custom-theme">
+      <label for="customTheme">Votre sujet personnel</label>
+      <textarea id="customTheme" maxlength="120" placeholder="Ex. Dois-je accepter cette proposition malgré mon hésitation actuelle ?"></textarea>
+      <div class="hint">Une phrase courte et précise suffit. CHRONOSPHERE la prendra comme axe principal du tirage.</div>
+      <div id="customCounter" class="counter">0 / 120</div>
+    </div>
     <div class="nums">
       <div><small>Carte principale</small><input id="n1" type="number" min="1" max="58" required placeholder="1–58"></div>
       <div><small>Résonance I</small><input id="n2" type="number" min="1" max="58" required placeholder="1–58"></div>
@@ -58,7 +73,10 @@
 <script>
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const form=document.getElementById('form'),go=document.getElementById('go'),err=document.getElementById('err'),results=document.getElementById('results');
-form.addEventListener('submit',async e=>{e.preventDefault();err.textContent='';results.style.display='none';const numbers=['n1','n2','n3'].map(id=>parseInt(document.getElementById(id).value,10));if(new Set(numbers).size!==3){err.textContent='Choisissez trois nombres différents.';return}const profile={fullName:document.getElementById('fullName').value,birthDate:document.getElementById('birthDate').value,birthTime:document.getElementById('birthTime').value,birthPlace:document.getElementById('birthPlace').value};go.disabled=true;go.textContent='Calcul du ciel, des maisons et lecture…';try{const r=await fetch('/api/oracle-interpret',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme:document.getElementById('theme').value,numbers,profile})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||'Erreur moteur');document.getElementById('context').innerHTML=`<strong>${esc(d.profile.fullName)}</strong> · naissance ${esc(d.profile.birthDate)} à ${esc(d.profile.birthTime)}<br>${esc(d.sky.resolvedBirthPlace)} · ${esc(d.sky.timeZone)}<br>Ascendant <strong>${esc(d.sky.ascendant)}</strong> · MC ${esc(d.sky.mc)} · maisons ${esc(d.sky.houseSystem)}`;document.getElementById('drawn').innerHTML=d.cards.map((c,i)=>`<article><span>${i===0?'FRÉQUENCE PRINCIPALE':'RÉSONANCE '+i} · N°${String(c.number).padStart(2,'0')}</span><b>${esc(c.name)}</b><span>${esc(c.block)} · ${esc(c.density)}${c.astre?' · '+esc(c.astre):''}</span></article>`).join('');document.getElementById('reading').textContent=d.interpretation;document.getElementById('act').innerHTML=`<strong>Acte de réalignement</strong><div style="margin-top:10px;line-height:1.6">Geste : ${esc(d.cards[0].gesture)}</div><em>${esc(d.cards[0].decree)}</em>`;results.style.display='block';results.scrollIntoView({behavior:'smooth',block:'start'});}catch(x){err.textContent=x.message||'Erreur';}finally{go.disabled=false;go.textContent='Ouvrir ma ligne de temps →';}});
+const themeSelect=document.getElementById('theme'),customThemeWrap=document.getElementById('customThemeWrap'),customTheme=document.getElementById('customTheme'),customCounter=document.getElementById('customCounter');
+function syncCustomTheme(){const isOther=themeSelect.value==='autre';customThemeWrap.classList.toggle('visible',isOther);customTheme.required=isOther;if(!isOther){customTheme.value='';customCounter.textContent='0 / 120'}}
+themeSelect.addEventListener('change',syncCustomTheme);customTheme.addEventListener('input',()=>{customCounter.textContent=`${customTheme.value.length} / 120`});syncCustomTheme();
+form.addEventListener('submit',async e=>{e.preventDefault();err.textContent='';results.style.display='none';const numbers=['n1','n2','n3'].map(id=>parseInt(document.getElementById(id).value,10));if(new Set(numbers).size!==3){err.textContent='Choisissez trois nombres différents.';return}let theme=themeSelect.value;if(theme==='autre'){theme=customTheme.value.trim();if(theme.length<3){err.textContent='Écrivez votre sujet personnel en une phrase courte.';return}}const profile={fullName:document.getElementById('fullName').value,birthDate:document.getElementById('birthDate').value,birthTime:document.getElementById('birthTime').value,birthPlace:document.getElementById('birthPlace').value};go.disabled=true;go.textContent='Calcul du ciel, des fenêtres et lecture…';try{const r=await fetch('/api/oracle-interpret',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme,numbers,profile})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||d.error||'Erreur moteur');document.getElementById('context').innerHTML=`<strong>${esc(d.profile.fullName)}</strong> · naissance ${esc(d.profile.birthDate)} à ${esc(d.profile.birthTime)}<br>${esc(d.sky.resolvedBirthPlace)} · ${esc(d.sky.timeZone)}<br>Ascendant <strong>${esc(d.sky.ascendant)}</strong> · MC ${esc(d.sky.mc)} · maisons ${esc(d.sky.houseSystem)}`;document.getElementById('drawn').innerHTML=d.cards.map((c,i)=>`<article><span>${i===0?'FRÉQUENCE PRINCIPALE':'RÉSONANCE '+i} · N°${String(c.number).padStart(2,'0')}</span><b>${esc(c.name)}</b><span>${esc(c.block)} · ${esc(c.density)}${c.astre?' · '+esc(c.astre):''}</span></article>`).join('');document.getElementById('reading').textContent=d.interpretation;document.getElementById('act').innerHTML=`<strong>Acte de réalignement</strong><div style="margin-top:10px;line-height:1.6">Geste : ${esc(d.cards[0].gesture)}</div><em>${esc(d.cards[0].decree)}</em>`;results.style.display='block';results.scrollIntoView({behavior:'smooth',block:'start'});}catch(x){err.textContent=x.message||'Erreur';}finally{go.disabled=false;go.textContent='Ouvrir ma ligne de temps →';}});
 </script>
 </body>
 </html>

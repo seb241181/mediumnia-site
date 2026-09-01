@@ -12,10 +12,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@photostructure/tz-lookup": "^11.6.1",
     "@supabase/supabase-js": "^2.112.3",
     "astronomy-engine": "^2.1.19",
     "free-human-design": "^1.0.1",
-    "geo-tz": "^8.1.8",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
@@ -26,7 +26,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
     "eslint": "^10.3.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-hooks": "^0.4.19",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^17.6.0",
     "postcss": "^8.5.14",

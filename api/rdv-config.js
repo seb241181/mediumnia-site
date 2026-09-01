@@ -22,6 +22,7 @@
  * Endpoint public — aucune donnée sensible (tokens, emails pro, etc.) n'est exposée.
  */
 import { isSupabaseConfigured, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
+import { handlePayPalSandbox } from '../lib/paypalSandbox.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -36,6 +37,11 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
+
+  const paypalSandboxAction = req.query?.paypalSandboxAction
+  if (paypalSandboxAction) {
+    return handlePayPalSandbox(req, res, paypalSandboxAction)
+  }
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })

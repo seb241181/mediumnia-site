@@ -22,7 +22,7 @@
  * Endpoint public — aucune donnée sensible (tokens, emails pro, etc.) n'est exposée.
  */
 import { isSupabaseConfigured, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
-import { handlePayPalSandbox } from '../lib/paypalSandbox.js'
+import { handlePayPalSandbox, handlePayPalCheckout } from '../lib/paypalSandbox.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -41,6 +41,11 @@ export default async function handler(req, res) {
   const paypalSandboxAction = req.query?.paypalSandboxAction
   if (paypalSandboxAction) {
     return handlePayPalSandbox(req, res, paypalSandboxAction)
+  }
+
+  const paypalAction = req.query?.paypalAction
+  if (paypalAction) {
+    return handlePayPalCheckout(req, res, paypalAction)
   }
 
   if (req.method !== 'GET') {

@@ -13,6 +13,7 @@ import ReseauJoindre from './components/ReseauJoindre'
 import RdvDashboard from './components/rdv/RdvDashboard'
 import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
+import ChronospherePage from './components/ChronospherePage'
 import SiteGuardian from './components/SiteGuardian'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
@@ -114,7 +115,7 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -162,6 +163,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenRe
                 Assistants IA métier, mémoire professionnelle, aide à la communication, rendez-vous et automatisations — des outils pensés pour les professionnels de l'accompagnement.
               </UniverseCard>
             </div>
+            <UniverseCard icon="◎" eyebrow="CHRONOSPHERE 999" title="Oracle des Lignes de Temps" action="Explorer ma ligne de temps" onClick={onOpenChronosphere}>
+              Éclairez la dynamique présente et les fenêtres qui s'ouvrent devant vous. Une expérience numérique Mediumia distincte de l'Oracle physique.
+            </UniverseCard>
           </div>
         </section>
 
@@ -194,6 +198,7 @@ function pathToView(p) {
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
     : p.startsWith('/formation') ? 'formation'
+    : p.startsWith('/chronosphere') ? 'chronosphere'
     : p.startsWith('/oracle') ? 'oracle'
     : p.startsWith('/reseau/rejoindre') ? 'reseau-form'
     : p.startsWith('/reseau') ? 'reseau-dir'
@@ -217,6 +222,7 @@ export default function App() {
   const openPro        = () => nav('/pro',              'pro')
   const openFormation  = () => nav('/formation',        'formation')
   const openOracle     = () => nav('/oracle',           'oracle')
+  const openChronosphere = () => nav('/chronosphere',  'chronosphere')
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
@@ -233,7 +239,7 @@ export default function App() {
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
+  if (window.location.pathname === PAYPAL_TEST_PATH) return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
   if (view === 'mentions')       return <><MentionsLegales onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'confidentialite') return <><PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cgv-oracle')     return <><CgvOracle onBack={backHome} onNavigate={legalNav} />{guardian}</>
@@ -241,10 +247,11 @@ export default function App() {
   if (view === 'pro')           return <><ProWaitlistPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
 }

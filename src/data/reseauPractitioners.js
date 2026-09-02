@@ -5,7 +5,7 @@ export const reseauPractitioners = [
     role: 'Psychopraticienne',
     city: 'Rubrouck',
     audience: 'Adultes & adolescents',
-    portrait: 'https://raw.githubusercontent.com/seb241181/mediumnia-site/7ad700d9c507c83a5c8e579b17a12a4401c69898/public/images/reseau/amandine-pouwels.jpg',
+    portrait: '/images/reseau/amandine-pouwels.jpg',
     portraitAlt: 'Portrait d’Amandine Pouwels, psychopraticienne à Rubrouck',
     membership: 'Membre de l’AFMASP',
     introduction: "Spécialisée dans l’accompagnement du deuil, Amandine reçoit les adultes et les adolescents qui traversent une difficulté, une période de questionnement ou une étape de vie.",

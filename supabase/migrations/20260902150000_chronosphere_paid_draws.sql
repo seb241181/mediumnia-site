@@ -7,12 +7,12 @@ create table if not exists chronosphere_paid_draws (
   id uuid primary key default gen_random_uuid(),
   draw_token_hash text not null,
   paypal_order_id text not null,
-  paypal_capture_id text not null,
+  paypal_capture_id text,
   paypal_env text not null default 'sandbox',
   amount_cents integer not null,
   currency text not null default 'EUR',
-  status text not null default 'ready'
-    check (status in ('ready', 'processing', 'completed')),
+  status text not null default 'payment_pending'
+    check (status in ('payment_pending', 'ready', 'processing', 'completed')),
   consent_version text not null,
   consent_accepted_at timestamptz not null,
   request_hash text,
@@ -32,7 +32,8 @@ alter table chronosphere_paid_draws enable row level security;
 
 -- Atomic draw-token consumption.
 -- Returns { allowed, cached, draw_id, result_json, reason }.
--- SELECT … FOR UPDATE prevents two concurrent requests from both
+-- A token in payment_pending is NEVER accepted.
+-- SELECT ... FOR UPDATE prevents two concurrent requests from both
 -- transitioning the same row out of 'ready'.
 create or replace function consume_chronosphere_draw_token(
   p_token_hash text,
@@ -55,6 +56,10 @@ begin
 
   if not found then
     return jsonb_build_object('allowed', false, 'reason', 'invalid_token');
+  end if;
+
+  if v_draw.status = 'payment_pending' then
+    return jsonb_build_object('allowed', false, 'reason', 'payment_pending');
   end if;
 
   if v_draw.status = 'completed' and v_draw.request_hash = p_request_hash then
@@ -85,6 +90,11 @@ begin
 end;
 $$;
 
+revoke execute on function consume_chronosphere_draw_token(text, text, integer)
+  from public, anon, authenticated;
+grant execute on function consume_chronosphere_draw_token(text, text, integer)
+  to service_role;
+
 -- Mark a draw as completed and store the cached result.
 create or replace function complete_chronosphere_draw(
   p_draw_id uuid,
@@ -107,3 +117,8 @@ begin
   return found;
 end;
 $$;
+
+revoke execute on function complete_chronosphere_draw(uuid, jsonb)
+  from public, anon, authenticated;
+grant execute on function complete_chronosphere_draw(uuid, jsonb)
+  to service_role;

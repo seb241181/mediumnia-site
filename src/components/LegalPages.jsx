@@ -179,6 +179,30 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
         </p>
       </Section>
 
+      <Section title="Données collectées — Candidature Mediumia Réseau">
+        <p>
+          Le formulaire de candidature au réseau de praticiens Mediumia collecte les données suivantes :
+          prénom, nom, nom professionnel ou enseigne, adresse email professionnelle, téléphone, ville, département,
+          disponibilité pour des consultations à distance, site internet, réseau social principal, activité principale,
+          spécialités, années de pratique, numéro SIRET, description de la pratique, approche de l'accompagnement,
+          public concerné et motivation.
+        </p>
+        <p>
+          Finalité : étude de la candidature et, en cas d'admission, préparation de la fiche de référencement du praticien
+          au sein du réseau Mediumia.
+        </p>
+        <p>
+          Ces données sont stockées dans Supabase. L'accès est limité à Mediumia et à ses prestataires techniques nécessaires.
+          Les données sont conservées pendant la durée nécessaire à l'étude de la candidature puis, en cas d'admission,
+          à la gestion de la relation professionnelle.
+        </p>
+        <p>
+          Base légale : consentement fourni via le formulaire de candidature.
+          Vous pouvez exercer vos droits d'accès, de rectification et de suppression en écrivant à{' '}
+          <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline">contact@mediumia.fr</a>.
+        </p>
+      </Section>
+
       <Section title="Données collectées — Le Gardien de MediumIA">
         <p>
           Les messages échangés avec Le Gardien (assistant IA public du site) sont transmis à OpenAI pour générer la réponse.

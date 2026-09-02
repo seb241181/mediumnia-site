@@ -7,6 +7,8 @@ export const reseauPractitioners = [
     audience: 'Adultes & adolescents',
     portrait: '/images/reseau/amandine-pouwels.jpg',
     portraitAlt: 'Portrait d’Amandine Pouwels, psychopraticienne à Rubrouck',
+    founder: true,
+    founderNumber: 1,
     membership: 'Membre de l’AFMASP',
     introduction: "Spécialisée dans l’accompagnement du deuil, Amandine reçoit les adultes et les adolescents qui traversent une difficulté, une période de questionnement ou une étape de vie.",
     approach: "L’accompagnement peut répondre à un besoin ponctuel — être écouté, soutenu ou y voir plus clair — ou s’inscrire dans un travail thérapeutique sur plusieurs séances, selon les besoins et le cheminement de chacun.",

@@ -91,9 +91,15 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
                     </div>
 
                     <div className="p-7 md:p-9 flex flex-col">
-                      <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
-                        Membre du réseau MediumIA
-                      </p>
+                      {practitioner.founder ? (
+                        <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
+                          Membre Fondateur Mediumia — N°{String(practitioner.founderNumber).padStart(3, '0')}
+                        </p>
+                      ) : (
+                        <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
+                          Membre du réseau Mediumia
+                        </p>
+                      )}
                       <h2 className="font-georgia text-3xl md:text-4xl font-medium leading-tight mb-2">
                         {practitioner.name}
                       </h2>

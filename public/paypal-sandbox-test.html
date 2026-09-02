@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediumIA — Test PayPal Sandbox</title>
+  <style>
+    :root { color-scheme: light; font-family: Georgia, 'Times New Roman', serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: #f7f1e7; color: #1a1535; display: grid; place-items: center; padding: 24px; }
+    main { width: min(620px, 100%); background: rgba(255,255,255,.78); border: 1px solid rgba(183,145,63,.35); border-radius: 24px; padding: 32px; box-shadow: 0 18px 60px rgba(26,21,53,.10); }
+    .badge { display: inline-block; padding: 7px 11px; border-radius: 999px; background: #1a1535; color: #d8b567; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+    h1 { font-size: clamp(28px, 5vw, 42px); margin: 18px 0 10px; font-weight: 500; }
+    p { line-height: 1.65; }
+    .price { font-size: 34px; margin: 20px 0 4px; }
+    .muted { color: #716b7c; font-size: 14px; }
+    #paypal-button-container { margin-top: 26px; min-height: 48px; }
+    #status { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: rgba(26,21,53,.05); font-family: system-ui, sans-serif; font-size: 14px; white-space: pre-wrap; }
+    .success { background: rgba(29,128,74,.10) !important; }
+    .error { background: rgba(180,45,45,.10) !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge">SANDBOX — AUCUN ARGENT RÉEL</span>
+    <h1>Test PayPal + accès élève</h1>
+    <p>Ce test valide le circuit complet : paiement fictif PayPal, vérification côté serveur et création automatique d’un accès MediumIA de 365 jours pour le compte acheteur Sandbox.</p>
+    <div class="price">1,00 € fictif</div>
+    <div class="muted">Utilisez uniquement un compte acheteur Sandbox PayPal. Aucun moyen de paiement réel n’est débité.</div>
+    <div id="paypal-button-container"></div>
+    <div id="status">Chargement de PayPal Sandbox…</div>
+  </main>
+
+  <script>
+    const statusBox = document.getElementById('status')
+
+    function setStatus(message, type = '') {
+      statusBox.textContent = message
+      statusBox.className = type
+    }
+
+    async function jsonFetch(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`)
+      return data
+    }
+
+    function loadPayPal(clientId) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons&enable-funding=paylater`
+        script.onload = resolve
+        script.onerror = () => reject(new Error('paypal_sdk_load_failed'))
+        document.head.appendChild(script)
+      })
+    }
+
+    async function boot() {
+      try {
+        const { clientId } = await jsonFetch('/api/rdv-config?paypalSandboxAction=config')
+        await loadPayPal(clientId)
+
+        if (!window.paypal?.Buttons) throw new Error('paypal_buttons_unavailable')
+
+        setStatus('PayPal Sandbox prêt. Lancez le paiement fictif pour tester aussi les 365 jours d’accès.')
+
+        await window.paypal.Buttons({
+          createOrder: async () => {
+            setStatus('Création de la commande Sandbox…')
+            const order = await jsonFetch('/api/rdv-config?paypalSandboxAction=create', { method: 'POST', body: '{}' })
+            return order.id
+          },
+          onApprove: async (data) => {
+            setStatus('Paiement approuvé. Capture et création de l’accès élève en cours…')
+            const result = await jsonFetch('/api/rdv-config?paypalSandboxAction=capture', {
+              method: 'POST',
+              body: JSON.stringify({ orderId: data.orderID }),
+            })
+            const expires = result.access?.accessExpiresAt
+              ? new Date(result.access.accessExpiresAt).toLocaleDateString('fr-FR')
+              : 'date non retournée'
+            setStatus(`✅ TEST COMPLET RÉUSSI\nCommande : ${result.orderId}\nStatut PayPal : ${result.status}\nMontant : ${result.amount?.value || '1.00'} ${result.amount?.currency_code || 'EUR'}\nAccès élève : ${result.access?.status || 'inconnu'}\nExpiration : ${expires}\n\nLe paiement est fictif, mais l’accès de test a bien été provisionné dans MediumIA.`, 'success')
+          },
+          onCancel: () => setStatus('Test annulé. Aucun paiement Sandbox capturé.'),
+          onError: (error) => {
+            console.error('PayPal Sandbox error', error)
+            setStatus('❌ Le test PayPal a échoué. Notez simplement le message affiché ici, sans partager aucun identifiant secret.', 'error')
+          },
+        }).render('#paypal-button-container')
+      } catch (error) {
+        console.error(error)
+        setStatus(`❌ Impossible de démarrer le test Sandbox : ${error.message}`, 'error')
+      }
+    }
+
+    boot()
+  </script>
+</body>
+</html>

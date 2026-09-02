@@ -11,6 +11,7 @@ export default {
       },
       fontFamily: {
         georgia: ['Georgia', 'Times New Roman', 'serif'],
+        bodoni: ['"Bodoni Moda"', 'Didot', 'Georgia', 'serif'],
       },
     },
   },

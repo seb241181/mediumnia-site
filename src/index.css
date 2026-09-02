@@ -3,8 +3,78 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body { background-color: #FAFAF7; color: #1A1535; font-family: Georgia, 'Times New Roman', serif; -webkit-font-smoothing: antialiased; }
+html { scroll-behavior: smooth; width: 100%; max-width: 100%; overflow-x: hidden; }
+body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  background-color: #FAFAF7;
+  color: #1A1535;
+  font-family: Georgia, 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+}
+#root { width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden; }
+img, video, svg, canvas { max-width: 100%; }
+button, a, input, select, textarea { min-width: 0; }
+
+/* Le header public gardait le logo + deux espaces côte à côte avec des
+   dimensions desktop. Sur les petits écrans cela pouvait élargir tout le
+   document et obliger à dézoomer. On conserve les trois accès en les
+   compactant uniquement sur mobile. */
+@media (max-width: 767px) {
+  #top > header > div {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  #top > header > div > a[aria-label] {
+    gap: 0.4rem !important;
+    min-width: 0;
+  }
+
+  #top > header > div > a[aria-label] img {
+    height: 2rem !important;
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  #top > header > div > a[aria-label] span {
+    font-size: 0.72rem !important;
+    letter-spacing: 0.12em !important;
+    white-space: nowrap;
+  }
+
+  #top > header > div > div:last-child {
+    min-width: 0;
+    gap: 0.35rem !important;
+  }
+
+  #top > header > div > div:last-child > a,
+  #top > header > div > div:last-child > button {
+    padding: 0.65rem 0.55rem !important;
+    font-size: 0.625rem !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 360px) {
+  #top > header > div > a[aria-label] span {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  #top > header > div > div:last-child > a,
+  #top > header > div > div:last-child > button {
+    padding-left: 0.42rem !important;
+    padding-right: 0.42rem !important;
+    font-size: 0.58rem !important;
+  }
+}
+
 @layer utilities {
   .hero-fade-in { animation: heroFadeIn 1s ease both; }
   @keyframes heroFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }

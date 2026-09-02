@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="mia-logo-title mia-logo-desc">
+  <title id="mia-logo-title">MediumIA</title>
+  <desc id="mia-logo-desc">Logo MediumIA : halo solaire doré rayonnant surmonté d'étoiles à quatre branches, nom MEDIUMIA en bleu nuit et signature « Accompagnement à la Médiumnité Consciente ».</desc>
+
+  <!-- Halo solaire : demi-cercle + rayons fins -->
+  <g fill="none" stroke="#C19A3A" stroke-linecap="round">
+    <path d="M450 380 A150 150 0 0 1 750 380" stroke-width="6"/>
+    <g stroke-width="5">
+      <line x1="600" y1="215" x2="600" y2="55"/>
+      <line x1="661.9" y1="227.1" x2="718.1" y2="91"/>
+      <line x1="538.1" y1="227.1" x2="481.9" y2="91"/>
+      <line x1="716.7" y1="263.3" x2="812.1" y2="167.9"/>
+      <line x1="483.3" y1="263.3" x2="387.9" y2="167.9"/>
+      <line x1="753" y1="318.1" x2="864.2" y2="273.1"/>
+      <line x1="447" y1="318.1" x2="335.8" y2="273.1"/>
+    </g>
+  </g>
+
+  <!-- Étoiles à quatre branches -->
+  <g fill="#C19A3A">
+    <path d="M600 11 L607.2 27.8 L624 35 L607.2 42.2 L600 59 L592.8 42.2 L576 35 L592.8 27.8 Z"/>
+    <path d="M718 75 L722.8 86.2 L734 91 L722.8 95.8 L718 107 L713.2 95.8 L702 91 L713.2 86.2 Z"/>
+    <path d="M482 75 L486.8 86.2 L498 91 L486.8 95.8 L482 107 L477.2 95.8 L466 91 L477.2 86.2 Z"/>
+    <path d="M812 152 L816.8 163.2 L828 168 L816.8 172.8 L812 184 L807.2 172.8 L796 168 L807.2 163.2 Z"/>
+    <path d="M388 152 L392.8 163.2 L404 168 L392.8 172.8 L388 184 L383.2 172.8 L372 168 L383.2 163.2 Z"/>
+    <path d="M864 257 L868.8 268.2 L880 273 L868.8 277.8 L864 289 L859.2 277.8 L848 273 L859.2 268.2 Z"/>
+    <path d="M336 257 L340.8 268.2 L352 273 L340.8 277.8 L336 289 L331.2 277.8 L320 273 L331.2 268.2 Z"/>
+  </g>
+
+  <!-- Nom -->
+  <text x="600" y="585" text-anchor="middle" fill="#17233F" font-family="Georgia, 'Times New Roman', serif" font-size="118" letter-spacing="30">MEDIUMIA</text>
+
+  <!-- Filet doré + étoile centrale -->
+  <g stroke="#C19A3A" stroke-width="2">
+    <line x1="320" y1="635" x2="560" y2="635"/>
+    <line x1="640" y1="635" x2="880" y2="635"/>
+  </g>
+  <path fill="#C19A3A" d="M600 621 L604.2 630.8 L614 635 L604.2 639.2 L600 649 L595.8 639.2 L586 635 L595.8 630.8 Z"/>
+
+  <!-- Signature -->
+  <text x="600" y="712" text-anchor="middle" fill="#17233F" font-family="Georgia, 'Times New Roman', serif" font-size="40" font-style="italic" letter-spacing="3">Accompagnement à la Médiumnité Consciente</text>
+</svg>

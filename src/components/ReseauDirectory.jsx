@@ -4,6 +4,14 @@ import { reseauPractitioners } from '../data/reseauPractitioners'
 
 const filters = ['Tous', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
 
+function withPreviewShareToken(src) {
+  if (typeof window === 'undefined' || !src?.startsWith('/')) return src
+  const token = new URLSearchParams(window.location.search).get('_vercel_share')
+  if (!token) return src
+  const separator = src.includes('?') ? '&' : '?'
+  return `${src}${separator}_vercel_share=${encodeURIComponent(token)}`
+}
+
 export default function ReseauDirectory({ onBack, onNavigate }) {
   const [activeFilter, setActiveFilter] = useState('Tous')
 
@@ -76,7 +84,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
                   <div className="grid md:grid-cols-[280px_1fr]">
                     <div className="relative min-h-[300px] md:min-h-full bg-deep/5">
                       <img
-                        src={practitioner.portrait}
+                        src={withPreviewShareToken(practitioner.portrait)}
                         alt={practitioner.portraitAlt}
                         className="absolute inset-0 w-full h-full object-cover object-center"
                       />

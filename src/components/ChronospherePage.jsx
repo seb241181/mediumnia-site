@@ -198,13 +198,20 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   const [paypalConfig, setPaypalConfig] = useState(null)
   const [paymentStatus, setPaymentStatus] = useState('loading')
   const [paymentMessage, setPaymentMessage] = useState('')
-  const [drawToken, setDrawToken] = useState(() => {
-    try { return sessionStorage.getItem(SESSION_KEY) || null } catch { return null }
+  const [pendingPayment, setPendingPayment] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY)
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed.orderId === 'string' && typeof parsed.drawToken === 'string') return parsed
+      return null
+    } catch { return null }
   })
+  const [drawToken, setDrawToken] = useState(null)
   const [consentAccepted, setConsentAccepted] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const paypalContainerRef = useRef(null)
-  const drawTokenRef = useRef(drawToken)
+  const drawTokenRef = useRef(pendingPayment?.drawToken || null)
   const launchRef = useRef(null)
 
   useEffect(() => { drawTokenRef.current = drawToken }, [drawToken])
@@ -243,6 +250,18 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     return null
   }
 
+  function storePendingPayment(orderId, token) {
+    const entry = { orderId, drawToken: token }
+    setPendingPayment(entry)
+    drawTokenRef.current = token
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(entry)) } catch {}
+  }
+
+  function clearPendingPayment() {
+    setPendingPayment(null)
+    try { sessionStorage.removeItem(SESSION_KEY) } catch {}
+  }
+
   function buildPayload(token) {
     const ids = numbers.map((v) => Number.parseInt(v, 10))
     return {
@@ -273,15 +292,14 @@ export default function ChronospherePage({ onBack, onNavigate }) {
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
         if (data.error === 'draw_token_payment_pending') {
-          try { sessionStorage.removeItem(SESSION_KEY) } catch {}
           setDrawToken(null)
           drawTokenRef.current = null
-          throw new Error('Le paiement n\'a pas encore été finalisé. Veuillez réessayer.')
+          throw new Error('Le paiement n\'a pas encore été finalisé. Cliquez sur « Vérifier mon paiement » pour reprendre.')
         }
         throw new Error(data.message || data.error || 'Le moteur est momentanément indisponible.')
       }
       setResult(data)
-      try { sessionStorage.removeItem(SESSION_KEY) } catch {}
+      clearPendingPayment()
       requestAnimationFrame(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
@@ -314,26 +332,35 @@ export default function ChronospherePage({ onBack, onNavigate }) {
             })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || !data.id || !data.drawToken) throw new Error(data.error || 'paypal_create_order_failed')
-            drawTokenRef.current = data.drawToken
-            try { sessionStorage.setItem(SESSION_KEY, data.drawToken) } catch {}
+            storePendingPayment(data.id, data.drawToken)
             return data.id
           },
           onApprove: async (data) => {
             setPaymentMessage('Paiement en cours de validation...')
-            const res = await fetch('/api/rdv-config?chronospherePayPalAction=capture', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: data.orderID }),
-            })
-            const captureResult = await res.json().catch(() => ({}))
-            if (!res.ok) throw new Error(captureResult.error || 'capture_failed')
-            const token = drawTokenRef.current
-            setDrawToken(token)
-            setPaymentMessage('')
-            if (node) node.innerHTML = ''
-            if (token && launchRef.current) launchRef.current(token)
+            try {
+              const res = await fetch('/api/rdv-config?chronospherePayPalAction=capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: data.orderID }),
+              })
+              const captureResult = await res.json().catch(() => ({}))
+              if (!res.ok) throw new Error(captureResult.error || 'capture_failed')
+              const token = drawTokenRef.current
+              setDrawToken(token)
+              setPaymentMessage('')
+              if (node) node.innerHTML = ''
+              if (token && launchRef.current) launchRef.current(token)
+            } catch {
+              setPaymentMessage('')
+              setShowPayment(false)
+              setError('La validation du paiement a échoué. Cliquez sur « Vérifier mon paiement » pour réessayer.')
+            }
           },
-          onCancel: () => setPaymentMessage('Paiement annulé.'),
+          onCancel: () => {
+            clearPendingPayment()
+            drawTokenRef.current = null
+            setPaymentMessage('Paiement annulé.')
+          },
           onError: () => setPaymentMessage('Le paiement n\'a pas abouti. Vous pouvez réessayer.'),
         }).render(node)
       })
@@ -371,6 +398,42 @@ export default function ChronospherePage({ onBack, onNavigate }) {
       return
     }
     await launchInterpretation(drawToken)
+  }
+
+  async function handleVerifyPayment() {
+    if (!pendingPayment) return
+    setError('')
+    setLoading(true)
+    setPaymentMessage('Vérification du paiement...')
+    try {
+      const res = await fetch('/api/rdv-config?chronospherePayPalAction=capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: pendingPayment.orderId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        const code = data.error || 'capture_failed'
+        const neverPaid = ['paypal_capture_failed', 'paypal_payment_invalid', 'paypal_consent_mismatch', 'paypal_amount_mismatch', 'draw_not_found']
+        if (neverPaid.includes(code)) {
+          clearPendingPayment()
+          drawTokenRef.current = null
+          setShowPayment(false)
+          throw new Error('Le paiement n\'a pas été finalisé sur PayPal. Vous pouvez relancer un nouveau paiement.')
+        }
+        throw new Error('La vérification a échoué. Vous pouvez réessayer dans quelques instants.')
+      }
+      const token = pendingPayment.drawToken
+      setDrawToken(token)
+      drawTokenRef.current = token
+      setPaymentMessage('')
+      if (token && launchRef.current) launchRef.current(token)
+    } catch (err) {
+      setError(err?.message || 'Une erreur est survenue.')
+      setPaymentMessage('')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const parts = result ? splitTendency(result.interpretation) : null
@@ -558,7 +621,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
             </div>
 
             {/* Validate-and-pay button — before payment */}
-            {!result && !showPayment && !hasToken && (
+            {!result && !showPayment && !pendingPayment && !hasToken && (
               <button
                 type="submit"
                 disabled={loading || !paypalConfig}
@@ -568,7 +631,19 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               </button>
             )}
 
-            {/* Direct submit — token available (sessionStorage recovery or post-capture retry) */}
+            {/* Verify pending payment — capture recovery */}
+            {!result && pendingPayment && !hasToken && (
+              <button
+                type="button"
+                onClick={handleVerifyPayment}
+                disabled={loading}
+                className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {loading ? 'Vérification du paiement...' : 'Vérifier mon paiement →'}
+              </button>
+            )}
+
+            {/* Direct submit — token confirmed (post-capture) */}
             {!result && hasToken && (
               <button
                 type="submit"

@@ -21,6 +21,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/chronosphere",
+      "destination": "/index.html"
+    },
+    {
       "source": "/reseau/rejoindre",
       "destination": "/index.html"
     },

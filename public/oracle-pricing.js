@@ -54,10 +54,6 @@
     return snapshot?.lineId || snapshot?.id || null
   }
 
-  function latestSnapshotForLine(lineId) {
-    return loadHistory().find(item => lineIdFor(item) === lineId) || null
-  }
-
   function planState(lineId) {
     const plan = loadPlans()[lineId]
     if (!plan) return { active: false, reason: 'none', remaining: 0, plan: null }
@@ -167,7 +163,6 @@
         if (status) status.textContent = 'Le navigateur n’a pas permis d’activer le suivi.'
         return
       }
-      pendingResumeLineId = lineId
       renderActivePlan(lineId)
       gateHistoryButtons()
     }, 120)
@@ -267,6 +262,7 @@
           setTimeout(() => {
             clickHiddenSave()
             consumeReturn(lineId)
+            pendingResumeLineId = null
           }, 320)
         }
       }

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import LegalFooter from './LegalFooter'
 
 const THEMES = [
@@ -59,6 +59,24 @@ function splitTendency(value) {
     summary,
     reading: text.slice(photoIndex).trim(),
   }
+}
+
+function loadPayPalSdk(clientId) {
+  if (window.paypal?.Buttons) return Promise.resolve()
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById('mediumia-paypal-sdk')
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true })
+      existing.addEventListener('error', () => reject(new Error('paypal_sdk_load_failed')), { once: true })
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'mediumia-paypal-sdk'
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons&enable-funding=paylater`
+    script.onload = resolve
+    script.onerror = () => reject(new Error('paypal_sdk_load_failed'))
+    document.head.appendChild(script)
+  })
 }
 
 function TimelineFrise({ timing }) {
@@ -175,6 +193,82 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   const [result, setResult] = useState(null)
   const resultsRef = useRef(null)
 
+  const [paypalConfig, setPaypalConfig] = useState(null)
+  const [paymentStatus, setPaymentStatus] = useState('loading')
+  const [paymentMessage, setPaymentMessage] = useState('')
+  const [drawToken, setDrawToken] = useState(null)
+  const [consentAccepted, setConsentAccepted] = useState(false)
+  const paypalContainerRef = useRef(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/rdv-config?chronospherePayPalAction=config', { cache: 'no-store' })
+      .then(async (res) => {
+        if (res.status === 404) return null
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || 'paypal_unavailable')
+        return data
+      })
+      .then((data) => {
+        if (cancelled) return
+        if (!data) { setPaymentStatus('disabled'); return }
+        setPaypalConfig(data)
+        setPaymentStatus('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentStatus('error')
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!paypalConfig || !consentAccepted || drawToken) return
+    let cancelled = false
+    const node = paypalContainerRef.current
+    if (!node) return
+    node.innerHTML = ''
+
+    loadPayPalSdk(paypalConfig.clientId)
+      .then(() => {
+        if (cancelled || !window.paypal?.Buttons) return
+        return window.paypal.Buttons({
+          createOrder: async () => {
+            setPaymentMessage('Création de la commande...')
+            const res = await fetch('/api/rdv-config?chronospherePayPalAction=create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ consentAccepted: true }),
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || !data.id) throw new Error(data.error || 'paypal_create_order_failed')
+            return data.id
+          },
+          onApprove: async (data) => {
+            setPaymentMessage('Paiement en cours de validation...')
+            const res = await fetch('/api/rdv-config?chronospherePayPalAction=capture', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: data.orderID }),
+            })
+            const result = await res.json().catch(() => ({}))
+            if (!res.ok || !result.drawToken) throw new Error(result.error || 'capture_failed')
+            setDrawToken(result.drawToken)
+            setPaymentStatus('paid')
+            setPaymentMessage('')
+            node.innerHTML = ''
+          },
+          onCancel: () => setPaymentMessage('Paiement annulé.'),
+          onError: () => setPaymentMessage('Le paiement n\'a pas abouti. Vous pouvez réessayer.'),
+        }).render(node)
+      })
+      .catch(() => setPaymentMessage('PayPal est momentanément indisponible.'))
+
+    return () => {
+      cancelled = true
+      if (node) node.innerHTML = ''
+    }
+  }, [paypalConfig, consentAccepted, drawToken])
+
   function updateNumber(index, raw) {
     const next = [...numbers]
     if (raw === '') {
@@ -190,6 +284,11 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     event.preventDefault()
     setError('')
     setResult(null)
+
+    if (!drawToken) {
+      setError('Le paiement est requis avant de lancer le tirage.')
+      return
+    }
 
     if (!fullName.trim() || fullName.trim().length < 2) {
       setError('Indiquez votre prénom et votre nom.')
@@ -229,6 +328,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          drawToken,
           theme: finalTheme,
           numbers: ids,
           profile: {
@@ -255,6 +355,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   }
 
   const parts = result ? splitTendency(result.interpretation) : null
+  const isPaid = paymentStatus === 'paid' && drawToken
 
   return (
     <div className="min-h-screen bg-cream text-deep">
@@ -286,157 +387,239 @@ export default function ChronospherePage({ onBack, onNavigate }) {
             CHRONOSPHERE 999
           </h1>
           <p className="mx-auto max-w-2xl font-bodoni text-lg italic leading-relaxed text-deep/80 md:text-xl">
-            « Éclairez la dynamique présente et les fenêtres qui s'ouvrent devant vous. »
+            « Éclairez la dynamique présente et les fenêtres qui s'ouvrent devant vous. »
           </p>
         </section>
 
-        {/* Form */}
+        {/* Payment + Form */}
         <section className="mx-auto max-w-3xl px-6 pb-20">
-          <form onSubmit={handleSubmit} className="rounded-3xl border-2 border-gold/25 bg-white/60 p-6 shadow-sm md:p-9">
 
-            {/* Birth profile */}
-            <p className="mb-1 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">
-              Empreinte de naissance
-            </p>
-            <p className="mb-5 font-georgia text-xs leading-relaxed text-mist">
-              Ces informations servent aux calculs astrologiques du tirage : ciel natal, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles.
-            </p>
+          {/* Payment gate */}
+          {!isPaid && !result && (
+            <div className="mb-8 rounded-3xl border-2 border-gold/25 bg-white/60 p-6 shadow-sm md:p-9">
+              <p className="mb-2 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">
+                Tirage payant
+              </p>
+              <p className="mb-5 font-georgia text-sm leading-relaxed text-deep/80">
+                Chaque tirage CHRONOSPHERE 999 comprend le calcul de votre ciel natal, vos fenêtres temporelles personnalisées et une interprétation approfondie par intelligence artificielle.
+              </p>
+              <p className="mb-6 text-center font-georgia text-2xl font-medium text-deep">
+                {paypalConfig?.amount || '5,00'} {paypalConfig?.currency || 'EUR'}
+                <span className="ml-2 text-base font-normal text-mist">TTC — tirage unique</span>
+              </p>
 
-            <div className="mb-6 grid gap-x-4 gap-y-4 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <label htmlFor="chrono-name" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
-                  Prénom et nom
-                </label>
-                <input
-                  id="chrono-name"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Prénom Nom"
-                  className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
-                />
-              </div>
-              <div>
-                <label htmlFor="chrono-bdate" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
-                  Date de naissance
-                </label>
-                <input
-                  id="chrono-bdate"
-                  type="date"
-                  required
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
-                />
-              </div>
-              <div>
-                <label htmlFor="chrono-btime" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
-                  Heure exacte
-                </label>
-                <input
-                  id="chrono-btime"
-                  type="time"
-                  required
-                  value={birthTime}
-                  onChange={(e) => setBirthTime(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label htmlFor="chrono-bplace" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
-                  Lieu de naissance
-                </label>
-                <input
-                  id="chrono-bplace"
-                  type="text"
-                  required
-                  value={birthPlace}
-                  onChange={(e) => setBirthPlace(e.target.value)}
-                  placeholder="Ex. Dunkerque, France"
-                  className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
-                />
-                <p className="mt-1.5 font-georgia text-xs leading-relaxed text-mist">
-                  Indiquez la ville et le pays. Le lieu permet de déterminer les coordonnées et le fuseau horaire historique.
-                </p>
-              </div>
+              {paypalConfig?.env === 'sandbox' && (
+                <div className="mb-5 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-center">
+                  <p className="font-georgia text-xs font-medium text-deep/70">
+                    Sandbox — environnement de test ({paypalConfig.amount} {paypalConfig.currency})
+                  </p>
+                </div>
+              )}
+
+              {paymentStatus === 'loading' && (
+                <p className="text-center font-georgia text-sm text-mist">Chargement du paiement...</p>
+              )}
+
+              {paymentStatus === 'disabled' && (
+                <div className="text-center">
+                  <button disabled className="w-full cursor-not-allowed rounded-xl bg-deep/20 px-6 py-4 font-georgia text-base font-bold text-deep/40">
+                    Paiement bientôt disponible
+                  </button>
+                </div>
+              )}
+
+              {paymentStatus === 'error' && (
+                <p className="text-center font-georgia text-sm text-mist">Le paiement est temporairement indisponible.</p>
+              )}
+
+              {paymentStatus === 'ready' && (
+                <>
+                  <label className="mb-5 flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={consentAccepted}
+                      onChange={(e) => setConsentAccepted(e.target.checked)}
+                      className="mt-1 h-4 w-4 shrink-0 rounded border-gold/40 accent-gold"
+                    />
+                    <span className="font-georgia text-xs leading-relaxed text-deep/80">
+                      Je demande l'exécution immédiate du tirage numérique CHRONOSPHERE 999 et reconnais que ce contenu numérique personnalisé ne peut faire l'objet d'un droit de rétractation une fois le tirage généré (art. L221-28 du Code de la consommation).
+                    </span>
+                  </label>
+
+                  {consentAccepted && (
+                    <div ref={paypalContainerRef} className="min-h-[50px]" />
+                  )}
+
+                  {!consentAccepted && (
+                    <p className="text-center font-georgia text-xs text-mist">
+                      Cochez la case ci-dessus pour accéder au paiement.
+                    </p>
+                  )}
+                </>
+              )}
+
+              {paymentMessage && (
+                <p className="mt-4 text-center font-georgia text-sm text-deep/70">{paymentMessage}</p>
+              )}
             </div>
+          )}
 
-            <div className="my-6 h-px bg-gold/20" />
+          {/* Draw form — visible after payment or if result already exists */}
+          {(isPaid || result) && (
+            <form onSubmit={handleSubmit} className="rounded-3xl border-2 border-gold/25 bg-white/60 p-6 shadow-sm md:p-9">
 
-            {/* Theme */}
-            <p className="mb-4 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">Tirage</p>
+              {isPaid && !result && (
+                <div className="mb-6 rounded-xl border border-green-300 bg-green-50 px-4 py-3 text-center">
+                  <p className="font-georgia text-sm font-medium text-green-800">
+                    Paiement validé — remplissez le formulaire pour lancer votre tirage.
+                  </p>
+                </div>
+              )}
 
-            <div className="mb-5">
-              <label htmlFor="chrono-theme" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
-                Thème du tirage
-              </label>
-              <select
-                id="chrono-theme"
-                value={theme}
-                onChange={(e) => setTheme(e.target.value)}
-                className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
-              >
-                {THEMES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
+              {/* Birth profile */}
+              <p className="mb-1 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">
+                Empreinte de naissance
+              </p>
+              <p className="mb-5 font-georgia text-xs leading-relaxed text-mist">
+                Ces informations servent aux calculs astrologiques du tirage : ciel natal, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles.
+              </p>
 
-            {theme === 'autre' && (
-              <div className="mb-5">
-                <label htmlFor="chrono-custom" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
-                  Votre sujet personnel
-                </label>
-                <textarea
-                  id="chrono-custom"
-                  value={customTheme}
-                  onChange={(e) => setCustomTheme(e.target.value.slice(0, 120))}
-                  maxLength={120}
-                  rows={3}
-                  placeholder="Ex. Dois-je accepter cette proposition malgré mon hésitation actuelle ?"
-                  className="w-full resize-vertical rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base leading-relaxed text-deep outline-none focus:border-gold/60"
-                />
-                <p className="mt-1 font-georgia text-xs text-mist">
-                  Une phrase courte et précise suffit. {customTheme.length} / 120
-                </p>
-              </div>
-            )}
-
-            {/* Numbers */}
-            <div className="mb-7 grid grid-cols-3 gap-3 md:gap-5">
-              {['Carte principale', 'Résonance I', 'Résonance II'].map((label, index) => (
-                <label key={label} className="block">
-                  <span className="mb-2 block text-center font-georgia text-[10px] uppercase tracking-[0.12em] text-mist">
-                    {label}
-                  </span>
+              <div className="mb-6 grid gap-x-4 gap-y-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label htmlFor="chrono-name" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
+                    Prénom et nom
+                  </label>
                   <input
-                    type="number"
-                    min="1"
-                    max="58"
-                    value={numbers[index]}
-                    onChange={(e) => updateNumber(index, e.target.value)}
-                    placeholder="1–58"
+                    id="chrono-name"
+                    type="text"
+                    autoComplete="name"
                     required
-                    className="w-full rounded-xl border-2 border-gold/25 bg-white px-3 py-4 text-center font-georgia text-xl text-deep outline-none focus:border-gold/70"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Prénom Nom"
+                    className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
                   />
+                </div>
+                <div>
+                  <label htmlFor="chrono-bdate" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
+                    Date de naissance
+                  </label>
+                  <input
+                    id="chrono-bdate"
+                    type="date"
+                    required
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="chrono-btime" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
+                    Heure exacte
+                  </label>
+                  <input
+                    id="chrono-btime"
+                    type="time"
+                    required
+                    value={birthTime}
+                    onChange={(e) => setBirthTime(e.target.value)}
+                    className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label htmlFor="chrono-bplace" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
+                    Lieu de naissance
+                  </label>
+                  <input
+                    id="chrono-bplace"
+                    type="text"
+                    required
+                    value={birthPlace}
+                    onChange={(e) => setBirthPlace(e.target.value)}
+                    placeholder="Ex. Dunkerque, France"
+                    className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
+                  />
+                  <p className="mt-1.5 font-georgia text-xs leading-relaxed text-mist">
+                    Indiquez la ville et le pays. Le lieu permet de déterminer les coordonnées et le fuseau horaire historique.
+                  </p>
+                </div>
+              </div>
+
+              <div className="my-6 h-px bg-gold/20" />
+
+              {/* Theme */}
+              <p className="mb-4 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">Tirage</p>
+
+              <div className="mb-5">
+                <label htmlFor="chrono-theme" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
+                  Thème du tirage
                 </label>
-              ))}
-            </div>
+                <select
+                  id="chrono-theme"
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value)}
+                  className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60"
+                >
+                  {THEMES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {loading ? 'Calcul du ciel, des fenêtres et lecture…' : 'Ouvrir ma ligne de temps →'}
-            </button>
+              {theme === 'autre' && (
+                <div className="mb-5">
+                  <label htmlFor="chrono-custom" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
+                    Votre sujet personnel
+                  </label>
+                  <textarea
+                    id="chrono-custom"
+                    value={customTheme}
+                    onChange={(e) => setCustomTheme(e.target.value.slice(0, 120))}
+                    maxLength={120}
+                    rows={3}
+                    placeholder="Ex. Dois-je accepter cette proposition malgré mon hésitation actuelle ?"
+                    className="w-full resize-vertical rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base leading-relaxed text-deep outline-none focus:border-gold/60"
+                  />
+                  <p className="mt-1 font-georgia text-xs text-mist">
+                    Une phrase courte et précise suffit. {customTheme.length} / 120
+                  </p>
+                </div>
+              )}
 
-            {error && (
-              <p className="mt-4 text-center font-georgia text-sm text-red-600">{error}</p>
-            )}
-          </form>
+              {/* Numbers */}
+              <div className="mb-7 grid grid-cols-3 gap-3 md:gap-5">
+                {['Carte principale', 'Résonance I', 'Résonance II'].map((label, index) => (
+                  <label key={label} className="block">
+                    <span className="mb-2 block text-center font-georgia text-[10px] uppercase tracking-[0.12em] text-mist">
+                      {label}
+                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="58"
+                      value={numbers[index]}
+                      onChange={(e) => updateNumber(index, e.target.value)}
+                      placeholder="1–58"
+                      required
+                      className="w-full rounded-xl border-2 border-gold/25 bg-white px-3 py-4 text-center font-georgia text-xl text-deep outline-none focus:border-gold/70"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !drawToken}
+                className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {loading ? 'Calcul du ciel, des fenêtres et lecture...' : 'Ouvrir ma ligne de temps →'}
+              </button>
+
+              {error && (
+                <p className="mt-4 text-center font-georgia text-sm text-red-600">{error}</p>
+              )}
+            </form>
+          )}
 
           <p className="mt-6 text-center font-georgia text-xs leading-relaxed text-mist/70">
             Chronosphere propose une lecture symbolique et introspective.

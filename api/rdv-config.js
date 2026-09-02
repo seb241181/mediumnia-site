@@ -24,6 +24,7 @@
 import { isSupabaseConfigured, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { handlePayPalSandbox, handlePayPalCheckout } from '../lib/paypalSandbox.js'
 import { handleReseauApply } from '../lib/reseauApply.js'
+import { handleChronospherePayPal } from '../lib/chronospherePayPal.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -41,6 +42,11 @@ export default async function handler(req, res) {
 
   if (req.query?.action === 'reseau-apply') {
     return handleReseauApply(req, res)
+  }
+
+  const chronospherePayPalAction = req.query?.chronospherePayPalAction
+  if (chronospherePayPalAction) {
+    return handleChronospherePayPal(req, res, chronospherePayPalAction)
   }
 
   const paypalSandboxAction = req.query?.paypalSandboxAction

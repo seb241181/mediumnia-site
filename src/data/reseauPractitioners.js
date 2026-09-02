@@ -1,0 +1,28 @@
+export const reseauPractitioners = [
+  {
+    id: 'amandine-pouwels',
+    name: 'Amandine Pouwels',
+    role: 'Psychopraticienne',
+    city: 'Rubrouck',
+    audience: 'Adultes & adolescents',
+    portrait: '/images/reseau/amandine-pouwels.jpg',
+    portraitAlt: 'Portrait d’Amandine Pouwels, psychopraticienne à Rubrouck',
+    membership: 'Membre de l’AFMASP',
+    introduction: "Spécialisée dans l’accompagnement du deuil, Amandine reçoit les adultes et les adolescents qui traversent une difficulté, une période de questionnement ou une étape de vie.",
+    approach: "L’accompagnement peut répondre à un besoin ponctuel — être écouté, soutenu ou y voir plus clair — ou s’inscrire dans un travail thérapeutique sur plusieurs séances, selon les besoins et le cheminement de chacun.",
+    spirituality: "Sensible aux questionnements spirituels et à la dimension globale de l’être, Amandine accueille chaque personne avec bienveillance, respect et sans jugement, dans le respect de son histoire, de ses valeurs et de son propre rythme.",
+    specialties: [
+      'Deuil',
+      'Transitions de vie',
+      'Séparation',
+      'Difficultés relationnelles ou familiales',
+      'Burn-out',
+      'Perte d’emploi',
+      'Perte de repères',
+      'Estime de soi',
+      'Questionnements personnels',
+      'Accompagnement intérieur',
+    ],
+    bookingUrl: 'https://www.resalib.fr/praticien/130865-amandine-pouwels-psychopraticien-rubrouck',
+  },
+]

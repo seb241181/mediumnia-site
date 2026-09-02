@@ -1,14 +1,19 @@
+import { useMemo, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import { reseauPractitioners } from '../data/reseauPractitioners'
+
+const filters = ['Tous', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
 
 export default function ReseauDirectory({ onBack, onNavigate }) {
-  const disciplines = [
-    'Tous', 'Médiumnité', 'Guidance', 'Bien-être', 'EFT',
-    'Réflexologie', 'Naturopathie', 'Accompagnement intérieur',
-  ]
+  const [activeFilter, setActiveFilter] = useState('Tous')
+
+  const practitioners = useMemo(() => {
+    if (activeFilter === 'Tous') return reseauPractitioners
+    return reseauPractitioners.filter((practitioner) => practitioner.specialties.includes(activeFilter))
+  }, [activeFilter])
 
   return (
     <div className="min-h-screen bg-cream text-deep">
-
       <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">
@@ -21,8 +26,6 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
       </header>
 
       <main>
-
-        {/* Hero */}
         <section className="px-6 pt-16 pb-12 max-w-4xl mx-auto text-center">
           <img
             src="/images/brand/MEDIUMIA_symbol_header.png"
@@ -38,82 +41,126 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
           </h1>
           <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto">
             Découvrez des professionnels du spirituel, du bien-être et de l'accompagnement.
-            Chaque profil est étudié et validé avant publication — pour un réseau cohérent, humain et identifiable.
+            Chaque profil est étudié avant publication pour construire un réseau cohérent, humain et identifiable.
           </p>
         </section>
 
-        {/* Filtres — structure future */}
-        <section className="px-6 pb-10 max-w-6xl mx-auto">
+        <section className="px-6 pb-10 max-w-6xl mx-auto" aria-label="Filtrer les praticiens">
           <div className="flex flex-wrap gap-2 justify-center">
-            {disciplines.map((d, i) => (
+            {filters.map((filter) => (
               <button
-                key={d}
-                disabled
-                className={`font-georgia text-xs tracking-wide px-4 py-2 rounded-full border transition-colors cursor-default ${
-                  i === 0
+                key={filter}
+                type="button"
+                onClick={() => setActiveFilter(filter)}
+                aria-pressed={activeFilter === filter}
+                className={`font-georgia text-xs tracking-wide px-4 py-2 rounded-full border transition-colors ${
+                  activeFilter === filter
                     ? 'border-gold bg-gold/10 text-deep font-semibold'
-                    : 'border-gold/25 text-mist'
+                    : 'border-gold/25 text-mist hover:border-gold/60 hover:text-deep'
                 }`}
               >
-                {d}
+                {filter}
               </button>
             ))}
           </div>
         </section>
 
-        {/* État vide — réseau en constitution */}
-        <section className="px-6 pb-24 max-w-6xl mx-auto">
+        <section className="px-6 pb-20 max-w-6xl mx-auto">
+          {practitioners.length > 0 ? (
+            <div className="grid gap-6">
+              {practitioners.map((practitioner) => (
+                <article
+                  key={practitioner.id}
+                  className="max-w-4xl w-full mx-auto overflow-hidden rounded-3xl border border-gold/30 bg-white/65 shadow-sm"
+                >
+                  <div className="grid md:grid-cols-[280px_1fr]">
+                    <div className="relative min-h-[300px] md:min-h-full bg-deep/5">
+                      <img
+                        src={practitioner.portrait}
+                        alt={practitioner.portraitAlt}
+                        className="absolute inset-0 w-full h-full object-cover object-center"
+                      />
+                    </div>
 
-          {/* Aperçu de la structure future (cartes fantômes) */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-14 opacity-30 pointer-events-none select-none">
-            {[1, 2, 3].map(n => (
-              <div key={n} className="rounded-3xl border border-gold/25 bg-white/40 p-6 flex flex-col gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gold/20 shrink-0" />
-                  <div className="flex-1 space-y-2 pt-1">
-                    <div className="h-3 bg-deep/15 rounded w-3/4" />
-                    <div className="h-2.5 bg-deep/10 rounded w-1/2" />
+                    <div className="p-7 md:p-9 flex flex-col">
+                      <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
+                        Membre du réseau MediumIA
+                      </p>
+                      <h2 className="font-georgia text-3xl md:text-4xl font-medium leading-tight mb-2">
+                        {practitioner.name}
+                      </h2>
+                      <p className="font-georgia text-mist text-base mb-4">
+                        {practitioner.role} · {practitioner.city}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 mb-5">
+                        <span className="font-georgia text-[11px] rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 text-deep">
+                          {practitioner.audience}
+                        </span>
+                        <span className="font-georgia text-[11px] rounded-full border border-deep/10 bg-deep/5 px-3 py-1.5 text-mist">
+                          {practitioner.membership}
+                        </span>
+                      </div>
+
+                      <p className="font-georgia text-deep/80 leading-relaxed mb-5">
+                        {practitioner.introduction}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {practitioner.specialties.slice(0, 6).map((specialty) => (
+                          <span
+                            key={specialty}
+                            className="font-georgia text-[11px] text-mist border border-gold/20 rounded-full px-3 py-1.5"
+                          >
+                            {specialty}
+                          </span>
+                        ))}
+                      </div>
+
+                      <details className="group mb-7 rounded-2xl border border-gold/20 bg-cream/55 px-5 py-4">
+                        <summary className="font-georgia text-sm font-semibold cursor-pointer list-none flex items-center justify-between gap-4">
+                          Découvrir son approche
+                          <span className="text-gold group-open:rotate-45 transition-transform" aria-hidden="true">＋</span>
+                        </summary>
+                        <div className="pt-4 space-y-4 font-georgia text-sm text-mist leading-relaxed">
+                          <p>{practitioner.approach}</p>
+                          <p>{practitioner.spirituality}</p>
+                          <div>
+                            <p className="text-deep font-semibold mb-2">Motifs d'accompagnement</p>
+                            <p>{practitioner.specialties.join(' · ')}</p>
+                          </div>
+                        </div>
+                      </details>
+
+                      <a
+                        href={practitioner.bookingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-auto inline-flex justify-center items-center rounded-xl bg-deep text-gold font-georgia font-bold px-6 py-3.5 hover:bg-deep/90 transition-colors"
+                      >
+                        Voir ses disponibilités sur Resalib →
+                      </a>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="h-2 bg-deep/10 rounded w-full" />
-                  <div className="h-2 bg-deep/10 rounded w-5/6" />
-                  <div className="h-2 bg-deep/10 rounded w-4/6" />
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  <div className="h-5 w-16 rounded-full bg-gold/20" />
-                  <div className="h-5 w-20 rounded-full bg-gold/20" />
-                </div>
-                <div className="pt-2 border-t border-gold/15">
-                  <div className="h-7 rounded-lg bg-deep/10 w-full" />
-                </div>
-              </div>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="max-w-xl mx-auto text-center rounded-3xl border border-gold/25 bg-white/40 px-8 py-10">
+              <p className="font-georgia text-mist">Aucun profil ne correspond encore à ce filtre.</p>
+            </div>
+          )}
 
-          {/* Message principal */}
-          <div className="max-w-xl mx-auto text-center rounded-3xl border-2 border-gold/30 px-10 py-12"
-            style={{ background: 'linear-gradient(135deg,rgba(201,168,76,.07),rgba(201,168,76,.02))' }}>
-            <p className="text-gold text-4xl mb-5">◈</p>
-            <p className="font-georgia text-gold tracking-[0.22em] text-[11px] uppercase mb-4">
-              Réseau en constitution
-            </p>
-            <h2 className="font-georgia font-medium text-2xl text-deep leading-tight mb-4">
-              Les premiers profils arrivent bientôt
-            </h2>
+          <div className="max-w-xl mx-auto text-center mt-14 rounded-3xl border border-gold/20 px-8 py-8 bg-white/30">
+            <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">Réseau en développement</p>
             <p className="font-georgia text-mist leading-relaxed">
-              Le réseau MediumIA est en cours de construction. Les praticiens sélectionnés
-              seront présentés ici avec leur photo, leur activité, leur ville et une présentation
-              de leur approche, pour vous permettre de trouver l'accompagnement qui vous correspond vraiment.
+              Amandine inaugure l'annuaire MediumIA. D'autres profils sélectionnés viendront progressivement enrichir le réseau.
             </p>
           </div>
-
         </section>
-
       </main>
 
       <LegalFooter onNavigate={onNavigate} />
-
     </div>
   )
 }

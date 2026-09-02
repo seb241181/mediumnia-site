@@ -23,6 +23,7 @@
  */
 import { isSupabaseConfigured, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { handlePayPalSandbox, handlePayPalCheckout } from '../lib/paypalSandbox.js'
+import { handleReseauApply } from '../lib/reseauApply.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -37,6 +38,10 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
+
+  if (req.query?.action === 'reseau-apply') {
+    return handleReseauApply(req, res)
+  }
 
   const paypalSandboxAction = req.query?.paypalSandboxAction
   if (paypalSandboxAction) {

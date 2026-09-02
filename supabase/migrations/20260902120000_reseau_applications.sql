@@ -66,8 +66,8 @@ create table if not exists reseau_applications (
   honeypot text
 );
 
-create unique index if not exists reseau_applications_email_normalized_idx
-  on reseau_applications (email_normalized);
+create unique index if not exists reseau_applications_pending_email_idx
+  on reseau_applications (email_normalized) where status = 'pending';
 
 -- Mise à jour automatique de updated_at à chaque modification.
 create trigger reseau_applications_set_updated_at

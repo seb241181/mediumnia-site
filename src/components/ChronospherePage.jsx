@@ -225,7 +225,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
 
     setLoading(true)
     try {
-      const response = await fetch('/api/chronosphere-interpret', {
+      const response = await fetch('/api/oracle-interpret?mode=chronosphere', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -522,6 +522,13 @@ export default function ChronospherePage({ onBack, onNavigate }) {
           )}
         </section>
       </main>
+
+      <p className="mx-auto mt-4 max-w-2xl text-center font-georgia text-[11px] text-mist/50">
+        Données de localisation ©{' '}
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline hover:text-mist/70">
+          OpenStreetMap contributors
+        </a>
+      </p>
 
       <LegalFooter onNavigate={onNavigate} />
     </div>

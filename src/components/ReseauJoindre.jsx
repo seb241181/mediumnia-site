@@ -152,7 +152,7 @@ export default function ReseauJoindre({ onBack, onNavigate }) {
         _hp: form._hp,
       }
 
-      const res = await fetch('/api/reseau-apply', {
+      const res = await fetch('/api/rdv-config?action=reseau-apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -2,6 +2,7 @@
 import { createHash, createHmac } from 'node:crypto'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import { getSupabaseAdmin } from '../lib/supabaseAdmin.js'
+import { handleOracleTimeline } from '../lib/oracleTimeline.js'
 import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }
 
 const cardsById = new Map(oracleCards.map((card) => [card.id, card]))
@@ -153,6 +154,10 @@ ${interpretation}`,
 }
 
 export default async function handler(req, res) {
+  if (req.query?.mode === 'chronosphere') {
+    return handleOracleTimeline(req, res)
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }

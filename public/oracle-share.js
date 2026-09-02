@@ -4,6 +4,16 @@
   const CREAM = '#f8f5ee'
   const MIST = '#756f81'
 
+  function loadHistoryModule() {
+    if (document.querySelector('script[data-chronosphere-history]')) return
+    const script = document.createElement('script')
+    script.src = '/oracle-history.js'
+    script.dataset.chronosphereHistory = 'true'
+    document.head.appendChild(script)
+  }
+
+  loadHistoryModule()
+
   function injectStyles() {
     const style = document.createElement('style')
     style.textContent = `

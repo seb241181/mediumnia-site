@@ -190,8 +190,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
   )
 }
 
-const PAYPAL_TEST_PATH = '/test-paypal-mediumia-live-1eur-9f3b2c'
-
 function pathToView(p) {
   return p === '/rdv/annuler' ? 'rdv-cancellation'
     : p.startsWith('/rdv/') ? 'rdv-public'
@@ -239,7 +237,6 @@ export default function App() {
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 
-  if (window.location.pathname === PAYPAL_TEST_PATH) return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
   if (view === 'mentions')       return <><MentionsLegales onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'confidentialite') return <><PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cgv-oracle')     return <><CgvOracle onBack={backHome} onNavigate={legalNav} />{guardian}</>

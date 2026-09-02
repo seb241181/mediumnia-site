@@ -12,7 +12,16 @@
     document.head.appendChild(script)
   }
 
+  function loadPricingModule() {
+    if (document.querySelector('script[data-chronosphere-pricing]')) return
+    const script = document.createElement('script')
+    script.src = '/oracle-pricing.js'
+    script.dataset.chronospherePricing = 'true'
+    document.head.appendChild(script)
+  }
+
   loadHistoryModule()
+  loadPricingModule()
 
   function injectStyles() {
     const style = document.createElement('style')

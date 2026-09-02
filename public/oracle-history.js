@@ -293,6 +293,7 @@
 
   function saveLatestCheckpoint() {
     if (!latest) return
+    const wasResume = Boolean(activeResume)
     const history = loadHistory()
     const snapshot = { ...latest, id: uid(), lineId: latest.lineId || activeResume?.lineId || activeResume?.id || uid() }
     const next = [snapshot, ...history]
@@ -302,9 +303,9 @@
       if (status) status.textContent = 'Le navigateur n’a pas permis d’enregistrer ce repère.'
       return
     }
-    if (status) status.textContent = activeResume ? 'Nouvelle étape enregistrée sur cet appareil.' : 'Ligne enregistrée sur cet appareil.'
-    activeResume = snapshot
+    if (status) status.textContent = wasResume ? 'Nouvelle étape enregistrée sur cet appareil.' : 'Ligne enregistrée sur cet appareil.'
     latest = snapshot
+    activeResume = null
     renderHistory()
   }
 

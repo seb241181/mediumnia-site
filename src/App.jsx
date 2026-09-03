@@ -142,29 +142,21 @@ function FeaturedChronosphere({ onOpen }) {
           </div>
         </div>
         <div className="relative mx-auto w-full max-w-[265px] md:max-w-[310px]">
-          <div className="absolute -inset-6 rounded-full border border-gold/20" />
           <div className="absolute -inset-2 rounded-[34px] bg-gold/10 blur-2xl" />
           <div
             className="relative aspect-[3/4] overflow-hidden rounded-[28px] border border-gold/40 shadow-[0_24px_55px_rgba(0,0,0,.38)]"
             style={{ background: 'radial-gradient(circle at 50% 48%, rgba(201,168,76,.2), transparent 21%), radial-gradient(circle at 50% 42%, #242763 0%, #161943 35%, #091127 76%)' }}
           >
-            <div className="absolute inset-0 opacity-45" style={{ backgroundImage: 'radial-gradient(rgba(250,250,247,.82) 1px, transparent 1.5px)', backgroundSize: '46px 46px', backgroundPosition: '9px 17px' }} />
             <div className="absolute left-1/2 top-1/2 h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 blur-3xl" />
-            <div className="absolute left-1/2 top-1/2 h-[66%] w-[66%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/50" />
-            <div className="absolute left-1/2 top-1/2 h-[55%] w-[76%] -translate-x-1/2 -translate-y-1/2 rotate-[28deg] rounded-full border border-gold/25" />
-            <div className="absolute left-1/2 top-1/2 h-[76%] w-[48%] -translate-x-1/2 -translate-y-1/2 -rotate-[19deg] rounded-full border border-cream/20" />
-            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 300 400" aria-hidden="true">
-              <path d="M15 92 C82 140 208 126 282 72" fill="none" stroke="rgba(201,168,76,.42)" strokeWidth="1" />
-              <path d="M26 314 C91 258 218 278 286 326" fill="none" stroke="rgba(250,250,247,.25)" strokeWidth="1" strokeDasharray="3 9" />
-              <circle cx="60" cy="118" r="2.5" fill="#c9a84c" />
-              <circle cx="244" cy="128" r="2" fill="#fafaf7" />
-              <circle cx="218" cy="294" r="2.5" fill="#c9a84c" />
-            </svg>
+            <span className="absolute left-[18%] top-[20%] h-1.5 w-1.5 rounded-full bg-gold/85 shadow-[0_0_12px_rgba(201,168,76,.8)]" />
+            <span className="absolute right-[16%] top-[28%] h-1 w-1 rounded-full bg-cream/75" />
+            <span className="absolute bottom-[22%] left-[21%] h-1 w-1 rounded-full bg-cream/60" />
+            <span className="absolute bottom-[17%] right-[19%] h-1.5 w-1.5 rounded-full bg-gold/75 shadow-[0_0_12px_rgba(201,168,76,.7)]" />
             <div className="absolute inset-8 flex items-center justify-center">
               <img
                 src="/images/brand/MEDIUMIA_symbol_header.png"
                 alt="Symbole MediumIA au coeur de Chronosphere"
-                className="relative w-full max-w-[255px] object-contain drop-shadow-[0_0_24px_rgba(201,168,76,.34)]"
+                className="relative w-full max-w-[255px] object-contain brightness-110 saturate-125 drop-shadow-[0_0_24px_rgba(201,168,76,.42)]"
               />
             </div>
           </div>

@@ -15,7 +15,7 @@ import {
 } from '../lib/rdvPayPal.js'
 
 const migrationPath = new URL('../supabase/migrations/20260903110000_add_rdv_paypal_holds.sql', import.meta.url)
-const endpointPath = new URL('../api/rdv-paypal.js', import.meta.url)
+const endpointPath = new URL('../lib/rdvPayPalApiHandler.js', import.meta.url)
 
 test('un service visio instantané payable est le seul accepté', () => {
   const video = { booking_mode: 'instant', modality: ['video'], price_cents: 9000, currency: 'EUR' }

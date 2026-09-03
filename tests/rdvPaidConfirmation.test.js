@@ -22,10 +22,12 @@ test('paid confirmation shows the payment and never asks the client to pay withi
 })
 
 test('checkout UI and backend preserve the isolated sandbox flow', async () => {
-  const [ui, api, google] = await Promise.all([
+  const [ui, api, google, rdvBook, vercel] = await Promise.all([
     readFile(new URL('src/components/rdv/RdvPublic.jsx', root), 'utf8'),
-    readFile(new URL('api/rdv-paypal.js', root), 'utf8'),
+    readFile(new URL('lib/rdvPayPalApiHandler.js', root), 'utf8'),
     readFile(new URL('lib/googleCalendarEvents.js', root), 'utf8'),
+    readFile(new URL('api/rdv-book.js', root), 'utf8'),
+    readFile(new URL('vercel.json', root), 'utf8'),
   ])
   assert.match(ui, /crypto\.randomUUID\(\)/)
   assert.match(ui, /sessionStorage\.setItem/)
@@ -37,4 +39,8 @@ test('checkout UI and backend preserve the isolated sandbox flow', async () => {
   assert.match(api, /confirmation_sent_at/)
   assert.match(google, /conferenceDataVersion=1/)
   assert.match(google, /conferenceSolutionKey: \{ type: 'hangoutsMeet' \}/)
+  assert.match(rdvBook, /req\.query\?\.rdv_paypal === '1'/)
+  assert.match(rdvBook, /handleRdvPayPalApi/)
+  assert.match(vercel, /"source": "\/api\/rdv-paypal"/)
+  assert.match(vercel, /"destination": "\/api\/rdv-book\?rdv_paypal=1"/)
 })

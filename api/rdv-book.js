@@ -35,6 +35,7 @@
 import { createHmac } from 'node:crypto'
 import { decrypt, refreshGoogleToken, encrypt, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
+import { handleRdvPayPalApi } from '../lib/rdvPayPalApiHandler.js'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import { deleteBookingFromGoogleCalendar, syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 import {
@@ -527,6 +528,8 @@ async function handleBookingRequest(req, res, supabase, practitioner, service, c
 }
 
 export default async function handler(req, res) {
+  if (req.query?.rdv_paypal === '1') return handleRdvPayPalApi(req, res)
+
   res.setHeader('Cache-Control', 'no-store')
 
   if (!isSupabaseConfigured()) {

@@ -146,22 +146,26 @@ function FeaturedChronosphere({ onOpen }) {
           <div className="absolute -inset-2 rounded-[34px] bg-gold/10 blur-2xl" />
           <div
             className="relative aspect-[3/4] overflow-hidden rounded-[28px] border border-gold/40 shadow-[0_24px_55px_rgba(0,0,0,.38)]"
-            style={{ background: 'radial-gradient(circle at 50% 46%, rgba(201,168,76,.36), transparent 11%), radial-gradient(circle at 50% 46%, #283b75 0%, #171a4b 29%, #0a1128 70%)' }}
+            style={{ background: 'radial-gradient(circle at 50% 48%, rgba(201,168,76,.2), transparent 21%), radial-gradient(circle at 50% 42%, #242763 0%, #161943 35%, #091127 76%)' }}
           >
-            <div className="absolute inset-0 opacity-70" style={{ backgroundImage: 'radial-gradient(rgba(250,250,247,.85) 1px, transparent 1.5px)', backgroundSize: '36px 36px', backgroundPosition: '8px 12px' }} />
-            <div className="absolute left-1/2 top-[46%] h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/70 shadow-[0_0_35px_rgba(201,168,76,.48)]" />
-            <div className="absolute left-1/2 top-[46%] h-[29%] w-[29%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cream/45" />
-            <div className="absolute left-1/2 top-[46%] h-[16%] w-[16%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 shadow-[0_0_42px_rgba(201,168,76,.7)]" />
+            <div className="absolute inset-0 opacity-45" style={{ backgroundImage: 'radial-gradient(rgba(250,250,247,.82) 1px, transparent 1.5px)', backgroundSize: '46px 46px', backgroundPosition: '9px 17px' }} />
+            <div className="absolute left-1/2 top-1/2 h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 blur-3xl" />
+            <div className="absolute left-1/2 top-1/2 h-[66%] w-[66%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/50" />
+            <div className="absolute left-1/2 top-1/2 h-[55%] w-[76%] -translate-x-1/2 -translate-y-1/2 rotate-[28deg] rounded-full border border-gold/25" />
+            <div className="absolute left-1/2 top-1/2 h-[76%] w-[48%] -translate-x-1/2 -translate-y-1/2 -rotate-[19deg] rounded-full border border-cream/20" />
             <svg className="absolute inset-0 h-full w-full" viewBox="0 0 300 400" aria-hidden="true">
-              <path d="M-20 310 C72 252 70 176 150 184 S225 101 328 38" fill="none" stroke="rgba(201,168,76,.72)" strokeWidth="1.4" />
-              <path d="M-10 88 C65 115 91 252 166 245 S237 302 318 362" fill="none" stroke="rgba(250,250,247,.45)" strokeWidth="1" strokeDasharray="4 8" />
-              <circle cx="64" cy="260" r="3" fill="#c9a84c" />
-              <circle cx="223" cy="112" r="2.5" fill="#fafaf7" />
-              <circle cx="190" cy="282" r="2.5" fill="#c9a84c" />
+              <path d="M15 92 C82 140 208 126 282 72" fill="none" stroke="rgba(201,168,76,.42)" strokeWidth="1" />
+              <path d="M26 314 C91 258 218 278 286 326" fill="none" stroke="rgba(250,250,247,.25)" strokeWidth="1" strokeDasharray="3 9" />
+              <circle cx="60" cy="118" r="2.5" fill="#c9a84c" />
+              <circle cx="244" cy="128" r="2" fill="#fafaf7" />
+              <circle cx="218" cy="294" r="2.5" fill="#c9a84c" />
             </svg>
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-deep via-deep/70 to-transparent px-5 pb-5 pt-16">
-              <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Chronosphere 999</p>
-              <p className="mt-1 font-georgia text-sm text-cream">Cartographier l’instant, ouvrir la suite.</p>
+            <div className="absolute inset-8 flex items-center justify-center">
+              <img
+                src="/images/brand/MEDIUMIA_symbol_header.png"
+                alt="Symbole MediumIA au coeur de Chronosphere"
+                className="relative w-full max-w-[255px] object-contain drop-shadow-[0_0_24px_rgba(201,168,76,.34)]"
+              />
             </div>
           </div>
         </div>

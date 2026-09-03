@@ -79,6 +79,12 @@ function loadPayPalSdk(clientId) {
   })
 }
 
+function formatChronospherePrice(amount) {
+  const value = Number(amount)
+  if (!Number.isFinite(value)) return null
+  return `${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} € TTC`
+}
+
 function TimelineFrise({ timing }) {
   if (!timing?.primary) return null
 
@@ -449,6 +455,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
 
   const parts = result ? splitTendency(result.interpretation) : null
   const hasToken = !!drawToken
+  const formattedPrice = formatChronospherePrice(paypalConfig?.amount)
 
   return (
     <div className="min-h-screen bg-cream text-deep">
@@ -482,6 +489,14 @@ export default function ChronospherePage({ onBack, onNavigate }) {
           <p className="mx-auto max-w-2xl font-bodoni text-lg italic leading-relaxed text-deep/80 md:text-xl">
             « Éclairez la dynamique présente et les fenêtres qui s'ouvrent devant vous. »
           </p>
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-gold/40 bg-white/70 px-5 py-4 shadow-[0_10px_30px_rgba(26,21,53,.06)]">
+            <p className="font-georgia text-lg font-medium text-deep">
+              {formattedPrice ? `Prix du tirage : ${formattedPrice}` : 'Prix du tirage : chargement...'}
+            </p>
+            <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
+              Paiement unique pour un tirage complet avec envoi du compte rendu par e-mail.
+            </p>
+          </div>
         </section>
 
         {/* Form + Payment + Results */}
@@ -648,13 +663,21 @@ export default function ChronospherePage({ onBack, onNavigate }) {
 
             {/* Validate-and-pay button — before payment */}
             {!result && !showPayment && !pendingPayment && !hasToken && (
-              <button
-                type="submit"
-                disabled={loading || !paypalConfig}
-                className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                Procéder au paiement →
-              </button>
+              <>
+                <div className="mb-3 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
+                  <p className="font-georgia text-base font-medium text-deep">
+                    {formattedPrice ? `Prix du tirage : ${formattedPrice}` : 'Prix du tirage : chargement...'}
+                  </p>
+                  <p className="mt-1 font-georgia text-xs text-mist">Paiement unique avec envoi du compte rendu par e-mail.</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || !paypalConfig}
+                  className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  Procéder au paiement →
+                </button>
+              </>
             )}
 
             {/* Verify pending payment — capture recovery */}
@@ -695,7 +718,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                 Chaque tirage CHRONOSPHERE 999 comprend le calcul de votre ciel natal, vos fenêtres temporelles personnalisées et une interprétation approfondie par intelligence artificielle.
               </p>
               <p className="mb-6 text-center font-georgia text-2xl font-medium text-deep">
-                {Number(paypalConfig?.amount || 5)} €
+                {formattedPrice ? formattedPrice.replace(' TTC', '') : '...'}
                 <span className="ml-2 text-base font-normal text-mist">TTC — tirage unique</span>
               </p>
 
@@ -725,6 +748,10 @@ export default function ChronospherePage({ onBack, onNavigate }) {
 
               {paymentStatus === 'ready' && (
                 <>
+                  <div className="mb-5 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
+                    <p className="font-georgia text-base font-medium text-deep">Prix du tirage : {formattedPrice}</p>
+                    <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Paiement unique pour un tirage complet avec envoi du compte rendu par e-mail.</p>
+                  </div>
                   <label className="mb-5 flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"

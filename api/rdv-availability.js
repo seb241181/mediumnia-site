@@ -30,6 +30,7 @@
  */
 import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
+import { isActiveRdvPaymentHold } from '../lib/rdvPayPal.js'
 
 const SLUG_RE         = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 const DATE_RE         = /^\d{4}-\d{2}-\d{2}$/
@@ -299,6 +300,26 @@ export default async function handler(req, res) {
       existingBusy.push({
         start: new Date(new Date(b.starts_at).getTime() - bufBeforeMs).getTime(),
         end:   new Date(new Date(b.ends_at).getTime()   + bufAfterMs).getTime(),
+      })
+    }
+  }
+
+  // Les holds PayPal actifs protègent le créneau avant la conversion en booking.
+  // Un hold payment_captured reste bloquant jusqu'à sa réconciliation explicite.
+  const { data: activeHolds } = await supabase
+    .from('rdv_booking_holds')
+    .select('starts_at, ends_at, status, expires_at')
+    .eq('practitioner_id', practitioner.id)
+    .in('status', ['payment_pending', 'payment_capturing', 'payment_captured'])
+    .gte('starts_at', new Date(parisMidnightUTC).toISOString())
+    .lt('starts_at', new Date(parisMidnightEndUTC).toISOString())
+
+  if (activeHolds) {
+    for (const hold of activeHolds) {
+      if (!isActiveRdvPaymentHold(hold)) continue
+      existingBusy.push({
+        start: new Date(new Date(hold.starts_at).getTime() - bufBeforeMs).getTime(),
+        end:   new Date(new Date(hold.ends_at).getTime()   + bufAfterMs).getTime(),
       })
     }
   }

@@ -45,21 +45,18 @@ function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   )
 }
 
-function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, dark = false, badge }) {
-  const isDark = !!dark
-  const classes = typeof dark === 'string'
-    ? `${dark} text-cream`
-    : dark ? 'bg-deep text-cream border-deep' : 'bg-white/55 text-deep border-gold/25'
-  const buttonClasses = isDark ? 'text-gold' : 'text-deep'
+function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, badge }) {
+  const classes = 'border-gold/35 bg-white/75 text-deep shadow-[0_10px_28px_rgba(26,21,53,.06)] transition-shadow hover:shadow-[0_14px_34px_rgba(26,21,53,.1)]'
+  const buttonClasses = 'text-deep transition-colors hover:text-gold'
   return (
     <article className={`rounded-3xl border p-7 md:p-8 shadow-sm flex flex-col min-h-[300px] ${classes}`}>
       <div className="flex items-start justify-between gap-4 mb-6">
         <span className="text-gold text-3xl">{icon}</span>
-        {badge && <span className={`font-georgia text-[10px] uppercase tracking-[0.16em] rounded-full px-3 py-1 ${isDark ? 'bg-white/10 text-gold' : 'bg-deep/5 text-mist'}`}>{badge}</span>}
+        {badge && <span className="font-georgia text-[10px] uppercase tracking-[0.16em] rounded-full bg-gold/10 px-3 py-1 text-gold">{badge}</span>}
       </div>
       <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-3">{eyebrow}</p>
       <h2 className="font-georgia text-2xl md:text-3xl leading-tight mb-4 font-medium">{title}</h2>
-      <p className={`font-georgia leading-relaxed flex-1 ${dark ? 'text-cream/70' : 'text-mist'}`}>{children}</p>
+      <p className="font-georgia leading-relaxed text-mist flex-1">{children}</p>
       {href ? (
         <a href={href} target="_blank" rel="noopener noreferrer" className={`font-georgia text-sm font-bold mt-7 ${buttonClasses}`}>{action} →</a>
       ) : (
@@ -208,10 +205,10 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
             </div>
             <FeaturedChronosphere onOpen={onOpenChronosphere} />
             <div className="grid md:grid-cols-2 gap-5">
-              <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir} dark="bg-mist border-mist">
+              <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>
                 Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
               </UniverseCard>
-              <UniverseCard icon="✺" eyebrow="MediumIA Pro" title="Votre pratique, amplifiée par des outils qui vous ressemblent" action="Découvrir MediumIA Pro" onClick={onOpenPro} dark badge="Bientôt disponible">
+              <UniverseCard icon="✺" eyebrow="MediumIA Pro" title="Votre pratique, amplifiée par des outils qui vous ressemblent" action="Découvrir MediumIA Pro" onClick={onOpenPro} badge="Bientôt disponible">
                 Assistants IA métier, mémoire professionnelle, aide à la communication, rendez-vous et automatisations — des outils pensés pour les professionnels de l'accompagnement.
               </UniverseCard>
             </div>

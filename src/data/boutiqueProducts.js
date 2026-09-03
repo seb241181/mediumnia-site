@@ -65,6 +65,7 @@ export const boutiqueProducts = [
     summary: "25 modules en 4 niveaux pour développer sa médiumnité — avec un assistant IA dédié et 12 mois d'accès.",
     description: "Un accompagnement progressif né de douze ans de pratique réelle. Des fondations à la pratique accomplie.",
     highlights: ["25 modules PDF (269 pages)", "84 exercices guidés", "Assistant IA dédié", "12 mois d'accès"],
+    coverImage: '/images/brand/MEDIUMIA_logo_maitre_2026-08-16.png',
     artwork: 'formation',
     availability: 'preview',
   },

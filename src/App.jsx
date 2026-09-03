@@ -95,18 +95,27 @@ function FeaturedAccompagnement({ onOpen }) {
           Découvrir l'accompagnement →
         </button>
       </div>
-      <div className="shrink-0 grid grid-cols-2 gap-3 md:w-64">
-        {features.map(f => (
-          <div
-            key={f.label}
-            className="rounded-2xl border border-gold/20 p-4"
-            style={{ background: 'rgba(255,255,255,0.07)' }}
-          >
-            <span className="text-gold text-xl block mb-2">{f.icon}</span>
-            <p className="font-georgia text-xs text-cream font-medium leading-snug mb-1">{f.label}</p>
-            <p className="font-georgia text-[10px] leading-tight" style={{ color: 'rgba(250,250,247,0.45)' }}>{f.sub}</p>
-          </div>
-        ))}
+      <div className="shrink-0 md:w-72">
+        <div className="mb-3 overflow-hidden rounded-2xl border border-gold/30 bg-cream p-3 shadow-[0_18px_34px_rgba(0,0,0,.2)]">
+          <img
+            src="/images/brand/MEDIUMIA_logo_maitre_2026-08-16.png"
+            alt="MediumIA, accompagnement à la médiumnité consciente"
+            className="aspect-[4/3] w-full object-cover object-center"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {features.map(f => (
+            <div
+              key={f.label}
+              className="rounded-2xl border border-gold/20 p-4"
+              style={{ background: 'rgba(255,255,255,0.07)' }}
+            >
+              <span className="text-gold text-xl block mb-2">{f.icon}</span>
+              <p className="font-georgia text-xs text-cream font-medium leading-snug mb-1">{f.label}</p>
+              <p className="font-georgia text-[10px] leading-tight" style={{ color: 'rgba(250,250,247,0.45)' }}>{f.sub}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </article>
   )

@@ -1,0 +1,3 @@
+Chronosphere Preview environment reload marker — 2026-09-03.
+Purpose: trigger a branch-only Vercel Preview deployment after environment-variable updates.
+No production behavior is changed by this file.

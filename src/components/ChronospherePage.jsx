@@ -187,6 +187,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   const [birthDate, setBirthDate] = useState('')
   const [birthTime, setBirthTime] = useState('')
   const [birthPlace, setBirthPlace] = useState('')
+  const [deliveryEmail, setDeliveryEmail] = useState('')
   const [theme, setTheme] = useState('amour')
   const [customTheme, setCustomTheme] = useState('')
   const [numbers, setNumbers] = useState(['', '', ''])
@@ -240,6 +241,10 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     if (!birthDate) return 'Indiquez votre date de naissance.'
     if (!birthTime) return 'Indiquez votre heure exacte de naissance.'
     if (!birthPlace.trim() || birthPlace.trim().length < 2) return 'Indiquez votre lieu de naissance (ville et pays).'
+    const normalizedEmail = deliveryEmail.trim().toLowerCase()
+    if (!normalizedEmail || normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return 'Indiquez une adresse e-mail valide.'
+    }
     const ids = numbers.map((v) => Number.parseInt(v, 10))
     if (ids.some(Number.isNaN) || ids.some((n) => n < 1 || n > 58) || new Set(ids).size !== 3) {
       return 'Choisissez trois nombres différents entre 1 et 58.'
@@ -266,6 +271,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     const ids = numbers.map((v) => Number.parseInt(v, 10))
     return {
       drawToken: token,
+      deliveryEmail: deliveryEmail.trim().toLowerCase(),
       theme: theme === 'autre' ? customTheme.trim() : theme,
       numbers: ids,
       profile: {
@@ -299,7 +305,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
         throw new Error(data.message || data.error || 'Le moteur est momentanément indisponible.')
       }
       setResult(data)
-      clearPendingPayment()
+      if (data.delivery?.email === 'sent') clearPendingPayment()
       requestAnimationFrame(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
@@ -436,6 +442,11 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     }
   }
 
+  async function handleEmailRetry() {
+    if (!drawToken) return
+    await launchInterpretation(drawToken)
+  }
+
   const parts = result ? splitTendency(result.interpretation) : null
   const hasToken = !!drawToken
 
@@ -489,6 +500,21 @@ export default function ChronospherePage({ onBack, onNavigate }) {
             <p className="mb-5 font-georgia text-xs leading-relaxed text-mist">
               Ces informations servent aux calculs astrologiques du tirage : ciel natal, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles.
             </p>
+
+            <label className="mb-5 block">
+              <span className="mb-2 block font-georgia text-sm text-deep">Adresse e-mail</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={deliveryEmail}
+                onChange={(event) => setDeliveryEmail(event.target.value)}
+                required
+                maxLength={254}
+                disabled={loading}
+                className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3 font-georgia text-base text-deep outline-none focus:border-gold/70 disabled:opacity-60"
+              />
+              <span className="mt-2 block font-georgia text-xs text-mist">Votre ligne de temps complète sera envoyée à cette adresse.</span>
+            </label>
 
             <div className="mb-6 grid gap-x-4 gap-y-4 md:grid-cols-2">
               <div className="md:col-span-2">
@@ -737,6 +763,26 @@ export default function ChronospherePage({ onBack, onNavigate }) {
           {/* Results */}
           {result && parts && (
             <div ref={resultsRef} className="mt-10 space-y-5">
+
+              {result.delivery?.email === 'sent' && (
+                <p className="rounded-xl border border-gold/35 bg-gold/[.08] px-4 py-3 text-center font-georgia text-sm text-deep">
+                  Une copie de votre ligne de temps vient de vous être envoyée par e-mail.
+                </p>
+              )}
+
+              {result.delivery?.email === 'error' && (
+                <div className="rounded-xl border border-gold/35 bg-gold/[.08] px-4 py-4 text-center">
+                  <p className="font-georgia text-sm text-deep">Votre ligne de temps est bien créée. L’envoi par e-mail n’a pas pu être confirmé. Vous pouvez réessayer l’envoi sans repayer.</p>
+                  <button
+                    type="button"
+                    onClick={handleEmailRetry}
+                    disabled={loading || !drawToken}
+                    className="mt-3 rounded-xl bg-gold px-5 py-2.5 font-georgia text-sm font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    Renvoyer mon tirage par e-mail
+                  </button>
+                </div>
+              )}
 
               {/* Tendency */}
               {parts.direction && (

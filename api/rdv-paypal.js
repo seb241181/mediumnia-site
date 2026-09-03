@@ -2,6 +2,10 @@
 import { createHmac } from 'node:crypto'
 import { decrypt, encrypt, parisUTCOffsetMs, refreshGoogleToken } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
+import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
+import { createCancellationToken, bookingCancellationUrl } from '../lib/bookingCancellation.js'
+import { buildPaidRdvConfirmation } from '../lib/rdvConfirmationEmail.js'
+import { sendEmail } from '../lib/transactionalEmail.js'
 import {
   captureRdvPayPalOrder,
   createRdvPayPalOrder,
@@ -181,6 +185,82 @@ async function loadPaymentByCheckoutId(supabase, checkoutId) {
   return data || null
 }
 
+async function finalizePaidBooking(supabase, orderId, bookingId) {
+  // Finalization is deliberately fail-open: a captured payment and its booking stay valid.
+  const { data: booking, error: bookingError } = await supabase
+    .from('bookings')
+    .select('id, practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, customer_phone, starts_at, ends_at, timezone, google_event_id, google_meet_link')
+    .eq('id', bookingId)
+    .single()
+  if (bookingError || !booking) return { googleSync: 'pending', emailStatus: 'pending', meetLink: null }
+
+  const [{ data: service }, { data: practitioner }, { data: payment }] = await Promise.all([
+    supabase.from('booking_services').select('title, duration_min').eq('id', booking.service_id).single(),
+    supabase.from('booking_practitioners').select('name, timezone').eq('id', booking.practitioner_id).single(),
+    supabase.from('rdv_paypal_payments').select('id, amount_cents, confirmation_sent_at').eq('paypal_order_id', orderId).single(),
+  ])
+  if (!service || !payment) return { googleSync: 'pending', emailStatus: 'pending', meetLink: booking.google_meet_link || null }
+
+  let googleSync = { status: 'pending', google_meet_link: booking.google_meet_link || null }
+  try {
+    googleSync = await syncBookingToGoogleCalendar({
+      supabase,
+      practitionerId: booking.practitioner_id,
+      bookingId: booking.id,
+      currentGoogleEventId: booking.google_event_id,
+      createConference: true,
+      event: {
+        title: `MediumIA — ${service.title}`,
+        startsAt: booking.starts_at,
+        endsAt: booking.ends_at,
+        timezone: practitioner?.timezone || booking.timezone || 'Europe/Paris',
+        description: ['MediumIA Rendez-vous', '', `Client : ${booking.customer_first_name} ${booking.customer_last_name}`, `Email : ${booking.customer_email}`, `Téléphone : ${booking.customer_phone || 'Non renseigné'}`, 'Paiement PayPal confirmé', `Identifiant MediumIA : ${booking.id}`].join('\n'),
+      },
+    })
+  } catch { /* The calendar helper already fails closed without exposing data. */ }
+
+  const googleStatus = googleSync.status || 'failed'
+  await supabase.from('rdv_paypal_payments').update({
+    google_sync_status: googleStatus,
+    google_sync_error: googleStatus === 'failed' ? (googleSync.reason || 'google_sync_failed') : null,
+    finalized_at: new Date().toISOString(),
+  }).eq('id', payment.id)
+
+  let emailStatus = payment.confirmation_sent_at ? 'already_sent' : 'pending'
+  if (!payment.confirmation_sent_at) {
+    // A prior unsuccessful send may have stored a hash without exposing its raw token.
+    // Rotating it here is safe because no confirmation was marked as delivered.
+    const cancellation = createCancellationToken()
+    const { error: tokenError } = await supabase.from('bookings').update({
+      cancellation_token_hash: cancellation.tokenHash,
+      cancellation_token_created_at: new Date().toISOString(),
+    }).eq('id', booking.id)
+    if (!tokenError) {
+      const message = buildPaidRdvConfirmation({
+        firstName: booking.customer_first_name,
+        serviceTitle: service.title,
+        startsAt: booking.starts_at,
+        durationMin: service.duration_min,
+        timezone: practitioner?.timezone || booking.timezone || 'Europe/Paris',
+        amountCents: payment.amount_cents,
+        meetLink: googleSync.google_meet_link || booking.google_meet_link || null,
+        cancelUrl: bookingCancellationUrl(cancellation.token),
+      })
+      const sent = await sendEmail({
+        to: booking.customer_email,
+        ...message,
+        idempotencyKey: `rdv-paypal-confirmation/${booking.id}`,
+      })
+      emailStatus = sent.status
+      if (sent.status === 'sent') {
+        await supabase.from('rdv_paypal_payments').update({ confirmation_sent_at: new Date().toISOString() })
+          .eq('id', payment.id).is('confirmation_sent_at', null)
+      }
+    }
+  }
+  return { googleSync: googleStatus, emailStatus, meetLink: googleSync.google_meet_link || booking.google_meet_link || null, amountCents: payment.amount_cents }
+}
+
 async function handleCreate(req, res, supabase) {
   const { practitioner_slug, service_slug, date, time, selected_modality, customer, client_checkout_id } = req.body || {}
   if (!practitioner_slug || !service_slug || !DATE_RE.test(date || '') || !TIME_RE.test(time || '')) {
@@ -297,7 +377,10 @@ async function handleCapture(req, res, supabase) {
 
   const { data: claim, error: claimError } = await supabase.rpc('claim_rdv_payment_capture', { p_paypal_order_id: orderId })
   if (claimError || !claim?.ok) return publicError(res, claim?.error || 'capture_claim_failed', 409)
-  if (claim.converted) return res.status(200).json({ status: 'COMPLETED', bookingId: claim.booking_id, alreadyConverted: true })
+  if (claim.converted) {
+    const finalization = await finalizePaidBooking(supabase, orderId, claim.booking_id)
+    return res.status(200).json({ status: 'COMPLETED', bookingId: claim.booking_id, alreadyConverted: true, ...finalization })
+  }
   if (claim.captured) return res.status(202).json({ status: 'CAPTURED_PENDING_RECONCILIATION' })
   if (claim.capturing) return res.status(202).json({ status: 'CAPTURE_IN_PROGRESS' })
 
@@ -333,7 +416,8 @@ async function handleCapture(req, res, supabase) {
       p_currency: payment.currency,
     })
     if (convertError || !converted?.ok) throw new Error(converted?.error || 'booking_conversion_failed')
-    return res.status(200).json({ status: 'COMPLETED', bookingId: converted.booking_id, alreadyConverted: Boolean(converted.converted) })
+    const finalization = await finalizePaidBooking(supabase, orderId, converted.booking_id)
+    return res.status(200).json({ status: 'COMPLETED', bookingId: converted.booking_id, alreadyConverted: Boolean(converted.converted), ...finalization })
   } catch (error) {
     // A capture may have completed before a transient server failure. Keep the hold blocked
     // until the same order can be retried and verified, rather than releasing a paid slot.

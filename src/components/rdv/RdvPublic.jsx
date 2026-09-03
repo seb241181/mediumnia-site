@@ -5,6 +5,10 @@ import LegalFooter from '../LegalFooter'
 
 const MODALITY_LABELS = { video: 'Vidéo', phone: 'Téléphone', 'in-person': 'Présentiel' }
 
+function dateToYmd(date) {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-')
+}
+
 function formatService(svc) {
   return {
     ...svc,
@@ -18,7 +22,7 @@ function formatService(svc) {
 // ── Step indicator ────────────────────────────────────────────────────────────
 
 function StepBar({ step }) {
-  const labels = ['Prestation', 'Date', 'Créneau', 'Coordonnées']
+  const labels = ['Prestation', 'Date', 'Créneau', 'Coordonnées', 'Paiement']
   return (
     <div className="flex items-center gap-0 mb-8">
       {labels.map((label, i) => (
@@ -36,6 +40,89 @@ function StepBar({ step }) {
       ))}
     </div>
   )
+}
+
+const PAYPAL_ERROR_MESSAGES = {
+  slot_unavailable: 'Ce créneau vient d’être réservé. Choisissez un autre horaire.',
+  daily_limit_reached: 'Cette journée n’a plus de disponibilité.',
+  rate_limit_exceeded: 'Trop de tentatives ont été effectuées. Merci de réessayer un peu plus tard.',
+  paypal_capture_failed: 'Le paiement n’a pas pu être finalisé. Aucun nouveau paiement ne doit être relancé tant que son statut n’a pas été vérifié.',
+  paid_slot_reconciliation_required: 'Votre paiement nécessite une vérification. Votre créneau reste protégé. Merci de ne pas effectuer un second paiement.',
+}
+
+function paypalMessage(code) {
+  return PAYPAL_ERROR_MESSAGES[code] || 'Le paiement ne peut pas être préparé pour le moment. Réessayez dans quelques instants.'
+}
+
+function PayPalCheckout({ payload, checkoutId, onComplete, onUnavailable }) {
+  const containerRef = useRef(null)
+  const [config, setConfig] = useState(null)
+  const [notice, setNotice] = useState('')
+  const [holdUntil, setHoldUntil] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/rdv-paypal?action=config').then(r => r.json()).then(data => {
+      if (!active || !data.clientId || data.env !== 'sandbox') throw new Error('paypal_unavailable')
+      setConfig(data)
+    }).catch(() => { if (active) setNotice('Le paiement sécurisé est indisponible pour le moment.') })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!config || !containerRef.current) return
+    let disposed = false
+    const scriptId = 'mediumia-rdv-paypal-sdk'
+    const mount = () => {
+      if (disposed || !window.paypal || !containerRef.current) return
+      window.paypal.Buttons({
+        createOrder: async () => {
+          const res = await fetch('/api/rdv-paypal?action=create', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, client_checkout_id: checkoutId }),
+          })
+          const data = await res.json()
+          if (!res.ok || !data.id) {
+            const code = data.error || 'paypal_create_order_failed'
+            setNotice(paypalMessage(code))
+            if (['slot_unavailable', 'daily_limit_reached'].includes(code)) onUnavailable()
+            throw new Error(code)
+          }
+          setHoldUntil(data.expiresAt || null)
+          return data.id
+        },
+        onApprove: async data => {
+          const res = await fetch('/api/rdv-paypal?action=capture', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: data.orderID }),
+          })
+          const result = await res.json()
+          if (result.status === 'COMPLETED') return onComplete(result)
+          if (result.status === 'CAPTURE_IN_PROGRESS' || result.status === 'CAPTURED_PENDING_RECONCILIATION') {
+            for (let attempt = 0; attempt < 3; attempt++) {
+              await new Promise(resolve => setTimeout(resolve, 1500))
+              const statusRes = await fetch(`/api/rdv-paypal?action=status&checkout_id=${encodeURIComponent(checkoutId)}`)
+              const status = await statusRes.json()
+              if (status.bookingId) return onComplete({ status: 'COMPLETED', bookingId: status.bookingId })
+            }
+          }
+          setNotice(paypalMessage(result.error || 'paypal_capture_failed'))
+        },
+        onError: () => setNotice(paypalMessage('paypal_capture_failed')),
+      }).render(containerRef.current)
+    }
+    let script = document.getElementById(scriptId)
+    if (!script) {
+      script = document.createElement('script')
+      script.id = scriptId
+      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(config.clientId)}&currency=EUR&intent=capture&components=buttons`
+      script.onload = mount
+      script.onerror = () => setNotice('Le paiement sécurisé est indisponible pour le moment.')
+      document.head.appendChild(script)
+    } else if (window.paypal) mount()
+    else script.addEventListener('load', mount, { once: true })
+    return () => { disposed = true }
+  }, [config, payload, checkoutId, onComplete, onUnavailable])
+
+  return <div className="rounded-2xl border border-gold/30 bg-white/70 p-5"><p className="font-georgia text-[11px] tracking-[.18em] uppercase text-gold mb-2">Paiement sécurisé</p><p className="font-georgia text-sm text-mist leading-relaxed mb-4">Votre créneau est réservé pendant 15 minutes à partir du démarrage du paiement.</p>{holdUntil && <p className="font-georgia text-xs text-mist mb-3">Hold actif jusqu’à {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(holdUntil))}.</p>}{notice && <p className="font-georgia text-sm text-red-800 bg-red-50 rounded-xl px-3 py-2 mb-3">{notice}</p>}<div ref={containerRef}>{!config && !notice && <p className="font-georgia text-sm text-mist">Chargement du paiement sécurisé…</p>}</div></div>
 }
 
 // ── Step indicator (mode request) ────────────────────────────────────────────
@@ -202,6 +289,8 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
   useEffect(() => {
     if (!date) return
     let cancelled = false
+    // This effect intentionally resets its async loading state when the selected date changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setResult(null)
     const dateStr = [
@@ -285,7 +374,7 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
 
 // ── Contact form ──────────────────────────────────────────────────────────────
 
-function ContactForm({ onSubmit, loading, error }) {
+function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →' }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', message: '' })
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -346,7 +435,7 @@ function ContactForm({ onSubmit, loading, error }) {
         className="w-full font-georgia py-4 rounded-xl bg-deep text-gold font-bold text-base hover:bg-deep/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
       >
         {loading && <div className="w-4 h-4 border border-gold/40 border-t-gold rounded-full animate-spin" />}
-        {loading ? 'Confirmation en cours…' : 'Confirmer la réservation →'}
+        {loading ? 'Confirmation en cours…' : submitLabel}
       </button>
       <p className="font-georgia text-[10px] text-mist/60 text-center leading-relaxed">
         Vos données sont utilisées pour gérer votre rendez-vous et peuvent être traitées par les prestataires techniques nécessaires au service. Consultez notre <a href="/confidentialite" className="text-gold hover:underline">politique de confidentialité</a>.
@@ -520,6 +609,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const [date, setDate]           = useState(null)
   const [time, setTime]           = useState(null)
   const [bookingResult, setBookingResult] = useState(null)
+  const [paymentCustomer, setPaymentCustomer] = useState(null)
+  const [checkoutId, setCheckoutId] = useState(null)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError]     = useState(null)
   const [findingNext, setFindingNext]       = useState(false)
@@ -563,6 +654,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const services     = (configData.services || []).map(formatService)
 
   const fmt = (d) => d ? new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d) : null
+  const isPaidVideo = service?.bookingMode === 'instant' && service?.modality?.includes('video')
+  const checkoutStorageKey = service && date && time
+    ? `mediumia:rdv-paypal:${slug}:${service.id}:${dateToYmd(date)}:${time}` : null
 
   async function findNextAvailableDate(svc, seq) {
     setFindingNext(true)
@@ -695,6 +789,16 @@ export default function RdvPublic({ onBack, onNavigate }) {
   }
 
   async function handleConfirm(contactForm) {
+    if (isPaidVideo) {
+      const persisted = checkoutStorageKey ? sessionStorage.getItem(checkoutStorageKey) : null
+      const id = persisted || crypto.randomUUID()
+      if (!persisted && checkoutStorageKey) sessionStorage.setItem(checkoutStorageKey, id)
+      setCheckoutId(id)
+      setPaymentCustomer(contactForm)
+      setBookingError(null)
+      setStep('payment')
+      return
+    }
     setBookingLoading(true)
     setBookingError(null)
 
@@ -739,6 +843,12 @@ export default function RdvPublic({ onBack, onNavigate }) {
     } finally {
       setBookingLoading(false)
     }
+  }
+
+  function handlePaidComplete(result) {
+    if (checkoutStorageKey) sessionStorage.removeItem(checkoutStorageKey)
+    setBookingResult({ ...result, amountCents: result.amountCents ?? service.price_cents, meetLink: result.meetLink || null })
+    setStep(4)
   }
 
   // ── Demande envoyée (step request-sent) ────────────────────────────────────
@@ -786,15 +896,17 @@ export default function RdvPublic({ onBack, onNavigate }) {
           <div className="max-w-lg w-full text-center">
             <p className="text-gold text-5xl mb-6">✦</p>
             <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-4">Réservation confirmée</p>
-            <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-2">Votre rendez-vous est enregistré.</h1>
-            <p className="font-georgia text-mist text-base mb-8">Un email de confirmation vous sera envoyé prochainement.</p>
+            <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-2">Votre rendez-vous est confirmé.</h1>
+            <p className="font-georgia text-mist text-base mb-8">Paiement PayPal confirmé.</p>
             <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
               {practitioner && <p className="font-georgia text-sm"><span className="text-mist">Praticien :</span> <strong>{practitioner.name}</strong></p>}
               <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.title}</strong></p>
               <p className="font-georgia text-sm capitalize"><span className="text-mist">Date :</span> <strong>{fmt(date)}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Heure :</span> <strong>{time}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Modalité :</span> <strong>{service.modalityLabel}</strong></p>
+              {bookingResult.amountCents != null && <p className="font-georgia text-sm"><span className="text-mist">Montant payé :</span> <strong>{(bookingResult.amountCents / 100).toFixed(2).replace('.', ',')} €</strong></p>}
             </div>
+            {bookingResult.meetLink ? <a href={bookingResult.meetLink} target="_blank" rel="noreferrer" className="inline-block font-georgia text-sm bg-deep text-gold px-5 py-3 rounded-xl mb-6">Rejoindre la visioconférence</a> : <p className="font-georgia text-sm text-mist mb-6">Le lien de visioconférence vous sera communiqué par e-mail.</p>}
             <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
               ← Retour à MediumIA
             </button>
@@ -840,7 +952,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
           {/* Main booking flow */}
           <div className="md:col-span-2">
-            {typeof step === 'number' ? <StepBar step={step} /> : <RequestStepBar />}
+            {typeof step === 'number' || step === 'payment' ? <StepBar step={step === 'payment' ? 4 : step} /> : <RequestStepBar />}
 
             {/* Step 0 — Service */}
             {step === 0 && (
@@ -917,7 +1029,20 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   <button onClick={() => setStep(2)} className="font-georgia text-xs text-mist hover:text-deep">← Créneau</button>
                   <h2 className="font-georgia font-medium text-xl">Vos coordonnées</h2>
                 </div>
-                <ContactForm onSubmit={handleConfirm} loading={bookingLoading} error={bookingError} />
+                <ContactForm onSubmit={handleConfirm} loading={bookingLoading} error={bookingError} submitLabel={isPaidVideo ? 'Continuer vers le paiement →' : 'Confirmer la réservation →'} />
+              </div>
+            )}
+
+            {step === 'payment' && paymentCustomer && checkoutId && (
+              <div>
+                <div className="flex items-center gap-3 mb-5"><button onClick={() => setStep(3)} className="font-georgia text-xs text-mist hover:text-deep">← Coordonnées</button><h2 className="font-georgia font-medium text-xl">Paiement</h2></div>
+                <div className="rounded-2xl border border-gold/25 bg-gold/5 p-5 mb-4 space-y-2"><p className="font-georgia text-sm"><strong>{service.title}</strong></p><p className="font-georgia text-sm text-mist capitalize">{fmt(date)} · {time} · {service.durationLabel}</p><p className="font-georgia text-sm text-mist">Visio · <strong className="text-deep">{service.priceLabel}</strong></p></div>
+                <PayPalCheckout
+                  checkoutId={checkoutId}
+                  payload={{ practitioner_slug: slug, service_slug: service.slug, date: dateToYmd(date), time, selected_modality: 'video', customer: paymentCustomer }}
+                  onComplete={handlePaidComplete}
+                  onUnavailable={() => { setBookingError('Ce créneau n’est plus disponible.'); setStep(2) }}
+                />
               </div>
             )}
 

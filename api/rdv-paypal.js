@@ -1,3 +1,5 @@
+/* global process */
+import { createHmac } from 'node:crypto'
 import { decrypt, encrypt, parisUTCOffsetMs, refreshGoogleToken } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import {
@@ -13,6 +15,8 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const TIME_RE = /^\d{2}:\d{2}$/
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const RDV_PAYPAL_HOURLY_LIMIT = 10
+const RDV_PAYPAL_DAILY_LIMIT = 30
 
 function parisTimeToUTC(dateStr, timeStr, offsetMs) {
   const [hours, minutes] = timeStr.split(':').map(Number)
@@ -22,6 +26,45 @@ function parisTimeToUTC(dateStr, timeStr, offsetMs) {
 
 function publicError(res, code, status = 409) {
   return res.status(status).json({ error: code })
+}
+
+function extractClientIp(req) {
+  const xff = req.headers['x-forwarded-for']
+  if (!xff) return null
+  return xff.split(',')[0].trim().toLowerCase()
+}
+
+async function checkRdvPaypalCreateRateLimit(req, res, supabase) {
+  const secret = (process.env.RDV_RATE_LIMIT_SECRET || '').trim()
+  if (!/^[0-9a-fA-F]{64}$/.test(secret)) {
+    publicError(res, 'rdv_payment_unavailable', 503)
+    return true
+  }
+
+  const clientIp = extractClientIp(req)
+  if (!clientIp) {
+    publicError(res, 'rdv_payment_unavailable', 503)
+    return true
+  }
+
+  const ipHash = createHmac('sha256', secret).update(clientIp).digest('hex')
+  try {
+    const { data, error } = await supabase.rpc('consume_api_rate_limit', {
+      p_ip_hash: ipHash,
+      p_endpoint: 'rdv_paypal_create',
+      p_hourly_limit: RDV_PAYPAL_HOURLY_LIMIT,
+      p_daily_limit: RDV_PAYPAL_DAILY_LIMIT,
+    })
+    if (error) throw error
+    if (!data?.allowed) {
+      publicError(res, 'rate_limit_exceeded', 429)
+      return true
+    }
+  } catch {
+    publicError(res, 'rdv_payment_unavailable', 503)
+    return true
+  }
+  return false
 }
 
 async function validateServerAvailability({ supabase, practitioner, service, date, time }) {
@@ -169,6 +212,10 @@ async function handleCreate(req, res, supabase) {
   } catch (error) {
     return publicError(res, error.message || 'payment_lookup_failed', 500)
   }
+
+  // A retry with the same checkout ID returned above remains quota-free.
+  // New attempts are limited before any hold, PayPal, or Google side effect.
+  if (await checkRdvPaypalCreateRateLimit(req, res, supabase)) return
 
   const { data: practitioner } = await supabase
     .from('booking_practitioners')

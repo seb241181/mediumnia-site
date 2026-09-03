@@ -241,26 +241,32 @@ BEGIN
   IF v_hold.status = 'payment_capturing' AND v_hold.expires_at > now() THEN
     RETURN jsonb_build_object('ok', true, 'capturing', true, 'hold_id', v_hold.id);
   END IF;
-  IF v_hold.status = 'payment_capturing' AND v_hold.expires_at <= now() THEN
-    UPDATE rdv_booking_holds SET expires_at = now() + INTERVAL '5 minutes' WHERE id = v_hold.id;
-    UPDATE rdv_paypal_payments SET status = 'capturing' WHERE id = v_payment.id;
-    RETURN jsonb_build_object(
-      'ok', true, 'hold_id', v_hold.id, 'amount_cents', v_hold.final_price_cents, 'currency', v_hold.currency
-    );
-  END IF;
-  IF v_hold.status <> 'payment_pending' THEN
+  IF v_hold.status NOT IN ('payment_pending', 'payment_capturing') THEN
     RETURN jsonb_build_object('ok', false, 'error', 'hold_not_capturable');
   END IF;
 
+  -- Revalidate any resumed/expired hold under the practitioner's advisory lock.
+  -- This prevents a late PayPal approval from charging after another hold won the slot.
   SELECT EXISTS (
     SELECT 1 FROM bookings b
     WHERE b.practitioner_id = v_hold.practitioner_id
       AND b.status = 'confirmed'
       AND b.starts_at < v_hold.ends_at AND b.ends_at > v_hold.starts_at
+  ) OR EXISTS (
+    SELECT 1 FROM rdv_booking_holds h
+    WHERE h.practitioner_id = v_hold.practitioner_id
+      AND h.id <> v_hold.id
+      AND (
+        h.status IN ('payment_capturing', 'payment_captured')
+        OR (h.status = 'payment_pending' AND h.expires_at > now())
+      )
+      AND h.starts_at < v_hold.ends_at AND h.ends_at > v_hold.starts_at
   ) INTO v_conflict;
   IF v_conflict THEN
-    UPDATE rdv_booking_holds SET status = 'expired' WHERE id = v_hold.id;
-    UPDATE rdv_paypal_payments SET status = 'expired', last_error_code = 'slot_unavailable' WHERE id = v_payment.id;
+    IF v_payment.paypal_capture_id IS NULL THEN
+      UPDATE rdv_booking_holds SET status = 'expired' WHERE id = v_hold.id;
+      UPDATE rdv_paypal_payments SET status = 'expired', last_error_code = 'slot_unavailable' WHERE id = v_payment.id;
+    END IF;
     RETURN jsonb_build_object('ok', false, 'error', 'slot_unavailable');
   END IF;
 
@@ -325,6 +331,15 @@ BEGIN
     WHERE b.practitioner_id = v_hold.practitioner_id
       AND b.status = 'confirmed'
       AND b.starts_at < v_hold.ends_at AND b.ends_at > v_hold.starts_at
+  ) OR EXISTS (
+    SELECT 1 FROM rdv_booking_holds h
+    WHERE h.practitioner_id = v_hold.practitioner_id
+      AND h.id <> v_hold.id
+      AND (
+        h.status IN ('payment_capturing', 'payment_captured')
+        OR (h.status = 'payment_pending' AND h.expires_at > now())
+      )
+      AND h.starts_at < v_hold.ends_at AND h.ends_at > v_hold.starts_at
   ) INTO v_conflict;
   IF v_conflict THEN
     RETURN jsonb_build_object('ok', false, 'error', 'slot_conflict_after_capture');

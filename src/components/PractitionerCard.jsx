@@ -29,15 +29,6 @@ export default function PractitionerCard({
         {practitioner.statusLabel && (
           <p className="consultation-practitioner__status">{practitioner.statusLabel}</p>
         )}
-        {onOpenRdv && practitioner.rdvSlug && (
-          <button
-            type="button"
-            className="consultation-practitioner__book"
-            onClick={() => onOpenRdv(practitioner.rdvSlug)}
-          >
-            Prendre rendez-vous →
-          </button>
-        )}
       </div>
     </article>
   )

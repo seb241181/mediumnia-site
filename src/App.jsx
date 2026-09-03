@@ -186,7 +186,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <button onClick={onOpenFormation} className="font-georgia px-9 py-4 rounded-lg bg-gold text-deep font-bold text-base">Découvrir l'accompagnement →</button>
-            <button onClick={onOpenReseauForm} className="font-georgia px-9 py-4 rounded-lg border border-gold/50 text-deep font-bold text-base">Rejoindre le réseau →</button>
           </div>
         </section>
 
@@ -212,6 +211,16 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
                 Assistants IA métier, mémoire professionnelle, aide à la communication, rendez-vous et automatisations — des outils pensés pour les professionnels de l'accompagnement.
               </UniverseCard>
             </div>
+            <aside className="rounded-3xl border border-gold/35 bg-white/75 px-7 py-8 shadow-[0_10px_28px_rgba(26,21,53,.06)] md:flex md:items-center md:justify-between md:gap-10 md:px-10">
+              <div className="max-w-3xl">
+                <p className="font-georgia text-gold text-[11px] uppercase tracking-[0.2em]">Vous êtes praticien ?</p>
+                <h3 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">Rejoignez le réseau MediumIA</h3>
+                <p className="mt-3 font-georgia leading-relaxed text-mist">Présentez votre pratique et rejoignez un réseau pensé pour relier praticiens et personnes en recherche d’accompagnement.</p>
+              </div>
+              <button onClick={onOpenReseauForm} className="mt-6 shrink-0 font-georgia text-sm font-bold text-deep transition-colors hover:text-gold md:mt-0">
+                Rejoindre le réseau →
+              </button>
+            </aside>
           </div>
         </section>
 

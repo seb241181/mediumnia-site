@@ -135,23 +135,33 @@ function FeaturedChronosphere({ onOpen }) {
             Votre ciel natal, trois fréquences de l’Oracle et une lecture personnalisée pour éclairer les dynamiques présentes et les fenêtres qui s’ouvrent devant vous.
           </p>
           <p className="mt-6 font-georgia text-sm font-medium text-gold">5,00 € TTC · Tirage unique · Compte rendu par e-mail</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="mt-8">
             <button onClick={onOpen} className="rounded-lg bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90">
-              Faire mon tirage →
-            </button>
-            <button onClick={onOpen} className="px-2 py-3 text-left font-georgia text-sm font-bold text-cream transition-colors hover:text-gold">
-              Découvrir Chronosphere →
+              Faire mon tirage — 5 €
             </button>
           </div>
         </div>
         <div className="relative mx-auto w-full max-w-[265px] md:max-w-[310px]">
           <div className="absolute -inset-6 rounded-full border border-gold/20" />
           <div className="absolute -inset-2 rounded-[34px] bg-gold/10 blur-2xl" />
-          <div className="relative overflow-hidden rounded-[28px] border border-gold/40 bg-deep shadow-[0_24px_55px_rgba(0,0,0,.38)]">
-            <img src="/images/oracle/verso.png" alt="Illustration de l’Oracle MediumIA" className="aspect-[3/4] w-full object-cover opacity-90" />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-deep via-deep/60 to-transparent px-5 pb-5 pt-14">
-              <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Lecture personnalisée</p>
-              <p className="mt-1 font-georgia text-sm text-cream">Un tirage, une ligne de temps.</p>
+          <div
+            className="relative aspect-[3/4] overflow-hidden rounded-[28px] border border-gold/40 shadow-[0_24px_55px_rgba(0,0,0,.38)]"
+            style={{ background: 'radial-gradient(circle at 50% 46%, rgba(201,168,76,.36), transparent 11%), radial-gradient(circle at 50% 46%, #283b75 0%, #171a4b 29%, #0a1128 70%)' }}
+          >
+            <div className="absolute inset-0 opacity-70" style={{ backgroundImage: 'radial-gradient(rgba(250,250,247,.85) 1px, transparent 1.5px)', backgroundSize: '36px 36px', backgroundPosition: '8px 12px' }} />
+            <div className="absolute left-1/2 top-[46%] h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/70 shadow-[0_0_35px_rgba(201,168,76,.48)]" />
+            <div className="absolute left-1/2 top-[46%] h-[29%] w-[29%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cream/45" />
+            <div className="absolute left-1/2 top-[46%] h-[16%] w-[16%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 shadow-[0_0_42px_rgba(201,168,76,.7)]" />
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 300 400" aria-hidden="true">
+              <path d="M-20 310 C72 252 70 176 150 184 S225 101 328 38" fill="none" stroke="rgba(201,168,76,.72)" strokeWidth="1.4" />
+              <path d="M-10 88 C65 115 91 252 166 245 S237 302 318 362" fill="none" stroke="rgba(250,250,247,.45)" strokeWidth="1" strokeDasharray="4 8" />
+              <circle cx="64" cy="260" r="3" fill="#c9a84c" />
+              <circle cx="223" cy="112" r="2.5" fill="#fafaf7" />
+              <circle cx="190" cy="282" r="2.5" fill="#c9a84c" />
+            </svg>
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-deep via-deep/70 to-transparent px-5 pb-5 pt-16">
+              <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Chronosphere 999</p>
+              <p className="mt-1 font-georgia text-sm text-cream">Cartographier l’instant, ouvrir la suite.</p>
             </div>
           </div>
         </div>

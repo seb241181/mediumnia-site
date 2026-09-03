@@ -221,6 +221,10 @@ DECLARE
   v_hold rdv_booking_holds;
   v_payment rdv_paypal_payments;
   v_conflict BOOLEAN;
+  v_before INTEGER;
+  v_after INTEGER;
+  v_max_per_day INTEGER;
+  v_active_count INTEGER;
 BEGIN
   SELECT h.* INTO v_hold
   FROM rdv_paypal_payments p
@@ -231,6 +235,11 @@ BEGIN
   SELECT * INTO v_payment FROM rdv_paypal_payments WHERE hold_id = v_hold.id;
 
   PERFORM pg_advisory_xact_lock(hashtext(v_hold.practitioner_id::text));
+
+  SELECT buffer_before_min, buffer_after_min, max_per_day
+    INTO v_before, v_after, v_max_per_day
+  FROM booking_practitioners
+  WHERE id = v_hold.practitioner_id;
 
   IF v_hold.status = 'converted' THEN
     RETURN jsonb_build_object('ok', true, 'converted', true, 'booking_id', v_hold.converted_booking_id);
@@ -251,7 +260,8 @@ BEGIN
     SELECT 1 FROM bookings b
     WHERE b.practitioner_id = v_hold.practitioner_id
       AND b.status = 'confirmed'
-      AND b.starts_at < v_hold.ends_at AND b.ends_at > v_hold.starts_at
+      AND (b.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval) < (v_hold.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval)
+      AND (b.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval) > (v_hold.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval)
   ) OR EXISTS (
     SELECT 1 FROM rdv_booking_holds h
     WHERE h.practitioner_id = v_hold.practitioner_id
@@ -260,14 +270,40 @@ BEGIN
         h.status IN ('payment_capturing', 'payment_captured')
         OR (h.status = 'payment_pending' AND h.expires_at > now())
       )
-      AND h.starts_at < v_hold.ends_at AND h.ends_at > v_hold.starts_at
+      AND (h.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval) < (v_hold.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval)
+      AND (h.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval) > (v_hold.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval)
   ) INTO v_conflict;
   IF v_conflict THEN
-    IF v_payment.paypal_capture_id IS NULL THEN
-      UPDATE rdv_booking_holds SET status = 'expired' WHERE id = v_hold.id;
-      UPDATE rdv_paypal_payments SET status = 'expired', last_error_code = 'slot_unavailable' WHERE id = v_payment.id;
+    IF v_payment.paypal_capture_id IS NOT NULL OR v_hold.status = 'payment_capturing' THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'paid_slot_reconciliation_required');
     END IF;
+    UPDATE rdv_booking_holds SET status = 'expired' WHERE id = v_hold.id;
+    UPDATE rdv_paypal_payments SET status = 'expired', last_error_code = 'slot_unavailable' WHERE id = v_payment.id;
     RETURN jsonb_build_object('ok', false, 'error', 'slot_unavailable');
+  END IF;
+
+  IF v_max_per_day IS NOT NULL THEN
+    SELECT COUNT(*) INTO v_active_count FROM (
+      SELECT b.starts_at FROM bookings b
+      WHERE b.practitioner_id = v_hold.practitioner_id AND b.status = 'confirmed'
+        AND b.starts_at >= date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'
+        AND b.starts_at < date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris' + INTERVAL '1 day'
+      UNION ALL
+      SELECT h.starts_at FROM rdv_booking_holds h
+      WHERE h.practitioner_id = v_hold.practitioner_id
+        AND h.id <> v_hold.id
+        AND (h.status IN ('payment_capturing', 'payment_captured') OR (h.status = 'payment_pending' AND h.expires_at > now()))
+        AND h.starts_at >= date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'
+        AND h.starts_at < date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris' + INTERVAL '1 day'
+    ) active_slots;
+    IF v_active_count >= v_max_per_day THEN
+      IF v_payment.paypal_capture_id IS NOT NULL OR v_hold.status = 'payment_capturing' THEN
+        RETURN jsonb_build_object('ok', false, 'error', 'paid_slot_reconciliation_required');
+      END IF;
+      UPDATE rdv_booking_holds SET status = 'expired' WHERE id = v_hold.id;
+      UPDATE rdv_paypal_payments SET status = 'expired', last_error_code = 'daily_limit_reached' WHERE id = v_payment.id;
+      RETURN jsonb_build_object('ok', false, 'error', 'daily_limit_reached');
+    END IF;
   END IF;
 
   UPDATE rdv_booking_holds
@@ -299,6 +335,10 @@ DECLARE
   v_payment rdv_paypal_payments;
   v_booking_id UUID;
   v_conflict BOOLEAN;
+  v_before INTEGER;
+  v_after INTEGER;
+  v_max_per_day INTEGER;
+  v_active_count INTEGER;
 BEGIN
   SELECT h.* INTO v_hold
   FROM rdv_paypal_payments p
@@ -309,6 +349,11 @@ BEGIN
   SELECT * INTO v_payment FROM rdv_paypal_payments WHERE hold_id = v_hold.id;
 
   PERFORM pg_advisory_xact_lock(hashtext(v_hold.practitioner_id::text));
+
+  SELECT buffer_before_min, buffer_after_min, max_per_day
+    INTO v_before, v_after, v_max_per_day
+  FROM booking_practitioners
+  WHERE id = v_hold.practitioner_id;
 
   IF v_hold.status = 'converted' THEN
     IF v_payment.paypal_capture_id IS NOT NULL AND v_payment.paypal_capture_id <> p_paypal_capture_id THEN
@@ -330,7 +375,8 @@ BEGIN
     SELECT 1 FROM bookings b
     WHERE b.practitioner_id = v_hold.practitioner_id
       AND b.status = 'confirmed'
-      AND b.starts_at < v_hold.ends_at AND b.ends_at > v_hold.starts_at
+      AND (b.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval) < (v_hold.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval)
+      AND (b.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval) > (v_hold.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval)
   ) OR EXISTS (
     SELECT 1 FROM rdv_booking_holds h
     WHERE h.practitioner_id = v_hold.practitioner_id
@@ -339,10 +385,30 @@ BEGIN
         h.status IN ('payment_capturing', 'payment_captured')
         OR (h.status = 'payment_pending' AND h.expires_at > now())
       )
-      AND h.starts_at < v_hold.ends_at AND h.ends_at > v_hold.starts_at
+      AND (h.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval) < (v_hold.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval)
+      AND (h.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval) > (v_hold.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval)
   ) INTO v_conflict;
   IF v_conflict THEN
-    RETURN jsonb_build_object('ok', false, 'error', 'slot_conflict_after_capture');
+    RETURN jsonb_build_object('ok', false, 'error', 'paid_slot_reconciliation_required');
+  END IF;
+
+  IF v_max_per_day IS NOT NULL THEN
+    SELECT COUNT(*) INTO v_active_count FROM (
+      SELECT b.starts_at FROM bookings b
+      WHERE b.practitioner_id = v_hold.practitioner_id AND b.status = 'confirmed'
+        AND b.starts_at >= date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'
+        AND b.starts_at < date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris' + INTERVAL '1 day'
+      UNION ALL
+      SELECT h.starts_at FROM rdv_booking_holds h
+      WHERE h.practitioner_id = v_hold.practitioner_id
+        AND h.id <> v_hold.id
+        AND (h.status IN ('payment_capturing', 'payment_captured') OR (h.status = 'payment_pending' AND h.expires_at > now()))
+        AND h.starts_at >= date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'
+        AND h.starts_at < date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris' + INTERVAL '1 day'
+    ) active_slots;
+    IF v_active_count >= v_max_per_day THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'paid_slot_reconciliation_required');
+    END IF;
   END IF;
 
   UPDATE rdv_paypal_payments

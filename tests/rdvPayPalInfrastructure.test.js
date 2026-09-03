@@ -4,6 +4,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import {
+  countRdvDayUsage,
   formatPayPalAmount,
   hasCompetingRdvSlot,
   isActiveRdvPaymentHold,
@@ -64,6 +65,49 @@ test('cas C: deux holds différents du même créneau se détectent mutuellement
   }), true)
 })
 
+test('buffers: un hold expiré 14h-15h entre en conflit avec un hold actif à 15h05', () => {
+  const laterHold = {
+    id: 'hold-later', status: 'payment_pending',
+    starts_at: '2026-09-15T13:05:00.000Z', ends_at: '2026-09-15T14:05:00.000Z',
+    expires_at: '2026-09-03T12:15:00Z',
+  }
+  assert.equal(hasCompetingRdvSlot({
+    currentHoldId: expiredHold.id, startsAt: slotStart, endsAt: slotEnd,
+    holds: [expiredHold, laterHold], now, bufferBeforeMin: 10, bufferAfterMin: 10,
+  }), true)
+})
+
+test('buffers: les mêmes horaires restent reprenables sans zone de buffer', () => {
+  const laterHold = {
+    id: 'hold-later', status: 'payment_pending',
+    starts_at: '2026-09-15T13:05:00.000Z', ends_at: '2026-09-15T14:05:00.000Z',
+    expires_at: '2026-09-03T12:15:00Z',
+  }
+  assert.equal(hasCompetingRdvSlot({
+    currentHoldId: expiredHold.id, startsAt: slotStart, endsAt: slotEnd, holds: [expiredHold, laterHold], now,
+  }), false)
+})
+
+test('max_per_day: quatre réservations ou holds actifs bloquent la reprise', () => {
+  const dayStart = '2026-09-15T00:00:00.000Z'
+  const dayEnd = '2026-09-16T00:00:00.000Z'
+  const bookings = ['09', '10', '11'].map(hour => ({
+    status: 'confirmed', starts_at: `2026-09-15T${hour}:00:00.000Z`, ends_at: `2026-09-15T${String(Number(hour) + 1).padStart(2, '0')}:00:00.000Z`,
+  }))
+  const holds = [{ ...expiredHold }, {
+    id: 'hold-four', status: 'payment_pending', starts_at: '2026-09-15T12:00:00.000Z', ends_at: '2026-09-15T13:00:00.000Z', expires_at: '2026-09-03T12:15:00Z',
+  }]
+  assert.equal(countRdvDayUsage({ currentHoldId: expiredHold.id, dayStart, dayEnd, bookings, holds, now }), 4)
+})
+
+test('max_per_day: le hold courant est exclu du comptage', () => {
+  const dayStart = '2026-09-15T00:00:00.000Z'
+  const dayEnd = '2026-09-16T00:00:00.000Z'
+  assert.equal(countRdvDayUsage({
+    currentHoldId: activeHold.id, dayStart, dayEnd, holds: [activeHold], now,
+  }), 0)
+})
+
 test('la référence PayPal est déterministe pour reprendre le même checkout', () => {
   assert.equal(rdvPayPalCustomId('11111111-1111-4111-8111-111111111111'), 'MEDIUMIA:RDV:11111111-1111-4111-8111-111111111111')
 })
@@ -116,6 +160,8 @@ test('cas E: un custom_id PayPal présent mais incorrect est rejeté', () => {
 test('la migration protège concurrence, holds, expiration et conversion unique', async () => {
   const sql = await readFile(migrationPath, 'utf8')
   const endpoint = await readFile(endpointPath, 'utf8')
+  const claimSql = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.claim_rdv_payment_capture'), sql.indexOf('-- Enregistre la capture'))
+  const convertSql = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.convert_rdv_payment_hold'), sql.indexOf('-- Seuls les holds abandonnés'))
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.rdv_booking_holds/)
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.rdv_paypal_payments/)
   assert.match(sql, /pg_advisory_xact_lock\(hashtext\(p_practitioner_id::text\)\)/)
@@ -130,6 +176,11 @@ test('la migration protège concurrence, holds, expiration et conversion unique'
   assert.match(sql, /h\.id <> v_hold\.id/)
   assert.match(endpoint, /\.select\('id, duration_min, price_cents, currency, modality, booking_mode, is_active'\)/)
   assert.doesNotMatch(endpoint, /req\.body\??\.price|req\.body\??\.amount/)
+  for (const rpcSql of [claimSql, convertSql]) {
+    assert.match(rpcSql, /SELECT buffer_before_min, buffer_after_min, max_per_day/)
+    assert.match(rpcSql, /h\.id <> v_hold\.id/)
+    assert.match(rpcSql, /v_active_count >= v_max_per_day/)
+  }
 })
 
 test('cas F: le quota create précède le hold et la création de commande PayPal', async () => {

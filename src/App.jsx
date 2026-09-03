@@ -115,6 +115,51 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
+function FeaturedChronosphere({ onOpen }) {
+  return (
+    <article
+      className="relative isolate overflow-hidden rounded-3xl border border-gold/35 px-7 py-9 shadow-xl md:px-12 md:py-12"
+      style={{ background: 'radial-gradient(circle at 84% 18%, rgba(201,168,76,.2), transparent 26%), linear-gradient(135deg, #0d1730 0%, #1a1535 54%, #241d42 100%)' }}
+    >
+      <div className="pointer-events-none absolute -left-20 top-12 h-56 w-56 rounded-full border border-gold/15" />
+      <div className="pointer-events-none absolute left-24 top-20 h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_26px_rgba(201,168,76,.9)]" />
+      <div className="pointer-events-none absolute right-[39%] top-12 h-1.5 w-1.5 rounded-full bg-cream/70" />
+      <div className="relative grid gap-10 md:grid-cols-[1.2fr_.8fr] md:items-center md:gap-14">
+        <div className="max-w-2xl">
+          <span className="inline-flex rounded-full border border-gold/45 bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">
+            Nouveau · CHRONOSPHERE 999
+          </span>
+          <p className="mt-7 font-georgia text-xs uppercase tracking-[0.24em] text-gold/65">Oracle des Lignes de Temps</p>
+          <h2 className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-5xl">Explorez votre ligne de temps</h2>
+          <p className="mt-5 font-georgia text-base leading-relaxed text-cream/75 md:text-lg">
+            Votre ciel natal, trois fréquences de l’Oracle et une lecture personnalisée pour éclairer les dynamiques présentes et les fenêtres qui s’ouvrent devant vous.
+          </p>
+          <p className="mt-6 font-georgia text-sm font-medium text-gold">5,00 € TTC · Tirage unique · Compte rendu par e-mail</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button onClick={onOpen} className="rounded-lg bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90">
+              Faire mon tirage →
+            </button>
+            <button onClick={onOpen} className="px-2 py-3 text-left font-georgia text-sm font-bold text-cream transition-colors hover:text-gold">
+              Découvrir Chronosphere →
+            </button>
+          </div>
+        </div>
+        <div className="relative mx-auto w-full max-w-[265px] md:max-w-[310px]">
+          <div className="absolute -inset-6 rounded-full border border-gold/20" />
+          <div className="absolute -inset-2 rounded-[34px] bg-gold/10 blur-2xl" />
+          <div className="relative overflow-hidden rounded-[28px] border border-gold/40 bg-deep shadow-[0_24px_55px_rgba(0,0,0,.38)]">
+            <img src="/images/oracle/verso.png" alt="Illustration de l’Oracle MediumIA" className="aspect-[3/4] w-full object-cover opacity-90" />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-deep via-deep/60 to-transparent px-5 pb-5 pt-14">
+              <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Lecture personnalisée</p>
+              <p className="mt-1 font-georgia text-sm text-cream">Un tirage, une ligne de temps.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
@@ -155,6 +200,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
             <div id="formation">
               <FeaturedAccompagnement onOpen={onOpenFormation} />
             </div>
+            <FeaturedChronosphere onOpen={onOpenChronosphere} />
             <div className="grid md:grid-cols-2 gap-5">
               <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir} dark="bg-mist border-mist">
                 Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
@@ -163,9 +209,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
                 Assistants IA métier, mémoire professionnelle, aide à la communication, rendez-vous et automatisations — des outils pensés pour les professionnels de l'accompagnement.
               </UniverseCard>
             </div>
-            <UniverseCard icon="◎" eyebrow="CHRONOSPHERE 999" title="Oracle des Lignes de Temps" action="Explorer ma ligne de temps" onClick={onOpenChronosphere}>
-              Éclairez la dynamique présente et les fenêtres qui s'ouvrent devant vous. Une expérience numérique Mediumia distincte de l'Oracle physique.
-            </UniverseCard>
           </div>
         </section>
 

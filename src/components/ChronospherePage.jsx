@@ -186,7 +186,8 @@ function TimelineFrise({ timing }) {
   )
 }
 
-const SESSION_KEY = 'chronosphere_drawToken'
+const PENDING_PAYMENT_KEY = 'chronosphere_packPendingPayment'
+const PACK_TOKEN_KEY = 'chronosphere_packToken'
 
 export default function ChronospherePage({ onBack, onNavigate }) {
   const [fullName, setFullName] = useState('')
@@ -207,21 +208,46 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   const [paymentMessage, setPaymentMessage] = useState('')
   const [pendingPayment, setPendingPayment] = useState(() => {
     try {
-      const raw = sessionStorage.getItem(SESSION_KEY)
+      const raw = sessionStorage.getItem(PENDING_PAYMENT_KEY)
       if (!raw) return null
       const parsed = JSON.parse(raw)
-      if (parsed && typeof parsed.orderId === 'string' && typeof parsed.drawToken === 'string') return parsed
+      if (parsed && typeof parsed.orderId === 'string' && typeof parsed.packToken === 'string') return parsed
       return null
     } catch { return null }
   })
-  const [drawToken, setDrawToken] = useState(null)
+  const [drawToken, setDrawToken] = useState(() => {
+    try { return localStorage.getItem(PACK_TOKEN_KEY) || null } catch { return null }
+  })
+  const [creditState, setCreditState] = useState(null)
   const [consentAccepted, setConsentAccepted] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
   const paypalContainerRef = useRef(null)
-  const drawTokenRef = useRef(pendingPayment?.drawToken || null)
+  const drawTokenRef = useRef(pendingPayment?.packToken || drawToken)
   const launchRef = useRef(null)
 
   useEffect(() => { drawTokenRef.current = drawToken }, [drawToken])
+
+  useEffect(() => {
+    if (!drawToken) return
+    let cancelled = false
+    fetch('/api/rdv-config?chronospherePayPalAction=status', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ packToken: drawToken }),
+    })
+      .then(async (res) => ({ ok: res.ok, data: await res.json().catch(() => ({})) }))
+      .then(({ ok, data }) => {
+        if (cancelled) return
+        if (!ok || !data.valid || data.creditsRemaining < 1) {
+          setDrawToken(null)
+          drawTokenRef.current = null
+          setCreditState(data?.valid ? data : { creditsRemaining: 0, creditsTotal: 3, status: 'exhausted' })
+          try { localStorage.removeItem(PACK_TOKEN_KEY) } catch {}
+          return
+        }
+        setCreditState(data)
+      })
+      .catch(() => { if (!cancelled) setError('Impossible de retrouver le solde de vos tirages.') })
+    return () => { cancelled = true }
+  }, [drawToken])
 
   useEffect(() => {
     let cancelled = false
@@ -262,21 +288,21 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   }
 
   function storePendingPayment(orderId, token) {
-    const entry = { orderId, drawToken: token }
+    const entry = { orderId, packToken: token }
     setPendingPayment(entry)
     drawTokenRef.current = token
-    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(entry)) } catch {}
+    try { sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(entry)) } catch {}
   }
 
   function clearPendingPayment() {
     setPendingPayment(null)
-    try { sessionStorage.removeItem(SESSION_KEY) } catch {}
+    try { sessionStorage.removeItem(PENDING_PAYMENT_KEY) } catch {}
   }
 
   function buildPayload(token) {
     const ids = numbers.map((v) => Number.parseInt(v, 10))
     return {
-      drawToken: token,
+      packToken: token,
       deliveryEmail: deliveryEmail.trim().toLowerCase(),
       theme: theme === 'autre' ? customTheme.trim() : theme,
       numbers: ids,
@@ -311,6 +337,14 @@ export default function ChronospherePage({ onBack, onNavigate }) {
         throw new Error(data.message || data.error || 'Le moteur est momentanément indisponible.')
       }
       setResult(data)
+      if (Number.isInteger(data.creditsRemaining)) {
+        setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal || 3, status: data.creditsRemaining ? 'active' : 'exhausted' })
+        if (data.creditsRemaining === 0) {
+          setDrawToken(null)
+          drawTokenRef.current = null
+          try { localStorage.removeItem(PACK_TOKEN_KEY) } catch {}
+        }
+      }
       if (data.delivery?.email === 'sent') clearPendingPayment()
       requestAnimationFrame(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -343,8 +377,8 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               body: JSON.stringify({ consentAccepted: true }),
             })
             const data = await res.json().catch(() => ({}))
-            if (!res.ok || !data.id || !data.drawToken) throw new Error(data.error || 'paypal_create_order_failed')
-            storePendingPayment(data.id, data.drawToken)
+            if (!res.ok || !data.id || !data.packToken) throw new Error(data.error || 'paypal_create_order_failed')
+            storePendingPayment(data.id, data.packToken)
             return data.id
           },
           onApprove: async (data) => {
@@ -359,6 +393,8 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               if (!res.ok) throw new Error(captureResult.error || 'capture_failed')
               const token = drawTokenRef.current
               setDrawToken(token)
+              setCreditState({ creditsRemaining: captureResult.creditsRemaining, creditsTotal: captureResult.creditsTotal || 3, status: captureResult.packStatus || 'active' })
+              try { localStorage.setItem(PACK_TOKEN_KEY, token) } catch {}
               setPaymentMessage('')
               if (node) node.innerHTML = ''
               if (token && launchRef.current) launchRef.current(token)
@@ -435,9 +471,11 @@ export default function ChronospherePage({ onBack, onNavigate }) {
         }
         throw new Error('La vérification a échoué. Vous pouvez réessayer dans quelques instants.')
       }
-      const token = pendingPayment.drawToken
+      const token = pendingPayment.packToken
       setDrawToken(token)
       drawTokenRef.current = token
+      setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal || 3, status: data.packStatus || 'active' })
+      try { localStorage.setItem(PACK_TOKEN_KEY, token) } catch {}
       setPaymentMessage('')
       if (token && launchRef.current) launchRef.current(token)
     } catch (err) {
@@ -453,9 +491,19 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     await launchInterpretation(drawToken)
   }
 
+  function handleNewDraw() {
+    setResult(null)
+    setNumbers(['', '', ''])
+    setTheme('amour')
+    setCustomTheme('')
+    setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const parts = result ? splitTendency(result.interpretation) : null
   const hasToken = !!drawToken
   const formattedPrice = formatChronospherePrice(paypalConfig?.amount)
+  const creditsLabel = creditState?.creditsRemaining === 1 ? '1 tirage disponible' : `${creditState?.creditsRemaining || 0} tirages disponibles`
 
   return (
     <div className="min-h-screen bg-cream text-deep">
@@ -666,9 +714,9 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               <>
                 <div className="mb-3 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
                   <p className="font-georgia text-base font-medium text-deep">
-                    {formattedPrice ? `Prix du tirage : ${formattedPrice}` : 'Prix du tirage : chargement...'}
+                    {formattedPrice ? `Pack de 3 tirages : ${formattedPrice}` : 'Prix du pack : chargement...'}
                   </p>
-                  <p className="mt-1 font-georgia text-xs text-mist">Paiement unique avec envoi du compte rendu par e-mail.</p>
+                  <p className="mt-1 font-georgia text-xs text-mist">Votre achat comprend 3 tirages Chronosphère, utilisables maintenant ou plus tard.</p>
                 </div>
                 <button
                   type="submit"
@@ -719,7 +767,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               </p>
               <p className="mb-6 text-center font-georgia text-2xl font-medium text-deep">
                 {formattedPrice ? formattedPrice.replace(' TTC', '') : '...'}
-                <span className="ml-2 text-base font-normal text-mist">TTC — tirage unique</span>
+                <span className="ml-2 text-base font-normal text-mist">TTC — pack de 3 tirages</span>
               </p>
 
               {paypalConfig?.env === 'sandbox' && (
@@ -749,8 +797,8 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               {paymentStatus === 'ready' && (
                 <>
                   <div className="mb-5 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
-                    <p className="font-georgia text-base font-medium text-deep">Prix du tirage : {formattedPrice}</p>
-                    <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Paiement unique pour un tirage complet avec envoi du compte rendu par e-mail.</p>
+                    <p className="font-georgia text-base font-medium text-deep">Pack de 3 tirages : {formattedPrice}</p>
+                    <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Un paiement unique pour 3 tirages complets avec envoi de chaque compte rendu par e-mail.</p>
                   </div>
                   <label className="mb-5 flex cursor-pointer items-start gap-3">
                     <input
@@ -791,6 +839,12 @@ export default function ChronospherePage({ onBack, onNavigate }) {
           {result && parts && (
             <div ref={resultsRef} className="mt-10 space-y-5">
 
+              {creditState && (
+                <div className="rounded-xl border border-gold/35 bg-gold/[.08] px-4 py-3 text-center font-georgia text-sm text-deep">
+                  {creditState.creditsRemaining > 0 ? creditsLabel : 'Vos 3 tirages ont été utilisés.'}
+                </div>
+              )}
+
               {result.delivery?.email === 'sent' && (
                 <p className="rounded-xl border border-gold/35 bg-gold/[.08] px-4 py-3 text-center font-georgia text-sm text-deep">
                   Une copie de votre ligne de temps vient de vous être envoyée par e-mail.
@@ -809,6 +863,18 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                     Renvoyer mon tirage par e-mail
                   </button>
                 </div>
+              )}
+
+              {creditState?.creditsRemaining > 0 && (
+                <button type="button" onClick={handleNewDraw} className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90">
+                  Faire un nouveau tirage →
+                </button>
+              )}
+
+              {creditState?.creditsRemaining === 0 && (
+                <button type="button" onClick={() => { setResult(null); setShowPayment(false); setError('') }} className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90">
+                  Obtenir 3 nouveaux tirages — {formattedPrice || '9,90 € TTC'}
+                </button>
               )}
 
               {/* Tendency */}

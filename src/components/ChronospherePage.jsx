@@ -354,6 +354,11 @@ export default function ChronospherePage({ onBack, onNavigate }) {
       }
       if (data.delivery?.email === 'sent') {
         clearPendingPayment()
+        if (legacy) {
+          setLegacyDrawToken(null)
+          setLegacyPendingPayment(null)
+          try { sessionStorage.removeItem(LEGACY_PENDING_PAYMENT_KEY) } catch {}
+        }
         if (data.creditsRemaining === 0) {
           setDrawToken(null)
           drawTokenRef.current = null
@@ -491,8 +496,6 @@ export default function ChronospherePage({ onBack, onNavigate }) {
       const token = isLegacy ? legacyPendingPayment.drawToken : pendingPayment.packToken
       if (isLegacy) {
         setLegacyDrawToken(token)
-        try { sessionStorage.removeItem(LEGACY_PENDING_PAYMENT_KEY) } catch {}
-        setLegacyPendingPayment(null)
       } else {
         setDrawToken(token)
         setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal || 3, status: data.packStatus || 'active' })

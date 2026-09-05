@@ -85,7 +85,8 @@ begin
 
   select * into v_draw
   from chronosphere_pack_draws
-  where pack_id = v_pack.id and request_hash = p_request_hash;
+  where pack_id = v_pack.id and request_hash = p_request_hash
+  for update;
   v_draw_exists := found;
 
   if v_draw_exists and v_draw.status = 'completed' then

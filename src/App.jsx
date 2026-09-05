@@ -140,10 +140,11 @@ function FeaturedChronosphere({ onOpen }) {
           <p className="mt-5 font-georgia text-base leading-relaxed text-cream/75 md:text-lg">
             Votre ciel natal, trois fréquences de l’Oracle et une lecture personnalisée pour éclairer les dynamiques présentes et les fenêtres qui s’ouvrent devant vous.
           </p>
-          <p className="mt-6 font-georgia text-sm font-medium text-gold">5,00 € TTC · Tirage unique · Compte rendu par e-mail</p>
+          <p className="mt-6 font-georgia text-sm font-medium text-gold">À partir de 5 € TTC</p>
+          <p className="mt-2 font-georgia text-xs text-cream/65">1 tirage : 5 € · Pack 3 tirages : 9,90 €</p>
           <div className="mt-8">
             <button onClick={onOpen} className="rounded-lg bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90">
-              Faire mon tirage — 5 €
+              Découvrir Chronosphère
             </button>
           </div>
         </div>

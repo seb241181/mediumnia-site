@@ -58,7 +58,8 @@ test('PayPal pack parameters remain server-decided and capture is idempotent', a
   assert.match(paypal, /const PACK_CREDITS = 3/)
   assert.match(paypal, /eq\('status', 'payment_pending'\)/)
   assert.match(paypal, /credits_remaining: PACK_CREDITS/)
-  assert.match(paypal, /captureLegacyDraw/)
+  assert.match(paypal, /captureSingleDraw/)
+  assert.match(paypal, /LEGACY_CONSENT_VERSION/)
 })
 
 test('timeline accepts the new pack token while retaining historical draw tokens', async () => {
@@ -81,5 +82,6 @@ test('frontend restores the pack locally and exposes its current balance', async
   assert.match(page, /Obtenir 3 nouveaux tirages/)
   assert.match(page, /chronosphere_drawToken/)
   assert.match(page, /resultToken/)
-  assert.match(page, /Un paiement unique pour 3 tirages complets, utilisables maintenant ou plus tard/)
+  assert.match(page, /À partir de \{singlePrice/)
+  assert.match(page, /Un paiement unique pour 3 tirages complets avec envoi de chaque compte rendu par e-mail/)
 })

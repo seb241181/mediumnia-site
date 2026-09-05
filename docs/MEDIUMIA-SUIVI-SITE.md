@@ -39,25 +39,40 @@ Remplacer la sélection de dates précédente par un calendrier mensuel complet 
 
 - mois entier visible ;
 - navigation mois précédent / suivant ;
-- point doré uniquement sur les jours ayant réellement au moins un créneau disponible ;
-- clic sur un jour disponible → affichage des horaires sous le calendrier ;
+- les jours ayant réellement au moins un créneau disponible sont affichés avec **un cercle clair autour du numéro** plutôt qu'un simple petit point ;
+- le **jour sélectionné** est affiché avec **un cercle plein dans la couleur profonde MediumIA** et un contraste fort ;
+- les jours sans disponibilité restent **sans cercle**, grisés et non sélectionnables ;
+- clic sur un jour disponible → affichage immédiat des horaires disponibles sous le calendrier ;
+- les horaires sont présentés sous forme de boutons larges et très lisibles, dans la logique de l'exemple Reservio fourni par Sébastien ;
 - jours passés et jours complets non sélectionnables ;
 - priorité au rendu mobile ;
+- identité graphique MediumIA conservée : ne pas copier les couleurs ni la marque Reservio ;
 - moteur de disponibilités, buffers, `max_per_day`, holds, PayPal, Google Meet, e-mails et annulation H-24 inchangés.
+
+### Référence visuelle validée
+
+Le comportement attendu est celui observé sur Reservio :
+
+- **cercle clair = journée disponible** ;
+- **cercle plein = journée sélectionnée** ;
+- **aucun cercle = journée non disponible** ;
+- après sélection, les créneaux restants du jour apparaissent directement sous le mois.
 
 ### Travail Claude du 5 septembre 2026
 
 - Branche : `claude/quirky-keller-gxgAV`
 - Commit initial : `a20ccc2ccdcdc8dfe61bb4a4a521bcdbff43435c`
 - Correctif : `c1b5ce303d0b8f737f9aa3c237b55525c5508468`
-- Le composant `CalendarPicker` a été remplacé par une grille mensuelle avec points de disponibilité.
+- Le composant `CalendarPicker` a été remplacé par une grille mensuelle avec disponibilités réelles.
 - Les étapes Date + Créneau ont été fusionnées en `Date & Heure`.
 - Le Preview Vercel du correctif est `READY` et le nouveau parcours a été vérifié visuellement.
+- **Ajustement visuel restant : remplacer les petits points de disponibilité par les cercles de date décrits ci-dessus.**
 
 ### Statut
 
 - **Décision UX : VALIDÉE**
-- **Preview : VALIDÉ visuellement**
+- **Preview : VALIDÉ fonctionnellement**
+- **Ajustement visuel Reservio-like : À FAIRE**
 - **Production : NON MODIFIÉE par la branche Claude tant qu'aucun merge n'est demandé**
 
 ---

@@ -36,10 +36,18 @@ const B = {
 
 replaceOnce('api/rdv-availability.js', B.old_select, B.new_select)
 replaceOnce('api/rdv-availability.js', B.old_backend_final, B.new_backend_final)
-replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_import, B.new_import)
-replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_state, B.new_state)
-replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_flow, B.new_flow)
-replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_step1, B.new_step1)
-replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_step2, B.new_step2)
+
+// CalendarGrid fetches per-day availability directly and shows gold dots,
+// superseding the findNextAvailableDate auto-search these patches injected.
+const rdvSource = fs.readFileSync('src/components/rdv/RdvPublic.jsx', 'utf8')
+if (rdvSource.includes('function CalendarGrid')) {
+  console.log('MediumIA RDV: CalendarGrid detected — frontend patches superseded, skipping')
+} else {
+  replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_import, B.new_import)
+  replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_state, B.new_state)
+  replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_flow, B.new_flow)
+  replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_step1, B.new_step1)
+  replaceOnce('src/components/rdv/RdvPublic.jsx', B.old_step2, B.new_step2)
+}
 
 console.log('MediumIA RDV: next-availability patch applied')

@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Invitation Fondateur — MediumIA</title>
+  <style>
+    :root {
+      --cream:#faf7ef;
+      --deep:#1a1535;
+      --gold:#c9a84c;
+      --mist:#6f6a7a;
+      --white:#ffffff;
+      --danger:#b54747;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(201,168,76,.08), transparent 24%),
+        radial-gradient(circle at 90% 20%, rgba(26,21,53,.05), transparent 26%),
+        var(--cream);
+      color:var(--deep);
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+    a { color:inherit; }
+    .topbar {
+      position:sticky; top:0; z-index:20;
+      background:rgba(250,247,239,.94);
+      backdrop-filter: blur(8px);
+      border-bottom:1px solid rgba(201,168,76,.22);
+    }
+    .topbar-inner {
+      max-width:1050px; margin:0 auto; padding:14px 22px;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+    }
+    .brand { display:flex; align-items:center; gap:11px; text-decoration:none; font-size:14px; font-weight:700; letter-spacing:.18em; }
+    .brand img { height:38px; width:auto; }
+    .back { font-size:12px; color:var(--mist); text-decoration:none; }
+    main { max-width:790px; margin:0 auto; padding:56px 22px 90px; }
+    .hero { text-align:center; margin-bottom:34px; }
+    .eyebrow { color:var(--gold); text-transform:uppercase; letter-spacing:.25em; font-size:11px; margin:0 0 13px; }
+    h1 { font-size:clamp(34px,6vw,54px); line-height:1.05; font-weight:500; margin:0 0 16px; }
+    .lead { max-width:610px; margin:0 auto; color:var(--mist); font-size:18px; line-height:1.65; }
+    .invite-card {
+      margin:34px 0 42px;
+      border:1px solid rgba(201,168,76,.42);
+      border-radius:24px;
+      background:linear-gradient(135deg,rgba(201,168,76,.11),rgba(255,255,255,.72));
+      padding:32px 24px;
+      text-align:center;
+      box-shadow:0 16px 42px rgba(26,21,53,.06);
+    }
+    .seal {
+      width:94px; height:94px; border-radius:50%; margin:0 auto 18px;
+      display:flex; align-items:center; justify-content:center; flex-direction:column;
+      border:1px solid rgba(201,168,76,.55); background:rgba(255,255,255,.7);
+      box-shadow:inset 0 0 0 7px rgba(201,168,76,.06);
+    }
+    .seal small { display:block; color:var(--mist); font-size:9px; letter-spacing:.18em; text-transform:uppercase; }
+    .seal strong { display:block; color:var(--gold); font-size:26px; margin-top:2px; }
+    .invite-card h2 { font-size:25px; font-weight:500; margin:0 0 10px; }
+    .invite-card p { color:var(--mist); line-height:1.65; margin:8px auto; max-width:590px; }
+    .free-pill {
+      display:inline-flex; gap:8px; align-items:center; margin-top:14px; padding:10px 16px;
+      border-radius:999px; background:var(--deep); color:#f7e7a8; font-size:12px; font-weight:700; letter-spacing:.05em;
+    }
+    .invalid {
+      display:none; border:1px solid rgba(181,71,71,.28); background:#fff5f4; color:#6a2d2d;
+      border-radius:16px; padding:18px 20px; line-height:1.55; margin:0 0 28px;
+    }
+    .notice {
+      display:flex; gap:12px; align-items:flex-start; padding:16px 18px; margin-bottom:34px;
+      border:1px solid rgba(201,168,76,.22); border-radius:14px; background:rgba(201,168,76,.05);
+      color:var(--mist); font-size:13px; line-height:1.55;
+    }
+    .notice b { color:var(--deep); }
+    .section { margin:0 0 46px; }
+    .section-head { margin-bottom:24px; }
+    .section-num { color:var(--gold); text-transform:uppercase; letter-spacing:.22em; font-size:10px; margin-bottom:5px; }
+    .section h3 { font-size:24px; font-weight:500; margin:0; padding-bottom:12px; border-bottom:1px solid rgba(201,168,76,.24); }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .full { grid-column:1/-1; }
+    label { display:block; color:var(--mist); text-transform:uppercase; letter-spacing:.12em; font-size:11px; margin-bottom:8px; }
+    label .req { color:var(--gold); }
+    input, textarea, select {
+      width:100%; border:1px solid rgba(201,168,76,.32); background:#fff; color:var(--deep);
+      border-radius:12px; padding:13px 14px; font:14px/1.45 Georgia, 'Times New Roman', serif; outline:none;
+      transition:border-color .18s, box-shadow .18s;
+    }
+    textarea { resize:vertical; min-height:105px; }
+    input:focus, textarea:focus, select:focus { border-color:rgba(201,168,76,.8); box-shadow:0 0 0 3px rgba(201,168,76,.08); }
+    .choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .choice label { margin:0; text-transform:none; letter-spacing:0; font-size:14px; }
+    .choice input { width:auto; margin-right:8px; }
+    .choice .choice-box {
+      display:flex; align-items:center; justify-content:center; padding:12px; border:1px solid rgba(201,168,76,.28); border-radius:12px; background:white; cursor:pointer;
+    }
+    .photo-card {
+      border:1px dashed rgba(201,168,76,.55); border-radius:18px; padding:22px; background:rgba(255,255,255,.48);
+    }
+    .photo-card h4 { font-size:18px; margin:0 0 8px; font-weight:500; }
+    .photo-card p { color:var(--mist); font-size:14px; line-height:1.6; margin:0; }
+    .check { display:flex; gap:12px; align-items:flex-start; margin:15px 0; color:var(--mist); font-size:13px; line-height:1.55; }
+    .check input { width:18px; height:18px; margin-top:1px; flex:0 0 auto; }
+    .check label { margin:0; text-transform:none; letter-spacing:0; font-size:13px; cursor:pointer; }
+    .submit {
+      width:100%; border:0; border-radius:13px; padding:16px 20px; background:var(--deep); color:#f6df92;
+      font:700 15px Georgia, 'Times New Roman', serif; cursor:pointer; transition:transform .12s, opacity .12s;
+    }
+    .submit:hover { transform:translateY(-1px); }
+    .submit:disabled { opacity:.55; cursor:wait; transform:none; }
+    .error { color:var(--danger); font-size:12px; margin-top:8px; display:none; }
+    .server-error { display:none; margin:15px 0 0; color:var(--danger); text-align:center; font-size:13px; }
+    .success { display:none; text-align:center; padding:62px 0; }
+    .success .star { color:var(--gold); font-size:52px; }
+    .success h2 { font-size:36px; font-weight:500; margin:12px 0; }
+    .success p { color:var(--mist); font-size:16px; line-height:1.65; max-width:620px; margin:10px auto; }
+    .success-box { margin:28px auto 0; max-width:600px; text-align:left; border:1px solid rgba(201,168,76,.28); border-radius:18px; padding:22px; background:rgba(201,168,76,.05); }
+    footer { text-align:center; color:var(--mist); font-size:11px; padding:30px 20px 48px; }
+    .hp { position:absolute !important; left:-9999px !important; width:1px !important; height:1px !important; overflow:hidden !important; }
+    @media (max-width:680px) {
+      main { padding-top:38px; }
+      .grid { grid-template-columns:1fr; }
+      .full { grid-column:auto; }
+      .invite-card { padding:26px 18px; }
+      .lead { font-size:16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" />
+        <span>MEDIUMIA</span>
+      </a>
+      <a class="back" href="/reseau">Voir le réseau →</a>
+    </div>
+  </div>
+
+  <main>
+    <div id="formView">
+      <section class="hero">
+        <p class="eyebrow">Le cercle des fondateurs MediumIA</p>
+        <h1>Bienvenue parmi les premiers.</h1>
+        <p class="lead">Cette page a été créée pour les professionnels invités personnellement à participer à la naissance du Réseau MediumIA.</p>
+      </section>
+
+      <section class="invite-card" id="inviteCard">
+        <div class="seal"><small>Fondateur</small><strong id="founderNumber">—</strong></div>
+        <h2>Votre invitation personnelle est ouverte ✦</h2>
+        <p>Votre place fait partie des <strong>10 invitations fondatrices offertes par MediumIA</strong>. Vous disposerez du même statut public de Membre Fondateur que les autres fondateurs du Réseau.</p>
+        <span class="free-pill">✦ INVITATION OFFERTE · AUCUN PAIEMENT À L’INSCRIPTION</span>
+      </section>
+
+      <div class="invalid" id="invalidInvite">
+        Ce lien d’invitation est incomplet ou n’est plus valide. Vous pouvez revenir au <a href="/reseau/rejoindre"><strong>formulaire général du Réseau MediumIA</strong></a>.
+      </div>
+
+      <div class="notice">
+        <span>◌</span>
+        <div><b>Vous n’avez pas besoin d’écrire “parfaitement”.</b> Racontez simplement votre pratique avec vos mots. À partir de vos réponses, nous préparerons une fiche claire et harmonieuse que vous pourrez valider avant sa publication.</div>
+      </div>
+
+      <form id="founderForm" novalidate>
+        <div class="hp" aria-hidden="true">
+          <label for="website_confirm">Ne pas remplir</label>
+          <input id="website_confirm" name="website_confirm" autocomplete="off" tabindex="-1" />
+        </div>
+
+        <section class="section">
+          <div class="section-head"><div class="section-num">01</div><h3>Identité professionnelle</h3></div>
+          <div class="grid">
+            <div><label for="first_name">Prénom <span class="req">*</span></label><input id="first_name" maxlength="100" required /></div>
+            <div><label for="last_name">Nom <span class="req">*</span></label><input id="last_name" maxlength="100" required /></div>
+            <div class="full"><label for="professional_name">Nom professionnel / enseigne</label><input id="professional_name" maxlength="100" placeholder="Si différent de votre nom civil" /></div>
+            <div class="full"><label for="email">E-mail professionnel <span class="req">*</span></label><input id="email" type="email" maxlength="254" required /></div>
+            <div><label for="phone">Téléphone</label><input id="phone" type="tel" maxlength="30" placeholder="Facultatif" /></div>
+            <div><label for="city">Ville <span class="req">*</span></label><input id="city" maxlength="100" required /></div>
+            <div><label for="department">Département <span class="req">*</span></label><input id="department" maxlength="10" placeholder="Ex : 59" required /></div>
+            <div>
+              <label>Consultations à distance <span class="req">*</span></label>
+              <div class="choice">
+                <label class="choice-box"><input type="radio" name="remote_sessions" value="yes" required />Oui</label>
+                <label class="choice-box"><input type="radio" name="remote_sessions" value="no" required />Non</label>
+              </div>
+            </div>
+            <div><label for="website">Site internet</label><input id="website" type="url" maxlength="500" placeholder="https://..." /></div>
+            <div><label for="social_link">Réseau social principal</label><input id="social_link" maxlength="500" placeholder="@votre_compte ou URL" /></div>
+            <div class="full"><label for="main_activity">Activité principale <span class="req">*</span></label><input id="main_activity" maxlength="200" placeholder="Ex : Médiumnité, Reiki, Réflexologie…" required /></div>
+            <div class="full"><label for="specialties">Spécialités / disciplines <span class="req">*</span></label><textarea id="specialties" maxlength="2000" required></textarea></div>
+            <div><label for="years_practice">Années de pratique <span class="req">*</span></label><input id="years_practice" maxlength="50" placeholder="Ex : 8 ans" required /></div>
+            <div><label for="siret">SIRET</label><input id="siret" maxlength="30" placeholder="Facultatif à ce stade" /></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head"><div class="section-num">02</div><h3>Votre univers</h3></div>
+          <div class="grid">
+            <div class="full"><label for="practice_description">Présentez votre pratique en quelques lignes <span class="req">*</span></label><textarea id="practice_description" maxlength="5000" placeholder="Ce que vous faites, votre univers, votre façon de travailler…" required></textarea></div>
+            <div class="full"><label for="approach_description">Quelle est votre approche de l’accompagnement ? <span class="req">*</span></label><textarea id="approach_description" maxlength="5000" placeholder="Comment accompagnez-vous les personnes ? Qu’est-ce qui vous caractérise ?" required></textarea></div>
+            <div class="full"><label for="target_audience">À qui vous adressez-vous principalement ? <span class="req">*</span></label><textarea id="target_audience" maxlength="3000" required></textarea></div>
+            <div class="full"><label for="motivation">Pourquoi avez-vous choisi de rejoindre l’aventure MediumIA ? <span class="req">*</span></label><textarea id="motivation" maxlength="5000" required></textarea></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head"><div class="section-num">03</div><h3>Les photos de votre fiche</h3></div>
+          <div class="photo-card">
+            <h4>1 à 3 photos suffisent.</h4>
+            <p>Après avoir envoyé ce formulaire, répondez simplement à <strong>l’e-mail d’invitation MediumIA</strong> que vous avez reçu et joignez vos photos : un portrait, votre lieu de pratique, ou une image représentative de votre univers. Nous les intégrerons à votre fiche si vous le souhaitez.</p>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head"><div class="section-num">04</div><h3>Validation</h3></div>
+          <div class="check">
+            <input id="consent_accuracy" type="checkbox" required />
+            <label for="consent_accuracy">Je certifie que les informations transmises sont exactes et j’accepte qu’elles servent à préparer ma fiche MediumIA.</label>
+          </div>
+          <div class="check">
+            <input id="consent_processing" type="checkbox" required />
+            <label for="consent_processing">J’accepte le traitement de ces informations dans le cadre de ma candidature et de la préparation de ma présence dans le Réseau MediumIA.</label>
+          </div>
+        </section>
+
+        <button class="submit" id="submitBtn" type="submit">Transmettre ma fiche de Fondateur ✦</button>
+        <p class="server-error" id="serverError">Votre fiche n’a pas pu être transmise. Vérifiez votre connexion puis réessayez.</p>
+      </form>
+    </div>
+
+    <section class="success" id="successView">
+      <div class="star">✦</div>
+      <p class="eyebrow">Fiche fondateur reçue</p>
+      <h2>Merci.</h2>
+      <p>Vos informations nous sont bien parvenues. Nous allons maintenant préparer votre fiche MediumIA en respectant votre univers.</p>
+      <div class="success-box">
+        <p><strong>Prochaine étape :</strong> si vous souhaitez illustrer votre fiche, répondez à votre e-mail d’invitation avec <strong>1 à 3 photos</strong>.</p>
+        <p>Nous vous présenterons votre fiche avant publication. <strong>Rien ne sera mis en ligne sans votre validation.</strong></p>
+      </div>
+      <p style="margin-top:26px"><a href="/reseau">Découvrir le Réseau MediumIA →</a></p>
+    </section>
+  </main>
+
+  <footer>MEDIUMIA · Le monde spirituel, relié autrement.</footer>
+
+  <script>
+    (() => {
+      const params = new URLSearchParams(window.location.search)
+      const raw = (params.get('invite') || '').trim()
+      const n = Number(raw)
+      const validInvite = Number.isInteger(n) && n >= 1 && n <= 10
+      const founder = validInvite ? String(n).padStart(3, '0') : null
+
+      const founderNumber = document.getElementById('founderNumber')
+      const inviteCard = document.getElementById('inviteCard')
+      const invalidInvite = document.getElementById('invalidInvite')
+      const form = document.getElementById('founderForm')
+      const submitBtn = document.getElementById('submitBtn')
+      const serverError = document.getElementById('serverError')
+
+      if (validInvite) {
+        founderNumber.textContent = founder
+        document.title = `Invitation Fondateur n°${founder} — MediumIA`
+      } else {
+        inviteCard.style.display = 'none'
+        invalidInvite.style.display = 'block'
+        form.style.display = 'none'
+      }
+
+      const val = id => document.getElementById(id).value.trim()
+      const checked = id => document.getElementById(id).checked
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault()
+        if (!validInvite) return
+
+        serverError.style.display = 'none'
+
+        if (!form.checkValidity()) {
+          form.reportValidity()
+          return
+        }
+
+        const website = val('website')
+        if (website && !/^https?:\/\//i.test(website)) {
+          document.getElementById('website').setCustomValidity('L’adresse doit commencer par http:// ou https://')
+          document.getElementById('website').reportValidity()
+          return
+        }
+        document.getElementById('website').setCustomValidity('')
+
+        const remote = document.querySelector('input[name="remote_sessions"]:checked')
+        const payload = {
+          first_name: val('first_name'),
+          last_name: val('last_name'),
+          professional_name: val('professional_name') || null,
+          email: val('email').toLowerCase(),
+          phone: val('phone') || null,
+          city: val('city'),
+          department: val('department'),
+          remote_sessions: remote ? remote.value : '',
+          website: website || null,
+          social_link: val('social_link') || null,
+          main_activity: val('main_activity'),
+          specialties: val('specialties'),
+          years_practice: val('years_practice'),
+          siret: val('siret') || null,
+          practice_description: val('practice_description'),
+          approach_description: val('approach_description'),
+          target_audience: val('target_audience'),
+          motivation: val('motivation'),
+          consent_accuracy: checked('consent_accuracy'),
+          consent_processing: checked('consent_processing'),
+          source_page: `${window.location.pathname}?invite=${founder}`,
+          _hp: document.getElementById('website_confirm').value
+        }
+
+        submitBtn.disabled = true
+        submitBtn.textContent = 'Transmission en cours…'
+
+        try {
+          const response = await fetch('/api/rdv-config?action=reseau-apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+
+          if (!response.ok) throw new Error('submission_failed')
+
+          document.getElementById('formView').style.display = 'none'
+          document.getElementById('successView').style.display = 'block'
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        } catch (error) {
+          serverError.style.display = 'block'
+          submitBtn.disabled = false
+          submitBtn.textContent = 'Transmettre ma fiche de Fondateur ✦'
+        }
+      })
+    })()
+  </script>
+</body>
+</html>

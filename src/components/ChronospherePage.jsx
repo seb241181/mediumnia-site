@@ -505,7 +505,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         const code = data.error || 'capture_failed'
-        const neverPaid = ['paypal_capture_failed', 'paypal_payment_invalid', 'paypal_consent_mismatch', 'paypal_amount_mismatch', 'draw_not_found']
+        const neverPaid = ['paypal_capture_failed', 'paypal_payment_invalid', 'paypal_consent_mismatch', 'paypal_amount_mismatch', 'draw_not_found', 'pack_not_found']
         if (neverPaid.includes(code)) {
           clearPendingPayment()
           drawTokenRef.current = null
@@ -548,6 +548,23 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     setTheme('amour')
     setCustomTheme('')
     setError('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function handleChooseNewOffer() {
+    setResult(null)
+    setSelectedProduct(null)
+    setShowPayment(false)
+    setConsentAccepted(false)
+    setError('')
+    setPaymentMessage('')
+    setResultToken(null)
+    setLegacyDrawToken(null)
+    setLegacyPendingPayment(null)
+    clearPendingPayment()
+    drawTokenRef.current = null
+    paymentProductRef.current = null
+    try { sessionStorage.removeItem(LEGACY_PENDING_PAYMENT_KEY) } catch {}
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -978,6 +995,12 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               {creditState?.creditsRemaining > 0 && (
                 <button type="button" onClick={handleNewDraw} className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90">
                   Faire un nouveau tirage →
+                </button>
+              )}
+
+              {creditState === null && resultToken?.legacy && (
+                <button type="button" onClick={handleChooseNewOffer} className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90">
+                  Choisir un nouveau tirage →
                 </button>
               )}
 

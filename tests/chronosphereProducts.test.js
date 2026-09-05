@@ -110,6 +110,32 @@ test('frontend sends the selected product and preserves legacy recovery fixes', 
   assert.match(page, /parsed\.product === 'single'[\s\S]*parsed\.drawToken/)
 })
 
+test('completed single result offers a return to product selection', async () => {
+  const { page } = await readSources()
+  assert.match(page, /creditState === null && resultToken\?\.legacy/)
+  assert.match(page, /onClick=\{handleChooseNewOffer\}[\s\S]*Choisir un nouveau tirage →/)
+  assert.match(page, /delivery\?\.email === 'error'[\s\S]*Renvoyer mon tirage par e-mail[\s\S]*Choisir un nouveau tirage →/)
+})
+
+test('single offer reset clears the result and removes any automatic product choice', async () => {
+  const { page } = await readSources()
+  const reset = page.slice(page.indexOf('function handleChooseNewOffer()'), page.indexOf('const parts = result'))
+  assert.match(reset, /setResult\(null\)/)
+  assert.match(reset, /setSelectedProduct\(null\)/)
+  assert.match(reset, /setShowPayment\(false\)/)
+  assert.match(reset, /setConsentAccepted\(false\)/)
+  assert.match(reset, /setError\(''\)/)
+  assert.match(reset, /paymentProductRef\.current = null/)
+})
+
+test('pack_not_found clears an obsolete pending payment', async () => {
+  const { page } = await readSources()
+  const recovery = page.slice(page.indexOf('const neverPaid ='), page.indexOf("throw new Error('La vérification a échoué"))
+  assert.match(recovery, /'pack_not_found'/)
+  assert.match(recovery, /neverPaid\.includes\(code\)[\s\S]*clearPendingPayment\(\)/)
+  assert.match(recovery, /drawTokenRef\.current = null[\s\S]*setShowPayment\(false\)/)
+})
+
 test('home presents both public offers and the discovery CTA', async () => {
   const { home } = await readSources()
   assert.match(home, /À partir de 5 € TTC/)

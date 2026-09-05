@@ -48,22 +48,44 @@ Remplacer la sélection de dates précédente par un calendrier mensuel complet 
 ### Travail Claude du 5 septembre 2026
 
 - Branche : `claude/quirky-keller-gxgAV`
-- Commit : `a20ccc2ccdcdc8dfe61bb4a4a521bcdbff43435c`
+- Commit initial : `a20ccc2ccdcdc8dfe61bb4a4a521bcdbff43435c`
+- Correctif : `c1b5ce303d0b8f737f9aa3c237b55525c5508468`
 - Le composant `CalendarPicker` a été remplacé par une grille mensuelle avec points de disponibilité.
 - Les étapes Date + Créneau ont été fusionnées en `Date & Heure`.
-
-### Points à corriger avant validation / merge
-
-1. **Le Preview Vercel du commit `a20ccc2` échoue au build.** Le script de prebuild `scripts/apply-rdv-next-availability.mjs` cherche encore une ancre supprimée de `src/components/rdv/RdvPublic.jsx` et lève : `Expected patch anchor not found`.
-2. Le cahier des charges demandait que les jours confirmés sans disponibilité soient **non cliquables**. Dans le commit actuel, ils sont grisés mais restent cliquables.
-3. La grille charge les disponibilités avec un appel API par jour, seulement regroupés par lots de 5. À conserver uniquement si aucune récupération mensuelle / par plage n'est raisonnablement possible ; sinon privilégier une stratégie réduisant le nombre de requêtes.
-4. Ne pas considérer la refonte terminée tant que le Preview Vercel n'est pas `READY` et que le parcours réel n'a pas été vérifié.
+- Le Preview Vercel du correctif est `READY` et le nouveau parcours a été vérifié visuellement.
 
 ### Statut
 
 - **Décision UX : VALIDÉE**
-- **Implémentation : EN COURS / À CORRIGER**
-- **Production : NON MODIFIÉE par le commit Claude à ce stade**
+- **Preview : VALIDÉ visuellement**
+- **Production : NON MODIFIÉE par la branche Claude tant qu'aucun merge n'est demandé**
+
+---
+
+## 3. RDV SÉBASTIEN — CAPACITÉ ET HORIZON
+
+### Décision validée le 5 septembre 2026
+
+Objectif de capacité : environ **100 rendez-vous par mois**.
+
+Configuration de référence :
+
+- jours ouverts : **lundi à vendredi** ;
+- créneaux quotidiens : **08:00, 09:30, 11:00, 13:30, 15:00** ;
+- soit **5 créneaux maximum par jour** ;
+- `max_per_day = 5` ;
+- horizon de réservation : **365 jours** ;
+- préavis minimum : **24 h** ;
+- buffer après rendez-vous : **30 min** ;
+- buffer avant rendez-vous : **0 min**.
+
+Le créneau de **08:00 était déjà présent du lundi au vendredi** dans les règles de disponibilité au moment de la vérification ; aucune duplication n'a été créée.
+
+### Statut
+
+- **Base MediumIA mise à jour : OUI**
+- `booking_horizon_days = 365`
+- `max_per_day = 5`
 
 ---
 

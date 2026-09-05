@@ -13,6 +13,7 @@ import ReseauJoindre from './components/ReseauJoindre'
 import RdvDashboard from './components/rdv/RdvDashboard'
 import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
+import RdvPasswordRecovery from './components/rdv/RdvPasswordRecovery'
 import ChronospherePage from './components/ChronospherePage'
 import SiteGuardian from './components/SiteGuardian'
 
@@ -255,7 +256,8 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
 }
 
 function pathToView(p) {
-  return p === '/rdv/annuler' ? 'rdv-cancellation'
+  return p === '/rdv/reset-password' ? 'rdv-password-recovery'
+    : p === '/rdv/annuler' ? 'rdv-cancellation'
     : p.startsWith('/rdv/') ? 'rdv-public'
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
@@ -297,7 +299,7 @@ export default function App() {
     else backHome()
   }
 
-  const showGuardian = view !== 'rdv-dashboard'
+  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-password-recovery'
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 
@@ -312,6 +314,7 @@ export default function App() {
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
+  if (view === 'rdv-password-recovery') return <RdvPasswordRecovery onBack={backHome} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
   return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>

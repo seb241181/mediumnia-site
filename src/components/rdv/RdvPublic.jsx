@@ -98,7 +98,7 @@ function ServiceCard({ service, selected, onSelect }) {
   )
 }
 
-// ── Calendar grid (monthly view with availability dots) ──────────────────────
+// ── Calendar grid (monthly view with availability states) ────────────────────
 
 function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, config, dayAvail, onDayAvailUpdate }) {
   const today = new Date()
@@ -273,38 +273,31 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
               key={cell.dateStr}
               onClick={() => cell.enabled && cell.hasAvail !== false && onSelect(cell.date)}
               disabled={!cell.enabled || cell.hasAvail === false}
-              className={`relative aspect-square flex flex-col items-center justify-center rounded-xl font-georgia text-sm transition-all ${
-                isSelected
-                  ? 'bg-gold text-deep font-bold shadow-sm'
-                  : !cell.enabled || cell.hasAvail === false
-                    ? 'text-mist/20 cursor-not-allowed'
-                    : 'text-deep hover:bg-gold/10'
+              className={`relative aspect-square flex items-center justify-center font-georgia text-sm transition-all ${
+                !cell.enabled || cell.hasAvail === false
+                  ? 'text-mist/20 cursor-not-allowed'
+                  : cell.isLoading
+                    ? 'text-mist/35 animate-pulse'
+                    : 'text-deep'
               }`}
             >
-              <span>{cell.date.getDate()}</span>
-              {cell.enabled && !isSelected && cell.hasAvail === true && (
-                <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-gold" />
-              )}
-              {cell.isLoading && (
-                <span className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-gold/30 animate-pulse" />
-              )}
+              <span className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-all ${
+                isSelected
+                  ? 'bg-deep text-gold font-bold shadow-sm'
+                  : cell.hasAvail === true
+                    ? 'border border-gold/30 bg-white/80 text-deep hover:border-gold/60 hover:bg-gold/5'
+                    : ''
+              }`}>
+                {cell.date.getDate()}
+              </span>
             </button>
           )
         })}
       </div>
 
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gold/10">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block" />
-          <span className="font-georgia text-[10px] text-mist/60">Disponible</span>
-        </div>
-        {loadingMonths[monthKey] && (
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold/30 animate-pulse inline-block" />
-            <span className="font-georgia text-[10px] text-mist/40">Vérification…</span>
-          </div>
-        )}
-      </div>
+      {loadingMonths[monthKey] && (
+        <p className="mt-3 pt-3 border-t border-gold/10 font-georgia text-[10px] text-mist/40 text-right">Vérification des disponibilités…</p>
+      )}
 
       {fetchError && (
         <div className="mt-3 rounded-xl border border-gold/20 bg-gold/5 px-4 py-2.5">

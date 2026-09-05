@@ -32,6 +32,7 @@ create table if not exists chronosphere_pack_draws (
   result_json jsonb,
   failure_code text,
   processing_started_at timestamptz,
+  processing_claim_id uuid,
   completed_at timestamptz,
   delivery_email_hash text,
   email_sent_at timestamptz,
@@ -39,7 +40,7 @@ create table if not exists chronosphere_pack_draws (
   created_at timestamptz not null default now(),
   constraint chronosphere_pack_draws_request_key unique (pack_id, request_hash),
   constraint chronosphere_pack_draws_completion_state check (
-    (status = 'processing' and processing_started_at is not null and result_json is null)
+    (status = 'processing' and processing_started_at is not null and processing_claim_id is not null and result_json is null)
     or (status = 'completed' and completed_at is not null and result_json is not null)
     or (status = 'failed' and failure_code is not null)
   )
@@ -55,7 +56,8 @@ alter table chronosphere_pack_draws enable row level security;
 -- This serializes all consumption and refund paths for one pack.
 create or replace function consume_chronosphere_pack_credit(
   p_pack_token_hash text,
-  p_request_hash text
+  p_request_hash text,
+  p_processing_ttl_seconds integer default 300
 )
 returns jsonb
 language plpgsql
@@ -67,6 +69,7 @@ declare
   v_draw chronosphere_pack_draws%rowtype;
   v_remaining integer;
   v_draw_exists boolean;
+  v_claim_id uuid := gen_random_uuid();
 begin
   select * into v_pack
   from chronosphere_credit_packs
@@ -96,7 +99,26 @@ begin
     );
   end if;
   if v_draw_exists and v_draw.status = 'processing' then
-    return jsonb_build_object('allowed', false, 'reason', 'in_progress');
+    if v_draw.processing_started_at > now() - make_interval(secs => greatest(30, least(p_processing_ttl_seconds, 3600))) then
+      return jsonb_build_object('allowed', false, 'reason', 'in_progress');
+    end if;
+
+    -- The original reservation already consumed one credit. A stale worker is
+    -- replaced in place, with a new claim that prevents it from completing or
+    -- refunding after this recovery succeeds.
+    update chronosphere_pack_draws
+    set processing_started_at = now(),
+        processing_claim_id = v_claim_id
+    where id = v_draw.id;
+    return jsonb_build_object(
+      'allowed', true,
+      'cached', false,
+      'recovered', true,
+      'draw_id', v_draw.id,
+      'claim_id', v_claim_id,
+      'credits_remaining', v_pack.credits_remaining,
+      'credits_total', v_pack.credits_total
+    );
   end if;
   if v_pack.credits_remaining <= 0 then
     return jsonb_build_object('allowed', false, 'reason', 'no_credits');
@@ -115,14 +137,15 @@ begin
         result_json = null,
         failure_code = null,
         processing_started_at = now(),
+        processing_claim_id = v_claim_id,
         completed_at = null,
         delivery_email_hash = null,
         email_sent_at = null,
         email_delivery_failure_code = null
     where id = v_draw.id;
   else
-    insert into chronosphere_pack_draws (pack_id, request_hash, status, processing_started_at)
-    values (v_pack.id, p_request_hash, 'processing', now())
+    insert into chronosphere_pack_draws (pack_id, request_hash, status, processing_started_at, processing_claim_id)
+    values (v_pack.id, p_request_hash, 'processing', now(), v_claim_id)
     returning * into v_draw;
   end if;
 
@@ -130,6 +153,7 @@ begin
     'allowed', true,
     'cached', false,
     'draw_id', v_draw.id,
+    'claim_id', v_claim_id,
     'credits_remaining', v_remaining,
     'credits_total', v_pack.credits_total
   );
@@ -138,7 +162,8 @@ $$;
 
 create or replace function complete_chronosphere_pack_draw(
   p_draw_id uuid,
-  p_result_json jsonb
+  p_result_json jsonb,
+  p_claim_id uuid
 )
 returns boolean
 language plpgsql
@@ -146,16 +171,16 @@ security definer
 set search_path = public
 as $$
 declare
-  v_status text;
+  v_draw chronosphere_pack_draws%rowtype;
 begin
-  select status into v_status
+  select * into v_draw
   from chronosphere_pack_draws
   where id = p_draw_id
   for update;
 
   if not found then return false; end if;
-  if v_status = 'completed' then return true; end if;
-  if v_status <> 'processing' then return false; end if;
+  if v_draw.status = 'completed' then return v_draw.processing_claim_id = p_claim_id; end if;
+  if v_draw.status <> 'processing' or v_draw.processing_claim_id <> p_claim_id then return false; end if;
 
   update chronosphere_pack_draws
   set status = 'completed',
@@ -169,7 +194,8 @@ $$;
 
 create or replace function release_chronosphere_pack_credit(
   p_draw_id uuid,
-  p_failure_code text
+  p_failure_code text,
+  p_claim_id uuid
 )
 returns jsonb
 language plpgsql
@@ -188,7 +214,7 @@ begin
 
   select * into v_pack from chronosphere_credit_packs where id = v_pack_id for update;
   select * into v_draw from chronosphere_pack_draws where id = p_draw_id for update;
-  if v_draw.status <> 'processing' then
+  if v_draw.status <> 'processing' or v_draw.processing_claim_id <> p_claim_id then
     return jsonb_build_object('released', false, 'reason', 'draw_not_processing', 'credits_remaining', v_pack.credits_remaining);
   end if;
 
@@ -196,7 +222,8 @@ begin
   update chronosphere_pack_draws
   set status = 'failed',
       failure_code = left(coalesce(nullif(p_failure_code, ''), 'timeline_engine_failed'), 80),
-      processing_started_at = null
+      processing_started_at = null,
+      processing_claim_id = null
   where id = v_draw.id;
   update chronosphere_credit_packs
   set credits_remaining = v_remaining,
@@ -207,9 +234,9 @@ begin
 end;
 $$;
 
-revoke execute on function consume_chronosphere_pack_credit(text, text) from public, anon, authenticated;
-revoke execute on function complete_chronosphere_pack_draw(uuid, jsonb) from public, anon, authenticated;
-revoke execute on function release_chronosphere_pack_credit(uuid, text) from public, anon, authenticated;
-grant execute on function consume_chronosphere_pack_credit(text, text) to service_role;
-grant execute on function complete_chronosphere_pack_draw(uuid, jsonb) to service_role;
-grant execute on function release_chronosphere_pack_credit(uuid, text) to service_role;
+revoke execute on function consume_chronosphere_pack_credit(text, text, integer) from public, anon, authenticated;
+revoke execute on function complete_chronosphere_pack_draw(uuid, jsonb, uuid) from public, anon, authenticated;
+revoke execute on function release_chronosphere_pack_credit(uuid, text, uuid) from public, anon, authenticated;
+grant execute on function consume_chronosphere_pack_credit(text, text, integer) to service_role;
+grant execute on function complete_chronosphere_pack_draw(uuid, jsonb, uuid) to service_role;
+grant execute on function release_chronosphere_pack_credit(uuid, text, uuid) to service_role;

@@ -42,6 +42,15 @@ test('failed processing refunds exactly once and a retry reserves a credit again
   assert.match(migration, /A failed attempt was already refunded/)
 })
 
+test('stale processing is recovered in place with an exclusive claim', async () => {
+  const { migration, timeline } = await sources()
+  assert.match(migration, /p_processing_ttl_seconds integer default 300/)
+  assert.match(migration, /processing_claim_id uuid/)
+  assert.match(migration, /'recovered', true/)
+  assert.match(migration, /v_draw\.processing_claim_id <> p_claim_id/)
+  assert.match(timeline, /p_claim_id: processingClaimId/)
+})
+
 test('PayPal pack parameters remain server-decided and capture is idempotent', async () => {
   const { paypal } = await sources()
   assert.match(paypal, /amount: '9\.90'/)
@@ -70,4 +79,7 @@ test('frontend restores the pack locally and exposes its current balance', async
   assert.match(page, /Pack de 3 tirages/)
   assert.match(page, /Faire un nouveau tirage/)
   assert.match(page, /Obtenir 3 nouveaux tirages/)
+  assert.match(page, /chronosphere_drawToken/)
+  assert.match(page, /resultToken/)
+  assert.match(page, /Un paiement unique pour 3 tirages complets, utilisables maintenant ou plus tard/)
 })

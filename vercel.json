@@ -25,6 +25,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/reseau/fondateur",
+      "destination": "/fondateur.html"
+    },
+    {
       "source": "/reseau/rejoindre",
       "destination": "/index.html"
     },

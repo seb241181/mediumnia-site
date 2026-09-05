@@ -129,6 +129,10 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
     return config?.availableWeekdays ? config.availableWeekdays.includes(wd) : (wd !== 0 && wd !== 6)
   }
 
+  // Fetches availability per day because rdv-availability depends on per-date
+  // Google FreeBusy, booking_exceptions, and day-of-week rules — a monthly
+  // batch would require refactoring the validated availability engine.
+  // Batches of 5 keep latency manageable (~4-5 rounds for a typical month).
   useEffect(() => {
     if (!serviceSlug || !config || config.mode === 'configuration_required') return
 
@@ -267,16 +271,14 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
           return (
             <button
               key={cell.dateStr}
-              onClick={() => cell.enabled && onSelect(cell.date)}
-              disabled={!cell.enabled}
+              onClick={() => cell.enabled && cell.hasAvail !== false && onSelect(cell.date)}
+              disabled={!cell.enabled || cell.hasAvail === false}
               className={`relative aspect-square flex flex-col items-center justify-center rounded-xl font-georgia text-sm transition-all ${
                 isSelected
                   ? 'bg-gold text-deep font-bold shadow-sm'
-                  : !cell.enabled
+                  : !cell.enabled || cell.hasAvail === false
                     ? 'text-mist/20 cursor-not-allowed'
-                    : cell.hasAvail === false
-                      ? 'text-mist/35'
-                      : 'text-deep hover:bg-gold/10'
+                    : 'text-deep hover:bg-gold/10'
               }`}
             >
               <span>{cell.date.getDate()}</span>

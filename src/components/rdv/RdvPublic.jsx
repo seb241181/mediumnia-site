@@ -15,10 +15,18 @@ function formatService(svc) {
   }
 }
 
-// ── Step indicator ────────────────────────────────────────────────────────────
+function toDateStr(d) {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+// ── Step indicator ───────────────────────────────────────────────────────────
 
 function StepBar({ step }) {
-  const labels = ['Prestation', 'Date', 'Créneau', 'Coordonnées']
+  const labels = ['Prestation', 'Date & Heure', 'Coordonnées']
   return (
     <div className="flex items-center gap-0 mb-8">
       {labels.map((label, i) => (
@@ -90,14 +98,13 @@ function ServiceCard({ service, selected, onSelect }) {
   )
 }
 
-// ── Calendar picker ───────────────────────────────────────────────────────────
+// ── Calendar grid (monthly view with availability states) ────────────────────
 
-function CalendarPicker({ selected, onSelect, config }) {
+function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, config, dayAvail, onDayAvailUpdate }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const minDate = new Date(today)
   minDate.setDate(minDate.getDate() + 1)
-
   const horizonDays = config?.horizonDays ?? 42
   const maxDate = new Date(today)
   maxDate.setDate(maxDate.getDate() + horizonDays)
@@ -105,6 +112,95 @@ function CalendarPicker({ selected, onSelect, config }) {
   const [viewDate, setViewDate] = useState(() => selected
     ? new Date(selected.getFullYear(), selected.getMonth(), 1)
     : new Date(today.getFullYear(), today.getMonth(), 1))
+  const [loadingMonths, setLoadingMonths] = useState({})
+  const [fetchError, setFetchError] = useState(null)
+  const dayAvailRef = useRef(dayAvail)
+  dayAvailRef.current = dayAvail
+
+  const year = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+  const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  function isDayEnabled(date) {
+    if (date < minDate || date > maxDate) return false
+    const wd = date.getDay()
+    if (config?.availableWeekdays === null) return wd !== 0 && wd !== 6
+    return config?.availableWeekdays ? config.availableWeekdays.includes(wd) : (wd !== 0 && wd !== 6)
+  }
+
+  // Fetches availability per day because rdv-availability depends on per-date
+  // Google FreeBusy, booking_exceptions, and day-of-week rules — a monthly
+  // batch would require refactoring the validated availability engine.
+  // Batches of 5 keep latency manageable (~4-5 rounds for a typical month).
+  useEffect(() => {
+    if (!serviceSlug || !config || config.mode === 'configuration_required') return
+
+    const candidates = []
+    const dim = new Date(year, month + 1, 0).getDate()
+    for (let d = 1; d <= dim; d++) {
+      const dt = new Date(year, month, d)
+      if (dt < minDate || dt > maxDate) continue
+      const wd = dt.getDay()
+      const weekdayOpen = config.availableWeekdays === null
+        ? (wd !== 0 && wd !== 6)
+        : (config.availableWeekdays ? config.availableWeekdays.includes(wd) : (wd !== 0 && wd !== 6))
+      if (weekdayOpen) candidates.push(dt)
+    }
+
+    if (candidates.length === 0) return
+    const allKnown = candidates.every(d => dayAvailRef.current[toDateStr(d)] !== undefined)
+    if (allKnown) return
+
+    let cancelled = false
+    setFetchError(null)
+    setLoadingMonths(prev => ({ ...prev, [monthKey]: true }))
+
+    async function run() {
+      for (let i = 0; i < candidates.length; i += 5) {
+        if (cancelled) return
+        const batch = candidates.slice(i, i + 5)
+        const results = await Promise.all(batch.map(async dt => {
+          const dateStr = toDateStr(dt)
+          if (dayAvailRef.current[dateStr] !== undefined) return null
+          try {
+            const params = new URLSearchParams({
+              practitioner: practitionerSlug,
+              date: dateStr,
+              service_slug: serviceSlug,
+            })
+            const res = await fetch(`/api/rdv-availability?${params}`)
+            if (!res.ok) return { dateStr, has: false }
+            const data = await res.json()
+            if (data?.mode === 'error' || data?.mode === 'configuration_required') {
+              return { dateStr, has: false, blocking: data.notice || 'Impossible de charger les disponibilités.' }
+            }
+            return { dateStr, has: Array.isArray(data?.slots) && data.slots.some(s => s.available) }
+          } catch {
+            return { dateStr, has: false }
+          }
+        }))
+        if (cancelled) return
+
+        const blocking = results.find(r => r?.blocking)
+        if (blocking) {
+          setFetchError(blocking.blocking)
+          setLoadingMonths(prev => ({ ...prev, [monthKey]: false }))
+          return
+        }
+
+        const update = {}
+        for (const r of results) {
+          if (r) update[r.dateStr] = r.has
+        }
+        if (Object.keys(update).length > 0) onDayAvailUpdate(update)
+      }
+      if (!cancelled) setLoadingMonths(prev => ({ ...prev, [monthKey]: false }))
+    }
+
+    run()
+    return () => { cancelled = true }
+  }, [monthKey, serviceSlug, practitionerSlug]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (config === null) {
     return (
@@ -125,70 +221,89 @@ function CalendarPicker({ selected, onSelect, config }) {
     )
   }
 
-  const year = viewDate.getFullYear()
-  const month = viewDate.getMonth()
   const monthLabel = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(viewDate)
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-  function isDayDisabled(date) {
-    if (date < minDate || date > maxDate) return true
-    if (config.availableWeekdays === null) return date.getDay() === 0 || date.getDay() === 6
-    return !config.availableWeekdays.includes(date.getDay())
-  }
 
   const cells = []
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month, d)
-    cells.push({ date, disabled: isDayDisabled(date) })
+    const dateStr = toDateStr(date)
+    const enabled = isDayEnabled(date)
+    const hasAvail = dayAvail[dateStr]
+    const isMonthLoading = !!loadingMonths[monthKey]
+    cells.push({ date, dateStr, enabled, hasAvail, isLoading: isMonthLoading && hasAvail === undefined && enabled })
   }
 
   const canPrev = new Date(year, month - 1, 1) >= new Date(today.getFullYear(), today.getMonth(), 1)
 
   return (
-    <div className="rounded-2xl border border-gold/25 bg-white/60 p-5 select-none">
+    <div className="rounded-2xl border border-gold/25 bg-white/60 p-4 sm:p-5 select-none">
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
           disabled={!canPrev}
-          className="font-georgia text-sm text-mist px-3 py-1.5 rounded-lg hover:text-deep disabled:opacity-25 disabled:cursor-not-allowed"
+          className="w-10 h-10 flex items-center justify-center rounded-xl text-mist hover:text-deep hover:bg-gold/10 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          aria-label="Mois précédent"
         >
-          ←
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
-        <p className="font-georgia text-sm font-semibold capitalize">{monthLabel}</p>
+        <p className="font-georgia text-base font-semibold capitalize text-deep">{monthLabel}</p>
         <button
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="font-georgia text-sm text-mist px-3 py-1.5 rounded-lg hover:text-deep"
+          className="w-10 h-10 flex items-center justify-center rounded-xl text-mist hover:text-deep hover:bg-gold/10 transition-colors"
+          aria-label="Mois suivant"
         >
-          →
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-0.5 mb-1">
+
+      <div className="grid grid-cols-7 mb-1">
         {['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'].map(d => (
-          <div key={d} className="text-center font-georgia text-[10px] uppercase tracking-wide text-mist/60 py-1">{d}</div>
+          <div key={d} className="text-center font-georgia text-[10px] uppercase tracking-wider text-mist/50 py-1.5">{d}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-0.5">
+
+      <div className="grid grid-cols-7">
         {cells.map((cell, idx) => {
-          if (!cell) return <div key={`pad-${idx}`} />
+          if (!cell) return <div key={`pad-${idx}`} className="aspect-square" />
           const isSelected = selected && cell.date.toDateString() === selected.toDateString()
           return (
             <button
-              key={cell.date.toISOString()}
-              onClick={() => !cell.disabled && onSelect(cell.date)}
-              disabled={cell.disabled}
-              className={`h-9 w-full rounded-lg font-georgia text-sm transition-all ${
-                isSelected ? 'bg-gold text-deep font-bold' :
-                cell.disabled ? 'text-mist/25 cursor-not-allowed' :
-                'text-deep hover:bg-gold/15 hover:font-semibold'
+              key={cell.dateStr}
+              onClick={() => cell.enabled && cell.hasAvail !== false && onSelect(cell.date)}
+              disabled={!cell.enabled || cell.hasAvail === false}
+              className={`relative aspect-square flex items-center justify-center font-georgia text-sm transition-all ${
+                !cell.enabled || cell.hasAvail === false
+                  ? 'text-mist/20 cursor-not-allowed'
+                  : cell.isLoading
+                    ? 'text-mist/35 animate-pulse'
+                    : 'text-deep'
               }`}
             >
-              {cell.date.getDate()}
+              <span className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-all ${
+                isSelected
+                  ? 'bg-deep text-gold font-bold shadow-sm'
+                  : cell.hasAvail === true
+                    ? 'border border-gold/30 bg-white/80 text-deep hover:border-gold/60 hover:bg-gold/5'
+                    : ''
+              }`}>
+                {cell.date.getDate()}
+              </span>
             </button>
           )
         })}
       </div>
+
+      {loadingMonths[monthKey] && (
+        <p className="mt-3 pt-3 border-t border-gold/10 font-georgia text-[10px] text-mist/40 text-right">Vérification des disponibilités…</p>
+      )}
+
+      {fetchError && (
+        <div className="mt-3 rounded-xl border border-gold/20 bg-gold/5 px-4 py-2.5">
+          <p className="font-georgia text-xs text-mist">{fetchError}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -204,14 +319,9 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
     let cancelled = false
     setLoading(true)
     setResult(null)
-    const dateStr = [
-      date.getFullYear(),
-      String(date.getMonth() + 1).padStart(2, '0'),
-      String(date.getDate()).padStart(2, '0'),
-    ].join('-')
     const params = new URLSearchParams({
       practitioner: practitionerSlug,
-      date: dateStr,
+      date: toDateStr(date),
       service_slug: service.slug,
     })
     fetch(`/api/rdv-availability?${params}`)
@@ -229,6 +339,7 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
   if (loading) {
     return (
       <div className="rounded-xl border border-gold/20 px-5 py-8 text-center">
+        <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto mb-2" />
         <p className="font-georgia text-sm text-mist">Chargement des créneaux…</p>
       </div>
     )
@@ -510,11 +621,9 @@ function Summary({ practitioner, service, date, time }) {
 export default function RdvPublic({ onBack, onNavigate }) {
   const slug = window.location.pathname.replace(/^\/rdv\//, '').replace(/\/$/, '')
 
-  // Config + données publiques chargées depuis /api/rdv-config
-  const [configData, setConfigData]     = useState(null)   // null = chargement
+  const [configData, setConfigData]     = useState(null)
   const [configLoading, setConfigLoading] = useState(true)
 
-  // Booking flow
   const [step, setStep]           = useState(0)
   const [service, setService]     = useState(null)
   const [date, setDate]           = useState(null)
@@ -522,10 +631,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const [bookingResult, setBookingResult] = useState(null)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError]     = useState(null)
-  const [findingNext, setFindingNext]       = useState(false)
-  const [nextSearchError, setNextSearchError] = useState(null)
-  const [autoSuggested, setAutoSuggested]   = useState(false)
-  const nextSearchSeq = useRef(0)
+
+  const [dayAvail, setDayAvail] = useState({})
 
   useEffect(() => {
     fetch(`/api/rdv-config?practitioner=${encodeURIComponent(slug)}`)
@@ -564,98 +671,18 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   const fmt = (d) => d ? new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d) : null
 
-  async function findNextAvailableDate(svc, seq) {
-    setFindingNext(true)
-    setNextSearchError(null)
-    setAutoSuggested(false)
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const horizonDays = configData?.horizonDays ?? 42
-    const availableWeekdays = configData?.availableWeekdays
-    const candidates = []
-
-    for (let offset = 1; offset <= horizonDays; offset++) {
-      const candidate = new Date(today)
-      candidate.setDate(candidate.getDate() + offset)
-      const jsDay = candidate.getDay()
-      const weeklyOpen = availableWeekdays === null
-        ? jsDay !== 0 && jsDay !== 6
-        : availableWeekdays.includes(jsDay)
-      if (weeklyOpen) candidates.push(candidate)
-    }
-
-    try {
-      const batchSize = 5
-      for (let i = 0; i < candidates.length; i += batchSize) {
-        const batch = candidates.slice(i, i + batchSize)
-        const checked = await Promise.all(batch.map(async candidate => {
-          const dateStr = [
-            candidate.getFullYear(),
-            String(candidate.getMonth() + 1).padStart(2, '0'),
-            String(candidate.getDate()).padStart(2, '0'),
-          ].join('-')
-          const params = new URLSearchParams({
-            practitioner: slug,
-            date: dateStr,
-            service_slug: svc.slug,
-          })
-          const response = await fetch(`/api/rdv-availability?${params}`)
-          if (!response.ok) throw new Error('availability_http_error')
-          const data = await response.json()
-          return { candidate, data }
-        }))
-
-        if (seq !== nextSearchSeq.current) return
-
-        const blockingError = checked.find(({ data }) =>
-          data?.mode === 'error' || data?.mode === 'configuration_required'
-        )
-        if (blockingError) {
-          throw new Error(blockingError.data?.notice || 'availability_configuration_error')
-        }
-
-        const found = checked.find(({ data }) =>
-          Array.isArray(data?.slots) && data.slots.some(slot => slot.available)
-        )
-
-        if (found) {
-          setDate(found.candidate)
-          setTime(null)
-          setAutoSuggested(true)
-          setStep(2)
-          return
-        }
-      }
-
-      if (seq === nextSearchSeq.current) {
-        setNextSearchError("Aucun créneau disponible dans la période de réservation actuelle.")
-        setStep(1)
-      }
-    } catch {
-      if (seq === nextSearchSeq.current) {
-        setNextSearchError('Impossible de rechercher la prochaine disponibilité pour le moment. Vous pouvez choisir une date manuellement.')
-        setStep(1)
-      }
-    } finally {
-      if (seq === nextSearchSeq.current) setFindingNext(false)
-    }
-  }
-
   function selectService(svc) {
-    const seq = ++nextSearchSeq.current
     setService(svc); setDate(null); setTime(null); setBookingError(null)
-    setNextSearchError(null); setAutoSuggested(false)
+    setDayAvail({})
     if (svc.bookingMode === 'request') {
-      setFindingNext(false)
       setStep('request-form')
     } else {
       setStep(1)
-      void findNextAvailableDate(svc, seq)
     }
   }
-  function selectDate(d)      { ++nextSearchSeq.current; setFindingNext(false); setAutoSuggested(false); setDate(d); setTime(null); setStep(2) }
-  function selectTime(t)      { setTime(t); setStep(3) }
+
+  function selectDate(d)  { setDate(d); setTime(null) }
+  function selectTime(t)  { setTime(t) }
 
   async function handleSubmitRequest(requestForm) {
     setBookingLoading(true)
@@ -698,12 +725,6 @@ export default function RdvPublic({ onBack, onNavigate }) {
     setBookingLoading(true)
     setBookingError(null)
 
-    const dateStr = [
-      date.getFullYear(),
-      String(date.getMonth() + 1).padStart(2, '0'),
-      String(date.getDate()).padStart(2, '0'),
-    ].join('-')
-
     try {
       const res = await fetch('/api/rdv-book', {
         method: 'POST',
@@ -711,7 +732,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
         body: JSON.stringify({
           practitioner_slug: slug,
           service_slug:      service.slug,
-          date:              dateStr,
+          date:              toDateStr(date),
           time,
           customer: {
             firstName: contactForm.firstName,
@@ -731,9 +752,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
         return
       }
 
-      // Succès confirmé par le serveur (INSERT bookings réalisé)
       setBookingResult(data)
-      setStep(4)
+      setStep(3)
     } catch {
       setBookingError('Erreur réseau. Vérifiez votre connexion et réessayez.')
     } finally {
@@ -772,9 +792,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
     )
   }
 
-  // ── Confirmation (step 4) — UNIQUEMENT après INSERT réussi ─────────────────
+  // ── Confirmation (step 3) — UNIQUEMENT après INSERT réussi ─────────────────
 
-  if (step === 4 && bookingResult) {
+  if (step === 3 && bookingResult) {
     return (
       <div className="min-h-screen bg-cream flex flex-col">
         <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
@@ -860,61 +880,50 @@ export default function RdvPublic({ onBack, onNavigate }) {
               </div>
             )}
 
-            {/* Step 1 — Date */}
+            {/* Step 1 — Date & Time (combined calendar + slots) */}
             {step === 1 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => { ++nextSearchSeq.current; setFindingNext(false); setStep(0) }} className="font-georgia text-xs text-mist hover:text-deep">← Prestation</button>
+                  <button onClick={() => setStep(0)} className="font-georgia text-xs text-mist hover:text-deep">← Prestation</button>
                   <h2 className="font-georgia font-medium text-xl">Choisissez une date</h2>
                 </div>
-                {findingNext ? (
-                  <div className="rounded-2xl border border-gold/25 bg-white/60 px-5 py-10 text-center">
-                    <div className="w-6 h-6 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto mb-3" />
-                    <p className="font-georgia text-sm text-deep">Recherche de la prochaine disponibilité…</p>
-                    <p className="font-georgia text-xs text-mist/60 mt-1">Vérification de l'agenda en temps réel.</p>
-                  </div>
-                ) : (
-                  <>
-                    {nextSearchError && (
-                      <div className="rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 mb-4">
-                        <p className="font-georgia text-xs text-mist">{nextSearchError}</p>
-                      </div>
+                <CalendarGrid
+                  practitionerSlug={slug}
+                  serviceSlug={service.slug}
+                  selected={date}
+                  onSelect={selectDate}
+                  config={configData}
+                  dayAvail={dayAvail}
+                  onDayAvailUpdate={(update) => setDayAvail(prev => ({ ...prev, ...update }))}
+                />
+                {date && (
+                  <div className="mt-6">
+                    <p className="font-georgia text-sm font-semibold text-deep capitalize mb-3">{fmt(date)}</p>
+                    <TimeSlots
+                      practitionerSlug={slug}
+                      date={date}
+                      service={service}
+                      selected={time}
+                      onSelect={selectTime}
+                    />
+                    {time && (
+                      <button
+                        onClick={() => setStep(2)}
+                        className="mt-6 w-full font-georgia py-4 rounded-xl bg-gold text-deep font-bold hover:bg-gold/90 transition-colors"
+                      >
+                        Continuer — {time} →
+                      </button>
                     )}
-                    <CalendarPicker selected={date} onSelect={selectDate} config={configData} />
-                  </>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Step 2 — Time */}
+            {/* Step 2 — Contact form */}
             {step === 2 && (
               <div>
-                <div className="flex items-center justify-between gap-3 mb-5">
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => { setAutoSuggested(false); setStep(1) }} className="font-georgia text-xs text-mist hover:text-deep">← Date</button>
-                    <h2 className="font-georgia font-medium text-xl capitalize">{fmt(date)}</h2>
-                  </div>
-                  <button onClick={() => { setAutoSuggested(false); setStep(1) }} className="font-georgia text-xs text-gold hover:text-deep transition-colors">Voir d'autres dates disponibles</button>
-                </div>
-                {autoSuggested && (
-                  <div className="rounded-xl border border-gold/25 bg-gold/5 px-4 py-3 mb-4">
-                    <p className="font-georgia text-xs text-mist"><strong className="text-deep">Prochaine disponibilité trouvée</strong> — choisissez l'heure qui vous convient.</p>
-                  </div>
-                )}
-                <TimeSlots practitionerSlug={slug} date={date} service={service} selected={time} onSelect={selectTime} />
-                {time && (
-                  <button onClick={() => setStep(3)} className="mt-6 w-full font-georgia py-4 rounded-xl bg-gold text-deep font-bold hover:bg-gold/90 transition-colors">
-                    Continuer — {time} →
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Step 3 — Contact form */}
-            {step === 3 && (
-              <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => setStep(2)} className="font-georgia text-xs text-mist hover:text-deep">← Créneau</button>
+                  <button onClick={() => setStep(1)} className="font-georgia text-xs text-mist hover:text-deep">← Date & Heure</button>
                   <h2 className="font-georgia font-medium text-xl">Vos coordonnées</h2>
                 </div>
                 <ContactForm onSubmit={handleConfirm} loading={bookingLoading} error={bookingError} />

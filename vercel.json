@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/rdv-auth-recovery",
+      "destination": "/api/rdv-book?rdv_auth_recovery=1"
+    },
+    {
       "source": "/api/rdv-paypal",
       "destination": "/api/rdv-book?rdv_paypal=1"
     },

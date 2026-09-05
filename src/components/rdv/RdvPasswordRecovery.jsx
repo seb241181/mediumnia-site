@@ -12,12 +12,37 @@ function readRecoveryParams() {
 
 export default function RdvPasswordRecovery({ onBack }) {
   const [{ tokenHash, type }] = useState(readRecoveryParams)
+  const [email, setEmail] = useState('')
+  const [requestSent, setRequestSent] = useState(false)
+  const [requestLoading, setRequestLoading] = useState(false)
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [sessionReady, setSessionReady] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  const hasRecoveryLink = Boolean(tokenHash && type === 'recovery')
+
+  async function handleRecoveryRequest(event) {
+    event.preventDefault()
+    setError(null)
+    setRequestLoading(true)
+
+    try {
+      const response = await fetch('/api/rdv-auth-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(payload.error || 'Impossible d’envoyer l’e-mail pour le moment.')
+      setRequestSent(true)
+    } catch (err) {
+      setError(err?.message || 'Impossible d’envoyer l’e-mail pour le moment.')
+    } finally {
+      setRequestLoading(false)
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -84,7 +109,16 @@ export default function RdvPasswordRecovery({ onBack }) {
         </div>
 
         <div className="rounded-2xl border border-gold/25 bg-white/60 p-7">
-          {success ? (
+          {requestSent ? (
+            <div className="space-y-5 text-center">
+              <p className="font-georgia text-sm leading-relaxed text-emerald-800">
+                Si cette adresse correspond à votre compte praticien, un nouvel e-mail vient d’être envoyé.
+              </p>
+              <p className="font-georgia text-xs leading-relaxed text-mist">
+                Ouvrez uniquement le message le plus récent, puis choisissez votre mot de passe.
+              </p>
+            </div>
+          ) : success ? (
             <div className="space-y-5 text-center">
               <p className="font-georgia text-sm text-emerald-800">
                 Votre mot de passe a bien été enregistré.
@@ -96,6 +130,39 @@ export default function RdvPasswordRecovery({ onBack }) {
                 Ouvrir mon espace RDV →
               </a>
             </div>
+          ) : !hasRecoveryLink ? (
+            <form onSubmit={handleRecoveryRequest} className="space-y-4">
+              {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">
+                  {error}
+                </div>
+              )}
+
+              <p className="font-georgia text-xs leading-relaxed text-mist">
+                Indiquez l’adresse de votre compte praticien. Vous recevrez un lien sécurisé pour choisir votre mot de passe.
+              </p>
+
+              <div>
+                <label className="font-georgia text-xs text-mist block mb-1.5">Adresse e-mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="votre@email.com"
+                  className="w-full border border-gold/25 rounded-xl px-4 py-2.5 font-georgia text-sm text-deep bg-white/80 focus:outline-none focus:border-gold/60 focus:ring-1 focus:ring-gold/20"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={requestLoading}
+                className="w-full rounded-xl bg-deep py-3 font-georgia text-sm font-bold text-gold disabled:opacity-60"
+              >
+                {requestLoading ? 'Envoi…' : 'Recevoir le lien sécurisé →'}
+              </button>
+            </form>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (

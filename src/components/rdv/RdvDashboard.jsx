@@ -125,6 +125,12 @@ function LoginForm({ signIn }) {
             {loading ? <Spinner /> : null}
             {loading ? 'Connexion…' : 'Se connecter →'}
           </button>
+          <a
+            href="/rdv/reset-password"
+            className="block text-center font-georgia text-xs text-mist hover:text-deep"
+          >
+            Mot de passe oublié ?
+          </a>
         </form>
 
         <p className="font-georgia text-[10px] text-mist/50 text-center mt-5">

@@ -20,10 +20,23 @@ async function readSources() {
 test('ecosystem pathways stay contextual and non-coercive', async () => {
   const { component } = await readSources()
   assert.match(component, /MediumIA relie les expériences sans vous imposer de parcours/)
+  assert.match(component, /Je veux essayer gratuitement/)
+  assert.match(component, /J’ai besoin d’un éclairage maintenant/)
+  assert.match(component, /Je veux parler à quelqu’un/)
+  assert.match(component, /Je veux apprendre/)
   assert.match(component, /Faire le tirage offert/)
   assert.match(component, /Découvrir le réseau/)
   assert.match(component, /Découvrir l’accompagnement/)
   assert.match(component, /Explorer ma ligne de temps/)
+})
+
+test('public home exposes four guided doors using existing routes', async () => {
+  const { app } = await readSources()
+  assert.match(app, /context="home"/)
+  assert.match(app, /onOpenOracle=\{onOpenOracle\}/)
+  assert.match(app, /onOpenChronosphere=\{onOpenChronosphere\}/)
+  assert.match(app, /onOpenReseau=\{onOpenReseauDir\}/)
+  assert.match(app, /onOpenFormation=\{onOpenFormation\}/)
 })
 
 test('App wires existing MediumIA doors without adding duplicate routes', async () => {

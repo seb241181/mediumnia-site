@@ -113,7 +113,7 @@ export const reseauPractitioners = [
     name: 'Gilda',
     role: 'Voyante · Cartomancienne',
     city: '',
-    audience: 'Consultations individuelles',
+    audience: '',
     practical: {
       modalities: ['Consultation individuelle'],
     },

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { reseauPractitioners } from '../data/reseauPractitioners'
 
-const filters = ['Tous', 'Médiumnité', 'Voyance', 'Cartomancie', 'Écriture automatique', 'Hypnose Ericksonienne', 'Constellations familiales', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
+const filters = ['Tous', 'Médiumnité', 'Voyance', 'Cartomancie', 'Magnétisme', 'Reiki', 'Écriture automatique', 'Hypnose Ericksonienne', 'Constellations familiales', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
 
 function withPreviewShareToken(src) {
   if (typeof window === 'undefined' || !src?.startsWith('/')) return src
@@ -168,7 +168,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
                         rel="noopener noreferrer"
                         className="mt-auto inline-flex justify-center items-center rounded-xl bg-deep text-gold font-georgia font-bold px-6 py-3.5 hover:bg-deep/90 transition-colors"
                       >
-                        Voir ses disponibilités sur Resalib →
+                        {practitioner.externalLabel || 'Voir ses disponibilités'} →
                       </a>
                     </div>
                   </div>
@@ -184,7 +184,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
           <div className="max-w-xl mx-auto text-center mt-14 rounded-3xl border border-gold/20 px-8 py-8 bg-white/30">
             <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">Réseau en développement</p>
             <p className="font-georgia text-mist leading-relaxed">
-              Amandine, Stéphanie, Gilda et Lydie font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
+              Amandine, Stéphanie, Willy, Gilda et Lydie font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
             </p>
           </div>
         </section>

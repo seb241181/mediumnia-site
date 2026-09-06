@@ -57,3 +57,13 @@ test('pilotage returns aggregate counters rather than visitor records', async ()
   assert.doesNotMatch(pilotage, /localStorage|sessionStorage|document\.cookie/)
   assert.match(analytics, /event_date, event_name, source, event_count/)
 })
+
+test('preview demo can be reviewed without Supabase credentials and never exposes live data', async () => {
+  const { dashboard, pilotage } = await readSources()
+  assert.match(dashboard, /pilotage_demo/)
+  assert.match(dashboard, /hostname\.endsWith\('\.vercel\.app'\)/)
+  assert.match(dashboard, /<PilotageDashboard demoMode \/>/)
+  assert.match(pilotage, /demoMode = false/)
+  assert.match(pilotage, /makePreviewData/)
+  assert.match(pilotage, /Démonstration|données de démonstration/)
+})

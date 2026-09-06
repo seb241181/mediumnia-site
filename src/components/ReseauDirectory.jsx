@@ -96,84 +96,98 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
         <section className="px-6 pb-20 max-w-6xl mx-auto">
           {practitioners.length > 0 ? (
             <div className="grid gap-6">
-              {practitioners.map((practitioner) => (
-                <article
-                  key={practitioner.id}
-                  className="max-w-4xl w-full mx-auto overflow-hidden rounded-3xl border border-gold/30 bg-white/65 shadow-sm"
-                >
-                  <div className="grid md:grid-cols-[280px_1fr]">
-                    <div className="relative min-h-[300px] md:min-h-full bg-deep/5">
-                      <PractitionerPortrait practitioner={practitioner} />
-                    </div>
+              {practitioners.map((practitioner) => {
+                const practicalAudience = practitioner.practical?.audience || practitioner.audience
+                const practicalModalities = Array.isArray(practitioner.practical?.modalities)
+                  ? practitioner.practical.modalities.join(' · ')
+                  : practitioner.practical?.modalities
 
-                    <div className="p-7 md:p-9 flex flex-col">
-                      {practitioner.founder ? (
-                        <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
-                          Membre Fondateur Mediumia — N°{String(practitioner.founderNumber).padStart(3, '0')}
-                        </p>
-                      ) : (
-                        <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
-                          Membre du réseau Mediumia
-                        </p>
-                      )}
-                      <h2 className="font-georgia text-3xl md:text-4xl font-medium leading-tight mb-2">
-                        {practitioner.name}
-                      </h2>
-                      <p className="font-georgia text-mist text-base mb-4">
-                        {practitioner.role}{practitioner.city ? ` · ${practitioner.city}` : ''}
-                      </p>
-
-                      <div className="flex flex-wrap gap-2 mb-5">
-                        <span className="font-georgia text-[11px] rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 text-deep">
-                          {practitioner.audience}
-                        </span>
-                        <span className="font-georgia text-[11px] rounded-full border border-deep/10 bg-deep/5 px-3 py-1.5 text-mist">
-                          {practitioner.membership}
-                        </span>
+                return (
+                  <article
+                    key={practitioner.id}
+                    className="max-w-4xl w-full mx-auto overflow-hidden rounded-3xl border border-gold/30 bg-white/65 shadow-sm"
+                  >
+                    <div className="grid md:grid-cols-[280px_1fr]">
+                      <div className="relative min-h-[300px] md:min-h-full bg-deep/5">
+                        <PractitionerPortrait practitioner={practitioner} />
                       </div>
 
-                      <p className="font-georgia text-deep/80 leading-relaxed mb-5">
-                        {practitioner.introduction}
-                      </p>
+                      <div className="p-7 md:p-9 flex flex-col">
+                        {practitioner.founder ? (
+                          <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
+                            Membre Fondateur Mediumia — N°{String(practitioner.founderNumber).padStart(3, '0')}
+                          </p>
+                        ) : (
+                          <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
+                            Membre du réseau Mediumia
+                          </p>
+                        )}
+                        <h2 className="font-georgia text-3xl md:text-4xl font-medium leading-tight mb-2">
+                          {practitioner.name}
+                        </h2>
+                        <p className="font-georgia text-mist text-base mb-4">
+                          {practitioner.role}{practitioner.city ? ` · ${practitioner.city}` : ''}
+                        </p>
 
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        {practitioner.specialties.slice(0, 6).map((specialty) => (
-                          <span
-                            key={specialty}
-                            className="font-georgia text-[11px] text-mist border border-gold/20 rounded-full px-3 py-1.5"
-                          >
-                            {specialty}
+                        <div className="flex flex-wrap gap-2 mb-5">
+                          {practicalAudience && (
+                            <span className="font-georgia text-[11px] rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 text-deep">
+                              {practicalAudience}
+                            </span>
+                          )}
+                          {practicalModalities && practicalModalities !== practicalAudience && (
+                            <span className="font-georgia text-[11px] rounded-full border border-gold/25 bg-white/70 px-3 py-1.5 text-mist">
+                              {practicalModalities}
+                            </span>
+                          )}
+                          <span className="font-georgia text-[11px] rounded-full border border-deep/10 bg-deep/5 px-3 py-1.5 text-mist">
+                            {practitioner.membership}
                           </span>
-                        ))}
-                      </div>
-
-                      <details className="group mb-7 rounded-2xl border border-gold/20 bg-cream/55 px-5 py-4">
-                        <summary className="font-georgia text-sm font-semibold cursor-pointer list-none flex items-center justify-between gap-4">
-                          Découvrir son approche
-                          <span className="text-gold group-open:rotate-45 transition-transform" aria-hidden="true">＋</span>
-                        </summary>
-                        <div className="pt-4 space-y-4 font-georgia text-sm text-mist leading-relaxed">
-                          <p>{practitioner.approach}</p>
-                          <p>{practitioner.spirituality}</p>
-                          <div>
-                            <p className="text-deep font-semibold mb-2">Motifs d'accompagnement</p>
-                            <p>{practitioner.specialties.join(' · ')}</p>
-                          </div>
                         </div>
-                      </details>
 
-                      <a
-                        href={practitioner.bookingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-auto inline-flex justify-center items-center rounded-xl bg-deep text-gold font-georgia font-bold px-6 py-3.5 hover:bg-deep/90 transition-colors"
-                      >
-                        {practitioner.externalLabel || 'Voir ses disponibilités'} →
-                      </a>
+                        <p className="font-georgia text-deep/80 leading-relaxed mb-5">
+                          {practitioner.introduction}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2 mb-6">
+                          {practitioner.specialties.slice(0, 6).map((specialty) => (
+                            <span
+                              key={specialty}
+                              className="font-georgia text-[11px] text-mist border border-gold/20 rounded-full px-3 py-1.5"
+                            >
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+
+                        <details className="group mb-7 rounded-2xl border border-gold/20 bg-cream/55 px-5 py-4">
+                          <summary className="font-georgia text-sm font-semibold cursor-pointer list-none flex items-center justify-between gap-4">
+                            Découvrir son approche
+                            <span className="text-gold group-open:rotate-45 transition-transform" aria-hidden="true">＋</span>
+                          </summary>
+                          <div className="pt-4 space-y-4 font-georgia text-sm text-mist leading-relaxed">
+                            <p>{practitioner.approach}</p>
+                            <p>{practitioner.spirituality}</p>
+                            <div>
+                              <p className="text-deep font-semibold mb-2">Motifs d'accompagnement</p>
+                              <p>{practitioner.specialties.join(' · ')}</p>
+                            </div>
+                          </div>
+                        </details>
+
+                        <a
+                          href={practitioner.bookingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-auto inline-flex justify-center items-center rounded-xl bg-deep text-gold font-georgia font-bold px-6 py-3.5 hover:bg-deep/90 transition-colors"
+                        >
+                          {practitioner.externalLabel || 'Voir ses disponibilités'} →
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                )
+              })}
             </div>
           ) : (
             <div className="max-w-xl mx-auto text-center rounded-3xl border border-gold/25 bg-white/40 px-8 py-10">

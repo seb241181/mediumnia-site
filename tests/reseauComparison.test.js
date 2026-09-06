@@ -44,6 +44,13 @@ test('Willy keeps verified Wormhout and distance modalities and animal support',
   assert.match(willy.practical.audience, /animaux/)
 })
 
+test('Gilda exposes consultation mode without inventing a target audience', () => {
+  const gilda = practitioner('gilda')
+  assert.equal(gilda.audience, '')
+  assert.equal(gilda.practical.audience, undefined)
+  assert.deepEqual(gilda.practical.modalities, ['Consultation individuelle'])
+})
+
 test('pricing section is conditional and includes a stale-price warning', () => {
   assert.match(profileSource, /Array\.isArray\(practitioner\.services\) && practitioner\.services\.length > 0/)
   assert.match(profileSource, /peuvent évoluer/)

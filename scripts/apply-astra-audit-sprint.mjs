@@ -2,6 +2,8 @@ import { readFile, writeFile } from 'node:fs/promises'
 
 const ecosystemPath = new URL('../src/components/EcosystemNextSteps.jsx', import.meta.url)
 const oraclePath = new URL('../src/components/OraclePage.jsx', import.meta.url)
+const guardianPath = new URL('../lib/guardianKnowledge.js', import.meta.url)
+const trialApiPath = new URL('../api/mediumia-trial.js', import.meta.url)
 const testPath = new URL('../tests/ecosystemPathways.test.js', import.meta.url)
 
 function replaceRequired(source, before, after, label) {
@@ -70,6 +72,56 @@ oracle = replaceRequired(
 
 await writeFile(oraclePath, oracle)
 
+let guardian = await readFile(guardianPath, 'utf8')
+
+guardian = replaceRequired(
+  guardian,
+  ` */\n\nexport const GUARDIAN_SYSTEM`,
+  ` */\n\nimport { MEDIUMIA_PUBLIC_CATALOG } from './mediumiaPublicCatalog.js'\n\nexport const GUARDIAN_SYSTEM`,
+  'Guardian shared catalog import',
+)
+
+guardian = replaceRequired(
+  guardian,
+  `FAITS MEDIUMIA\n\nLe site`,
+  `SOURCE DE VÉRITÉ ACTUELLE\n\${MEDIUMIA_PUBLIC_CATALOG}\n\nFAITS MEDIUMIA\n\nLe site`,
+  'Guardian shared catalog injection',
+)
+
+guardian = replaceRequired(
+  guardian,
+  `Le réseau est en cours de constitution — les premiers profils arrivent bientôt.`,
+  `Le Réseau dispose déjà de plusieurs profils publics. Consulte la page du Réseau pour voir les praticiens actuellement publiés.`,
+  'Guardian stale network wording',
+)
+
+await writeFile(guardianPath, guardian)
+
+let trialApi = await readFile(trialApiPath, 'utf8')
+
+trialApi = replaceRequired(
+  trialApi,
+  `import { GUARDIAN_SYSTEM } from '../lib/guardianKnowledge.js'`,
+  `import { GUARDIAN_SYSTEM } from '../lib/guardianKnowledge.js'\nimport { MEDIUMIA_PUBLIC_CATALOG } from '../lib/mediumiaPublicCatalog.js'`,
+  'Formation assistant shared catalog import',
+)
+
+trialApi = replaceRequired(
+  trialApi,
+  `Consultations individuelles disponibles via Reservio.`,
+  `Consultations individuelles : réservation via le parcours MediumIA Rendez-vous sur mediumia.fr.`,
+  'Formation assistant Reservio removal',
+)
+
+trialApi = replaceRequired(
+  trialApi,
+  `LIMITES\n- Tu informes sur le parcours et la médiumnité.`,
+  `SOURCE DE VÉRITÉ ACTUELLE\n\${MEDIUMIA_PUBLIC_CATALOG}\n\nLIMITES\n- Tu informes sur le parcours et la médiumnité.`,
+  'Formation assistant shared catalog injection',
+)
+
+await writeFile(trialApiPath, trialApi)
+
 let tests = await readFile(testPath, 'utf8')
 const freeEntryTest = `test('free discovery opens the offered draw directly', async () => {`
 if (!tests.includes(freeEntryTest)) {
@@ -77,4 +129,4 @@ if (!tests.includes(freeEntryTest)) {
   await writeFile(testPath, tests)
 }
 
-console.log('MediumIA Astra sprint: free entry aligned with the free Oracle draw')
+console.log('MediumIA Astra sprint: free entry and assistant knowledge aligned')

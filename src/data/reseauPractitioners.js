@@ -34,7 +34,7 @@ export const reseauPractitioners = [
     role: 'Médium · écriture automatique',
     city: 'Lederzeele',
     audience: 'Cabinet & visio',
-    portrait: '/images/reseau/stephanie-madhyama.jpg',
+    portrait: 'https://1951880946.rsc.cdn77.org/resize?type=auto&url=https%3A%2F%2Freservio-static-production.s3.eu-central-1.amazonaws.com%2Fbusinesses%2Fbd91f99e-14df-4b29-966a-f4d7b05e644c.png&width=2400',
     portraitAlt: 'Portrait de Stéphanie Madhyama',
     founder: true,
     founderNumber: 2,

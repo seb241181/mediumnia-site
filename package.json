@@ -7,7 +7,7 @@
     "predev": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs",
     "dev": "vite",
     "prebuild": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs",
-    "build": "vite build",
+    "build": "npm test && vite build",
     "test": "node --test tests/*.test.js",
     "lint": "eslint .",
     "preview": "vite preview"

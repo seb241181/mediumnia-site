@@ -27,14 +27,15 @@ test('conferences page is a truthful public foundation without invented event de
   assert.doesNotMatch(page, /2026-\d{2}-\d{2}|\b\d{1,3}\s?€\b/)
 })
 
-test('conference route is lazy, reachable from navigation and kept outside the home clutter', async () => {
+test('conference route is lazy, reachable directly and kept outside the home clutter', async () => {
   const { app, footer, vercel } = await readSources()
+  const config = JSON.parse(vercel)
   assert.match(app, /const ConferencesPage = lazy/)
   assert.match(app, /p\.startsWith\('\/conferences'\)/)
   assert.match(app, /openConferences/)
   assert.match(app, />Conférences<\/button>/)
   assert.match(footer, /href="\/conferences"/)
-  assert.match(vercel, /"source": "\/conferences"[\s\S]*?"destination": "\/index\.html"/)
+  assert.ok(config.rewrites.some((rule) => rule.source === '/conferences' && rule.destination === '/index.html'))
   assert.doesNotMatch(app, /UniverseCard[^\n]+Conférences/)
 })
 

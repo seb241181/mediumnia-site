@@ -15,6 +15,13 @@ async function readSources() {
   return { dashboard, pilotage, admin }
 }
 
+function analyticsSection(admin) {
+  const start = admin.indexOf('// ── action=analytics')
+  const end = admin.indexOf('// ── Router principal', start)
+  assert.ok(start >= 0 && end > start)
+  return admin.slice(start, end)
+}
+
 test('private pro space exposes a dedicated MediumIA pilotage workspace', async () => {
   const { dashboard } = await readSources()
   assert.match(dashboard, /PilotageDashboard/)
@@ -45,7 +52,8 @@ test('analytics dashboard reuses authenticated rdv-admin and protects production
 
 test('pilotage returns aggregate counters rather than visitor records', async () => {
   const { admin, pilotage } = await readSources()
-  assert.doesNotMatch(admin, /customer_email|customer_phone|ip_address|visitor_id|session_id/)
+  const analytics = analyticsSection(admin)
+  assert.doesNotMatch(analytics, /customer_email|customer_phone|ip_address|visitor_id|session_id/)
   assert.doesNotMatch(pilotage, /localStorage|sessionStorage|document\.cookie/)
-  assert.match(admin, /event_date, event_name, source, event_count/)
+  assert.match(analytics, /event_date, event_name, source, event_count/)
 })

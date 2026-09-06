@@ -132,7 +132,7 @@ const newSummaryCard = `              {(parts.direction || parts.summary) && (
                     </strong>
                   )}
                   {parts.summary && (
-                    <p className={`${'${'}parts.direction ? 'mt-2.5' : 'mt-3'${'}'} font-georgia text-base leading-relaxed text-deep/75`}>{parts.summary}</p>
+                    <p className="mt-2.5 font-georgia text-base leading-relaxed text-deep/75">{parts.summary}</p>
                   )}
                 </div>
               )}`

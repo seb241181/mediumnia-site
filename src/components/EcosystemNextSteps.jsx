@@ -1,4 +1,42 @@
 const PATHS = {
+  home: [
+    {
+      key: 'oracle',
+      eyebrow: 'Je veux essayer gratuitement',
+      title: "Oracle Au-delà de l'Âme",
+      body: 'Commencez par un tirage test offert pour expérimenter l’univers MediumIA sans engagement.',
+      action: 'Faire le tirage offert',
+      handler: 'onOpenOracle',
+      icon: '✦',
+    },
+    {
+      key: 'chronosphere',
+      eyebrow: 'J’ai besoin d’un éclairage maintenant',
+      title: 'Chronosphère 999',
+      body: 'Une lecture personnalisée de vos dynamiques présentes et de vos fenêtres temporelles.',
+      action: 'Explorer ma ligne de temps',
+      handler: 'onOpenChronosphere',
+      icon: '✺',
+    },
+    {
+      key: 'reseau',
+      eyebrow: 'Je veux parler à quelqu’un',
+      title: 'Trouver un praticien',
+      body: 'Découvrez les membres du Réseau MediumIA et choisissez librement la personne qui vous correspond.',
+      action: 'Découvrir le réseau',
+      handler: 'onOpenReseau',
+      icon: '◇',
+    },
+    {
+      key: 'formation',
+      eyebrow: 'Je veux apprendre',
+      title: 'Médiumnité Consciente',
+      body: 'Un parcours structuré pour développer votre pratique, votre discernement et votre autonomie.',
+      action: 'Découvrir l’accompagnement',
+      handler: 'onOpenFormation',
+      icon: '◌',
+    },
+  ],
   chronosphere: [
     {
       key: 'oracle',
@@ -72,17 +110,23 @@ export default function EcosystemNextSteps({
 
   if (!paths.length) return null
 
+  const gridClass = paths.length === 4 ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'
+
   return (
     <section className={`rounded-3xl border border-gold/25 bg-deep px-6 py-8 text-cream shadow-lg md:px-8 md:py-10 ${className}`}>
       <div className="max-w-2xl">
-        <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Continuer votre chemin</p>
-        <h2 className="mt-2 font-georgia text-2xl font-medium leading-tight md:text-3xl">Une porte peut naturellement en ouvrir une autre.</h2>
+        <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">
+          {context === 'home' ? 'Par où commencer ?' : 'Continuer votre chemin'}
+        </p>
+        <h2 className="mt-2 font-georgia text-2xl font-medium leading-tight md:text-3xl">
+          {context === 'home' ? 'Choisissez simplement ce dont vous avez besoin aujourd’hui.' : 'Une porte peut naturellement en ouvrir une autre.'}
+        </h2>
         <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/65">
           MediumIA relie les expériences sans vous imposer de parcours. Choisissez simplement ce qui vous serait utile maintenant.
         </p>
       </div>
 
-      <div className="mt-7 grid gap-3 md:grid-cols-3">
+      <div className={`mt-7 grid gap-3 ${gridClass}`}>
         {paths.map((path) => (
           <button
             key={path.key}

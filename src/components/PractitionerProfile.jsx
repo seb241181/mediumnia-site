@@ -30,6 +30,16 @@ function Portrait({ practitioner }) {
   )
 }
 
+function PracticalCard({ label, value }) {
+  if (!value) return null
+  return (
+    <div className="rounded-2xl border border-gold/20 bg-white/70 px-5 py-4">
+      <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">{label}</p>
+      <p className="mt-2 font-georgia text-sm leading-relaxed text-deep">{value}</p>
+    </div>
+  )
+}
+
 export default function PractitionerProfile({ practitionerId, onBack, onNavigate }) {
   const practitioner = reseauPractitioners.find((item) => item.id === practitionerId)
 
@@ -46,6 +56,14 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
       </div>
     )
   }
+
+  const practical = practitioner.practical || {}
+  const practicalItems = [
+    { label: 'Public accompagné', value: practical.audience },
+    { label: 'Modalités', value: Array.isArray(practical.modalities) ? practical.modalities.join(' · ') : practical.modalities },
+    { label: 'Tarif indicatif', value: practical.startingPrice },
+    { label: 'Durée', value: practical.duration },
+  ].filter((item) => Boolean(item.value))
 
   return (
     <div className="min-h-screen bg-cream text-deep">
@@ -74,10 +92,36 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                 {practitioner.role}{practitioner.city ? ` · ${practitioner.city}` : ''}
               </p>
               <div className="mt-6 flex flex-wrap gap-2">
-                <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 font-georgia text-xs text-deep">{practitioner.audience}</span>
+                {(practical.audience || practitioner.audience) && (
+                  <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 font-georgia text-xs text-deep">
+                    {practical.audience || practitioner.audience}
+                  </span>
+                )}
                 <span className="rounded-full border border-deep/10 bg-deep/5 px-3 py-1.5 font-georgia text-xs text-mist">{practitioner.membership}</span>
               </div>
               <p className="mt-7 max-w-2xl font-georgia text-base leading-relaxed text-deep/80 md:text-lg">{practitioner.introduction}</p>
+
+              {practicalItems.length > 0 && (
+                <div className="mt-8">
+                  <p className="mb-3 font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Repères pratiques</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {practicalItems.map((item) => (
+                      <PracticalCard key={item.label} label={item.label} value={item.value} />
+                    ))}
+                  </div>
+                  {practical.sourceUrl && practical.sourceLabel && (
+                    <a
+                      href={practical.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex font-georgia text-xs font-semibold text-mist underline decoration-gold/40 underline-offset-4 transition-colors hover:text-deep"
+                    >
+                      {practical.sourceLabel} ↗
+                    </a>
+                  )}
+                </div>
+              )}
+
               <a
                 href={practitioner.bookingUrl}
                 target="_blank"
@@ -102,6 +146,33 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
             <p className="mt-4 font-georgia text-sm leading-relaxed text-mist">{practitioner.spirituality}</p>
           </article>
         </section>
+
+        {Array.isArray(practitioner.services) && practitioner.services.length > 0 && (
+          <section className="mx-auto max-w-5xl px-6 pb-14 md:pb-20">
+            <div className="rounded-3xl border border-gold/25 bg-white/70 p-7 md:p-9">
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Prestations publiées</p>
+                  <h2 className="mt-2 font-georgia text-2xl font-medium md:text-3xl">Quelques repères avant de réserver</h2>
+                </div>
+                <p className="max-w-md font-georgia text-xs leading-relaxed text-mist">
+                  Les tarifs ci-dessous proviennent du site public du praticien et peuvent évoluer. Vérifiez-les au moment de réserver.
+                </p>
+              </div>
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {practitioner.services.map((service) => (
+                  <div key={service.name} className="flex items-start justify-between gap-5 rounded-2xl border border-gold/20 bg-cream/55 px-5 py-4">
+                    <div>
+                      <p className="font-georgia text-sm font-semibold text-deep">{service.name}</p>
+                      {service.duration && <p className="mt-1 font-georgia text-xs text-mist">{service.duration}</p>}
+                    </div>
+                    {service.price && <p className="shrink-0 font-georgia text-sm font-semibold text-gold">{service.price}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="mx-auto max-w-5xl px-6 pb-16 md:pb-20">
           <div className="rounded-3xl border border-gold/25 bg-deep px-7 py-9 text-cream md:px-10 md:py-10">

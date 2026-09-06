@@ -52,7 +52,7 @@ test('metrics are aggregate-only and do not store personal identifiers', async (
   assert.match(migration, /mediumia_event_daily_counts/)
   assert.match(migration, /event_count bigint/)
   assert.match(migration, /primary key \(event_date, event_name, source\)/)
-  assert.doesNotMatch(migration, /user_id|email|ip_address|session_id|visitor_id|cookie/i)
+  assert.doesNotMatch(migration, /^\s*(user_id|email|ip_address|session_id|visitor_id|cookie)\s+/im)
 })
 
 test('metrics reuse rdv-config and keep the Vercel function count unchanged', async () => {

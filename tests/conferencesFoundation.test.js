@@ -6,15 +6,17 @@ const pagePath = new URL('../src/components/ConferencesPage.jsx', import.meta.ur
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const footerPath = new URL('../src/components/LegalFooter.jsx', import.meta.url)
 const pilotagePath = new URL('../src/components/rdv/PilotageDashboard.jsx', import.meta.url)
+const vercelPath = new URL('../vercel.json', import.meta.url)
 
 async function readSources() {
-  const [page, app, footer, pilotage] = await Promise.all([
+  const [page, app, footer, pilotage, vercel] = await Promise.all([
     readFile(pagePath, 'utf8'),
     readFile(appPath, 'utf8'),
     readFile(footerPath, 'utf8'),
     readFile(pilotagePath, 'utf8'),
+    readFile(vercelPath, 'utf8'),
   ])
-  return { page, app, footer, pilotage }
+  return { page, app, footer, pilotage, vercel }
 }
 
 test('conferences page is a truthful public foundation without invented event details', async () => {
@@ -26,12 +28,13 @@ test('conferences page is a truthful public foundation without invented event de
 })
 
 test('conference route is lazy, reachable from navigation and kept outside the home clutter', async () => {
-  const { app, footer } = await readSources()
+  const { app, footer, vercel } = await readSources()
   assert.match(app, /const ConferencesPage = lazy/)
   assert.match(app, /p\.startsWith\('\/conferences'\)/)
   assert.match(app, /openConferences/)
   assert.match(app, />Conférences<\/button>/)
   assert.match(footer, /href="\/conferences"/)
+  assert.match(vercel, /"source": "\/conferences"[\s\S]*?"destination": "\/index\.html"/)
   assert.doesNotMatch(app, /UniverseCard[^\n]+Conférences/)
 })
 

@@ -1,0 +1,4 @@
+MediumIA Réseau — Willy Ryckebusch portrait release
+Validated Preview: dpl_GSqcrNdkiTAUHGt4NG3HRxMKWiBb
+Validated tree head before production trigger: 19a73c9f20d0c2d21770b78ba45c16dd43d9d728
+Scope: Willy portrait only; Stéphanie and Lydie remain excluded from production.

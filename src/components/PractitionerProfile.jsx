@@ -9,6 +9,27 @@ function withPreviewShareToken(src) {
   return `${src}${separator}_vercel_share=${encodeURIComponent(token)}`
 }
 
+function Portrait({ practitioner }) {
+  if (practitioner.portrait) {
+    return (
+      <img
+        src={withPreviewShareToken(practitioner.portrait)}
+        alt={practitioner.portraitAlt}
+        className="aspect-[4/5] h-full w-full object-cover object-center"
+      />
+    )
+  }
+
+  return (
+    <div className="flex aspect-[4/5] h-full w-full flex-col items-center justify-center bg-gradient-to-br from-deep via-[#241d42] to-[#0d1730] px-8 text-center">
+      <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="mb-6 w-28 opacity-80" />
+      <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">Membre Fondateur MediumIA</p>
+      <p className="mt-3 font-georgia text-2xl text-cream">{practitioner.name}</p>
+      <p className="mt-3 font-georgia text-xs leading-relaxed text-cream/55">Photo du praticien à venir</p>
+    </div>
+  )
+}
+
 export default function PractitionerProfile({ practitionerId, onBack, onNavigate }) {
   const practitioner = reseauPractitioners.find((item) => item.id === practitionerId)
 
@@ -39,11 +60,7 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
         <section className="border-b border-gold/15 bg-white/35 px-6 py-14 md:py-20">
           <div className="mx-auto grid max-w-5xl gap-10 md:grid-cols-[320px_1fr] md:items-center">
             <div className="overflow-hidden rounded-3xl border border-gold/30 bg-deep/5 shadow-sm">
-              <img
-                src={withPreviewShareToken(practitioner.portrait)}
-                alt={practitioner.portraitAlt}
-                className="aspect-[4/5] h-full w-full object-cover object-center"
-              />
+              <Portrait practitioner={practitioner} />
             </div>
 
             <div>
@@ -74,12 +91,12 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
         <section className="mx-auto grid max-w-5xl gap-6 px-6 py-14 md:grid-cols-2 md:py-20">
           <article className="rounded-3xl border border-gold/20 bg-white/65 p-7 md:p-8">
             <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Son approche</p>
-            <h2 className="mt-3 font-georgia text-2xl font-medium">Un accompagnement à son rythme</h2>
+            <h2 className="mt-3 font-georgia text-2xl font-medium">{practitioner.approachTitle || 'Un accompagnement à son rythme'}</h2>
             <p className="mt-4 font-georgia text-sm leading-relaxed text-mist">{practitioner.approach}</p>
           </article>
           <article className="rounded-3xl border border-gold/20 bg-white/65 p-7 md:p-8">
             <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Sa sensibilité</p>
-            <h2 className="mt-3 font-georgia text-2xl font-medium">Accueillir la personne dans sa globalité</h2>
+            <h2 className="mt-3 font-georgia text-2xl font-medium">{practitioner.spiritualityTitle || 'Accueillir la personne dans sa globalité'}</h2>
             <p className="mt-4 font-georgia text-sm leading-relaxed text-mist">{practitioner.spirituality}</p>
           </article>
         </section>

@@ -44,14 +44,23 @@ test('profile route is lazy and direct practitioner URLs are rewritten to the SP
   assert.equal(profileRewrite?.destination, '/index.html')
 })
 
-test('Lydie Lesaffre is prepared as founder 002 from her public Mots pour Maux profile', async () => {
+test('Stephanie Madhyama is founder 002 with Reservio booking and a safe photo fallback', async () => {
+  const { data, profile, directory } = await readSources()
+  assert.match(data, /id: 'stephanie-madhyama'[\s\S]*founderNumber: 2/)
+  assert.match(data, /Médium · écriture automatique/)
+  assert.match(data, /https:\/\/stephanie-madhyama\.reservio\.com\//)
+  assert.match(data, /Réserver avec Stéphanie/)
+  assert.match(profile, /Photo du praticien à venir/)
+  assert.match(directory, /Photo à venir/)
+  assert.match(directory, /Écriture automatique/)
+})
+
+test('Lydie Lesaffre keeps the next reserved founder number and her public Mots pour Maux profile', async () => {
   const { data, directory } = await readSources()
-  assert.match(data, /id: 'lydie-lesaffre'/)
-  assert.match(data, /founderNumber: 2/)
+  assert.match(data, /id: 'lydie-lesaffre'[\s\S]*founderNumber: 8/)
   assert.match(data, /Psychopraticienne en hypnose · Médium/)
   assert.match(data, /Hypnose Ericksonienne/)
   assert.match(data, /Constellations familiales/)
-  assert.match(data, /Médiumnité/)
   assert.match(data, /https:\/\/www\.mots-pour-maux\.com\//)
   assert.match(directory, /Médiumnité/)
   assert.match(directory, /Hypnose Ericksonienne/)

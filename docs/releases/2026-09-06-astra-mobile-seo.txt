@@ -1,0 +1,5 @@
+Release marker — Astra audit sprint
+
+Validated preview commit: 975a52303a3a6bcda9847f5dfdad37a945e8ce4a
+Scope: mobile Guardian footprint + MediumIA SEO baseline (metadata, canonical, robots.txt, sitemap.xml).
+Tests: 69/69 passed before production trigger.

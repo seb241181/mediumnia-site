@@ -65,7 +65,7 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                 rel="noopener noreferrer"
                 className="mt-8 inline-flex rounded-xl bg-deep px-7 py-4 font-georgia text-sm font-bold text-gold transition-opacity hover:opacity-90"
               >
-                Voir ses disponibilités →
+                {practitioner.externalLabel || 'Voir ses disponibilités'} →
               </a>
             </div>
           </div>

@@ -21,6 +21,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/chronosphere/exemple",
+      "destination": "/index.html"
+    },
+    {
       "source": "/chronosphere",
       "destination": "/index.html"
     },

@@ -44,6 +44,21 @@ test('profile route is lazy and direct practitioner URLs are rewritten to the SP
   assert.equal(profileRewrite?.destination, '/index.html')
 })
 
+test('Lydie Lesaffre is founder 002 with Mots pour Maux profile', async () => {
+  const { data, directory } = await readSources()
+  assert.match(data, /id: 'lydie-lesaffre'[\s\S]*founderNumber: 2/)
+  assert.match(data, /Psychopraticienne en hypnose · Médium/)
+  assert.match(data, /city: 'Arras & Annezin'/)
+  assert.match(data, /'Hypnose Ericksonienne'/)
+  assert.match(data, /'Constellations familiales'/)
+  assert.match(data, /'Médiumnité'/)
+  assert.match(data, /https:\/\/www\.mots-pour-maux\.com\//)
+  assert.match(data, /Découvrir Mots pour Maux/)
+  assert.match(directory, /'Hypnose Ericksonienne'/)
+  assert.match(directory, /'Constellations familiales'/)
+  assert.match(directory, /Amandine, Lydie, Willy et Gilda/)
+})
+
 test('Willy Ryckebusch is founder 003 with his public site', async () => {
   const { data, directory } = await readSources()
   assert.match(data, /id: 'willy-ryckebusch'[\s\S]*founderNumber: 3/)
@@ -72,10 +87,8 @@ test('Gilda is founder 006 with voyance-cartomancie profile and Google listing',
   assert.match(profile, /practitioner\.city \? ` · \$\{practitioner\.city\}` : ''/)
 })
 
-test('release scope excludes Stephanie and Lydie until their profiles are approved', async () => {
+test('release scope keeps Stephanie excluded until her profile is approved', async () => {
   const { data, directory } = await readSources()
   assert.doesNotMatch(data, /id: 'stephanie-madhyama'/)
-  assert.doesNotMatch(data, /id: 'lydie-lesaffre'/)
   assert.doesNotMatch(directory, /Stéphanie/)
-  assert.doesNotMatch(directory, /Lydie/)
 })

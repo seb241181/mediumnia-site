@@ -41,6 +41,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/reseau/:slug",
+      "destination": "/index.html"
+    },
+    {
       "source": "/reseau",
       "destination": "/index.html"
     },

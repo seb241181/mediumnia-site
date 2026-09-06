@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import LegalFooter from './LegalFooter'
+import {
+  chronosphereUrlWithoutFragment,
+  parseChronosphereResumeHash,
+  resolveChronosphereResumeStatus,
+} from '../../lib/chronosphereResume.js'
 
 const THEMES = [
   { value: 'amour', label: 'Amour' },
@@ -230,22 +235,88 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     } catch { return null }
   })
   const [drawToken, setDrawToken] = useState(() => {
-    try { return localStorage.getItem(PACK_TOKEN_KEY) || null } catch { return null }
+    try {
+      if (typeof window !== 'undefined' && window.location.hash.startsWith('#resume=')) return null
+      return localStorage.getItem(PACK_TOKEN_KEY) || null
+    } catch { return null }
   })
   const [legacyDrawToken, setLegacyDrawToken] = useState(null)
   const [resultToken, setResultToken] = useState(null)
   const [creditState, setCreditState] = useState(null)
   const [consentAccepted, setConsentAccepted] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [resumeMessage, setResumeMessage] = useState('')
   const paypalContainerRef = useRef(null)
   const drawTokenRef = useRef(pendingPayment?.drawToken || pendingPayment?.packToken || drawToken)
   const paymentProductRef = useRef(pendingPayment?.product || null)
+  const resumeValidatedTokenRef = useRef(null)
   const launchRef = useRef(null)
 
   useEffect(() => { drawTokenRef.current = drawToken }, [drawToken])
 
   useEffect(() => {
+    const hash = window.location.hash
+    if (!hash.startsWith('#resume=')) return
+
+    const packToken = parseChronosphereResumeHash(hash)
+    const cleanUrl = chronosphereUrlWithoutFragment(window.location)
+    window.history.replaceState(window.history.state, '', cleanUrl)
+    try { localStorage.removeItem(PACK_TOKEN_KEY) } catch {}
+
+    setDrawToken(null)
+    drawTokenRef.current = null
+    setCreditState(null)
+    setSelectedProduct(null)
+    setShowPayment(false)
+    setConsentAccepted(false)
+
+    if (!packToken) {
+      setResumeMessage('Ce lien de reprise n\'est plus valide.')
+      return
+    }
+
+    let cancelled = false
+    let messageTimer
+    fetch('/api/rdv-config?chronospherePayPalAction=status', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ packToken }),
+    })
+      .then(async (res) => ({ ok: res.ok, data: await res.json().catch(() => ({})) }))
+      .then(({ ok, data }) => {
+        if (cancelled) return
+        const resume = resolveChronosphereResumeStatus(ok, data)
+        if (resume.kind === 'active') {
+          try { localStorage.setItem(PACK_TOKEN_KEY, packToken) } catch {}
+          resumeValidatedTokenRef.current = packToken
+          drawTokenRef.current = packToken
+          setDrawToken(packToken)
+          setCreditState(resume)
+          setResumeMessage('Votre pack Chronosphère a été retrouvé.')
+          messageTimer = window.setTimeout(() => setResumeMessage(''), 6000)
+          return
+        }
+        if (resume.kind === 'exhausted') {
+          setCreditState(resume)
+          setResumeMessage('Ce pack a déjà été entièrement utilisé.')
+          return
+        }
+        setResumeMessage('Ce lien de reprise n\'est plus valide.')
+      })
+      .catch(() => {
+        if (!cancelled) setResumeMessage('Ce lien de reprise n\'est plus valide.')
+      })
+
+    return () => {
+      cancelled = true
+      if (messageTimer) window.clearTimeout(messageTimer)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!drawToken) return
+    if (resumeValidatedTokenRef.current === drawToken) {
+      resumeValidatedTokenRef.current = null
+      return
+    }
     let cancelled = false
     fetch('/api/rdv-config?chronospherePayPalAction=status', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ packToken: drawToken }),
@@ -621,6 +692,15 @@ export default function ChronospherePage({ onBack, onNavigate }) {
 
         {/* Form + Payment + Results */}
         <section className="mx-auto max-w-3xl px-6 pb-20">
+
+          {(resumeMessage || (!result && drawToken && creditState?.creditsRemaining >= 1)) && (
+            <div className="mb-6 rounded-2xl border border-gold/40 bg-white/75 px-5 py-4 text-center shadow-sm">
+              {resumeMessage && <p className="font-georgia text-sm font-medium text-deep">{resumeMessage}</p>}
+              {!result && drawToken && creditState?.creditsRemaining >= 1 && (
+                <p className={`${resumeMessage ? 'mt-1' : ''} font-georgia text-sm text-gold`}>{creditsLabel}</p>
+              )}
+            </div>
+          )}
 
           {/* Form — always visible */}
           <form

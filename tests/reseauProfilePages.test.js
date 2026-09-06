@@ -6,6 +6,7 @@ const profilePath = new URL('../src/components/PractitionerProfile.jsx', import.
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const directoryPath = new URL('../src/components/ReseauDirectory.jsx', import.meta.url)
 const dataPath = new URL('../src/data/reseauPractitioners.js', import.meta.url)
+const stephaniePortraitPath = new URL('../public/images/reseau/stephanie-madhyama.jpg', import.meta.url)
 const vercelPath = new URL('../vercel.json', import.meta.url)
 
 async function readSources() {
@@ -44,12 +45,16 @@ test('profile route is lazy and direct practitioner URLs are rewritten to the SP
   assert.equal(profileRewrite?.destination, '/index.html')
 })
 
-test('Stephanie Madhyama is founder 002 with Reservio booking and a safe photo fallback', async () => {
+test('Stephanie Madhyama is founder 002 with Reservio booking and a valid portrait asset', async () => {
   const { data, profile, directory } = await readSources()
+  const portrait = await readFile(stephaniePortraitPath)
   assert.match(data, /id: 'stephanie-madhyama'[\s\S]*founderNumber: 2/)
   assert.match(data, /Médium · écriture automatique/)
+  assert.match(data, /portrait: '\/images\/reseau\/stephanie-madhyama\.jpg'/)
   assert.match(data, /https:\/\/stephanie-madhyama\.reservio\.com\//)
   assert.match(data, /Réserver avec Stéphanie/)
+  assert.ok(portrait.length >= 12000)
+  assert.deepEqual([...portrait.subarray(0, 3)], [0xff, 0xd8, 0xff])
   assert.match(profile, /Photo du praticien à venir/)
   assert.match(directory, /Photo à venir/)
   assert.match(directory, /Écriture automatique/)

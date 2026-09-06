@@ -1,3 +1,5 @@
+import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
+
 const PATHS = {
   home: [
     {
@@ -102,6 +104,11 @@ export default function EcosystemNextSteps({
 
   if (!paths.length) return null
 
+  const openPath = (path) => {
+    trackMediumiaMetric(context === 'home' ? 'home_door_click' : 'ecosystem_door_click', `${context}:${path.key}`)
+    handlers[path.handler]()
+  }
+
   if (context === 'home') {
     return (
       <section className={`rounded-2xl border border-gold/20 bg-white/55 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] md:px-7 ${className}`}>
@@ -114,7 +121,7 @@ export default function EcosystemNextSteps({
               <button
                 key={path.key}
                 type="button"
-                onClick={handlers[path.handler]}
+                onClick={() => openPath(path)}
                 className="group rounded-xl border border-gold/20 bg-cream/45 px-3 py-3 text-left transition-colors hover:border-gold/55 hover:bg-gold/[.06]"
               >
                 <span className="flex items-center gap-2">
@@ -147,7 +154,7 @@ export default function EcosystemNextSteps({
           <button
             key={path.key}
             type="button"
-            onClick={handlers[path.handler]}
+            onClick={() => openPath(path)}
             className="group rounded-2xl border border-gold/25 bg-white/[.06] p-5 text-left transition-colors hover:border-gold/60 hover:bg-white/[.09]"
           >
             <span className="text-xl text-gold">{path.icon}</span>

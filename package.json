@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs && node scripts/apply-chronosphere-v2-reading.mjs && node scripts/apply-ecosystem-pathways.mjs && node scripts/apply-performance-measurement.mjs && node scripts/apply-pilotage-dashboard.mjs && node scripts/apply-conferences-foundation.mjs && node scripts/apply-reseau-profile-pages.mjs",
+    "predev": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs && node scripts/apply-chronosphere-v2-reading.mjs && node scripts/apply-ecosystem-pathways.mjs && node scripts/apply-astra-audit-sprint.mjs && node scripts/apply-performance-measurement.mjs && node scripts/apply-pilotage-dashboard.mjs && node scripts/apply-conferences-foundation.mjs && node scripts/apply-reseau-profile-pages.mjs",
     "dev": "vite",
-    "pretest": "node scripts/apply-chronosphere-v2-reading.mjs && node scripts/apply-ecosystem-pathways.mjs && node scripts/apply-performance-measurement.mjs && node scripts/apply-pilotage-dashboard.mjs && node scripts/apply-conferences-foundation.mjs && node scripts/apply-reseau-profile-pages.mjs",
-    "prebuild": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs && node scripts/apply-chronosphere-v2-reading.mjs && node scripts/apply-ecosystem-pathways.mjs && node scripts/apply-performance-measurement.mjs && node scripts/apply-pilotage-dashboard.mjs && node scripts/apply-conferences-foundation.mjs && node scripts/apply-reseau-profile-pages.mjs && node --test tests/*.test.js",
+    "pretest": "node scripts/apply-chronosphere-v2-reading.mjs && node scripts/apply-ecosystem-pathways.mjs && node scripts/apply-astra-audit-sprint.mjs && node scripts/apply-performance-measurement.mjs && node scripts/apply-pilotage-dashboard.mjs && node scripts/apply-conferences-foundation.mjs && node scripts/apply-reseau-profile-pages.mjs",
+    "prebuild": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs && node scripts/apply-chronosphere-v2-reading.mjs && node scripts/apply-ecosystem-pathways.mjs && node scripts/apply-astra-audit-sprint.mjs && node scripts/apply-performance-measurement.mjs && node scripts/apply-pilotage-dashboard.mjs && node scripts/apply-conferences-foundation.mjs && node scripts/apply-reseau-profile-pages.mjs && node --test tests/*.test.js",
     "build": "vite build",
     "test": "node --test tests/*.test.js",
     "lint": "eslint .",

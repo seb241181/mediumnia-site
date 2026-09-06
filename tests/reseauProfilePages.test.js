@@ -55,6 +55,21 @@ test('Stephanie Madhyama is founder 002 with Reservio booking and a safe photo f
   assert.match(directory, /Écriture automatique/)
 })
 
+test('Willy Ryckebusch is founder 003 with a restrained Reiki-magnetism profile', async () => {
+  const { data, directory } = await readSources()
+  assert.match(data, /id: 'willy-ryckebusch'[\s\S]*founderNumber: 3/)
+  assert.match(data, /Magnétiseur · Maître Reiki · Médium/)
+  assert.match(data, /city: 'Wormhout'/)
+  assert.match(data, /'Magnétisme'/)
+  assert.match(data, /'Reiki'/)
+  assert.match(data, /'Animaux'/)
+  assert.match(data, /ne remplacent pas un diagnostic, un traitement ou un suivi médical ou vétérinaire/)
+  assert.match(data, /https:\/\/willyreikibusch\.wixsite\.com\/monsite-2/)
+  assert.match(data, /Découvrir le site de Willy/)
+  assert.match(directory, /'Magnétisme'/)
+  assert.match(directory, /'Reiki'/)
+})
+
 test('Gilda is founder 006 with a restrained voyance-cartomancie profile and Google listing', async () => {
   const { data, directory, profile } = await readSources()
   assert.match(data, /id: 'gilda'[\s\S]*founderNumber: 6/)

@@ -17,6 +17,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/conferences",
+      "destination": "/index.html"
+    },
+    {
       "source": "/oracle",
       "destination": "/index.html"
     },

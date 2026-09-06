@@ -14,6 +14,7 @@ import RdvDashboard from './components/rdv/RdvDashboard'
 import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
 import ChronospherePage from './components/ChronospherePage'
+import ChronosphereExamplePage from './components/ChronosphereExamplePage'
 import SiteGuardian from './components/SiteGuardian'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
@@ -121,7 +122,7 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function FeaturedChronosphere({ onOpen }) {
+function FeaturedChronosphere({ onOpen, onOpenExample }) {
   return (
     <article
       className="relative isolate overflow-hidden rounded-3xl border border-gold/35 px-7 py-9 shadow-xl md:px-12 md:py-12"
@@ -142,9 +143,12 @@ function FeaturedChronosphere({ onOpen }) {
           </p>
           <p className="mt-6 font-georgia text-sm font-medium text-gold">À partir de 5 € TTC</p>
           <p className="mt-2 font-georgia text-xs text-cream/65">1 tirage : 5 € · Pack 3 tirages : 9,90 €</p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <button onClick={onOpen} className="rounded-lg bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90">
               Découvrir Chronosphère
+            </button>
+            <button onClick={onOpenExample} className="rounded-lg border border-gold/55 px-7 py-4 font-georgia text-base font-bold text-gold transition-colors hover:bg-gold/10">
+              Voir un exemple de tirage
             </button>
           </div>
         </div>
@@ -173,7 +177,7 @@ function FeaturedChronosphere({ onOpen }) {
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
     <div id="top" className="bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -212,7 +216,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
             <div id="formation">
               <FeaturedAccompagnement onOpen={onOpenFormation} />
             </div>
-            <FeaturedChronosphere onOpen={onOpenChronosphere} />
+            <FeaturedChronosphere onOpen={onOpenChronosphere} onOpenExample={onOpenChronosphereExample} />
             <div className="grid md:grid-cols-2 gap-5">
               <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>
                 Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
@@ -261,6 +265,7 @@ function pathToView(p) {
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
     : p.startsWith('/formation') ? 'formation'
+    : p.startsWith('/chronosphere/exemple') ? 'chronosphere-example'
     : p.startsWith('/chronosphere') ? 'chronosphere'
     : p.startsWith('/oracle') ? 'oracle'
     : p.startsWith('/reseau/rejoindre') ? 'reseau-form'
@@ -286,6 +291,7 @@ export default function App() {
   const openFormation  = () => nav('/formation',        'formation')
   const openOracle     = () => nav('/oracle',           'oracle')
   const openChronosphere = () => nav('/chronosphere',  'chronosphere')
+  const openChronosphereExample = () => nav('/chronosphere/exemple', 'chronosphere-example')
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
@@ -310,10 +316,11 @@ export default function App() {
   if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'chronosphere-example') return <><ChronosphereExamplePage onBack={backHome} onOpenChronosphere={openChronosphere} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
 }

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { reseauPractitioners } from '../data/reseauPractitioners'
 
-const filters = ['Tous', 'Médiumnité', 'Hypnose Ericksonienne', 'Constellations familiales', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
+const filters = ['Tous', 'Médiumnité', 'Écriture automatique', 'Hypnose Ericksonienne', 'Constellations familiales', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
 
 function withPreviewShareToken(src) {
   if (typeof window === 'undefined' || !src?.startsWith('/')) return src
@@ -10,6 +10,26 @@ function withPreviewShareToken(src) {
   if (!token) return src
   const separator = src.includes('?') ? '&' : '?'
   return `${src}${separator}_vercel_share=${encodeURIComponent(token)}`
+}
+
+function PractitionerPortrait({ practitioner }) {
+  if (practitioner.portrait) {
+    return (
+      <img
+        src={withPreviewShareToken(practitioner.portrait)}
+        alt={practitioner.portraitAlt}
+        className="absolute inset-0 h-full w-full object-cover object-center"
+      />
+    )
+  }
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-deep via-[#241d42] to-[#0d1730] px-6 text-center">
+      <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="mb-5 w-24 opacity-80" />
+      <p className="font-georgia text-xl text-cream">{practitioner.name}</p>
+      <p className="mt-2 font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Photo à venir</p>
+    </div>
+  )
 }
 
 export default function ReseauDirectory({ onBack, onNavigate }) {
@@ -83,11 +103,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
                 >
                   <div className="grid md:grid-cols-[280px_1fr]">
                     <div className="relative min-h-[300px] md:min-h-full bg-deep/5">
-                      <img
-                        src={withPreviewShareToken(practitioner.portrait)}
-                        alt={practitioner.portraitAlt}
-                        className="absolute inset-0 w-full h-full object-cover object-center"
-                      />
+                      <PractitionerPortrait practitioner={practitioner} />
                     </div>
 
                     <div className="p-7 md:p-9 flex flex-col">
@@ -168,7 +184,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
           <div className="max-w-xl mx-auto text-center mt-14 rounded-3xl border border-gold/20 px-8 py-8 bg-white/30">
             <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">Réseau en développement</p>
             <p className="font-georgia text-mist leading-relaxed">
-              Amandine et Lydie inaugurent le Réseau MediumIA. D'autres profils sélectionnés viendront progressivement enrichir l'annuaire.
+              Amandine, Stéphanie et Lydie font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
             </p>
           </div>
         </section>

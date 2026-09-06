@@ -2,6 +2,14 @@ import { readFile, writeFile } from 'node:fs/promises'
 
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const directoryPath = new URL('../src/components/ReseauDirectory.jsx', import.meta.url)
+const willyPortraitPath = new URL('../public/images/reseau/willy-ryckebusch.webp', import.meta.url)
+const willyPortraitPayloadPaths = [
+  new URL('../public/images/reseau/willy-ryckebusch.webp.b64.001', import.meta.url),
+  new URL('../public/images/reseau/willy-ryckebusch.webp.b64.002', import.meta.url),
+  new URL('../public/images/reseau/willy-ryckebusch.webp.b64.003', import.meta.url),
+  new URL('../public/images/reseau/willy-ryckebusch.webp.b64.004', import.meta.url),
+  new URL('../public/images/reseau/willy-ryckebusch.webp.b64.005', import.meta.url),
+]
 
 function replaceRequired(source, before, after, label) {
   if (source.includes(after)) return source
@@ -58,5 +66,16 @@ directory = replaceRequired(
 )
 
 await writeFile(directoryPath, directory)
+
+const willyPortraitBase64 = (await Promise.all(
+  willyPortraitPayloadPaths.map((path) => readFile(path, 'utf8')),
+)).map((part) => part.trim()).join('')
+const willyPortrait = Buffer.from(willyPortraitBase64, 'base64')
+const isWebp = willyPortrait.length >= 10000
+  && willyPortrait.subarray(0, 4).toString('ascii') === 'RIFF'
+  && willyPortrait.subarray(8, 12).toString('ascii') === 'WEBP'
+
+if (!isWebp) throw new Error('MediumIA reseau profiles: invalid Willy portrait payload')
+await writeFile(willyPortraitPath, willyPortrait)
 
 console.log('MediumIA reseau: individual practitioner pages applied')

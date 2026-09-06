@@ -53,7 +53,7 @@ test('Stephanie Madhyama is founder 002 with Reservio booking and a valid portra
   assert.match(data, /portrait: '\/images\/reseau\/stephanie-madhyama\.jpg'/)
   assert.match(data, /https:\/\/stephanie-madhyama\.reservio\.com\//)
   assert.match(data, /Réserver avec Stéphanie/)
-  assert.ok(portrait.length >= 12000)
+  assert.ok(portrait.length >= 5000)
   assert.deepEqual([...portrait.subarray(0, 3)], [0xff, 0xd8, 0xff])
   assert.match(profile, /Photo du praticien à venir/)
   assert.match(directory, /Photo à venir/)

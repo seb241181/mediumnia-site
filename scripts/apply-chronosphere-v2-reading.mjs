@@ -103,9 +103,65 @@ const newParser = `function splitTendency(value) {
     summary: summary || null,
     reading: text.slice(photoIndex).trim(),
   }
+}
+
+const READING_SECTION_TITLES = [
+  "La photographie de l'instant",
+  'La fréquence principale',
+  'Les deux résonances',
+  'Ce que racontent les trois fréquences ensemble',
+  'Le ciel de naissance et le contexte astrologique',
+  'La ligne de temps',
+  'Les deux chemins possibles',
+  'Vos leviers concrets',
+  'La question que Chronosphère vous renvoie',
+]
+
+function matchReadingHeading(value) {
+  const cleaned = String(value || '')
+    .trim()
+    .replace(/^#{1,4}\\s*/, '')
+    .replace(/^\\*\\*(.*?)\\*\\*$/, '$1')
+    .trim()
+  const withoutNumber = cleaned.replace(/^\\d+[.)]\\s*/, '').trim()
+  const index = READING_SECTION_TITLES.findIndex((title) => title.toLowerCase() === withoutNumber.toLowerCase())
+  return index >= 0 ? { number: index + 1, title: READING_SECTION_TITLES[index] } : null
+}
+
+function splitReadingSections(value) {
+  const lines = String(value || '').split('\\n')
+  const sections = []
+  let current = null
+
+  for (const line of lines) {
+    const heading = matchReadingHeading(line)
+    if (heading) {
+      if (current) {
+        current.content = current.lines.join('\\n').trim()
+        delete current.lines
+        sections.push(current)
+      }
+      current = { ...heading, lines: [] }
+      continue
+    }
+    if (current) current.lines.push(line)
+  }
+
+  if (current) {
+    current.content = current.lines.join('\\n').trim()
+    delete current.lines
+    sections.push(current)
+  }
+
+  return sections.length >= 6 ? sections : []
 }`
 
-page = replaceRequired(page, oldParser, newParser, 'V2 summary parser')
+page = replaceRequired(page, oldParser, newParser, 'V2 summary and section parser')
+
+const oldPartsLine = `  const parts = result ? splitTendency(result.interpretation) : null`
+const newPartsLine = `  const parts = result ? splitTendency(result.interpretation) : null
+  const readingSections = parts ? splitReadingSections(parts.reading) : []`
+page = replaceRequired(page, oldPartsLine, newPartsLine, 'V2 parsed reading sections')
 
 const oldSummaryCard = `              {parts.direction && (
                 <div className="rounded-[22px] border-2 border-gold bg-gradient-to-br from-gold/[.14] to-white/90 p-6 shadow-md md:p-7">
@@ -138,6 +194,61 @@ const newSummaryCard = `              {(parts.direction || parts.summary) && (
               )}`
 
 page = replaceRequired(page, oldSummaryCard, newSummaryCard, 'V2 30-second summary card')
+
+const oldTimeline = `              {/* Timeline */}
+              <TimelineFrise timing={result.sky?.timing} />
+
+`
+page = replaceRequired(page, oldTimeline, '', 'V2 move timeline into detailed reading')
+
+const oldReading = `              {/* Reading */}
+              <article className="rounded-3xl border-2 border-gold/25 bg-white p-7 md:p-9">
+                <div className="whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/90 md:text-base">
+                  {parts.reading}
+                </div>
+              </article>`
+
+const newReading = `              {/* Reading */}
+              {readingSections.length > 0 ? (
+                <div className="space-y-5">
+                  {readingSections.map((section) => (
+                    <div key={section.number}>
+                      <article
+                        className={section.number === 4
+                          ? "rounded-3xl border-2 border-gold bg-gold/[.08] p-6 shadow-sm md:p-8"
+                          : "rounded-3xl border border-gold/25 bg-white/80 p-6 shadow-sm md:p-8"}
+                      >
+                        <div className="flex items-start gap-4">
+                          <span className="mt-0.5 shrink-0 font-georgia text-[11px] font-semibold tracking-[0.14em] text-gold">
+                            {String(section.number).padStart(2, '0')}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h2 className="font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">
+                              {section.title}
+                            </h2>
+                            <div className="mt-4 whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/80 md:text-base">
+                              {section.content}
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                      {section.number === 6 && (
+                        <div className="mt-5">
+                          <TimelineFrise timing={result.sky?.timing} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <article className="rounded-3xl border-2 border-gold/25 bg-white p-7 md:p-9">
+                  <div className="whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/90 md:text-base">
+                    {parts.reading}
+                  </div>
+                </article>
+              )}`
+
+page = replaceRequired(page, oldReading, newReading, 'V2 premium reading cards')
 
 await writeFile(pagePath, page)
 

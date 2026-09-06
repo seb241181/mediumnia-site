@@ -69,8 +69,8 @@ function routeMeta(view) {
     const practitioner = reseauPractitioners.find((item) => item.id === slug)
     if (practitioner) {
       return {
-        title: \`${'${practitioner.name}'} — ${'${practitioner.role}'} | Réseau MediumIA\`,
-        description: \`Découvrez le profil de ${'${practitioner.name}'}, ${'${practitioner.role}'}${'${practitioner.city ? ` à ${practitioner.city}` : \'\'}'}, membre du Réseau MediumIA.\`,
+        title: \`${practitioner.name} — ${practitioner.role} | Réseau MediumIA\`,
+        description: \`Découvrez le profil de ${practitioner.name}, ${practitioner.role}${practitioner.city ? ` à ${practitioner.city}` : ''}, membre du Réseau MediumIA.\`,
       }
     }
   }
@@ -79,7 +79,7 @@ function routeMeta(view) {
 
 function applyRouteMeta(view) {
   const meta = routeMeta(view)
-  const canonicalUrl = \`https://mediumia.fr${'${window.location.pathname === \'/\' ? \'/\' : window.location.pathname.replace(/\\/$/, \'\')}'}\`
+  const canonicalUrl = \`https://mediumia.fr${window.location.pathname === '/' ? '/' : window.location.pathname.replace(/\/$/, '')}\`
   const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation'
 
   document.title = meta.title
@@ -110,7 +110,7 @@ function applyRouteMeta(view) {
     ['og:description', meta.description],
     ['og:url', canonicalUrl],
   ]) {
-    const node = ensureHeadElement(\`meta[property="${'${property}'}"]\`, () => {
+    const node = ensureHeadElement(\`meta[property="${property}"]\`, () => {
       const element = document.createElement('meta')
       element.setAttribute('property', property)
       return element
@@ -122,7 +122,7 @@ function applyRouteMeta(view) {
     ['twitter:title', meta.title],
     ['twitter:description', meta.description],
   ]) {
-    const node = ensureHeadElement(\`meta[name="${'${name}'}"]\`, () => {
+    const node = ensureHeadElement(\`meta[name="${name}"]\`, () => {
       const element = document.createElement('meta')
       element.setAttribute('name', name)
       return element
@@ -136,7 +136,7 @@ function applyRouteMeta(view) {
 app = replaceRequired(
   app,
   `function pathToView(p) {`,
-  `${'${routeSeoHelpers}'}function pathToView(p) {`,
+  `${routeSeoHelpers}function pathToView(p) {`,
   'route SEO helpers',
 )
 
@@ -181,8 +181,8 @@ chronosphere = replaceRequired(
 
 chronosphere = replaceRequired(
   chronosphere,
-  `                    <span className={\`mt-1 block font-georgia text-xs ${'${selectedProduct === \'pack3\' ? \'text-cream/70\' : \'text-mist\'}'}\`}>3 tirages</span>`,
-  `                    <span className={\`mt-1 block font-georgia text-xs ${'${selectedProduct === \'pack3\' ? \'text-cream/70\' : \'text-mist\'}'}\`}>3 tirages · les suivants quand vous voulez</span>`,
+  `                    <span className={\`mt-1 block font-georgia text-xs \${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}\`}>3 tirages</span>`,
+  `                    <span className={\`mt-1 block font-georgia text-xs \${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}\`}>3 tirages · les suivants quand vous voulez</span>`,
   'Chronosphere pack card value',
 )
 

@@ -2,8 +2,6 @@ import { readFile, writeFile } from 'node:fs/promises'
 
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const directoryPath = new URL('../src/components/ReseauDirectory.jsx', import.meta.url)
-const stephaniePortraitPayloadPath = new URL('../public/images/reseau/stephanie-madhyama-small.b64', import.meta.url)
-const stephaniePortraitPath = new URL('../public/images/reseau/stephanie-madhyama.jpg', import.meta.url)
 
 function replaceRequired(source, before, after, label) {
   if (source.includes(after)) return source
@@ -60,15 +58,5 @@ directory = replaceRequired(
 )
 
 await writeFile(directoryPath, directory)
-
-const stephaniePortraitBase64 = (await readFile(stephaniePortraitPayloadPath, 'utf8')).trim()
-const stephaniePortrait = Buffer.from(stephaniePortraitBase64, 'base64')
-const isJpeg = stephaniePortrait.length >= 5000
-  && stephaniePortrait[0] === 0xff
-  && stephaniePortrait[1] === 0xd8
-  && stephaniePortrait[2] === 0xff
-
-if (!isJpeg) throw new Error('MediumIA reseau profiles: invalid Stephanie portrait payload')
-await writeFile(stephaniePortraitPath, stephaniePortrait)
 
 console.log('MediumIA reseau: individual practitioner pages applied')

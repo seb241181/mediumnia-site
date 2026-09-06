@@ -14,6 +14,31 @@ let app = await readFile(appPath, 'utf8')
 
 app = replaceRequired(
   app,
+  `import SiteGuardian from './components/SiteGuardian'`,
+  `import SiteGuardian from './components/SiteGuardian'\nimport EcosystemNextSteps from './components/EcosystemNextSteps'`,
+  'App ecosystem import',
+)
+
+app = replaceRequired(
+  app,
+  `        {/* ── Consulter ── */}`,
+  `        {/* ── Parcours guidés ── */}
+        <section className="mx-auto max-w-6xl px-6 pb-16 pt-2">
+          <EcosystemNextSteps
+            context="home"
+            onOpenOracle={onOpenOracle}
+            onOpenChronosphere={onOpenChronosphere}
+            onOpenReseau={onOpenReseauDir}
+            onOpenFormation={onOpenFormation}
+          />
+        </section>
+
+        {/* ── Consulter ── */}`,
+  'Home guided pathways',
+)
+
+app = replaceRequired(
+  app,
   `  if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>`,
   `  if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} onOpenChronosphere={openChronosphere} onOpenFormation={openFormation} onOpenReseau={openReseauDir} />{guardian}</>`,
   'Oracle route callbacks',

@@ -94,12 +94,14 @@ footer = replaceRequired(
 await writeFile(footerPath, footer)
 
 let pilotage = await readFile(pilotagePath, 'utf8')
-pilotage = replaceRequired(
-  pilotage,
-  `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',`,
-  `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',\n  conference_page_view: 'Vues page Conférences',\n  conference_interest_click: 'Intérêt Conférences',`,
-  'conference analytics labels',
-)
+if (!pilotage.includes("conference_page_view: 'Vues page Conférences'")) {
+  pilotage = replaceRequired(
+    pilotage,
+    `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',`,
+    `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',\n  conference_page_view: 'Vues page Conférences',\n  conference_interest_click: 'Intérêt Conférences',`,
+    'conference analytics labels',
+  )
+}
 await writeFile(pilotagePath, pilotage)
 
 console.log('MediumIA conferences: public foundation applied')

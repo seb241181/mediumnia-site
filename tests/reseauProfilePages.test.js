@@ -6,7 +6,6 @@ const profilePath = new URL('../src/components/PractitionerProfile.jsx', import.
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const directoryPath = new URL('../src/components/ReseauDirectory.jsx', import.meta.url)
 const dataPath = new URL('../src/data/reseauPractitioners.js', import.meta.url)
-const stephaniePortraitPath = new URL('../public/images/reseau/stephanie-madhyama.jpg', import.meta.url)
 const vercelPath = new URL('../vercel.json', import.meta.url)
 
 async function readSources() {
@@ -20,7 +19,7 @@ async function readSources() {
   return { profile, app, directory, data, vercel: JSON.parse(vercelRaw) }
 }
 
-test('practitioner profile uses existing network data and keeps external contact explicit', async () => {
+test('practitioner profile uses network data and keeps external contact explicit', async () => {
   const { profile } = await readSources()
   assert.match(profile, /reseauPractitioners\.find/)
   assert.match(profile, /practitioner\.bookingUrl/)
@@ -45,22 +44,7 @@ test('profile route is lazy and direct practitioner URLs are rewritten to the SP
   assert.equal(profileRewrite?.destination, '/index.html')
 })
 
-test('Stephanie Madhyama is founder 002 with Reservio booking and a high-resolution portrait source', async () => {
-  const { data, profile, directory } = await readSources()
-  const portrait = await readFile(stephaniePortraitPath)
-  assert.match(data, /id: 'stephanie-madhyama'[\s\S]*founderNumber: 2/)
-  assert.match(data, /Médium · écriture automatique/)
-  assert.match(data, /portrait: 'https:\/\/1951880946\.rsc\.cdn77\.org\/resize\?type=auto&url=.*width=2400'/)
-  assert.match(data, /https:\/\/stephanie-madhyama\.reservio\.com\//)
-  assert.match(data, /Réserver avec Stéphanie/)
-  assert.ok(portrait.length >= 5000)
-  assert.deepEqual([...portrait.subarray(0, 3)], [0xff, 0xd8, 0xff])
-  assert.match(profile, /Photo du praticien à venir/)
-  assert.match(directory, /Photo à venir/)
-  assert.match(directory, /Écriture automatique/)
-})
-
-test('Willy Ryckebusch is founder 003 with a restrained Reiki-magnetism profile', async () => {
+test('Willy Ryckebusch is founder 003 with his public site', async () => {
   const { data, directory } = await readSources()
   assert.match(data, /id: 'willy-ryckebusch'[\s\S]*founderNumber: 3/)
   assert.match(data, /Magnétiseur · Maître Reiki · Médium/)
@@ -75,7 +59,7 @@ test('Willy Ryckebusch is founder 003 with a restrained Reiki-magnetism profile'
   assert.match(directory, /'Reiki'/)
 })
 
-test('Gilda is founder 006 with a restrained voyance-cartomancie profile and Google listing', async () => {
+test('Gilda is founder 006 with voyance-cartomancie profile and Google listing', async () => {
   const { data, directory, profile } = await readSources()
   assert.match(data, /id: 'gilda'[\s\S]*founderNumber: 6/)
   assert.match(data, /Voyante · Cartomancienne/)
@@ -88,13 +72,10 @@ test('Gilda is founder 006 with a restrained voyance-cartomancie profile and Goo
   assert.match(profile, /practitioner\.city \? ` · \$\{practitioner\.city\}` : ''/)
 })
 
-test('Lydie Lesaffre keeps the next reserved founder number and her public Mots pour Maux profile', async () => {
+test('release scope excludes Stephanie and Lydie until their profiles are approved', async () => {
   const { data, directory } = await readSources()
-  assert.match(data, /id: 'lydie-lesaffre'[\s\S]*founderNumber: 8/)
-  assert.match(data, /Psychopraticienne en hypnose · Médium/)
-  assert.match(data, /Hypnose Ericksonienne/)
-  assert.match(data, /Constellations familiales/)
-  assert.match(data, /https:\/\/www\.mots-pour-maux\.com\//)
-  assert.match(directory, /Médiumnité/)
-  assert.match(directory, /Hypnose Ericksonienne/)
+  assert.doesNotMatch(data, /id: 'stephanie-madhyama'/)
+  assert.doesNotMatch(data, /id: 'lydie-lesaffre'/)
+  assert.doesNotMatch(directory, /Stéphanie/)
+  assert.doesNotMatch(directory, /Lydie/)
 })

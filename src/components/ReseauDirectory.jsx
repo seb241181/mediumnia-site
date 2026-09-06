@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { reseauPractitioners } from '../data/reseauPractitioners'
 
-const filters = ['Tous', 'Médiumnité', 'Voyance', 'Cartomancie', 'Magnétisme', 'Reiki', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
+const filters = ['Tous', 'Médiumnité', 'Voyance', 'Cartomancie', 'Magnétisme', 'Reiki', 'Hypnose Ericksonienne', 'Constellations familiales', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
 
 function withPreviewShareToken(src) {
   if (typeof window === 'undefined' || !src?.startsWith('/')) return src
@@ -184,7 +184,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
           <div className="max-w-xl mx-auto text-center mt-14 rounded-3xl border border-gold/20 px-8 py-8 bg-white/30">
             <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">Réseau en développement</p>
             <p className="font-georgia text-mist leading-relaxed">
-              Amandine, Willy et Gilda font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
+              Amandine, Lydie, Willy et Gilda font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
             </p>
           </div>
         </section>

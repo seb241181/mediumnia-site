@@ -21,9 +21,9 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  `        {/* ── Consulter ── */}`,
-  `        {/* ── Parcours guidés ── */}
-        <section className="mx-auto max-w-6xl px-6 pb-16 pt-2">
+  `        {/* ── Découvrir ── */}`,
+  `        {/* ── Orientation légère ── */}
+        <section className="mx-auto max-w-6xl px-6 pb-4">
           <EcosystemNextSteps
             context="home"
             onOpenOracle={onOpenOracle}
@@ -33,8 +33,8 @@ app = replaceRequired(
           />
         </section>
 
-        {/* ── Consulter ── */}`,
-  'Home guided pathways',
+        {/* ── Découvrir ── */}`,
+  'Home lightweight pathways',
 )
 
 app = replaceRequired(

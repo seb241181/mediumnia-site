@@ -15,6 +15,33 @@ function authHeader(session) {
   return session ? { Authorization: `Bearer ${session.access_token}` } : {}
 }
 
+function makePreviewData(days) {
+  const factor = days === 7 ? 0.28 : days === 90 ? 2.7 : 1
+  const round = value => Math.max(0, Math.round(value * factor))
+  const totals = {
+    home_view: round(428),
+    home_door_click: round(173),
+    ecosystem_door_click: round(61),
+    chronosphere_example_view: round(96),
+    chronosphere_example_cta: round(41),
+    chronosphere_payment_opened: round(24),
+  }
+  const home_doors = {
+    oracle: round(58),
+    chronosphere: round(67),
+    reseau: round(24),
+    formation: round(24),
+  }
+  const daily = []
+  const today = new Date()
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = new Date(today)
+    date.setUTCDate(date.getUTCDate() - offset)
+    daily.push({ date: date.toISOString().slice(0, 10), total: 9 + ((offset * 7 + days) % 11) })
+  }
+  return { preview: true, days, totals, home_doors, daily }
+}
+
 function pct(value, total) {
   if (!total) return '—'
   return `${Math.round((value / total) * 100)} %`
@@ -71,13 +98,19 @@ function MiniBars({ daily }) {
   )
 }
 
-export default function PilotageDashboard({ session }) {
+export default function PilotageDashboard({ session, demoMode = false }) {
   const [days, setDays] = useState(30)
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState(() => demoMode ? makePreviewData(30) : null)
+  const [loading, setLoading] = useState(!demoMode)
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (demoMode) {
+      setData(makePreviewData(days))
+      setLoading(false)
+      setError(null)
+      return
+    }
     if (!session) return
     let cancelled = false
     setLoading(true)
@@ -103,7 +136,7 @@ export default function PilotageDashboard({ session }) {
       })
 
     return () => { cancelled = true }
-  }, [session, days])
+  }, [session, days, demoMode])
 
   const totals = data?.totals || {}
   const homeDoors = data?.home_doors || {}

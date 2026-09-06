@@ -45,12 +45,12 @@ test('profile route is lazy and direct practitioner URLs are rewritten to the SP
   assert.equal(profileRewrite?.destination, '/index.html')
 })
 
-test('Stephanie Madhyama is founder 002 with Reservio booking and a valid portrait asset', async () => {
+test('Stephanie Madhyama is founder 002 with Reservio booking and a high-resolution portrait source', async () => {
   const { data, profile, directory } = await readSources()
   const portrait = await readFile(stephaniePortraitPath)
   assert.match(data, /id: 'stephanie-madhyama'[\s\S]*founderNumber: 2/)
   assert.match(data, /Médium · écriture automatique/)
-  assert.match(data, /portrait: '\/images\/reseau\/stephanie-madhyama\.jpg'/)
+  assert.match(data, /portrait: 'https:\/\/1951880946\.rsc\.cdn77\.org\/resize\?type=auto&url=.*width=2400'/)
   assert.match(data, /https:\/\/stephanie-madhyama\.reservio\.com\//)
   assert.match(data, /Réserver avec Stéphanie/)
   assert.ok(portrait.length >= 5000)

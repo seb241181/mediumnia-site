@@ -1,6 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
 const appPath = new URL('../src/App.jsx', import.meta.url)
+const footerPath = new URL('../src/components/LegalFooter.jsx', import.meta.url)
+const pilotagePath = new URL('../src/components/rdv/PilotageDashboard.jsx', import.meta.url)
 
 function replaceRequired(source, before, after, label) {
   if (source.includes(after)) return source
@@ -81,4 +83,23 @@ app = replaceRequired(
 )
 
 await writeFile(appPath, app)
+
+let footer = await readFile(footerPath, 'utf8')
+footer = replaceRequired(
+  footer,
+  `        <a href="/retractation" onClick={go('/retractation')} className="hover:text-gold transition-colors">Rétractation</a>\n        <span className="hidden sm:inline">·</span>\n        <a href="mailto:contact@mediumia.fr" className="hover:text-gold transition-colors">Contact</a>`,
+  `        <a href="/retractation" onClick={go('/retractation')} className="hover:text-gold transition-colors">Rétractation</a>\n        <span className="hidden sm:inline">·</span>\n        <a href="/conferences" onClick={go('/conferences')} className="hover:text-gold transition-colors">Conférences</a>\n        <span className="hidden sm:inline">·</span>\n        <a href="mailto:contact@mediumia.fr" className="hover:text-gold transition-colors">Contact</a>`,
+  'footer conference link',
+)
+await writeFile(footerPath, footer)
+
+let pilotage = await readFile(pilotagePath, 'utf8')
+pilotage = replaceRequired(
+  pilotage,
+  `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',`,
+  `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',\n  conference_page_view: 'Vues page Conférences',\n  conference_interest_click: 'Intérêt Conférences',`,
+  'conference analytics labels',
+)
+await writeFile(pilotagePath, pilotage)
+
 console.log('MediumIA conferences: public foundation applied')

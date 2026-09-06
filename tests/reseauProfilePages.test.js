@@ -55,6 +55,19 @@ test('Stephanie Madhyama is founder 002 with Reservio booking and a safe photo f
   assert.match(directory, /Écriture automatique/)
 })
 
+test('Gilda is founder 006 with a restrained voyance-cartomancie profile and Google listing', async () => {
+  const { data, directory, profile } = await readSources()
+  assert.match(data, /id: 'gilda'[\s\S]*founderNumber: 6/)
+  assert.match(data, /Voyante · Cartomancienne/)
+  assert.match(data, /'Voyance'/)
+  assert.match(data, /'Cartomancie'/)
+  assert.match(data, /Voir la fiche Google de Gilda/)
+  assert.match(data, /0x47dcf7d908be2da3:0x664c404e4875e75a/)
+  assert.match(directory, /'Voyance'/)
+  assert.match(directory, /'Cartomancie'/)
+  assert.match(profile, /practitioner\.city \? ` · \$\{practitioner\.city\}` : ''/)
+})
+
 test('Lydie Lesaffre keeps the next reserved founder number and her public Mots pour Maux profile', async () => {
   const { data, directory } = await readSources()
   assert.match(data, /id: 'lydie-lesaffre'[\s\S]*founderNumber: 8/)

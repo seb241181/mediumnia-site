@@ -139,6 +139,13 @@ dashboard = replaceRequired(
 
 dashboard = replaceRequired(
   dashboard,
+  `  // ── Auth loading ──────────────────────────────────────────────────────────`,
+  `  const isPreviewPilotageDemo = new URLSearchParams(window.location.search).get('pilotage_demo') === '1'\n    && window.location.hostname.endsWith('.vercel.app')\n\n  if (isPreviewPilotageDemo) {\n    return (\n      <div className="min-h-screen bg-cream text-deep">\n        <header className="sticky top-0 z-40 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">\n          <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">\n            <span className="font-georgia text-sm font-semibold text-deep">MediumIA · Pilotage</span>\n            <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep">← Retour au site</button>\n          </div>\n        </header>\n        <main className="mx-auto max-w-5xl px-6 pb-24 pt-10">\n          <div className="mb-8">\n            <p className="mb-2 font-georgia text-[11px] uppercase tracking-[0.24em] text-gold">APERÇU PRIVÉ</p>\n            <h1 className="font-georgia text-3xl font-medium leading-tight md:text-4xl">Pilotage MediumIA</h1>\n            <p className="mt-2 font-georgia text-mist">Démonstration visuelle sans connexion · aucune donnée réelle.</p>\n          </div>\n          <PilotageDashboard demoMode />\n        </main>\n      </div>\n    )\n  }\n\n  // ── Auth loading ──────────────────────────────────────────────────────────`,
+  'preview demo gate',
+)
+
+dashboard = replaceRequired(
+  dashboard,
   `  const activePractitioner = practitioners.find(p => p.slug === activeSlug)`,
   `  const activePractitioner = practitioners.find(p => p.slug === activeSlug)\n  const canSeePilotage = practitioners.some(p => p.slug === 'sebastien-seguin') || window.location.hostname.endsWith('.vercel.app')`,
   'pilotage access visibility',

@@ -38,6 +38,17 @@ test('paid result exposes a 30-second summary even without a closed question', a
   assert.match(page, /directionMatch \? directionMatch\[1\]/)
 })
 
+test('paid result renders V2 reading as separate premium sections', async () => {
+  const { page } = await readSources()
+  assert.match(page, /READING_SECTION_TITLES/)
+  assert.match(page, /splitReadingSections/)
+  assert.match(page, /readingSections\.map/)
+  assert.match(page, /section\.title/)
+  assert.match(page, /section\.content/)
+  assert.match(page, /section\.number === 6/)
+  assert.match(page, /<TimelineFrise timing=\{result\.sky\?\.timing\} \/>/)
+})
+
 test('public example remains clearly fictional and conversion-oriented', async () => {
   const { example } = await readSources()
   assert.match(example, /Exemple fictif/)

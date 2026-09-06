@@ -70,7 +70,9 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                   : 'Membre du Réseau MediumIA'}
               </p>
               <h1 className="mt-4 font-georgia text-4xl font-medium leading-tight md:text-6xl">{practitioner.name}</h1>
-              <p className="mt-3 font-georgia text-lg text-mist">{practitioner.role} · {practitioner.city}</p>
+              <p className="mt-3 font-georgia text-lg text-mist">
+                {practitioner.role}{practitioner.city ? ` · ${practitioner.city}` : ''}
+              </p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 font-georgia text-xs text-deep">{practitioner.audience}</span>
                 <span className="rounded-full border border-deep/10 bg-deep/5 px-3 py-1.5 font-georgia text-xs text-mist">{practitioner.membership}</span>

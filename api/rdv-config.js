@@ -25,6 +25,7 @@ import { isSupabaseConfigured, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { handlePayPalSandbox, handlePayPalCheckout } from '../lib/paypalSandbox.js'
 import { handleReseauApply } from '../lib/reseauApply.js'
 import { handleChronospherePayPal } from '../lib/chronospherePayPal.js'
+import { handleMediumiaAnalytics } from '../lib/mediumiaAnalytics.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -39,6 +40,11 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
+
+  const analyticsAction = req.query?.analyticsAction
+  if (analyticsAction) {
+    return handleMediumiaAnalytics(req, res, analyticsAction)
+  }
 
   if (req.query?.action === 'reseau-apply') {
     return handleReseauApply(req, res)

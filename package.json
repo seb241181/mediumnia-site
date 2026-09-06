@@ -7,7 +7,7 @@
     "predev": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs && node scripts/apply-chronosphere-v2-reading.mjs",
     "dev": "vite",
     "pretest": "node scripts/apply-chronosphere-v2-reading.mjs",
-    "prebuild": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs && node scripts/apply-chronosphere-v2-reading.mjs",
+    "prebuild": "node scripts/apply-rdv-next-availability.mjs && node scripts/apply-rdv-calendar-view-fix.mjs && node scripts/apply-chronosphere-v2-reading.mjs && node --test tests/*.test.js",
     "build": "vite build",
     "test": "node --test tests/*.test.js",
     "lint": "eslint .",

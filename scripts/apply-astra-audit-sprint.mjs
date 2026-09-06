@@ -73,7 +73,7 @@ await writeFile(oraclePath, oracle)
 let tests = await readFile(testPath, 'utf8')
 const freeEntryTest = `test('free discovery opens the offered draw directly', async () => {`
 if (!tests.includes(freeEntryTest)) {
-  tests += `\n\ntest('free discovery opens the offered draw directly', async () => {\n  const { component, oracle } = await readSources()\n  assert.match(component, /window\\.location\\.assign\\('\/oracle#tirage-gratuit'\\)/)\n  assert.match(oracle, /id="tirage-gratuit"/)\n  assert.match(oracle, /window\\.location\\.hash !== '#tirage-gratuit'/)\n  assert.match(oracle, /scrollIntoView\\(\\{ block: 'start' \\}\\)/)\n})\n`
+  tests += `\n\ntest('free discovery opens the offered draw directly', async () => {\n  const { component, oracle } = await readSources()\n  assert.ok(component.includes("window.location.assign('/oracle#tirage-gratuit')"))\n  assert.ok(oracle.includes('id="tirage-gratuit"'))\n  assert.ok(oracle.includes("window.location.hash !== '#tirage-gratuit'"))\n  assert.ok(oracle.includes("scrollIntoView({ block: 'start' })"))\n})\n`
   await writeFile(testPath, tests)
 }
 

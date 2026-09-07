@@ -40,6 +40,30 @@ function PracticalCard({ label, value }) {
   )
 }
 
+function PracticalContact({ practical }) {
+  if (!practical.phone && !practical.email) return null
+  const phoneHref = practical.phone ? `tel:${practical.phone.replace(/\s+/g, '')}` : null
+  const emailHref = practical.email ? `mailto:${practical.email}` : null
+
+  return (
+    <div className="rounded-2xl border border-gold/20 bg-white/70 px-5 py-4">
+      <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Contact public</p>
+      <div className="mt-2 flex flex-col gap-2 font-georgia text-sm leading-relaxed">
+        {phoneHref && (
+          <a href={phoneHref} className="inline-flex min-h-11 items-center font-semibold text-deep underline decoration-gold/40 underline-offset-4">
+            Appeler · {practical.phone}
+          </a>
+        )}
+        {emailHref && (
+          <a href={emailHref} className="inline-flex min-h-11 items-center break-all font-semibold text-deep underline decoration-gold/40 underline-offset-4">
+            Écrire · {practical.email}
+          </a>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function PractitionerProfile({ practitionerId, onBack, onNavigate }) {
   const practitioner = reseauPractitioners.find((item) => item.id === practitionerId)
 
@@ -63,8 +87,8 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
     { label: 'Modalités', value: Array.isArray(practical.modalities) ? practical.modalities.join(' · ') : practical.modalities },
     { label: 'Tarif indicatif', value: practical.startingPrice },
     { label: 'Durée', value: practical.duration },
-    { label: 'Contact public', value: practical.contact },
   ].filter((item) => Boolean(item.value))
+  const hasPracticalDetails = practicalItems.length > 0 || practical.phone || practical.email
 
   return (
     <div className="min-h-screen bg-cream text-deep">
@@ -107,20 +131,21 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
               </div>
               <p className="mt-7 max-w-2xl font-georgia text-base leading-relaxed text-deep/80 md:text-lg">{practitioner.introduction}</p>
 
-              {practicalItems.length > 0 && (
+              {hasPracticalDetails && (
                 <div className="mt-8">
                   <p className="mb-3 font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Repères pratiques</p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {practicalItems.map((item) => (
                       <PracticalCard key={item.label} label={item.label} value={item.value} />
                     ))}
+                    <PracticalContact practical={practical} />
                   </div>
                   {practical.sourceUrl && practical.sourceLabel && (
                     <a
                       href={practical.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-3 inline-flex font-georgia text-xs font-semibold text-mist underline decoration-gold/40 underline-offset-4 transition-colors hover:text-deep"
+                      className="mt-3 inline-flex min-h-11 items-center font-georgia text-xs font-semibold text-mist underline decoration-gold/40 underline-offset-4 transition-colors hover:text-deep"
                     >
                       {practical.sourceLabel} ↗
                     </a>
@@ -132,7 +157,7 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                 href={practitioner.bookingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-8 inline-flex rounded-xl bg-deep px-7 py-4 font-georgia text-sm font-bold text-gold transition-opacity hover:opacity-90"
+                className="mt-8 inline-flex min-h-11 items-center rounded-xl bg-deep px-7 py-4 font-georgia text-sm font-bold text-gold transition-opacity hover:opacity-90"
               >
                 {practitioner.externalLabel || 'Voir ses disponibilités'} →
               </a>

@@ -25,6 +25,9 @@ test('practitioner profile uses network data and keeps external contact explicit
   assert.match(profile, /practitioner\.bookingUrl/)
   assert.match(profile, /practitioner\.externalLabel/)
   assert.match(profile, /Membre Fondateur MediumIA/)
+  assert.match(profile, /Participation au lancement du Réseau/)
+  assert.match(profile, /ne constitue ni une certification ni une garantie de compétence/)
+  assert.match(profile, /Contact public/)
   assert.match(profile, /ne constitue ni une certification ni une garantie de résultat/)
 })
 
@@ -52,6 +55,8 @@ test('Lydie Lesaffre is founder 002 with Mots pour Maux profile', async () => {
   assert.match(data, /'Hypnose Ericksonienne'/)
   assert.match(data, /'Constellations familiales'/)
   assert.match(data, /'Médiumnité'/)
+  assert.match(data, /06 62 51 79 79/)
+  assert.match(data, /hypnose\.arras@free\.fr/)
   assert.match(data, /https:\/\/www\.mots-pour-maux\.com\//)
   assert.match(data, /Découvrir Mots pour Maux/)
   assert.match(directory, /'Hypnose Ericksonienne'/)
@@ -59,7 +64,7 @@ test('Lydie Lesaffre is founder 002 with Mots pour Maux profile', async () => {
   assert.match(directory, /Amandine, Lydie, Willy et Gilda/)
 })
 
-test('Willy Ryckebusch is founder 003 with his public site', async () => {
+test('Willy Ryckebusch is founder 003 with his verified public contact', async () => {
   const { data, directory } = await readSources()
   assert.match(data, /id: 'willy-ryckebusch'[\s\S]*founderNumber: 3/)
   assert.match(data, /Magnétiseur · Maître Reiki · Médium/)
@@ -67,6 +72,8 @@ test('Willy Ryckebusch is founder 003 with his public site', async () => {
   assert.match(data, /'Magnétisme'/)
   assert.match(data, /'Reiki'/)
   assert.match(data, /'Animaux'/)
+  assert.match(data, /06 22 82 32 71/)
+  assert.match(data, /willyreikibusch@gmail\.com/)
   assert.match(data, /ne remplacent pas un diagnostic, un traitement ou un suivi médical ou vétérinaire/)
   assert.match(data, /https:\/\/willyreikibusch\.wixsite\.com\/monsite-2/)
   assert.match(data, /Découvrir le site de Willy/)

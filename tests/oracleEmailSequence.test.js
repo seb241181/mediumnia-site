@@ -60,17 +60,25 @@ test('Oracle opt-in proof is email-bound and expires', () => {
   }
 })
 
-test('build patch reuses Oracle endpoint and adds Resend scheduling plus cancellation', () => {
-  const patch = read('scripts/apply-oracle-email-sequence.mjs')
+test('active build patch reuses the existing Oracle endpoint without adding a Lambda', () => {
+  const patch = read('scripts/apply-oracle-email-sequence-v2.mjs')
+  const packageJson = read('package.json')
   assert.match(patch, /mode=email-sequence/)
-  assert.match(patch, /scheduled_at/)
-  assert.match(patch, /cancelScheduledEmail/)
-  assert.match(patch, /emails\/\\\$\{encodeURIComponent\(emailId\.trim\(\)\)\}\/cancel/)
+  assert.match(patch, /handleOracleEmailSequence/)
   assert.doesNotMatch(patch, /api\/oracle-email-sequence\.js/)
+  assert.match(packageJson, /apply-oracle-email-sequence-v2\.mjs/)
+})
+
+test('Resend helper supports scheduled sends and cancellation', () => {
+  const helper = read('lib/transactionalEmail.js')
+  assert.match(helper, /scheduledAt/)
+  assert.match(helper, /payload\.scheduled_at/)
+  assert.match(helper, /export async function cancelScheduledEmail/)
+  assert.match(helper, /emails\/\$\{encodeURIComponent\(normalizedId\)\}\/cancel/)
 })
 
 test('opt-in UI requires a positive action and promises only three emails', () => {
-  const patch = read('scripts/apply-oracle-email-sequence.mjs')
+  const patch = read('scripts/apply-oracle-email-sequence-v2.mjs')
   assert.match(patch, /const \[emailOptIn, setEmailOptIn\] = useState\(false\)/)
   assert.match(patch, /disabled=\{!emailOptIn \|\| sequenceLoading \|\| sequenceDone\}/)
   assert.match(patch, /3 e-mails seulement/)
@@ -79,7 +87,7 @@ test('opt-in UI requires a positive action and promises only three emails', () =
 })
 
 test('privacy copy documents separate consent and data minimisation', () => {
-  const patch = read('scripts/apply-oracle-email-sequence.mjs')
+  const patch = read('scripts/apply-oracle-email-sequence-v2.mjs')
   assert.match(patch, /Cette demande est distincte du tirage gratuit/)
   assert.match(patch, /case dédiée non pré-cochée/)
   assert.match(patch, /ne conserve pas cette adresse en clair dans Supabase/)
@@ -87,7 +95,7 @@ test('privacy copy documents separate consent and data minimisation', () => {
 })
 
 test('aggregate metrics cover opt-in and unsubscribe without visitor identifiers', () => {
-  const patch = read('scripts/apply-oracle-email-sequence.mjs')
+  const patch = read('scripts/apply-oracle-email-sequence-v2.mjs')
   for (const event of [
     'oracle_email_optin_view',
     'oracle_email_optin_completed',

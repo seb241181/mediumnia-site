@@ -199,7 +199,7 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                   <h2 className="mt-2 font-georgia text-2xl font-medium md:text-3xl">Quelques repères avant de réserver</h2>
                 </div>
                 <p className="max-w-md font-georgia text-xs leading-relaxed text-mist">
-                  Les tarifs ci-dessous proviennent du site public du praticien et peuvent évoluer. Vérifiez-les au moment de réserver.
+                  Les tarifs ci-dessous ont été communiqués ou publiés par le praticien et peuvent évoluer. Vérifiez-les au moment de réserver.
                 </p>
               </div>
               <div className="mt-6 grid gap-3 md:grid-cols-2">

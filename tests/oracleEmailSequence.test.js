@@ -69,11 +69,12 @@ test('active build patch reuses the existing Oracle endpoint without adding a La
   assert.match(packageJson, /apply-oracle-email-sequence-v2\.mjs/)
 })
 
-test('Resend helper supports scheduled sends and cancellation', () => {
+test('Resend helper supports scheduled sends and cancellation with a separate management key', () => {
   const helper = read('lib/transactionalEmail.js')
   assert.match(helper, /scheduledAt/)
   assert.match(helper, /payload\.scheduled_at/)
   assert.match(helper, /export async function cancelScheduledEmail/)
+  assert.match(helper, /RESEND_MANAGEMENT_API_KEY \|\| process\.env\.RESEND_API_KEY/)
   assert.match(helper, /emails\/\$\{encodeURIComponent\(normalizedId\)\}\/cancel/)
 })
 

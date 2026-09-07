@@ -42,19 +42,27 @@ function PracticalCard({ label, value }) {
 }
 
 function PracticalContact({ practical }) {
-  if (!practical.phone && !practical.email) return null
-  const phoneHref = practical.phone ? `tel:${practical.phone.replace(/\s+/g, '')}` : null
+  const phones = Array.isArray(practical.phones)
+    ? practical.phones.filter(Boolean)
+    : practical.phone
+      ? [practical.phone]
+      : []
+  if (phones.length === 0 && !practical.email) return null
   const emailHref = practical.email ? `mailto:${practical.email}` : null
 
   return (
     <div className="rounded-2xl border border-gold/20 bg-white/70 px-5 py-4">
       <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Contact public</p>
       <div className="mt-2 flex flex-col gap-2 font-georgia text-sm leading-relaxed">
-        {phoneHref && (
-          <a href={phoneHref} className="inline-flex min-h-11 items-center font-semibold text-deep underline decoration-gold/40 underline-offset-4">
-            Appeler · {practical.phone}
+        {phones.map((phone) => (
+          <a
+            key={phone}
+            href={`tel:${phone.replace(/\s+/g, '')}`}
+            className="inline-flex min-h-11 items-center font-semibold text-deep underline decoration-gold/40 underline-offset-4"
+          >
+            Appeler · {phone}
           </a>
-        )}
+        ))}
         {emailHref && (
           <a href={emailHref} className="inline-flex min-h-11 items-center break-all font-semibold text-deep underline decoration-gold/40 underline-offset-4">
             Écrire · {practical.email}
@@ -89,7 +97,10 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
     { label: 'Tarif indicatif', value: practical.startingPrice },
     { label: 'Durée', value: practical.duration },
   ].filter((item) => Boolean(item.value))
-  const hasPracticalDetails = practicalItems.length > 0 || practical.phone || practical.email
+  const hasPracticalDetails = practicalItems.length > 0
+    || practical.phone
+    || (Array.isArray(practical.phones) && practical.phones.length > 0)
+    || practical.email
 
   return (
     <div className="min-h-screen bg-cream text-deep">

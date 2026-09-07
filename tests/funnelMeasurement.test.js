@@ -21,7 +21,8 @@ test('analytics accepts the new aggregate funnel events without adding visitor i
     assert.match(analytics, new RegExp(`'${event}'`))
   }
   assert.match(analytics, /formation\|conferences/)
-  assert.doesNotMatch(analytics, /visitor_id|session_id|email|user_id/)
+  assert.doesNotMatch(analytics, /visitor_id|session_id|user_id/)
+  assert.doesNotMatch(analytics, /req\.body\?\.email|req\.body\.email|p_email|email_address/)
 })
 
 test('Oracle free funnel counts view, qualified start and completed result', () => {

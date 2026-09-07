@@ -65,7 +65,6 @@ test('Lydie Lesaffre is founder 002 with Mots pour Maux profile', async () => {
   assert.match(data, /Découvrir Mots pour Maux/)
   assert.match(directory, /'Hypnose Ericksonienne'/)
   assert.match(directory, /'Constellations familiales'/)
-  assert.match(directory, /Amandine, Lydie, Willy et Gilda/)
 })
 
 test('Willy Ryckebusch is founder 003 with his verified public contact', async () => {
@@ -83,6 +82,22 @@ test('Willy Ryckebusch is founder 003 with his verified public contact', async (
   assert.match(data, /Découvrir le site de Willy/)
   assert.match(directory, /'Magnétisme'/)
   assert.match(directory, /'Reiki'/)
+})
+
+test('Clara Sidler is founder 004 with current public services and contact', async () => {
+  const { data, directory } = await readSources()
+  assert.match(data, /id: 'clara-sidler'[\s\S]*founderNumber: 4/)
+  assert.match(data, /Médium · Soins énergétiques · Tarot évolutif/)
+  assert.match(data, /phone: '06 99 44 09 14'/)
+  assert.match(data, /email: 'contact@clarasidler\.com'/)
+  assert.match(data, /Soin énergétique'[\s\S]*45 min[\s\S]*90 €/)
+  assert.match(data, /Médiumnité'[\s\S]*120 €/)
+  assert.match(data, /Tarot évolutif blanc'[\s\S]*45 min[\s\S]*100 €/)
+  assert.match(data, /https:\/\/www\.clarasidler\.com\/fr\/consultations-en-ligne/)
+  assert.match(data, /Voir ses consultations/)
+  assert.match(directory, /'Soin énergétique'/)
+  assert.match(directory, /'Tarot évolutif'/)
+  assert.match(directory, /Amandine, Lydie, Willy, Clara et Gilda/)
 })
 
 test('Gilda is founder 006 with voyance-cartomancie profile and Google listing', async () => {

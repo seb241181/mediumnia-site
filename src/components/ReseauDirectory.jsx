@@ -18,7 +18,8 @@ function PractitionerPortrait({ practitioner }) {
       <img
         src={withPreviewShareToken(practitioner.portrait)}
         alt={practitioner.portraitAlt}
-        className="absolute inset-0 h-full w-full object-cover object-center"
+        className="absolute inset-0 h-full w-full object-cover"
+        style={{ objectPosition: practitioner.portraitPosition ?? 'center' }}
       />
     )
   }
@@ -32,7 +33,7 @@ function PractitionerPortrait({ practitioner }) {
   )
 }
 
-export default function ReseauDirectory({ onBack, onNavigate }) {
+export default function ReseauDirectory({ onBack, onNavigate, onOpenProfile }) {
   const [activeFilter, setActiveFilter] = useState('Tous')
 
   const practitioners = useMemo(() => {
@@ -115,7 +116,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
                       <div className="p-7 md:p-9 flex flex-col">
                         {practitioner.founder ? (
                           <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
-                            Membre Fondateur Mediumia — N°{String(practitioner.founderNumber).padStart(3, '0')}
+                            Membre Fondateur Mediumia{practitioner.founderNumber != null ? ` — N°${String(practitioner.founderNumber).padStart(3, '0')}` : ''}
                           </p>
                         ) : (
                           <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">
@@ -175,14 +176,23 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
                           </div>
                         </details>
 
+                      <div className="mt-auto flex flex-col gap-3 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => onOpenProfile(practitioner.id)}
+                          className="inline-flex flex-1 items-center justify-center rounded-xl bg-deep px-6 py-3.5 font-georgia font-bold text-gold transition-colors hover:bg-deep/90"
+                        >
+                          Découvrir son profil →
+                        </button>
                         <a
                           href={practitioner.bookingUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-auto inline-flex justify-center items-center rounded-xl bg-deep text-gold font-georgia font-bold px-6 py-3.5 hover:bg-deep/90 transition-colors"
+                          className="inline-flex items-center justify-center rounded-xl border border-gold/35 px-5 py-3.5 font-georgia text-sm font-semibold text-deep transition-colors hover:bg-gold/10"
                         >
-                          {practitioner.externalLabel || 'Voir ses disponibilités'} →
+                          {practitioner.externalLabel || 'Disponibilités'} ↗
                         </a>
+                      </div>
                       </div>
                     </div>
                   </article>
@@ -198,7 +208,7 @@ export default function ReseauDirectory({ onBack, onNavigate }) {
           <div className="max-w-xl mx-auto text-center mt-14 rounded-3xl border border-gold/20 px-8 py-8 bg-white/30">
             <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">Réseau en développement</p>
             <p className="font-georgia text-mist leading-relaxed">
-              Amandine, Lydie, Willy, Clara et Gilda font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
+              Amandine, Lydie, Willy, Clara, Stéphanie et Gilda font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
             </p>
           </div>
         </section>

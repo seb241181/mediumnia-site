@@ -97,7 +97,7 @@ test('Clara Sidler is founder 004 with current public services and contact', asy
   assert.match(data, /Voir ses consultations/)
   assert.match(directory, /'Soin énergétique'/)
   assert.match(directory, /'Tarot évolutif'/)
-  assert.match(directory, /Amandine, Lydie, Willy, Clara et Gilda/)
+  assert.match(directory, /Amandine, Lydie, Willy, Clara, Stéphanie et Gilda/)
 })
 
 test('Gilda is founder 006 with voyance-cartomancie profile and Google listing', async () => {
@@ -113,8 +113,16 @@ test('Gilda is founder 006 with voyance-cartomancie profile and Google listing',
   assert.match(profile, /practitioner\.city \? ` · \$\{practitioner\.city\}` : ''/)
 })
 
-test('release scope keeps Stephanie excluded until her profile is approved', async () => {
+test('Stephanie Madhyama is restored with portrait and booking URL', async () => {
   const { data, directory } = await readSources()
-  assert.doesNotMatch(data, /id: 'stephanie-madhyama'/)
-  assert.doesNotMatch(directory, /Stéphanie/)
+  assert.match(data, /id: 'stephanie-madhyama'/)
+  assert.match(data, /Médium · écriture automatique/)
+  assert.match(data, /city: 'Lederzeele'/)
+  assert.match(data, /'Médiumnité'/)
+  assert.match(data, /'Écriture automatique'/)
+  assert.match(data, /portrait: '\/images\/reseau\/stephanie-madhyama\.jpg'/)
+  assert.match(data, /portraitPosition: 'center top'/)
+  assert.match(data, /https:\/\/stephanie-madhyama\.reservio\.com\//)
+  assert.match(data, /Réserver avec Stéphanie/)
+  assert.match(directory, /Stéphanie/)
 })

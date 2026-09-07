@@ -5,6 +5,9 @@ const chronoPath = new URL('../src/components/ChronospherePage.jsx', import.meta
 const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
 const guardianPath = new URL('../src/components/SiteGuardian.jsx', import.meta.url)
 const indexPath = new URL('../index.html', import.meta.url)
+const transactionalEmailPath = new URL('../lib/transactionalEmail.js', import.meta.url)
+const oracleEmailSequencePath = new URL('../lib/oracleEmailSequence.js', import.meta.url)
+const formationEmailLeadPath = new URL('../lib/formationEmailLead.js', import.meta.url)
 
 function replaceRequired(source, before, after, label) {
   if (source.includes(after)) return source
@@ -115,4 +118,55 @@ if (!index.includes('MEDIUMIA_logo_transparent_2026-08-16.png" fetchpriority="hi
 }
 await writeFile(indexPath, index)
 
-console.log('MediumIA audit #2 polish: CRO, privacy, assistant links and image loading priorities updated')
+let transactionalEmail = await readFile(transactionalEmailPath, 'utf8')
+transactionalEmail = replaceRequired(
+  transactionalEmail,
+  `export async function sendEmail({ to, subject, html, text, idempotencyKey, scheduledAt }) {\n  const apiKey = process.env.RESEND_API_KEY\n  const from = process.env.RESEND_FROM_EMAIL`,
+  `export async function sendEmail({ to, subject, html, text, idempotencyKey, scheduledAt, from: fromOverride }) {\n  const apiKey = process.env.RESEND_API_KEY\n  const from = String(fromOverride || process.env.RESEND_FROM_EMAIL || '').trim()`,
+  'transactional email sender override',
+)
+await writeFile(transactionalEmailPath, transactionalEmail)
+
+let oracleEmailSequence = await readFile(oracleEmailSequencePath, 'utf8')
+oracleEmailSequence = replaceRequired(
+  oracleEmailSequence,
+  `const SOURCE = 'oracle_free_result'\nconst PROOF_TTL_MS = 2 * 60 * 60 * 1000`,
+  `const SOURCE = 'oracle_free_result'\nconst SEQUENCE_FROM = (process.env.RESEND_SEQUENCE_FROM_EMAIL || 'Sébastien — MediumIA <sebastien@mail.mediumia.fr>').trim()\nconst PROOF_TTL_MS = 2 * 60 * 60 * 1000`,
+  'Oracle sequence sender',
+)
+oracleEmailSequence = replaceRequired(
+  oracleEmailSequence,
+  `  const exercise1Html = \`\n      <p style="line-height:1.75;margin:0 0 18px;">On commence par le premier geste de toute pratique consciente : poser une direction claire.</p>\n      <h2 style="font-size:19px;margin:24px 0 10px;">Votre exercice — L’Intention quotidienne</h2>`,
+  `  const exercise1Html = \`\n      <h2 style="font-size:19px;margin:24px 0 10px;">Votre exercice — L’Intention quotidienne</h2>`,
+  'exercise 1 duplicate HTML intro',
+)
+oracleEmailSequence = replaceRequired(
+  oracleEmailSequence,
+  `  const exercise1Text = \`On commence par le premier geste de toute pratique consciente : poser une direction claire.\\n\\nVOTRE EXERCICE — L’INTENTION QUOTIDIENNE`,
+  `  const exercise1Text = \`VOTRE EXERCICE — L’INTENTION QUOTIDIENNE`,
+  'exercise 1 duplicate text intro',
+)
+oracleEmailSequence = replaceRequired(
+  oracleEmailSequence,
+  `      const result = await sendEmail({\n        to: normalizedEmail,`,
+  `      const result = await sendEmail({\n        from: SEQUENCE_FROM,\n        to: normalizedEmail,`,
+  'Oracle sequence explicit sender',
+)
+await writeFile(oracleEmailSequencePath, oracleEmailSequence)
+
+let formationEmailLead = await readFile(formationEmailLeadPath, 'utf8')
+formationEmailLead = replaceRequired(
+  formationEmailLead,
+  `export const FORMATION_EMAIL_CONSENT_VERSION = 'formation-3-exercises-v1-2026-09-07'\n\nconst EMAIL_RE`,
+  `export const FORMATION_EMAIL_CONSENT_VERSION = 'formation-3-exercises-v1-2026-09-07'\n\nconst SEQUENCE_FROM = (process.env.RESEND_SEQUENCE_FROM_EMAIL || 'Sébastien — MediumIA <sebastien@mail.mediumia.fr>').trim()\nconst EMAIL_RE`,
+  'Formation sequence sender',
+)
+formationEmailLead = replaceRequired(
+  formationEmailLead,
+  `        const result = await sendEmail({\n          to: normalizedEmail,`,
+  `        const result = await sendEmail({\n          from: SEQUENCE_FROM,\n          to: normalizedEmail,`,
+  'Formation sequence explicit sender',
+)
+await writeFile(formationEmailLeadPath, formationEmailLead)
+
+console.log('MediumIA audit #2 polish: CRO, privacy, assistant links, image loading and sequence sender updated')

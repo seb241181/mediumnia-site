@@ -198,9 +198,8 @@ export const reseauPractitioners = [
     name: 'Gilda',
     role: 'Voyante · Cartomancienne',
     city: '',
-    audience: 'Consultation individuelle',
+    audience: '',
     practical: {
-      audience: 'Particuliers',
       modalities: ['Consultation individuelle'],
       startingPrice: '40 €',
       duration: '1 h',

@@ -14,6 +14,12 @@ test('founder attribution is derived server-side from a hashed known invite', as
   assert.match(source, /billing_plan:\s+founderNumber \? 'invited_free' : null/)
 })
 
+test('Clara founder 004 can be recognized through both confirmed email aliases', async () => {
+  const source = await readFile(handlerPath, 'utf8')
+  assert.match(source, /36ae4bdd3ffc90317249aad9b04943314c95bf86edee28b080122c7ed1b6ef36', 4/)
+  assert.match(source, /3122d97ccce6adf9ed3746a2aa8b17aff1b6983931a43b7b68048dc3b84c4ab4', 4/)
+})
+
 test('founder status is never trusted from body membership fields', async () => {
   const source = await readFile(handlerPath, 'utf8')
   assert.doesNotMatch(source, /membership_type:\s+body\./)

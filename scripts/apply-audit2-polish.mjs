@@ -4,6 +4,7 @@ const appPath = new URL('../src/App.jsx', import.meta.url)
 const chronoPath = new URL('../src/components/ChronospherePage.jsx', import.meta.url)
 const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
 const guardianPath = new URL('../src/components/SiteGuardian.jsx', import.meta.url)
+const indexPath = new URL('../index.html', import.meta.url)
 
 function replaceRequired(source, before, after, label) {
   if (source.includes(after)) return source
@@ -48,6 +49,20 @@ app = replaceRequired(
   'network nav link',
 )
 
+app = replaceRequired(
+  app,
+  `            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"\n            alt="MediumIA — Le monde spirituel, relié autrement"\n            className="w-80 md:w-[32rem] mx-auto mb-5"`,
+  `            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"\n            alt="MediumIA — Le monde spirituel, relié autrement"\n            fetchPriority="high"\n            decoding="async"\n            className="w-80 md:w-[32rem] mx-auto mb-5"`,
+  'homepage hero image priority',
+)
+
+app = replaceRequired(
+  app,
+  `            src="/images/brand/MEDIUMIA_logo_maitre_2026-08-16.png"\n            alt="MediumIA, accompagnement à la médiumnité consciente"\n            className="aspect-[4/3] w-full object-cover object-center"`,
+  `            src="/images/brand/MEDIUMIA_logo_maitre_2026-08-16.png"\n            alt="MediumIA, accompagnement à la médiumnité consciente"\n            loading="lazy"\n            decoding="async"\n            fetchPriority="low"\n            className="aspect-[4/3] w-full object-cover object-center"`,
+  'below-fold master logo lazy loading',
+)
+
 await writeFile(appPath, app)
 
 let chrono = await readFile(chronoPath, 'utf8')
@@ -89,4 +104,15 @@ guardian = replaceRequired(
 )
 await writeFile(guardianPath, guardian)
 
-console.log('MediumIA audit #2 polish: homepage, navigation, Chronosphere, privacy and Guardian links updated')
+let index = await readFile(indexPath, 'utf8')
+if (!index.includes('MEDIUMIA_logo_transparent_2026-08-16.png" fetchpriority="high"')) {
+  index = replaceRequired(
+    index,
+    `    <!-- Bodoni Moda — pont typographique avec le logo -->`,
+    `    <link rel="preload" as="image" href="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" fetchpriority="high" />\n\n    <!-- Bodoni Moda — pont typographique avec le logo -->`,
+    'hero image preload',
+  )
+}
+await writeFile(indexPath, index)
+
+console.log('MediumIA audit #2 polish: CRO, privacy, assistant links and image loading priorities updated')

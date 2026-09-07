@@ -25,17 +25,14 @@ test('Lydie has public comparable price and duration markers from her own site',
   assert.deepEqual(lydie.services[0], { name: 'Médiumnité', duration: '1 h', price: '65 €' })
 })
 
-test('other founders do not receive invented price or duration data', () => {
+test('founders without verified pricing do not receive invented price or duration data', () => {
   const amandine = practitioner('amandine-pouwels')
   const willy = practitioner('willy-ryckebusch')
-  const gilda = practitioner('gilda')
 
   assert.equal(amandine.practical.startingPrice, undefined)
   assert.equal(amandine.practical.duration, undefined)
   assert.equal(willy.practical.startingPrice, undefined)
   assert.equal(willy.practical.duration, undefined)
-  assert.equal(gilda.practical.startingPrice, undefined)
-  assert.equal(gilda.practical.duration, undefined)
 })
 
 test('Willy keeps verified Wormhout and distance modalities and animal support', () => {
@@ -44,11 +41,16 @@ test('Willy keeps verified Wormhout and distance modalities and animal support',
   assert.match(willy.practical.audience, /animaux/)
 })
 
-test('Gilda exposes consultation mode without inventing a target audience', () => {
+test('Gilda exposes only the consultation details she confirmed', () => {
   const gilda = practitioner('gilda')
   assert.equal(gilda.audience, '')
   assert.equal(gilda.practical.audience, undefined)
   assert.deepEqual(gilda.practical.modalities, ['Consultation individuelle'])
+  assert.equal(gilda.practical.startingPrice, '40 €')
+  assert.equal(gilda.practical.duration, '1 h')
+  assert.deepEqual(gilda.practical.phones, ['06 79 36 16 07', '03 28 21 89 83'])
+  assert.deepEqual(gilda.services[0], { name: 'Consultation de cartomancie', duration: '1 h', price: '40 €' })
+  assert.equal(gilda.portrait, '/images/reseau/gilda-cartomancie.jpg')
 })
 
 test('pricing section is conditional and includes a stale-price warning', () => {

@@ -3,6 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const chronoPath = new URL('../src/components/ChronospherePage.jsx', import.meta.url)
 const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
+const guardianPath = new URL('../src/components/SiteGuardian.jsx', import.meta.url)
 
 function replaceRequired(source, before, after, label) {
   if (source.includes(after)) return source
@@ -71,4 +72,21 @@ if (!legal.includes('Données collectées — Chronosphère')) {
 }
 await writeFile(legalPath, legal)
 
-console.log('MediumIA audit #2 polish: homepage, navigation, Chronosphere and privacy updated')
+let guardian = await readFile(guardianPath, 'utf8')
+if (!guardian.includes('function LinkedGuardianMessage')) {
+  guardian = replaceRequired(
+    guardian,
+    `\nexport default function SiteGuardian() {`,
+    `\nfunction LinkedGuardianMessage({ content }) {\n  const parts = String(content || '').split(/(https:\\/\\/mediumia\\.fr(?:\\/[^\\s]*)?)/g)\n  return parts.map((part, index) => {\n    if (!part.startsWith('https://mediumia.fr')) return <span key={index}>{part}</span>\n    const match = part.match(/^(.*?)([.,;:!?)]*)$/)\n    const url = match?.[1] || part\n    const suffix = match?.[2] || ''\n    return (\n      <span key={index}>\n        <a href={url} className="font-semibold underline decoration-gold/50 underline-offset-2 break-all">{url.replace('https://', '')}</a>\n        {suffix}\n      </span>\n    )\n  })\n}\n\nexport default function SiteGuardian() {`,
+    'Guardian link renderer helper',
+  )
+}
+guardian = replaceRequired(
+  guardian,
+  `                  {msg.content}`,
+  `                  {msg.role === 'assistant' ? <LinkedGuardianMessage content={msg.content} /> : msg.content}`,
+  'Guardian clickable assistant links',
+)
+await writeFile(guardianPath, guardian)
+
+console.log('MediumIA audit #2 polish: homepage, navigation, Chronosphere, privacy and Guardian links updated')

@@ -17,6 +17,12 @@ function replaceRequired(source, before, after, label) {
   return source.replace(before, after)
 }
 
+function replacePatternRequired(source, pattern, after, label) {
+  if (source.includes(after)) return source
+  if (!pattern.test(source)) throw new Error(`MediumIA reseau profiles patch drift: ${label}`)
+  return source.replace(pattern, after)
+}
+
 let app = await readFile(appPath, 'utf8')
 
 app = replaceRequired(
@@ -58,10 +64,12 @@ directory = replaceRequired(
   'directory profile navigation prop',
 )
 
-directory = replaceRequired(
+const practitionerActions = `                      <div className="mt-auto flex flex-col gap-3 sm:flex-row">\n                        <button\n                          type="button"\n                          onClick={() => onOpenProfile(practitioner.id)}\n                          className="inline-flex flex-1 items-center justify-center rounded-xl bg-deep px-6 py-3.5 font-georgia font-bold text-gold transition-colors hover:bg-deep/90"\n                        >\n                          Découvrir son profil →\n                        </button>\n                        <a\n                          href={practitioner.bookingUrl}\n                          target="_blank"\n                          rel="noopener noreferrer"\n                          className="inline-flex items-center justify-center rounded-xl border border-gold/35 px-5 py-3.5 font-georgia text-sm font-semibold text-deep transition-colors hover:bg-gold/10"\n                        >\n                          {practitioner.externalLabel || 'Disponibilités'} ↗\n                        </a>\n                      </div>`
+
+directory = replacePatternRequired(
   directory,
-  `                      <a\n                        href={practitioner.bookingUrl}\n                        target="_blank"\n                        rel="noopener noreferrer"\n                        className="mt-auto inline-flex justify-center items-center rounded-xl bg-deep text-gold font-georgia font-bold px-6 py-3.5 hover:bg-deep/90 transition-colors"\n                      >\n                        {practitioner.externalLabel || 'Voir ses disponibilités'} →\n                      </a>`,
-  `                      <div className="mt-auto flex flex-col gap-3 sm:flex-row">\n                        <button\n                          type="button"\n                          onClick={() => onOpenProfile(practitioner.id)}\n                          className="inline-flex flex-1 items-center justify-center rounded-xl bg-deep px-6 py-3.5 font-georgia font-bold text-gold transition-colors hover:bg-deep/90"\n                        >\n                          Découvrir son profil →\n                        </button>\n                        <a\n                          href={practitioner.bookingUrl}\n                          target="_blank"\n                          rel="noopener noreferrer"\n                          className="inline-flex items-center justify-center rounded-xl border border-gold/35 px-5 py-3.5 font-georgia text-sm font-semibold text-deep transition-colors hover:bg-gold/10"\n                        >\n                          {practitioner.externalLabel || 'Disponibilités'} ↗\n                        </a>\n                      </div>`,
+  /[ \t]*<a\s*\n[ \t]*href=\{practitioner\.bookingUrl\}[\s\S]*?\{practitioner\.externalLabel \|\| 'Voir ses disponibilités'\} →\s*\n[ \t]*<\/a>/,
+  practitionerActions,
   'directory practitioner actions',
 )
 

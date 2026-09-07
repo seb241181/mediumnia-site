@@ -60,8 +60,10 @@ test('Formation lead measures view and completed opt-in separately', () => {
   assert.match(patch, /trackMediumiaMetric\('formation_email_optin_completed', 'formation'\)/)
 })
 
-test('privacy copy covers both Oracle and Formation entry points', () => {
-  const patch = read('scripts/apply-formation-email-lead.mjs')
-  assert.match(patch, /Après votre tirage Oracle gratuit ou directement depuis la page Formation/)
-  assert.match(patch, /consentement/)
+test('privacy copy covers both Oracle and Formation entry points while retaining explicit-consent wording from the base sequence patch', () => {
+  const formationPatch = read('scripts/apply-formation-email-lead.mjs')
+  const oraclePatch = read('scripts/apply-oracle-email-sequence-v2.mjs')
+  assert.match(formationPatch, /Après votre tirage Oracle gratuit ou directement depuis la page Formation/)
+  assert.match(oraclePatch, /consentement explicite/)
+  assert.match(oraclePatch, /case dédiée non pré-cochée/)
 })

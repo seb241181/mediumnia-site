@@ -83,5 +83,6 @@ test('frontend restores the pack locally and exposes its current balance', async
   assert.match(page, /chronosphere_drawToken/)
   assert.match(page, /resultToken/)
   assert.match(page, /À partir de \{singlePrice/)
-  assert.match(page, /Un paiement unique pour 3 tirages complets avec envoi de chaque compte rendu par e-mail/)
+  assert.match(page, /Un paiement unique pour 3 tirages complets/)
+  assert.match(page, /l’e-mail contient votre lien personnel pour reprendre les tirages restants/)
 })

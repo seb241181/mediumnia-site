@@ -79,7 +79,9 @@ function routeMeta(view) {
 
 function applyRouteMeta(view) {
   const meta = routeMeta(view)
-  const canonicalUrl = 'https://mediumia.fr' + (window.location.pathname === '/' ? '/' : window.location.pathname.replace(/\/$/, ''))
+  const pathname = window.location.pathname
+  const canonicalPath = pathname === '/' ? '/' : (pathname.endsWith('/') ? pathname.slice(0, -1) : pathname)
+  const canonicalUrl = 'https://mediumia.fr' + canonicalPath
   const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation'
 
   document.title = meta.title

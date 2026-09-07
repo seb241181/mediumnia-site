@@ -2,10 +2,28 @@ import { useState, useRef, useEffect } from 'react'
 
 const MAX_MESSAGES = 5
 const STORAGE_KEY = 'mediumia_trial_count'
+const MEDIUMIA_URL_RE = /(https:\/\/mediumia\.fr(?:\/[^\s]*)?)/g
+
+function LinkedMessage({ content }) {
+  return String(content || '').split(MEDIUMIA_URL_RE).map((part, index) => {
+    if (!part.startsWith('https://mediumia.fr')) return <span key={index}>{part}</span>
+    const match = part.match(/^(.*?)([.,;:!?)]*)$/)
+    const url = match?.[1] || part
+    const suffix = match?.[2] || ''
+    return (
+      <span key={index}>
+        <a href={url} className="font-semibold underline decoration-gold/50 underline-offset-2 break-all">
+          {url.replace('https://', '')}
+        </a>
+        {suffix}
+      </span>
+    )
+  })
+}
 
 export default function TrialChat() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Bonjour. Je suis MediumIA, votre assistant pour l'accompagnement à la médiumnité consciente. Posez-moi vos questions sur le parcours, l'approche ou ce que vous vivez — je suis là pour vous éclairer." }
+    { role: 'assistant', content: "Bonjour. Je suis MediumIA, votre assistant pour l'accompagnement à la médiumnité consciente. Posez-moi vos questions sur le parcours, l'approche ou demandez-moi une courte pratique de découverte — je suis là pour vous éclairer." }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -65,7 +83,6 @@ export default function TrialChat() {
 
   return (
     <div className="border-2 border-gold/30 rounded-2xl overflow-hidden bg-white/70">
-      {/* Header */}
       <div className="px-5 py-4 border-b border-gold/20 flex items-center gap-3" style={{ background: 'linear-gradient(135deg,#1A1535,#292443)' }}>
         <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-7 w-auto opacity-90" />
         <div className="flex-1">
@@ -79,21 +96,18 @@ export default function TrialChat() {
         )}
       </div>
 
-      {/* Messages */}
       <div className="px-5 py-5 space-y-4 overflow-y-auto" style={{ minHeight: 240, maxHeight: 360 }}>
         {messages.map((m, i) => (
           <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {m.role === 'assistant' && (
-              <span className="text-gold text-xs mt-1 shrink-0">✦</span>
-            )}
+            {m.role === 'assistant' && <span className="text-gold text-xs mt-1 shrink-0">✦</span>}
             <div
-              className="font-georgia text-sm leading-relaxed rounded-2xl px-4 py-3 max-w-[85%]"
+              className="font-georgia text-sm leading-relaxed rounded-2xl px-4 py-3 max-w-[85%] whitespace-pre-wrap"
               style={m.role === 'user'
                 ? { background: '#1A1535', color: '#FAFAF7', borderRadius: '18px 18px 4px 18px' }
                 : { background: 'rgba(201,168,76,.08)', color: '#1A1535', border: '1px solid rgba(201,168,76,.2)', borderRadius: '18px 18px 18px 4px' }
               }
             >
-              {m.content}
+              {m.role === 'assistant' ? <LinkedMessage content={m.content} /> : m.content}
             </div>
           </div>
         ))}
@@ -114,14 +128,13 @@ export default function TrialChat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <form onSubmit={handleSend} className="border-t border-gold/20 p-4 flex gap-3">
         <input
           type="text"
           value={input}
           onChange={e => setInput(e.target.value)}
           disabled={loading || exhausted}
-          placeholder={exhausted ? "Essai terminé — rejoignez l'accompagnement" : "Posez votre question…"}
+          placeholder={exhausted ? "Essai terminé — rejoignez l'accompagnement" : "Posez une question ou demandez une courte pratique…"}
           className="flex-1 font-georgia text-sm text-deep bg-transparent border-2 border-gold/20 rounded-lg px-4 py-2.5 focus:outline-none focus:border-gold/50 transition-colors disabled:opacity-40"
         />
         <button

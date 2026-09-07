@@ -7,6 +7,9 @@ const chronoPath = new URL('../src/components/ChronospherePage.jsx', import.meta
 const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
 const guardianPath = new URL('../src/components/SiteGuardian.jsx', import.meta.url)
 const indexPath = new URL('../index.html', import.meta.url)
+const transactionalEmailPath = new URL('../lib/transactionalEmail.js', import.meta.url)
+const oracleEmailSequencePath = new URL('../lib/oracleEmailSequence.js', import.meta.url)
+const formationEmailLeadPath = new URL('../lib/formationEmailLead.js', import.meta.url)
 const packagePath = new URL('../package.json', import.meta.url)
 
 test('homepage has one clear H1 and commercial navigation uses real links', async () => {
@@ -51,6 +54,27 @@ test('Guardian renders public MediumIA URLs as clickable links', async () => {
   assert.match(guardian, /function LinkedGuardianMessage/)
   assert.match(guardian, /https:\/\/mediumia\.fr/)
   assert.match(guardian, /<LinkedGuardianMessage content=\{msg\.content\} \/>/)
+})
+
+test('three-exercise emails use the human Sébastien sender without changing other transactional mail', async () => {
+  const [transactionalEmail, oracleSequence, formationLead] = await Promise.all([
+    readFile(transactionalEmailPath, 'utf8'),
+    readFile(oracleEmailSequencePath, 'utf8'),
+    readFile(formationEmailLeadPath, 'utf8'),
+  ])
+
+  assert.match(transactionalEmail, /from: fromOverride/)
+  assert.match(transactionalEmail, /fromOverride \|\| process\.env\.RESEND_FROM_EMAIL/)
+  assert.match(oracleSequence, /Sébastien — MediumIA <sebastien@mail\.mediumia\.fr>/)
+  assert.match(formationLead, /Sébastien — MediumIA <sebastien@mail\.mediumia\.fr>/)
+  assert.match(oracleSequence, /sendEmail\(\{\n\s*from: SEQUENCE_FROM,/)
+  assert.match(formationLead, /sendEmail\(\{\n\s*from: SEQUENCE_FROM,/)
+})
+
+test('exercise 1 does not repeat its opening sentence in the body', async () => {
+  const oracleSequence = await readFile(oracleEmailSequencePath, 'utf8')
+  const repeatedLine = 'On commence par le premier geste de toute pratique consciente : poser une direction claire.'
+  assert.equal(oracleSequence.split(repeatedLine).length - 1, 1)
 })
 
 test('audit2 polish runs after all layered product patches', async () => {

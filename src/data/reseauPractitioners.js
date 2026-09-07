@@ -46,7 +46,7 @@ export const reseauPractitioners = [
     portraitPosition: 'center top',
     founder: true,
     founderNumber: 2,
-    membership: '25 ans de pratique de l'écriture automatique',
+    membership: "25 ans de pratique de l'écriture automatique",
     introduction: "Stéphanie propose des guidances par écriture automatique, des séances de contact défunt, des accompagnements de désenvoûtement ainsi que des interventions de nettoyage énergétique de lieux. Elle reçoit à Lederzeele et propose également certaines séances à distance.",
     approachTitle: "L'écriture automatique comme fil conducteur",
     approach: "Sa pratique s'appuie principalement sur l'écriture automatique, qu'elle utilise comme support de guidance et dans ses séances de contact défunt. Son objectif est d'offrir un temps clair, direct et accessible aux personnes qui recherchent un éclairage ou souhaitent explorer une situation autrement.",

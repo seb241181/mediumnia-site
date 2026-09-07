@@ -120,7 +120,7 @@ test('Stephanie Madhyama is founder 002 with portrait, cadrage and booking URL',
   assert.match(data, /city: 'Lederzeele'/)
   assert.match(data, /'Médiumnité'/)
   assert.match(data, /'Écriture automatique'/)
-  assert.match(data, /portrait: '\/images\/reseau\/stephanie-madhyama\.jpg'/)
+  assert.match(data, /portrait: 'https:\/\/1951880946\.rsc\.cdn77\.org\/resize\?/)
   assert.match(data, /portraitPosition: 'center top'/)
   assert.match(data, /https:\/\/stephanie-madhyama\.reservio\.com\//)
   assert.match(data, /Réserver avec Stéphanie/)

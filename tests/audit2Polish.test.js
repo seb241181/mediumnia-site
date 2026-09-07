@@ -6,6 +6,7 @@ const appPath = new URL('../src/App.jsx', import.meta.url)
 const chronoPath = new URL('../src/components/ChronospherePage.jsx', import.meta.url)
 const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
 const guardianPath = new URL('../src/components/SiteGuardian.jsx', import.meta.url)
+const indexPath = new URL('../index.html', import.meta.url)
 const packagePath = new URL('../package.json', import.meta.url)
 
 test('homepage has one clear H1 and commercial navigation uses real links', async () => {
@@ -15,6 +16,16 @@ test('homepage has one clear H1 and commercial navigation uses real links', asyn
   assert.match(app, /href="\/formation"[\s\S]*>Se former<\/a>/)
   assert.match(app, /href="\/conferences"[\s\S]*>Conférences<\/a>/)
   assert.match(app, /href="\/reseau"[\s\S]*>Trouver un praticien<\/a>/)
+})
+
+test('homepage prioritizes the hero image and defers heavy below-fold imagery', async () => {
+  const [app, index] = await Promise.all([
+    readFile(appPath, 'utf8'),
+    readFile(indexPath, 'utf8'),
+  ])
+  assert.match(index, /rel="preload" as="image" href="\/images\/brand\/MEDIUMIA_logo_transparent_2026-08-16\.png" fetchpriority="high"/)
+  assert.match(app, /MEDIUMIA_logo_transparent_2026-08-16\.png"[\s\S]*fetchPriority="high"[\s\S]*decoding="async"/)
+  assert.match(app, /MEDIUMIA_logo_maitre_2026-08-16\.png"[\s\S]*loading="lazy"[\s\S]*fetchPriority="low"/)
 })
 
 test('Chronosphere exposes its public example immediately before the form', async () => {

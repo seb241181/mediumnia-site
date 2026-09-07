@@ -21,9 +21,12 @@ async function readSources() {
 
 test('conferences page is a truthful public foundation without invented event details', async () => {
   const { page } = await readSources()
-  assert.match(page, /Programmation en préparation/)
+  assert.match(page, /Première rencontre en préparation/)
   assert.match(page, /La prochaine conférence sera annoncée ici/)
-  assert.match(page, /réservation, le paiement et l’envoi automatique du lien de direct viendront s’y brancher ensuite/)
+  assert.match(page, /Aucune inscription n’est demandée tant que ces informations ne sont pas publiées/)
+  assert.match(page, />Programmation<\/button>/)
+  assert.doesNotMatch(page, /Être prévenu/)
+  assert.doesNotMatch(page, /réservation, le paiement et l’envoi automatique du lien de direct viendront s’y brancher ensuite/)
   assert.doesNotMatch(page, /2026-\d{2}-\d{2}|\b\d{1,3}\s?€\b/)
 })
 
@@ -33,7 +36,7 @@ test('conference route is lazy, reachable directly and kept outside the home clu
   assert.match(app, /const ConferencesPage = lazy/)
   assert.match(app, /p\.startsWith\('\/conferences'\)/)
   assert.match(app, /openConferences/)
-  assert.match(app, />Conférences<\/button>/)
+  assert.match(app, />Conférences<\/a>/)
   assert.match(footer, /href="\/conferences"/)
   assert.ok(config.rewrites.some((rule) => rule.source === '/conferences' && rule.destination === '/index.html'))
   assert.doesNotMatch(app, /UniverseCard[^\n]+Conférences/)

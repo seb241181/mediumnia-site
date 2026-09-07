@@ -42,7 +42,8 @@ export const reseauPractitioners = [
       modalities: ['Cabinet à Arras', 'Cabinet à Annezin', 'Téléconsultation'],
       startingPrice: 'À partir de 65 €',
       duration: '1 h pour médiumnité, contact défunt et tarots/oracles',
-      sourceLabel: 'Voir les tarifs publiés',
+      contact: '06 62 51 79 79 · hypnose.arras@free.fr',
+      sourceLabel: 'Voir les tarifs et coordonnées publiés',
       sourceUrl: 'https://www.mots-pour-maux.com/tarifs-contact',
     },
     services: [
@@ -85,6 +86,9 @@ export const reseauPractitioners = [
     practical: {
       audience: 'Particuliers · animaux',
       modalities: ['Cabinet à Wormhout', 'À distance'],
+      contact: '06 22 82 32 71 · willyreikibusch@gmail.com',
+      sourceLabel: 'Voir les informations publiées par Willy',
+      sourceUrl: 'https://willyreikibusch.wixsite.com/monsite-2',
     },
     portrait: '/images/reseau/willy-ryckebusch.webp',
     portraitAlt: 'Portrait de Willy Ryckebusch, magnétiseur, maître Reiki et médium à Wormhout',

@@ -51,9 +51,9 @@ test('profile route is lazy and direct practitioner URLs are rewritten to the SP
   assert.equal(profileRewrite?.destination, '/index.html')
 })
 
-test('Lydie Lesaffre is founder 002 with Mots pour Maux profile', async () => {
+test('Lydie Lesaffre is founder 008 with Mots pour Maux profile', async () => {
   const { data, directory } = await readSources()
-  assert.match(data, /id: 'lydie-lesaffre'[\s\S]*founderNumber: 2/)
+  assert.match(data, /id: 'lydie-lesaffre'[\s\S]*founderNumber: 8/)
   assert.match(data, /Psychopraticienne en hypnose · Médium/)
   assert.match(data, /city: 'Arras & Annezin'/)
   assert.match(data, /'Hypnose Ericksonienne'/)
@@ -113,9 +113,9 @@ test('Gilda is founder 006 with voyance-cartomancie profile and Google listing',
   assert.match(profile, /practitioner\.city \? ` · \$\{practitioner\.city\}` : ''/)
 })
 
-test('Stephanie Madhyama is restored with portrait and booking URL', async () => {
+test('Stephanie Madhyama is founder 002 with portrait, cadrage and booking URL', async () => {
   const { data, directory } = await readSources()
-  assert.match(data, /id: 'stephanie-madhyama'/)
+  assert.match(data, /id: 'stephanie-madhyama'[\s\S]*founderNumber: 2/)
   assert.match(data, /Médium · écriture automatique/)
   assert.match(data, /city: 'Lederzeele'/)
   assert.match(data, /'Médiumnité'/)

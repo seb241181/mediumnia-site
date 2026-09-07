@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const chronoPath = new URL('../src/components/ChronospherePage.jsx', import.meta.url)
 const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
+const guardianPath = new URL('../src/components/SiteGuardian.jsx', import.meta.url)
 const packagePath = new URL('../package.json', import.meta.url)
 
 test('homepage has one clear H1 and commercial navigation uses real links', async () => {
@@ -32,6 +33,13 @@ test('privacy policy explicitly documents Chronosphere birth data', async () => 
   assert.match(legal, /lieu de naissance/)
   assert.match(legal, /trois nombres distincts/)
   assert.match(legal, /prospection commerciale sans consentement distinct/)
+})
+
+test('Guardian renders public MediumIA URLs as clickable links', async () => {
+  const guardian = await readFile(guardianPath, 'utf8')
+  assert.match(guardian, /function LinkedGuardianMessage/)
+  assert.match(guardian, /https:\/\/mediumia\.fr/)
+  assert.match(guardian, /<LinkedGuardianMessage content=\{msg\.content\} \/>/)
 })
 
 test('audit2 polish runs after all layered product patches', async () => {

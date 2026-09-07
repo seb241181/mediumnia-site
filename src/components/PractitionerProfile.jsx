@@ -16,6 +16,7 @@ function Portrait({ practitioner }) {
         src={withPreviewShareToken(practitioner.portrait)}
         alt={practitioner.portraitAlt}
         className="aspect-[4/5] h-full w-full object-cover object-center"
+        style={{ objectPosition: practitioner.portraitPosition || 'center' }}
       />
     )
   }

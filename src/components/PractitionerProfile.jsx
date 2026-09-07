@@ -63,6 +63,7 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
     { label: 'Modalités', value: Array.isArray(practical.modalities) ? practical.modalities.join(' · ') : practical.modalities },
     { label: 'Tarif indicatif', value: practical.startingPrice },
     { label: 'Durée', value: practical.duration },
+    { label: 'Contact public', value: practical.contact },
   ].filter((item) => Boolean(item.value))
 
   return (
@@ -87,6 +88,11 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                   ? `Membre Fondateur MediumIA — N°${String(practitioner.founderNumber).padStart(3, '0')}`
                   : 'Membre du Réseau MediumIA'}
               </p>
+              {practitioner.founder && (
+                <p className="mt-2 font-georgia text-[11px] leading-relaxed text-mist">
+                  Participation au lancement du Réseau · ce statut ne constitue ni une certification ni une garantie de compétence.
+                </p>
+              )}
               <h1 className="mt-4 font-georgia text-4xl font-medium leading-tight md:text-6xl">{practitioner.name}</h1>
               <p className="mt-3 font-georgia text-lg text-mist">
                 {practitioner.role}{practitioner.city ? ` · ${practitioner.city}` : ''}

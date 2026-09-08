@@ -273,6 +273,16 @@ export default function FormationPage({ onBack, onNavigate }) {
           <blockquote className="font-bodoni text-2xl md:text-4xl text-deep leading-relaxed max-w-2xl mx-auto mb-3 italic">« La médiumnité ne s'apprend pas. Elle se découvre. »</blockquote>
           <p className="font-georgia text-gold/70 text-xs tracking-[0.2em] uppercase mb-10">— Sébastien Seguin</p>
           <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto mb-10">Un accompagnement structuré en 25 modules et 4 niveaux, né de plus de douze ans de pratique médiumnique réelle. Pas de théories. Une transmission.</p>
+          <div aria-labelledby="formation-summary-title" className="max-w-3xl mx-auto mb-10 rounded-2xl border-2 border-gold/30 bg-white/60 p-5 sm:p-7 text-left">
+            <h2 id="formation-summary-title" className="font-georgia text-deep text-xl leading-snug mb-4">Un parcours complet pour explorer et structurer votre pratique</h2>
+            <p className="font-georgia text-deep text-base leading-relaxed mb-4">
+              25 modules répartis en 4 niveaux, réunissant <strong>269 pages de contenu pédagogique en PDF</strong>, avec <strong>84 exercices guidés</strong>.
+            </p>
+            <p className="font-georgia text-deep text-base leading-relaxed mb-3">
+              Vous bénéficiez également de <strong>12 mois d’accès à l’application MediumIA</strong>, à son assistant IA dédié et à votre carnet de pratique.
+            </p>
+            <p className="font-georgia text-mist text-sm leading-relaxed">Les PDF téléchargés restent à votre disposition pour votre usage personnel.</p>
+          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={() => document.getElementById('offre')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Rejoindre l’accompagnement →</button>
             <button onClick={() => document.getElementById('niveaux')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-8 py-4 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">Découvrir les 4 niveaux ↓</button>

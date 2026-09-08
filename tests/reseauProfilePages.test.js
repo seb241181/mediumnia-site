@@ -129,7 +129,7 @@ test('Blandine Gourdin is founder 007 with verified Terapiz details and portrait
   assert.match(data, /startingPrice: 'À partir de 70 €'/)
   assert.match(data, /Dégagement des lieux'[\s\S]*100 €/)
   assert.match(data, /Atelier bien-être'[\s\S]*350 €/)
-  assert.match(data, /portrait: '\/images\/reseau\/blandine-gourdin\.svg'/)
+  assert.match(data, /portrait: '\/images\/reseau\/blandine-gourdin\.jpg'/)
   assert.match(data, /https:\/\/terapiz\.com\/therapeute\/offekerque\/blandine-gourdin/)
   assert.match(data, /Prendre rendez-vous avec Blandine/)
   assert.match(directory, /Blandine/)

@@ -208,7 +208,7 @@ export default function ReseauDirectory({ onBack, onNavigate, onOpenProfile }) {
           <div className="max-w-xl mx-auto text-center mt-14 rounded-3xl border border-gold/20 px-8 py-8 bg-white/30">
             <p className="font-georgia text-gold tracking-[0.2em] text-[10px] uppercase mb-3">Réseau en développement</p>
             <p className="font-georgia text-mist leading-relaxed">
-              Amandine, Lydie, Willy, Clara, Stéphanie et Gilda font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
+              Amandine, Lydie, Willy, Clara, Stéphanie, Gilda et Blandine font partie des premiers profils du Réseau MediumIA. D'autres professionnels sélectionnés viendront progressivement enrichir l'annuaire.
             </p>
           </div>
         </section>

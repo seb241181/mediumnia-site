@@ -251,7 +251,7 @@ export const reseauPractitioners = [
       { name: 'Dégagement des lieux', price: '100 €' },
       { name: 'Atelier bien-être', price: '350 €' },
     ],
-    portrait: '/images/reseau/blandine-gourdin.svg',
+    portrait: '/images/reseau/blandine-gourdin.jpg',
     portraitAlt: 'Portrait de Blandine Gourdin, médium et praticienne en soins énergétiques à Offekerque',
     portraitPosition: 'center 40%',
     founder: true,

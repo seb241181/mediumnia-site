@@ -75,6 +75,35 @@ button, a, input, select, textarea { min-width: 0; }
   }
 }
 
+/* Desktop : le menu principal doit respirer sur toute la largeur disponible.
+   Chaque catégorie reste sur une seule ligne, y compris « Trouver un praticien ». */
+@media (min-width: 768px) {
+  #top > header > div {
+    max-width: 96rem !important;
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+
+  #top > header nav {
+    white-space: nowrap;
+    gap: clamp(1rem, 1.7vw, 1.75rem) !important;
+  }
+
+  #top > header nav > a,
+  #top > header nav > button {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+/* Entre tablette et petit ordinateur, mieux vaut masquer le menu central
+   plutôt que compresser ou superposer ses libellés. Les accès élèves/pro restent visibles. */
+@media (min-width: 768px) and (max-width: 1099px) {
+  #top > header nav {
+    display: none !important;
+  }
+}
+
 @layer utilities {
   .hero-fade-in { animation: heroFadeIn 1s ease both; }
   @keyframes heroFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }

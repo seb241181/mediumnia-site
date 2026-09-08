@@ -98,7 +98,7 @@ test('Clara Sidler is founder 004 with current public services and contact', asy
   assert.match(data, /Voir ses consultations/)
   assert.match(directory, /'Soin énergétique'/)
   assert.match(directory, /'Tarot évolutif'/)
-  assert.match(directory, /Amandine, Lydie, Willy, Clara, Stéphanie et Gilda/)
+  assert.match(directory, /Amandine, Lydie, Willy, Clara, Stéphanie, Gilda et Blandine/)
 })
 
 test('Gilda is founder 006 with current cartomancie profile, image and contact', async () => {
@@ -118,6 +118,21 @@ test('Gilda is founder 006 with current cartomancie profile, image and contact',
   assert.match(directory, /'Cartomancie'/)
   assert.match(profile, /Array\.isArray\(practical\.phones\)/)
   assert.match(profile, /practitioner\.city \? ` · \$\{practitioner\.city\}` : ''/)
+})
+
+test('Blandine Gourdin is founder 007 with verified Terapiz details and portrait', async () => {
+  const { data, directory } = await readSources()
+  assert.match(data, /id: 'blandine-gourdin'[\s\S]*founderNumber: 7/)
+  assert.match(data, /Médium · Magnétisme · Soins énergétiques · Ostéofluidique/)
+  assert.match(data, /city: 'Offekerque'/)
+  assert.match(data, /phone: '06 19 76 75 44'/)
+  assert.match(data, /startingPrice: 'À partir de 70 €'/)
+  assert.match(data, /Dégagement des lieux'[\s\S]*100 €/)
+  assert.match(data, /Atelier bien-être'[\s\S]*350 €/)
+  assert.match(data, /portrait: '\/images\/reseau\/blandine-gourdin\.svg'/)
+  assert.match(data, /https:\/\/terapiz\.com\/therapeute\/offekerque\/blandine-gourdin/)
+  assert.match(data, /Prendre rendez-vous avec Blandine/)
+  assert.match(directory, /Blandine/)
 })
 
 test('Stephanie Madhyama is founder 002 with portrait, cadrage and booking URL', async () => {

@@ -11,6 +11,7 @@ const read = relative => fs.readFileSync(new URL(`../${relative}`, import.meta.u
 function completedOrder(cfg, overrides = {}) {
   return {
     id: 'ORDER-DISCOVERY-1',
+    status: 'COMPLETED',
     create_time: '2026-09-09T08:00:00.000Z',
     payer: {
       email_address: 'buyer@example.test',
@@ -19,6 +20,7 @@ function completedOrder(cfg, overrides = {}) {
     purchase_units: [{
       reference_id: cfg.referenceId,
       custom_id: 'MEDIUMIA:formation-2026-09-01-v1:IMMEDIATE_ACCESS',
+      amount: { currency_code: cfg.currency, value: cfg.amount },
       payments: {
         captures: [{
           id: 'CAPTURE-DISCOVERY-1',
@@ -82,7 +84,7 @@ test('sandbox uses one euro while retaining the selected server-side product', (
   }
 })
 
-test('capture verification rejects forged price, product and consent', () => {
+test('capture verification uses durable server intent when capture omits custom_id', () => {
   const previous = {
     VERCEL_ENV: process.env.VERCEL_ENV,
     PAYPAL_ENV: process.env.PAYPAL_ENV,
@@ -95,25 +97,73 @@ test('capture verification rejects forged price, product and consent', () => {
   try {
     const discovery = __paypalFormationTest.runtimeConfig(null, 'discovery')
     const valid = completedOrder(discovery)
-    assert.equal(__paypalFormationTest.verifiedPayment(discovery, valid, { requireConsent: true }).amountCents, 2900)
+    delete valid.purchase_units[0].custom_id
+    const intent = {
+      paypal_order_id: valid.id,
+      paypal_env: 'live',
+      product_code: 'discovery',
+      amount_cents: 2900,
+      currency: 'EUR',
+      reference_id: discovery.referenceId,
+      terms_version: 'formation-2026-09-01-v1',
+      terms_accepted_at: '2026-09-09T07:59:00.000Z',
+      immediate_access_accepted_at: '2026-09-09T07:59:00.000Z',
+    }
+    assert.equal(__paypalFormationTest.verifiedPayment(discovery, valid, intent).amountCents, 2900)
 
     const wrongPrice = structuredClone(valid)
     wrongPrice.purchase_units[0].payments.captures[0].amount.value = '1.00'
-    assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, wrongPrice, { requireConsent: true }), /paypal_amount_mismatch/)
+    assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, wrongPrice, intent), /paypal_amount_mismatch/)
 
     const wrongProduct = structuredClone(valid)
     wrongProduct.purchase_units[0].reference_id = 'MEDIUMIA_FORMATION_597'
-    assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, wrongProduct, { requireConsent: true }), /paypal_payment_invalid/)
+    assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, wrongProduct, intent), /paypal_payment_invalid/)
 
-    const missingConsent = structuredClone(valid)
-    delete missingConsent.purchase_units[0].custom_id
-    assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, missingConsent, { requireConsent: true }), /paypal_consent_mismatch/)
+    assert.doesNotThrow(() => __paypalFormationTest.validateOrderAgainstIntent(discovery, valid, intent, { requireCaptured: true }))
+    const missingConsent = { ...intent, terms_accepted_at: null }
+    assert.throws(() => __paypalFormationTest.validateOrderAgainstIntent(discovery, valid, missingConsent), /consent_evidence_missing/)
+    const wrongIntentProduct = { ...intent, product_code: 'full' }
+    assert.throws(() => __paypalFormationTest.validateOrderAgainstIntent(discovery, valid, wrongIntentProduct), /purchase_product_mismatch/)
   } finally {
     Object.entries(previous).forEach(([key, value]) => {
       if (value === undefined) delete process.env[key]
       else process.env[key] = value
     })
   }
+})
+
+test('legacy captured Sandbox order is recoverable only with PayPal consent marker', () => {
+  const previous = process.env.VERCEL_ENV
+  process.env.VERCEL_ENV = 'preview'
+  try {
+    const discovery = __paypalFormationTest.runtimeConfig(null, 'discovery')
+    const order = completedOrder(discovery)
+    order.status = 'COMPLETED'
+    order.purchase_units[0].amount = { currency_code: discovery.currency, value: discovery.amount }
+    const intent = __paypalFormationTest.legacyIntentFromPayPal(discovery, order)
+    assert.equal(intent.product_code, 'discovery')
+    assert.equal(intent.status, 'captured')
+
+    delete order.purchase_units[0].custom_id
+    assert.throws(() => __paypalFormationTest.legacyIntentFromPayPal(discovery, order), /legacy_consent_unverifiable/)
+  } finally {
+    if (previous === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = previous
+  }
+})
+
+test('capture flow persists intent first and can reconcile without recapturing', () => {
+  const paypal = read('lib/paypalSandbox.js')
+  const migration = read('supabase/migrations/20260909133000_mediumia_paypal_order_intents.sql')
+
+  assert.match(paypal, /await saveOrderIntent\(getSupabaseAdmin\(\), cfg, data\.id\)/)
+  assert.match(paypal, /if \(fetched\.data\.status !== 'COMPLETED'\)/)
+  assert.match(paypal, /completedOrder = await captureOrder/)
+  assert.match(paypal, /status: 'provisioning_failed'/)
+  assert.match(paypal, /status: 'provisioned'/)
+  assert.match(migration, /paypal_order_id text primary key/)
+  assert.match(migration, /paypal_capture_id text unique/)
+  assert.match(migration, /revoke all on table public\.mediumia_paypal_order_intents from public, anon, authenticated/)
 })
 
 test('public Formation page presents full first and discovery without calling it a book', () => {

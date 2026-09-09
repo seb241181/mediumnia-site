@@ -21,9 +21,9 @@ Dernière mise à jour : 9 septembre 2026.
 
 ### Statut
 
-- **Migration additive : PRÊTE**
+- **Migration additive : APPLIQUÉE**
 - **Tests PostgreSQL locaux : 4/4 VALIDÉS**
-- **Production : EN ATTENTE DE LA FUSION DE LA PR SITE #9**
+- **Site public : EN ATTENTE DE LA FUSION DE LA PR SITE #9**
 
 ## 2. CHRONOSPHÈRE — TARIFICATION VALIDÉE
 

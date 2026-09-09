@@ -42,7 +42,7 @@ create role anon;
 create role authenticated;
 create role service_role;
 
-\ir ../../supabase/migrations/20260909170005_mediumia_full_upgrade_immediate.sql
+\ir ../../supabase/migrations/20260909144531_full_purchase_ignore_discovery_expiry.sql
 
 do $test$
 declare

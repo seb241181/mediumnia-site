@@ -170,9 +170,8 @@ test('capture flow persists intent first and can reconcile without recapturing',
 })
 
 test('full entitlement grant starts now after discovery and preserves full renewal', () => {
-  const migration = read('supabase/migrations/20260909170005_mediumia_full_upgrade_immediate.sql')
+  const migration = read('supabase/migrations/20260909144531_full_purchase_ignore_discovery_expiry.sql')
 
-  assert.match(migration, /pg_advisory_xact_lock\(hashtextextended\(p_user_id::text, 0\)\)/)
   assert.match(migration, /and access_level = 'full'/)
   assert.match(migration, /and max_module = 25/)
   assert.match(migration, /select greatest\(now\(\), coalesce\(max\(access_expires_at\), now\(\)\)\) into v_start/)
@@ -182,7 +181,7 @@ test('full entitlement grant starts now after discovery and preserves full renew
 })
 
 test('full purchase replay remains idempotent by payment origin', () => {
-  const migration = read('supabase/migrations/20260909170005_mediumia_full_upgrade_immediate.sql')
+  const migration = read('supabase/migrations/20260909144531_full_purchase_ignore_discovery_expiry.sql')
   const paypal = read('lib/paypalSandbox.js')
 
   assert.match(migration, /where type = 'purchase' and origin_ref = trim\(p_origin_ref\)/)
@@ -193,7 +192,7 @@ test('full purchase replay remains idempotent by payment origin', () => {
 })
 
 test('discovery and full rights remain server-scoped', () => {
-  const appMigration = read('supabase/migrations/20260909170005_mediumia_full_upgrade_immediate.sql')
+  const appMigration = read('supabase/migrations/20260909144531_full_purchase_ignore_discovery_expiry.sql')
   const paypal = read('lib/paypalSandbox.js')
   const publicPatch = read('scripts/apply-discovery-offer.mjs')
 

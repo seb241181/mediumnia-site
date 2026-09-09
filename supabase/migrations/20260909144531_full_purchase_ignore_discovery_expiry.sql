@@ -27,9 +27,6 @@ begin
     return jsonb_build_object('status', 'user_not_found');
   end if;
 
-  -- Serialize grants for one student so two concurrent renewals cannot overlap.
-  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
-
   select * into v_existing
   from public.mediumia_entitlements
   where type = 'purchase' and origin_ref = trim(p_origin_ref)

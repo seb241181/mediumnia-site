@@ -2,9 +2,30 @@
 
 Document de référence pour les décisions produit, commerciales et techniques validées pour `mediumia.fr`.
 
-Dernière mise à jour : 5 septembre 2026.
+Dernière mise à jour : 9 septembre 2026.
 
-## 1. CHRONOSPHÈRE — TARIFICATION VALIDÉE
+## 1. FORMATION — UPGRADE DÉCOUVERTE VERS FULL
+
+### Décision métier
+
+- Un achat Full sans accès existant ouvre immédiatement 365 jours d'accès aux 25 modules.
+- Un achat Full pendant un accès Discovery actif est un upgrade immédiat : les jours Discovery restants ne décalent pas le départ du Full.
+- Un nouvel achat Full pendant un Full actif conserve le renouvellement historique à partir de l'expiration du Full en cours.
+- Le rejeu d'un même paiement reste idempotent et ne crée aucun second entitlement.
+
+### Contrôle des droits
+
+- Discovery : Module 1 uniquement, coach limité à l'Introduction et au Module 1, PDF Découverte protégé.
+- Full : Modules 1 à 25, coach complet et PDF complet protégé.
+- Le niveau d'accès et le PDF sont déterminés côté serveur, jamais élargis par le frontend.
+
+### Statut
+
+- **Migration additive : APPLIQUÉE**
+- **Tests PostgreSQL locaux : 4/4 VALIDÉS**
+- **Site public : EN ATTENTE DE LA FUSION DE LA PR SITE #9**
+
+## 2. CHRONOSPHÈRE — TARIFICATION VALIDÉE
 
 ### Décision commerciale
 
@@ -31,7 +52,7 @@ Dernière mise à jour : 5 septembre 2026.
 
 ---
 
-## 2. RDV — CALENDRIER MENSUEL
+## 3. RDV — CALENDRIER MENSUEL
 
 ### Décision UX validée
 
@@ -77,7 +98,7 @@ Le comportement attendu est celui observé sur Reservio :
 
 ---
 
-## 3. RDV SÉBASTIEN — CAPACITÉ ET HORIZON
+## 4. RDV SÉBASTIEN — CAPACITÉ ET HORIZON
 
 ### Décision validée le 5 septembre 2026
 

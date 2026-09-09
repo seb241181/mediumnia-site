@@ -169,6 +169,41 @@ test('capture flow persists intent first and can reconcile without recapturing',
   assert.match(migration, /revoke all on table public\.mediumia_paypal_order_intents from public, anon, authenticated/)
 })
 
+test('full entitlement grant starts now after discovery and preserves full renewal', () => {
+  const migration = read('supabase/migrations/20260909170005_mediumia_full_upgrade_immediate.sql')
+
+  assert.match(migration, /pg_advisory_xact_lock\(hashtextextended\(p_user_id::text, 0\)\)/)
+  assert.match(migration, /and access_level = 'full'/)
+  assert.match(migration, /and max_module = 25/)
+  assert.match(migration, /select greatest\(now\(\), coalesce\(max\(access_expires_at\), now\(\)\)\) into v_start/)
+  assert.match(migration, /v_start \+ make_interval\(days => p_duration_days\)/)
+  assert.match(migration, /'active',\s*'full',\s*25/)
+  assert.doesNotMatch(migration, /access_level = 'discovery'[\s\S]*into v_start/)
+})
+
+test('full purchase replay remains idempotent by payment origin', () => {
+  const migration = read('supabase/migrations/20260909170005_mediumia_full_upgrade_immediate.sql')
+  const paypal = read('lib/paypalSandbox.js')
+
+  assert.match(migration, /where type = 'purchase' and origin_ref = trim\(p_origin_ref\)/)
+  assert.match(migration, /'status', 'already_granted'/)
+  assert.match(paypal, /existing\?\.status === 'provisioned' && existing\.entitlement_id/)
+  assert.match(paypal, /alreadyProvisioned: true/)
+  assert.match(paypal, /if \(fetched\.data\.status !== 'COMPLETED'\)/)
+})
+
+test('discovery and full rights remain server-scoped', () => {
+  const appMigration = read('supabase/migrations/20260909170005_mediumia_full_upgrade_immediate.sql')
+  const paypal = read('lib/paypalSandbox.js')
+  const publicPatch = read('scripts/apply-discovery-offer.mjs')
+
+  assert.match(appMigration, /'full',\s*25/)
+  assert.match(paypal, /p_access_level: cfg\.accessLevel/)
+  assert.match(paypal, /p_max_module: cfg\.maxModule/)
+  assert.match(publicPatch, /Coach MediumIA limité à l'Introduction et au Module 1 pendant 30 jours/)
+  assert.doesNotMatch(publicPatch, /p_max_module|access_level\s*:/)
+})
+
 test('public Formation page presents full first and discovery without calling it a book', () => {
   const page = read('src/components/FormationPage.jsx')
   const catalog = read('lib/mediumiaPublicCatalog.js')

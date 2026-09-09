@@ -1,5 +1,7 @@
--- MediumIA Agents — fondation de données
--- Schéma de référence : agents, versions, conversations et messages.
+-- LEGACY SNAPSHOT - DO NOT APPLY.
+-- The reproducible source of truth is now supabase/migrations, including the
+-- recovered historical migrations and the additive Phase 0 hardening migration.
+-- This file is retained temporarily for audit history and can be removed later.
 
 create extension if not exists pgcrypto;
 

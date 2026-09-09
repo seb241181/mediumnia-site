@@ -120,6 +120,9 @@ test('capture verification uses durable server intent when capture omits custom_
     assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, wrongProduct, intent), /paypal_payment_invalid/)
 
     assert.doesNotThrow(() => __paypalFormationTest.validateOrderAgainstIntent(discovery, valid, intent, { requireCaptured: true }))
+    const captureResponseWithoutUnitAmount = structuredClone(valid)
+    delete captureResponseWithoutUnitAmount.purchase_units[0].amount
+    assert.doesNotThrow(() => __paypalFormationTest.validateOrderAgainstIntent(discovery, captureResponseWithoutUnitAmount, intent, { requireCaptured: true }))
     const missingConsent = { ...intent, terms_accepted_at: null }
     assert.throws(() => __paypalFormationTest.validateOrderAgainstIntent(discovery, valid, missingConsent), /consent_evidence_missing/)
     const wrongIntentProduct = { ...intent, product_code: 'full' }

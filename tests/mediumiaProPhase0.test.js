@@ -74,10 +74,11 @@ test('recovered migration history and additive hardening are versioned', () => {
     '20260815074019_add_agent_conversations_and_messages.sql',
     '20260815192137_add_secure_agent_documents_foundation.sql',
     '20260815203822_fix_agent_document_search_query_terms.sql',
+    '20260909181952_mediumia_pro_phase0_security.sql',
+    '20260910045000_mediumia_pro_phase0_cleanup.sql',
   ]) {
     assert.ok(names.includes(expected), `${expected} is missing`)
   }
-  assert.ok(names.some((name) => name.endsWith('_mediumia_pro_phase0_security.sql')))
 })
 
 test('hardening migration protects audit, search, storage and quotas', () => {
@@ -92,4 +93,24 @@ test('hardening migration protects audit, search, storage and quotas', () => {
   assert.match(migration, /storage\.foldername\(storage\.objects\.name\)\)\[2\]/)
   assert.match(migration, /consume_pro_usage_quota/)
   assert.match(migration, /pg_advisory_xact_lock/)
+})
+
+test('cleanup migration covers composite FKs and explicitly denies client-only tables', () => {
+  const migration = read('supabase/migrations/20260910045000_mediumia_pro_phase0_cleanup.sql')
+
+  for (const indexName of [
+    'agents_membership_owner_idx',
+    'agent_versions_agent_owner_idx',
+    'agent_conversations_agent_owner_idx',
+    'agent_messages_conversation_agent_owner_idx',
+    'agent_documents_agent_owner_idx',
+    'agent_document_chunks_document_agent_owner_idx',
+    'agent_audit_events_agent_owner_idx',
+  ]) {
+    assert.match(migration, new RegExp(`create index if not exists ${indexName}`))
+  }
+
+  assert.match(migration, /create policy "No client access to agent versions"[\s\S]*to anon, authenticated[\s\S]*using \(false\)[\s\S]*with check \(false\)/)
+  assert.match(migration, /create policy "No client access to Pro usage counters"[\s\S]*to anon, authenticated[\s\S]*using \(false\)[\s\S]*with check \(false\)/)
+  assert.doesNotMatch(migration, /\b(drop table|truncate|delete from|alter column .* type)\b/i)
 })

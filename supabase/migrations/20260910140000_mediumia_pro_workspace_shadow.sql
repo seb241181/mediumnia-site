@@ -24,7 +24,8 @@ create table if not exists public.pro_workspaces (
   )
 );
 
-create unique index if not exists pro_workspaces_customer_owner_uidx
+-- Deliberately non-unique: a user may later own more than one workspace.
+create index if not exists pro_workspaces_customer_owner_idx
   on public.pro_workspaces(owner_user_id)
   where kind = 'customer';
 
@@ -57,8 +58,8 @@ where not exists (
   select 1 from public.pro_workspaces where kind = 'platform'
 );
 
--- One durable customer workspace per historical Pro owner, independent of
--- membership lifecycle/status.
+-- One initial durable customer workspace per historical Pro owner. The schema
+-- itself still allows a user to own additional workspaces later.
 insert into public.pro_workspaces(kind, owner_user_id, name, status)
 select distinct 'customer', m.user_id, 'Espace MediumIA Pro', 'active'
 from public.pro_memberships m
@@ -122,6 +123,9 @@ where a.workspace_id is null
 
 alter table public.agents
   add constraint agents_id_workspace_key unique (id, workspace_id);
+
+alter table public.agents
+  add constraint agents_workspace_id_key unique (workspace_id, id);
 
 alter table public.agents
   add constraint agents_id_workspace_owner_key unique (id, workspace_id, owner_id);
@@ -248,6 +252,14 @@ create index if not exists pro_document_versions_document_created_idx
 create index if not exists pro_document_versions_workspace_approval_idx
   on public.pro_document_versions(workspace_id, extraction_status, approved_for_ai);
 
+create unique index if not exists pro_document_versions_storage_object_uidx
+  on public.pro_document_versions(storage_bucket, storage_path)
+  where storage_path is not null;
+
+create index if not exists pro_document_versions_workspace_sha_idx
+  on public.pro_document_versions(workspace_id, sha256)
+  where sha256 is not null;
+
 -- Backfill each existing logical document with the same UUID. Nothing is
 -- moved in Storage and no source object is duplicated.
 insert into public.pro_documents(
@@ -342,7 +354,7 @@ create table if not exists public.pro_document_agent_access (
 );
 
 create unique index if not exists pro_document_agent_access_one_active_uidx
-  on public.pro_document_agent_access(document_id, agent_id)
+  on public.pro_document_agent_access(workspace_id, document_id, agent_id)
   where revoked_at is null;
 
 create index if not exists pro_document_agent_access_agent_active_idx
@@ -420,18 +432,21 @@ create table if not exists public.pro_audit_events (
     (actor_type = 'user' and actor_user_id is not null)
     or actor_type = 'system'
   ),
+  constraint pro_audit_events_version_requires_document_check check (
+    document_version_id is null or document_id is not null
+  ),
   constraint pro_audit_events_agent_workspace_fkey
     foreign key (workspace_id, agent_id)
     references public.agents(workspace_id, id)
-    on delete set null,
+    on delete restrict,
   constraint pro_audit_events_document_workspace_fkey
     foreign key (workspace_id, document_id)
     references public.pro_documents(workspace_id, id)
-    on delete set null,
+    on delete restrict,
   constraint pro_audit_events_version_workspace_document_fkey
     foreign key (workspace_id, document_version_id, document_id)
     references public.pro_document_versions(workspace_id, id, document_id)
-    on delete set null
+    on delete restrict
 );
 
 create index if not exists pro_audit_events_workspace_created_idx

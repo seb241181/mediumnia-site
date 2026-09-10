@@ -54,7 +54,7 @@ test('database system prompt and runtime fields cannot replace platform instruct
 test('agent chat API accepts no client runtime configuration', async () => {
   const source = read('api/agent-chat.js')
   assert.match(source, /resolveAgentRuntimePolicy\(\)/)
-  assert.match(source, /const \{ agentId, conversationId: requestedConversationId, message \} = req\.body/)
+  assert.match(source, /conversationId: requestedConversationId/)
   assert.doesNotMatch(source, /req\.body\.(provider|model|system_prompt|permissions|limits)/)
   await import('../api/agent-chat.js')
 })

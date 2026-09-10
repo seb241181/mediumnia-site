@@ -57,7 +57,7 @@ makes the server-only intent of `agent_versions` and `pro_usage_counters`
 explicit through deny-all client policies and table comments. It grants no new
 client capability and rewrites no application data.
 
-## Local verification
+## Verification
 
 Run the isolated reconstruction and REST/RLS suite with:
 
@@ -65,11 +65,21 @@ Run the isolated reconstruction and REST/RLS suite with:
 npm run test:pro-phase0
 ```
 
-The suite starts fresh PostgreSQL and PostgREST containers, applies the
-recovered migrations plus the Phase 0 hardening and cleanup migrations, creates
-Users A and B, exercises REST and RPC access with signed test JWTs, verifies
-server-only surfaces stay unavailable to clients, and removes every test
-container and network afterward.
+The integration suite starts fresh PostgreSQL and PostgREST containers, applies
+the recovered migrations plus the Phase 0 hardening migration, creates Users A
+and B, exercises REST and RPC access with signed test JWTs, and removes every
+test container and network afterward.
+
+Run the repository unit suite with:
+
+```sh
+npm test
+```
+
+The unit suite additionally verifies that the cleanup migration contains all
+seven covering composite indexes, explicit deny-all client policies for both
+server-only tables, and no destructive table/data operation. The cleanup SQL
+must still pass Preview/build review before any Production rollout.
 
 ## Production status
 

@@ -180,9 +180,9 @@ export default function FounderCopilotAccess({ onBack }) {
         ) : agentId ? (
           <>
             <div className="max-w-5xl mx-auto mb-5 rounded-2xl border border-gold/25 bg-gold/5 px-5 py-4">
-              <p className="font-georgia text-sm text-deep"><strong>Pilote Founder :</strong> conversation sécurisée activée. Création d’assistants, documents et actions externes restent désactivés pendant cette phase.</p>
+              <p className="font-georgia text-sm text-deep"><strong>Pilote Founder :</strong> conversations et mémoire métier sécurisées activées. Création d’autres copilotes et actions externes restent désactivées pendant cette phase.</p>
             </div>
-            <AgentChat agentId={agentId} onBack={onBack} backLabel="MediumIA" documentsEnabled={false} />
+            <AgentChat agentId={agentId} onBack={onBack} backLabel="MediumIA" documentsEnabled={true} />
           </>
         ) : null}
       </main>

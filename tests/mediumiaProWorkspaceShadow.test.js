@@ -8,80 +8,64 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const migrationPath = 'supabase/migrations/20260910140000_mediumia_pro_workspace_shadow.sql'
 const migration = fs.readFileSync(path.join(root, migrationPath), 'utf8')
 
-test('workspace shadow model separates durable tenant ownership from commercial membership', () => {
-  assert.match(migration, /create table if not exists public\.pro_workspaces/)
-  assert.match(migration, /create table if not exists public\.pro_workspace_members/)
-  assert.match(migration, /alter table public\.pro_memberships\s+add column if not exists workspace_id uuid/)
-  assert.match(migration, /pro_memberships_workspace_member_fkey/)
-  assert.match(migration, /references public\.pro_workspace_members\(workspace_id, user_id\)/)
-  assert.match(migration, /insert into public\.pro_workspaces\(kind, owner_user_id, name, status\)[\s\S]*'platform'/)
-
-  // Owning several workspaces later must stay possible.
-  assert.match(migration, /pro_workspaces_customer_owner_idx/)
-  assert.doesNotMatch(migration, /unique index if not exists pro_workspaces_customer_owner/)
+test('Phase 1A creates durable customer and platform workspaces without document shadow tables', () => {
+  assert.match(migration, /create table public\.pro_workspaces/)
+  assert.match(migration, /create table public\.pro_workspace_members/)
+  assert.match(migration, /values \('platform', null, 'MediumIA Platform', 'active'\)/)
+  assert.doesNotMatch(migration, /create table .*pro_documents/i)
+  assert.doesNotMatch(migration, /create table .*pro_document_versions/i)
+  assert.doesNotMatch(migration, /create table .*pro_document_agent_access/i)
+  assert.doesNotMatch(migration, /document_version_id/i)
 })
 
-test('legacy rows are backfilled but workspace columns remain transitional until writers are workspace-aware', () => {
-  assert.match(migration, /alter table public\.agents\s+add column if not exists workspace_id uuid/)
-  assert.match(migration, /alter table public\.agent_documents\s+add column if not exists workspace_id uuid/)
-  assert.match(migration, /add column if not exists workspace_id uuid,\s+add column if not exists document_version_id uuid/)
+test('legacy workspace ids are backfilled, auto-derived for future writes and made NOT NULL', () => {
+  for (const fn of [
+    'pro_assign_membership_workspace',
+    'pro_assign_agent_workspace',
+    'pro_assign_document_workspace',
+    'pro_assign_chunk_workspace',
+  ]) {
+    assert.match(migration, new RegExp(`create or replace function public\\.${fn}`))
+  }
+
+  assert.match(migration, /alter table public\.pro_memberships[\s\S]*alter column workspace_id set not null/)
+  assert.match(migration, /alter table public\.agents alter column workspace_id set not null/)
+  assert.match(migration, /alter table public\.agent_documents alter column workspace_id set not null/)
+  assert.match(migration, /alter table public\.agent_document_chunks alter column workspace_id set not null/)
+
+  assert.match(migration, /agents_membership_workspace_owner_fkey/)
+  assert.match(migration, /agent_documents_agent_workspace_owner_fkey/)
+  assert.match(migration, /agent_document_chunks_legacy_workspace_fkey/)
+})
+
+test('multi-agent blocker is removed while legacy RAG and Storage remain untouched', () => {
+  assert.match(migration, /drop index if exists public\.agents_one_live_copilot_per_membership_idx/)
+  assert.match(migration, /agents_membership_status_idx/)
+  assert.match(migration, /agents_workspace_status_idx/)
+  assert.match(migration, /mediumia_phase1a_rag_guard/)
+  assert.match(migration, /legacy_rag_function_changed/)
+  assert.doesNotMatch(migration, /create or replace function public\.search_agent_document_chunks/i)
+  assert.doesNotMatch(migration, /storage\.objects/i)
+})
+
+test('workspace RLS requires active customer workspace and active workspace membership', () => {
+  assert.match(migration, /create or replace function public\.pro_is_active_workspace_member/)
+  assert.match(migration, /w\.kind = 'customer'/)
+  assert.match(migration, /w\.status = 'active'/)
+  assert.match(migration, /wm\.status = 'active'/)
+  assert.match(migration, /revoke all on table public\.pro_workspaces from public, anon, authenticated/)
+  assert.match(migration, /revoke all on table public\.pro_workspace_members from public, anon, authenticated/)
+  assert.match(migration, /grant all on table public\.pro_workspaces to service_role/)
+  assert.match(migration, /grant all on table public\.pro_workspace_members to service_role/)
+})
+
+test('migration encodes explicit backfill invariants for every legacy resource', () => {
   assert.match(migration, /workspace_backfill_missing_membership/)
   assert.match(migration, /workspace_backfill_missing_agent/)
   assert.match(migration, /workspace_backfill_missing_document/)
-  assert.match(migration, /workspace_backfill_missing_chunk_version/)
-  assert.doesNotMatch(migration, /alter column workspace_id set not null/i)
-})
-
-test('shadow documents are versioned and AI approval belongs to the version', () => {
-  const documentTable = migration.slice(
-    migration.indexOf('create table if not exists public.pro_documents'),
-    migration.indexOf('create table if not exists public.pro_document_versions'),
-  )
-  const versionTable = migration.slice(
-    migration.indexOf('create table if not exists public.pro_document_versions'),
-    migration.indexOf('-- Backfill each existing logical document'),
-  )
-
-  assert.doesNotMatch(documentTable, /approved_for_ai/)
-  assert.match(versionTable, /approved_for_ai boolean not null default false/)
-  assert.match(versionTable, /unique \(document_id, version_number\)/)
-  assert.match(migration, /v\.extraction_status = 'ready'[\s\S]*v\.approved_for_ai = true/)
-  assert.match(migration, /pro_documents_current_version_fkey/)
-  assert.match(migration, /pro_document_versions_storage_object_uidx/)
-  assert.match(migration, /pro_document_versions_workspace_sha_idx/)
-})
-
-test('document to agent access is revocable and cross-workspace links are blocked structurally', () => {
-  assert.match(migration, /create table if not exists public\.pro_document_agent_access/)
-  assert.match(migration, /foreign key \(workspace_id, document_id\)[\s\S]*references public\.pro_documents\(workspace_id, id\)/)
-  assert.match(migration, /foreign key \(workspace_id, agent_id\)[\s\S]*references public\.agents\(workspace_id, id\)/)
-  assert.match(migration, /pro_document_agent_access_one_active_uidx[\s\S]*where revoked_at is null/)
-  assert.match(migration, /shadow_document_access_mismatch/)
-  assert.match(migration, /shadow_cross_workspace_access_detected/)
-})
-
-test('Phase 1 removes the one-agent database blocker without cutting over RAG or Storage', () => {
-  assert.match(migration, /drop index if exists public\.agents_one_live_copilot_per_membership_idx/)
-  assert.match(migration, /create index if not exists agents_membership_status_idx/)
-  assert.doesNotMatch(migration, /create or replace function public\.search_agent_document_chunks/i)
-  assert.doesNotMatch(migration, /drop function[^;]*search_agent_document_chunks/i)
-  assert.doesNotMatch(migration, /storage\.objects/i)
-  assert.doesNotMatch(migration, /create table if not exists public\.pro_document_chunks/i)
-})
-
-test('new shadow tables are read-only to authenticated users and platform data is not exposed', () => {
-  for (const table of [
-    'pro_workspaces',
-    'pro_workspace_members',
-    'pro_documents',
-    'pro_document_versions',
-    'pro_document_agent_access',
-    'pro_audit_events',
-  ]) {
-    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`))
-    assert.match(migration, new RegExp(`revoke all on public\\.${table} from anon, authenticated`))
-  }
-  assert.match(migration, /kind = 'customer'/)
-  assert.match(migration, /scope = 'workspace'/)
-  assert.match(migration, /No INSERT\/UPDATE\/DELETE policies are created for authenticated users/)
+  assert.match(migration, /workspace_backfill_missing_chunk/)
+  assert.match(migration, /membership_workspace_invariant_failed/)
+  assert.match(migration, /agent_workspace_invariant_failed/)
+  assert.match(migration, /document_workspace_invariant_failed/)
+  assert.match(migration, /chunk_workspace_invariant_failed/)
 })

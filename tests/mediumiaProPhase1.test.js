@@ -50,6 +50,20 @@ test('Founder can request a fresh conversation without deleting prior history', 
   assert.doesNotMatch(source, /from\('agent_conversations'\)[\s\S]*\.delete\(/)
 })
 
+test('Founder can list and reopen prior conversations without client-side mutation', () => {
+  const source = read('src/components/AgentChat.jsx')
+
+  assert.match(source, /const \[conversations, setConversations\] = useState\(\[\]\)/)
+  assert.match(source, /select\('id, title, created_at, updated_at'\)/)
+  assert.match(source, /order\('created_at', \{ ascending: false \}\)/)
+  assert.match(source, /limit\(25\)/)
+  assert.match(source, /async function openConversation\(conversation\)/)
+  assert.match(source, /\.eq\('conversation_id', conversation\.id\)/)
+  assert.match(source, />Historique</)
+  assert.match(source, /aria-pressed=\{selected\}/)
+  assert.doesNotMatch(source, /from\('agent_conversations'\)[\s\S]*\.(update|delete)\(/)
+})
+
 test('server enforces a fresh conversation even if a stale conversation id is sent', () => {
   const source = read('api/agent-chat.js')
 

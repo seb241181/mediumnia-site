@@ -2,14 +2,23 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import AgentDocuments from './AgentDocuments.jsx'
 
+function formatConversationDate(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+}
+
 export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', documentsEnabled = true }) {
   const [agent, setAgent] = useState(null)
   const [conversationId, setConversationId] = useState(null)
+  const [conversations, setConversations] = useState([])
   const [newConversationRequested, setNewConversationRequested] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [status, setStatus] = useState('loading')
   const [sending, setSending] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const [error, setError] = useState('')
   const [workspaceTab, setWorkspaceTab] = useState('chat')
   const endRef = useRef(null)
@@ -35,12 +44,12 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
       }
       setAgent(agentData)
 
-      const { data: conversations, error: conversationError } = await supabase
+      const { data: conversationRows, error: conversationError } = await supabase
         .from('agent_conversations')
-        .select('id, title, updated_at')
+        .select('id, title, created_at, updated_at')
         .eq('agent_id', agentId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
+        .order('created_at', { ascending: false })
+        .limit(25)
 
       if (!active) return
       if (conversationError) {
@@ -49,7 +58,9 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
         return
       }
 
-      const latest = conversations?.[0]
+      const availableConversations = conversationRows || []
+      setConversations(availableConversations)
+      const latest = availableConversations[0]
       if (latest) {
         setConversationId(latest.id)
         setNewConversationRequested(false)
@@ -80,8 +91,34 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
     if (workspaceTab === 'chat') endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, sending, workspaceTab])
 
+  async function openConversation(conversation) {
+    if (!conversation?.id || sending || historyLoading) return
+    if (!newConversationRequested && conversation.id === conversationId) return
+
+    setHistoryLoading(true)
+    setError('')
+    setWorkspaceTab('chat')
+    setNewConversationRequested(false)
+    setConversationId(conversation.id)
+    setMessages([])
+
+    const { data: history, error: historyError } = await supabase
+      .from('agent_messages')
+      .select('id, role, content, created_at, sources')
+      .eq('conversation_id', conversation.id)
+      .order('created_at', { ascending: true })
+      .limit(100)
+
+    if (historyError) {
+      setError(historyError.message || 'Impossible de charger cette conversation.')
+    } else {
+      setMessages(history || [])
+    }
+    setHistoryLoading(false)
+  }
+
   function startNewConversation() {
-    if (sending) return
+    if (sending || historyLoading) return
     setConversationId(null)
     setNewConversationRequested(true)
     setMessages([])
@@ -127,6 +164,17 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
       if (data.conversationId) {
         setConversationId(data.conversationId)
         setNewConversationRequested(false)
+        if (startingFresh) {
+          setConversations((prev) => [
+            {
+              id: data.conversationId,
+              title: text.replace(/\s+/g, ' ').slice(0, 70) || 'Nouvelle conversation',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            ...prev.filter((conversation) => conversation.id !== data.conversationId),
+          ])
+        }
       }
 
       if (!response.ok) throw new Error(data.error || 'Impossible de joindre votre agent.')
@@ -160,7 +208,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
           <button
             type="button"
             onClick={startNewConversation}
-            disabled={sending}
+            disabled={sending || historyLoading}
             className="font-georgia text-xs md:text-sm px-3 py-2 rounded-lg border border-gold/35 text-deep font-bold disabled:opacity-40"
           >
             + Nouvelle conversation
@@ -179,6 +227,34 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
           <span className="text-gold text-3xl">✦</span>
         </div>
 
+        <div className="border-b border-gold/15 bg-cream/80 px-4 md:px-8 py-3">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-mist">Historique</p>
+            <p className="font-georgia text-[11px] text-mist/60">{conversations.length} conversation{conversations.length > 1 ? 's' : ''}</p>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {conversations.map((conversation) => {
+              const selected = !newConversationRequested && conversation.id === conversationId
+              return (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => openConversation(conversation)}
+                  disabled={sending || historyLoading}
+                  aria-pressed={selected}
+                  className={`shrink-0 max-w-[230px] rounded-xl border px-3 py-2 text-left disabled:opacity-40 ${selected ? 'bg-deep text-cream border-deep' : 'bg-white/70 text-deep border-gold/20'}`}
+                >
+                  <span className="block font-georgia text-xs truncate">{conversation.title || 'Conversation sans titre'}</span>
+                  <span className={`block font-georgia text-[10px] mt-1 ${selected ? 'text-cream/55' : 'text-mist/55'}`}>{formatConversationDate(conversation.created_at)}</span>
+                </button>
+              )
+            })}
+            {conversations.length === 0 && (
+              <p className="font-georgia text-xs text-mist/60 py-2">Aucun échange enregistré pour le moment.</p>
+            )}
+          </div>
+        </div>
+
         {documentsEnabled && (
           <div className="border-b border-gold/15 bg-cream/80 px-4 md:px-8 py-3 flex gap-2 overflow-x-auto">
             <button onClick={() => setWorkspaceTab('chat')} className={`font-georgia text-sm px-4 py-2 rounded-lg ${workspaceTab === 'chat' ? 'bg-deep text-gold' : 'text-mist'}`}>Conversation</button>
@@ -191,7 +267,11 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
         ) : (
           <>
             <div className="flex-1 px-4 md:px-8 py-7 space-y-4 overflow-y-auto max-h-[520px]">
-              {messages.length === 0 && (
+              {historyLoading && (
+                <div className="text-center py-12"><p className="font-georgia text-mist">Ouverture de la conversation…</p></div>
+              )}
+
+              {!historyLoading && messages.length === 0 && (
                 <div className="max-w-xl mx-auto text-center py-16">
                   <p className="text-gold text-4xl mb-4">✦</p>
                   <p className="font-georgia text-2xl text-deep mb-3">{newConversationRequested ? 'Nouvelle conversation prête.' : 'Votre agent est prêt à vous écouter.'}</p>
@@ -203,7 +283,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
                 </div>
               )}
 
-              {messages.map((message) => (
+              {!historyLoading && messages.map((message) => (
                 <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] md:max-w-[72%] rounded-2xl px-5 py-4 ${message.role === 'user' ? 'bg-deep text-cream rounded-br-md' : 'bg-gold/10 border border-gold/20 text-deep rounded-bl-md'}`}>
                     <p className="font-georgia text-xs mb-2 opacity-50">{message.role === 'user' ? 'Vous' : agent.name}</p>
@@ -243,9 +323,10 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
                     }
                   }}
                   placeholder={newConversationRequested ? 'Premier message de cette nouvelle conversation…' : 'Parlez à votre agent…'}
-                  className="flex-1 resize-none rounded-xl bg-white border border-gold/25 px-4 py-3 text-deep placeholder:text-mist/50 outline-none focus:border-gold/60 font-georgia leading-relaxed"
+                  disabled={historyLoading}
+                  className="flex-1 resize-none rounded-xl bg-white border border-gold/25 px-4 py-3 text-deep placeholder:text-mist/50 outline-none focus:border-gold/60 font-georgia leading-relaxed disabled:opacity-50"
                 />
-                <button type="submit" disabled={!input.trim() || sending} className="font-georgia px-5 py-3.5 rounded-xl bg-gold text-deep font-bold disabled:opacity-30">Envoyer</button>
+                <button type="submit" disabled={!input.trim() || sending || historyLoading} className="font-georgia px-5 py-3.5 rounded-xl bg-gold text-deep font-bold disabled:opacity-30">Envoyer</button>
               </div>
               <p className="font-georgia text-[11px] text-mist/55 mt-3">
                 {documentsEnabled

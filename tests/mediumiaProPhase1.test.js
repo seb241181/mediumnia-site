@@ -15,7 +15,7 @@ test('Founder pilot requires an existing authenticated founder membership', () =
   assert.match(source, /membership\.status !== 'active'/)
   assert.match(source, /membership\?\.expires_at/)
   assert.doesNotMatch(source, /signUp/)
-  assert.match(source, /documentsEnabled=\{false\}/)
+  assert.match(source, /documentsEnabled=\{true\}/)
 })
 
 test('Founder pilot opens only the existing non-archived copilot', () => {
@@ -72,6 +72,53 @@ test('server enforces a fresh conversation even if a stale conversation id is se
   assert.match(source, /let conversationId = newConversation === true \? null : \(requestedConversationId \|\| null\)/)
   assert.match(source, /insert\(\{ agent_id: agent\.id, owner_id: auth\.userId, title \}\)/)
   assert.match(source, /messageSaved: true, conversationId/)
+})
+
+test('Founder document UI keeps reads client-side but sends every mutation through authenticated Edge function', () => {
+  const source = read('src/components/AgentDocuments.jsx')
+
+  assert.match(source, /from\('agent_documents'\)[\s\S]*\.select\(/)
+  assert.match(source, /supabase\.functions\.invoke\('agent-documents'/)
+  for (const action of ['create_text', 'prepare_upload', 'finalize_upload', 'set_approval', 'delete']) {
+    assert.match(source, new RegExp(`invokeDocumentAction\\('${action}'`))
+  }
+  assert.match(source, /uploadToSignedUrl\(/)
+  assert.doesNotMatch(source, /\.from\('agent_documents'\)[\s\S]*\.(insert|update|delete)\(/)
+  assert.doesNotMatch(source, /\.from\('agent_document_chunks'\)/)
+  assert.doesNotMatch(source, /\.storage[\s\S]*\.upload\(/)
+  assert.doesNotMatch(source, /ensure-agent-documents-bucket/)
+})
+
+test('document Edge function authenticates ownership and keeps privileged writes server-side', () => {
+  const source = read('supabase/functions/agent-documents/index.ts')
+
+  assert.match(source, /SUPABASE_SERVICE_ROLE_KEY/)
+  assert.match(source, /userClient\.auth\.getUser\(\)/)
+  assert.match(source, /from\('pro_memberships'\)[\s\S]*\.eq\('status', 'active'\)/)
+  assert.match(source, /from\('agents'\)[\s\S]*\.eq\('owner_id', user\.id\)[\s\S]*\.eq\('membership_id', membership\.id\)/)
+  assert.match(source, /createSignedUploadUrl\(storagePath, \{ upsert: false \}\)/)
+  assert.match(source, /storagePath = `\$\{user\.id\}\/\$\{agent\.id\}\/\$\{crypto\.randomUUID\(\)\}/)
+  assert.match(source, /MAX_FILE_BYTES = 25 \* 1024 \* 1024/)
+  assert.match(source, /MAX_TEXT_CHARS = 750_000/)
+  assert.match(source, /approved_for_ai: false/)
+  assert.match(source, /action === 'set_approval'/)
+  assert.match(source, /action === 'delete'/)
+  assert.doesNotMatch(source, /Deno\.env\.get\('.*VITE_/)
+})
+
+test('Phase 1 migration removes prototype raw Storage access for document clients', () => {
+  const migration = read('supabase/migrations/20260910054200_mediumia_pro_phase1_documents_server_only.sql')
+
+  for (const policy of [
+    'Users can upload own stored agent documents',
+    'Users can read own stored agent documents',
+    'Users can update own stored agent documents',
+    'Users can delete own stored agent documents',
+  ]) {
+    assert.match(migration, new RegExp(`drop policy if exists "${policy}" on storage\\.objects`))
+  }
+  assert.match(migration, /update storage\.buckets[\s\S]*set public = false[\s\S]*where id = 'agent-documents'/)
+  assert.doesNotMatch(migration, /create policy/i)
 })
 
 test('public Pro waitlist remains available independently from Founder pilot', () => {

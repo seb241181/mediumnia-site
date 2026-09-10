@@ -147,8 +147,19 @@ export default async function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error, requestId })
   }
 
-  const { agentId, conversationId: requestedConversationId, message } = req.body || {}
+  const {
+    agentId,
+    conversationId: requestedConversationId,
+    newConversation = false,
+    message,
+  } = req.body || {}
   const cleanMessage = typeof message === 'string' ? message.trim() : ''
+
+  if (typeof newConversation !== 'boolean') {
+    technicalLog(requestId, 'chat', 'rejected', startedAt, 'invalid_conversation_mode')
+    return res.status(400).json({ error: 'invalid_conversation_mode', requestId })
+  }
+
   if (!agentId || !cleanMessage) {
     technicalLog(requestId, 'chat', 'rejected', startedAt, 'invalid_request')
     return res.status(400).json({ error: 'agentId and message are required', requestId })
@@ -204,7 +215,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'usage_limit_reached', requestId })
   }
 
-  let conversationId = requestedConversationId || null
+  let conversationId = newConversation === true ? null : (requestedConversationId || null)
   if (conversationId) {
     const { data: conversation } = await db
       .from('agent_conversations')
@@ -240,7 +251,7 @@ export default async function handler(req, res) {
   })
   if (userMessageError) {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'message_persistence_failed')
-    return res.status(500).json({ error: 'Impossible d’enregistrer le message', requestId })
+    return res.status(500).json({ error: 'Impossible d’enregistrer le message', requestId, conversationId })
   }
 
   const { data: latestMessages, error: historyError } = await db
@@ -254,7 +265,7 @@ export default async function handler(req, res) {
 
   if (historyError) {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'history_unavailable')
-    return res.status(500).json({ error: 'Impossible de charger la conversation', requestId })
+    return res.status(500).json({ error: 'Impossible de charger la conversation', requestId, conversationId })
   }
 
   const history = [...(latestMessages || [])]
@@ -321,7 +332,7 @@ export default async function handler(req, res) {
       result: errorCode,
     })
     technicalLog(requestId, 'chat', 'failed', startedAt, errorCode)
-    return res.status(502).json({ error: 'Le copilote est momentanément indisponible.', requestId, messageSaved: true })
+    return res.status(502).json({ error: 'Le copilote est momentanément indisponible.', requestId, messageSaved: true, conversationId })
   }
 
   if (result.error) {
@@ -338,7 +349,7 @@ export default async function handler(req, res) {
       result: result.error,
     })
     technicalLog(requestId, 'chat', 'failed', startedAt, result.error)
-    return res.status(502).json({ error: 'Le copilote n’a pas pu répondre.', requestId, messageSaved: true })
+    return res.status(502).json({ error: 'Le copilote n’a pas pu répondre.', requestId, messageSaved: true, conversationId })
   }
 
   const { error: assistantMessageError } = await db.from('agent_messages').insert({
@@ -353,7 +364,7 @@ export default async function handler(req, res) {
   })
   if (assistantMessageError) {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'assistant_persistence_failed')
-    return res.status(500).json({ error: 'Réponse reçue mais non enregistrée', requestId })
+    return res.status(500).json({ error: 'Réponse reçue mais non enregistrée', requestId, conversationId })
   }
 
   await writeAudit(db, {

@@ -7,14 +7,21 @@
 -- authoritative and unchanged.
 
 -- Guard the legacy RAG function byte-for-byte during this migration.
+-- Do not use ON COMMIT DROP here: psql may run this file in autocommit mode,
+-- which would drop the table before the following INSERT.
 create temporary table mediumia_phase1a_rag_guard (
   definition_md5 text not null
-) on commit drop;
+);
 
 insert into mediumia_phase1a_rag_guard(definition_md5)
 select md5(pg_get_functiondef(
   'public.search_agent_document_chunks(uuid,text,integer)'::regprocedure
 ));
+
+-- Internal privileged helpers live outside the exposed public schema.
+create schema if not exists mediumia_private;
+revoke all on schema mediumia_private from public, anon;
+grant usage on schema mediumia_private to authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 1. Durable tenant/workspace model
@@ -24,16 +31,15 @@ create table public.pro_workspaces (
   id uuid primary key default gen_random_uuid(),
   kind text not null default 'customer'
     check (kind in ('customer', 'platform')),
-  owner_user_id uuid references auth.users(id) on delete restrict,
+  owner_user_id uuid references auth.users(id) on delete set null,
   name text not null default 'Espace MediumIA Pro'
     check (char_length(name) between 1 and 160),
   status text not null default 'active'
     check (status in ('active', 'suspended', 'archived')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint pro_workspaces_owner_shape_check check (
-    (kind = 'customer' and owner_user_id is not null)
-    or (kind = 'platform' and owner_user_id is null)
+  constraint pro_workspaces_platform_owner_check check (
+    kind <> 'platform' or owner_user_id is null
   )
 );
 
@@ -83,7 +89,8 @@ from public.pro_memberships m;
 insert into public.pro_workspace_members(workspace_id, user_id, role, status)
 select w.id, w.owner_user_id, 'owner', 'active'
 from public.pro_workspaces w
-where w.kind = 'customer';
+where w.kind = 'customer'
+  and w.owner_user_id is not null;
 
 -- ---------------------------------------------------------------------------
 -- 2. Workspace assignment for memberships, including future server writes
@@ -99,20 +106,39 @@ where w.kind = 'customer'
   and w.owner_user_id = m.user_id;
 
 -- Future membership creation remains compatible with existing server writers.
--- If the user has no workspace yet, create one. If exactly one active owned
--- customer workspace exists, derive it. If several exist, the writer must
--- provide workspace_id explicitly rather than letting the database guess.
-create or replace function public.pro_assign_membership_workspace()
+-- The advisory transaction lock serializes concurrent creation for one user.
+-- Existing membership wins first, which makes INSERT ... ON CONFLICT replays
+-- idempotent even if its workspace has since been archived.
+create or replace function mediumia_private.pro_assign_membership_workspace()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
+  v_existing_workspace_id uuid;
   v_workspace_ids uuid[];
   v_workspace_id uuid;
 begin
-  if new.workspace_id is null then
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(new.user_id::text, 0)
+  );
+
+  select m.workspace_id
+    into v_existing_workspace_id
+  from public.pro_memberships m
+  where m.user_id = new.user_id
+  order by m.created_at, m.id
+  limit 1;
+
+  if v_existing_workspace_id is not null then
+    if new.workspace_id is not null
+       and new.workspace_id <> v_existing_workspace_id then
+      raise exception 'membership_workspace_mismatch';
+    end if;
+
+    new.workspace_id := v_existing_workspace_id;
+  elsif new.workspace_id is null then
     select array_agg(w.id order by w.created_at, w.id)
       into v_workspace_ids
     from public.pro_workspaces w
@@ -157,11 +183,12 @@ begin
 end;
 $$;
 
-revoke all on function public.pro_assign_membership_workspace() from public;
+revoke all on function mediumia_private.pro_assign_membership_workspace() from public, anon, authenticated;
+grant execute on function mediumia_private.pro_assign_membership_workspace() to service_role;
 
 create trigger pro_memberships_assign_workspace
 before insert or update of user_id, workspace_id on public.pro_memberships
-for each row execute function public.pro_assign_membership_workspace();
+for each row execute function mediumia_private.pro_assign_membership_workspace();
 
 alter table public.pro_memberships
   add constraint pro_memberships_workspace_fkey
@@ -197,11 +224,11 @@ from public.pro_memberships m
 where m.id = a.membership_id
   and m.user_id = a.owner_id;
 
-create or replace function public.pro_assign_agent_workspace()
+create or replace function mediumia_private.pro_assign_agent_workspace()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_workspace_id uuid;
@@ -224,11 +251,12 @@ begin
 end;
 $$;
 
-revoke all on function public.pro_assign_agent_workspace() from public;
+revoke all on function mediumia_private.pro_assign_agent_workspace() from public, anon, authenticated;
+grant execute on function mediumia_private.pro_assign_agent_workspace() to service_role;
 
 create trigger agents_assign_workspace
 before insert or update of membership_id, owner_id, workspace_id on public.agents
-for each row execute function public.pro_assign_agent_workspace();
+for each row execute function mediumia_private.pro_assign_agent_workspace();
 
 alter table public.agents
   add constraint agents_id_workspace_owner_key
@@ -262,11 +290,11 @@ from public.agents a
 where a.id = d.agent_id
   and a.owner_id = d.owner_id;
 
-create or replace function public.pro_assign_document_workspace()
+create or replace function mediumia_private.pro_assign_document_workspace()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_workspace_id uuid;
@@ -289,11 +317,12 @@ begin
 end;
 $$;
 
-revoke all on function public.pro_assign_document_workspace() from public;
+revoke all on function mediumia_private.pro_assign_document_workspace() from public, anon, authenticated;
+grant execute on function mediumia_private.pro_assign_document_workspace() to service_role;
 
 create trigger agent_documents_assign_workspace
 before insert or update of agent_id, owner_id, workspace_id on public.agent_documents
-for each row execute function public.pro_assign_document_workspace();
+for each row execute function mediumia_private.pro_assign_document_workspace();
 
 alter table public.agent_documents
   add constraint agent_documents_id_agent_owner_workspace_key
@@ -319,11 +348,11 @@ where d.id = c.document_id
   and d.agent_id = c.agent_id
   and d.owner_id = c.owner_id;
 
-create or replace function public.pro_assign_chunk_workspace()
+create or replace function mediumia_private.pro_assign_chunk_workspace()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_workspace_id uuid;
@@ -347,12 +376,13 @@ begin
 end;
 $$;
 
-revoke all on function public.pro_assign_chunk_workspace() from public;
+revoke all on function mediumia_private.pro_assign_chunk_workspace() from public, anon, authenticated;
+grant execute on function mediumia_private.pro_assign_chunk_workspace() to service_role;
 
 create trigger agent_document_chunks_assign_workspace
 before insert or update of document_id, agent_id, owner_id, workspace_id
 on public.agent_document_chunks
-for each row execute function public.pro_assign_chunk_workspace();
+for each row execute function mediumia_private.pro_assign_chunk_workspace();
 
 alter table public.agent_document_chunks
   add constraint agent_document_chunks_legacy_workspace_fkey
@@ -374,12 +404,12 @@ create index agent_document_chunks_workspace_agent_idx
 alter table public.pro_workspaces enable row level security;
 alter table public.pro_workspace_members enable row level security;
 
-create or replace function public.pro_is_active_workspace_member(p_workspace_id uuid)
+create or replace function mediumia_private.pro_is_active_workspace_member(p_workspace_id uuid)
 returns boolean
 language sql
 stable
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
   select exists (
     select 1
@@ -394,8 +424,8 @@ as $$
   );
 $$;
 
-revoke all on function public.pro_is_active_workspace_member(uuid) from public;
-grant execute on function public.pro_is_active_workspace_member(uuid) to authenticated;
+revoke all on function mediumia_private.pro_is_active_workspace_member(uuid) from public, anon;
+grant execute on function mediumia_private.pro_is_active_workspace_member(uuid) to authenticated, service_role;
 
 revoke all on table public.pro_workspaces from public, anon, authenticated;
 revoke all on table public.pro_workspace_members from public, anon, authenticated;
@@ -407,14 +437,14 @@ grant all on table public.pro_workspace_members to service_role;
 create policy "Active members can read customer workspace"
 on public.pro_workspaces
 for select to authenticated
-using (public.pro_is_active_workspace_member(id));
+using ((select mediumia_private.pro_is_active_workspace_member(id)));
 
 create policy "Active members can read own workspace membership"
 on public.pro_workspace_members
 for select to authenticated
 using (
   user_id = (select auth.uid())
-  and public.pro_is_active_workspace_member(workspace_id)
+  and (select mediumia_private.pro_is_active_workspace_member(workspace_id))
 );
 
 -- ---------------------------------------------------------------------------
@@ -499,6 +529,10 @@ begin
     raise exception 'legacy_rag_function_changed';
   end if;
 end $$;
+
+-- Explicit cleanup works both in psql autocommit and transaction-wrapped
+-- migration runners.
+drop table pg_temp.mediumia_phase1a_rag_guard;
 
 comment on table public.pro_workspaces is
   'Durable MediumIA Pro tenant. It survives commercial membership lifecycle; document shadow model is introduced only in Phase 1B.';

@@ -5,6 +5,7 @@ import AgentDocuments from './AgentDocuments.jsx'
 export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', documentsEnabled = true }) {
   const [agent, setAgent] = useState(null)
   const [conversationId, setConversationId] = useState(null)
+  const [newConversationRequested, setNewConversationRequested] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [status, setStatus] = useState('loading')
@@ -51,6 +52,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
       const latest = conversations?.[0]
       if (latest) {
         setConversationId(latest.id)
+        setNewConversationRequested(false)
         const { data: history, error: historyError } = await supabase
           .from('agent_messages')
           .select('id, role, content, created_at, sources')
@@ -81,6 +83,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
   function startNewConversation() {
     if (sending) return
     setConversationId(null)
+    setNewConversationRequested(true)
     setMessages([])
     setInput('')
     setError('')
@@ -92,6 +95,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
     const text = input.trim()
     if (!text || sending || !agent) return
 
+    const startingFresh = newConversationRequested
     setSending(true); setError(''); setInput('')
     const optimistic = { id: `local-${Date.now()}`, role: 'user', content: text, sources: [] }
     setMessages((prev) => [...prev, optimistic])
@@ -111,12 +115,22 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ agentId: agent.id, conversationId, message: text }),
+        body: JSON.stringify({
+          agentId: agent.id,
+          conversationId: startingFresh ? null : conversationId,
+          newConversation: startingFresh,
+          message: text,
+        }),
       })
       const data = await response.json().catch(() => ({}))
+
+      if (data.conversationId) {
+        setConversationId(data.conversationId)
+        setNewConversationRequested(false)
+      }
+
       if (!response.ok) throw new Error(data.error || 'Impossible de joindre votre agent.')
 
-      if (!conversationId && data.conversationId) setConversationId(data.conversationId)
       setMessages((prev) => [...prev, {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
@@ -180,8 +194,12 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
               {messages.length === 0 && (
                 <div className="max-w-xl mx-auto text-center py-16">
                   <p className="text-gold text-4xl mb-4">✦</p>
-                  <p className="font-georgia text-2xl text-deep mb-3">Votre agent est prêt à vous écouter.</p>
-                  <p className="font-georgia text-mist leading-relaxed">Commencez naturellement. Il connaît déjà sa mission et peut utiliser uniquement les sources métier que vous avez explicitement autorisées.</p>
+                  <p className="font-georgia text-2xl text-deep mb-3">{newConversationRequested ? 'Nouvelle conversation prête.' : 'Votre agent est prêt à vous écouter.'}</p>
+                  <p className="font-georgia text-mist leading-relaxed">
+                    {newConversationRequested
+                      ? 'Votre prochain message ouvrira un nouvel échange indépendant. L’historique précédent reste conservé.'
+                      : 'Commencez naturellement. Il connaît déjà sa mission et peut utiliser uniquement les sources métier que vous avez explicitement autorisées.'}
+                  </p>
                 </div>
               )}
 
@@ -224,7 +242,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
                       sendMessage()
                     }
                   }}
-                  placeholder="Parlez à votre agent…"
+                  placeholder={newConversationRequested ? 'Premier message de cette nouvelle conversation…' : 'Parlez à votre agent…'}
                   className="flex-1 resize-none rounded-xl bg-white border border-gold/25 px-4 py-3 text-deep placeholder:text-mist/50 outline-none focus:border-gold/60 font-georgia leading-relaxed"
                 />
                 <button type="submit" disabled={!input.trim() || sending} className="font-georgia px-5 py-3.5 rounded-xl bg-gold text-deep font-bold disabled:opacity-30">Envoyer</button>

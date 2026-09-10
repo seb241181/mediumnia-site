@@ -78,6 +78,15 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
     if (workspaceTab === 'chat') endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, sending, workspaceTab])
 
+  function startNewConversation() {
+    if (sending) return
+    setConversationId(null)
+    setMessages([])
+    setInput('')
+    setError('')
+    setWorkspaceTab('chat')
+  }
+
   async function sendMessage(e) {
     e?.preventDefault()
     const text = input.trim()
@@ -133,7 +142,17 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
     <section className="px-4 md:px-6 pb-24 max-w-5xl mx-auto">
       <div className="mb-5 flex items-center justify-between gap-4">
         <button onClick={onBack} className="font-georgia text-sm text-mist">← {backLabel}</button>
-        <span className="font-georgia text-[11px] uppercase tracking-wider text-gold bg-deep/5 rounded-full px-3 py-1">{agent.status}</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={startNewConversation}
+            disabled={sending}
+            className="font-georgia text-xs md:text-sm px-3 py-2 rounded-lg border border-gold/35 text-deep font-bold disabled:opacity-40"
+          >
+            + Nouvelle conversation
+          </button>
+          <span className="font-georgia text-[11px] uppercase tracking-wider text-gold bg-deep/5 rounded-full px-3 py-1">{agent.status}</span>
+        </div>
       </div>
 
       <div className="rounded-3xl overflow-hidden border border-gold/25 shadow-xl bg-white/55 min-h-[650px] flex flex-col">

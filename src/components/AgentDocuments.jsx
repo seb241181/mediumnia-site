@@ -1,16 +1,30 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 
-const TEXT_TYPES = new Set(['text/plain', 'text/markdown', 'text/csv', 'application/json'])
 const MAX_FILE_BYTES = 25 * 1024 * 1024
-const MAX_INLINE_TEXT_BYTES = 750_000
+
+const EXTRACTION_ERROR_MESSAGES = {
+  invalid_pdf_signature: 'Le fichier ne correspond pas à un PDF valide.',
+  invalid_pdf: 'Ce PDF ne peut pas être analysé.',
+  pdf_page_limit: 'Ce PDF dépasse la limite pilote de 400 pages.',
+  pdf_extraction_timeout: 'L’analyse du PDF a pris trop de temps. Vous pouvez la relancer.',
+  pdf_no_extractable_text: 'Aucun texte exploitable détecté. Le PDF est probablement scanné ou composé d’images.',
+  invalid_docx_signature: 'Le fichier ne correspond pas à un document Word .docx valide.',
+  invalid_docx: 'Ce document Word .docx ne peut pas être analysé.',
+  docx_document_xml_missing: 'Le contenu principal du document Word est introuvable.',
+  docx_no_extractable_text: 'Aucun texte exploitable détecté dans ce document Word.',
+  text_too_large: 'Le texte extrait dépasse la limite pilote de la mémoire documentaire.',
+  empty_document_text: 'Aucun texte exploitable détecté dans ce fichier.',
+  storage_download_failed: 'Le fichier privé n’a pas pu être relu pour l’analyse.',
+  stored_file_too_large: 'Le fichier dépasse la limite d’analyse autorisée.',
+}
 
 function statusLabel(doc) {
   if (doc.status === 'ready') return doc.approved_for_ai ? 'Utilisé par le copilote' : 'Prêt à valider'
-  if (doc.status === 'processing') return 'Préparation en cours'
-  if (doc.status === 'error') return 'Erreur'
+  if (doc.status === 'processing') return 'Analyse en cours'
+  if (doc.status === 'error') return 'Analyse à relancer'
   if (doc.status === 'archived') return 'Archivé'
-  return 'Stocké — analyse à venir'
+  return 'Stocké — analyse à relancer'
 }
 
 function sizeLabel(value) {
@@ -19,6 +33,10 @@ function sizeLabel(value) {
   if (bytes < 1024) return `${bytes} o`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+}
+
+function errorLabel(code) {
+  return EXTRACTION_ERROR_MESSAGES[code] || code || 'L’analyse de ce document a échoué.'
 }
 
 export default function AgentDocuments({ agentId }) {
@@ -35,7 +53,7 @@ export default function AgentDocuments({ agentId }) {
     const { data, error: functionError } = await supabase.functions.invoke('agent-documents', {
       body: { action, agentId, ...payload },
     })
-    if (functionError) throw new Error(functionError.message || 'Action documentaire indisponible.')
+    if (functionError) throw new Error(data?.error || functionError.message || 'Action documentaire indisponible.')
     if (data?.error) throw new Error(data.error)
     return data || {}
   }
@@ -69,14 +87,10 @@ export default function AgentDocuments({ agentId }) {
       return
     }
 
-    const mimeType = (file.type || '').toLowerCase()
-    if (!mimeType) {
-      setError('Type de fichier indéterminé. Utilisez PDF, TXT, Markdown, CSV, JSON, DOC ou DOCX.')
-      return
-    }
-
+    const mimeType = (file.type || 'application/octet-stream').toLowerCase()
     setBusy(true)
     let documentId = null
+    let uploadCompleted = false
     try {
       const prepared = await invokeDocumentAction('prepare_upload', {
         name: file.name,
@@ -89,29 +103,46 @@ export default function AgentDocuments({ agentId }) {
       const { error: uploadError } = await supabase.storage
         .from(prepared.bucket)
         .uploadToSignedUrl(prepared.path, prepared.token, file, {
-          contentType: mimeType,
+          contentType: prepared.mimeType || mimeType,
           upsert: false,
         })
       if (uploadError) throw uploadError
+      uploadCompleted = true
 
-      const canIndexInline = file.size <= MAX_INLINE_TEXT_BYTES
-        && TEXT_TYPES.has(mimeType)
-        && /\.(txt|md|csv|json)$/i.test(file.name)
-      const content = canIndexInline ? await file.text() : undefined
-      const finalized = await invokeDocumentAction('finalize_upload', {
-        documentId,
-        ...(content !== undefined ? { content } : {}),
-      })
-
+      const finalized = await invokeDocumentAction('finalize_upload', { documentId })
       setInfo(finalized.indexed
-        ? 'Document analysé côté serveur. Validez-le pour autoriser le copilote à l’utiliser.'
-        : 'Document stocké en privé. Les PDF/Word et gros fichiers seront analysés lors de la prochaine étape du moteur documentaire.')
+        ? 'Document extrait et analysé côté serveur. Validez-le pour autoriser le copilote à l’utiliser.'
+        : 'Document stocké en privé. Relancez l’analyse pour créer sa mémoire exploitable.')
       await loadDocuments()
     } catch (err) {
-      if (documentId) {
+      if (!uploadCompleted && documentId) {
         try { await invokeDocumentAction('delete', { documentId }) } catch { /* best-effort cleanup */ }
       }
-      setError(err.message || 'Impossible d’ajouter ce document.')
+      if (uploadCompleted) {
+        await loadDocuments()
+        setError('Le fichier est bien stocké en privé, mais son analyse automatique n’a pas abouti. Utilisez « Relancer l’analyse ».')
+      } else {
+        setError(err.message || 'Impossible d’ajouter ce document.')
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function retryExtraction(doc) {
+    if (busy || doc.source_type !== 'upload') return
+    setBusy(true)
+    setError('')
+    setInfo('')
+    try {
+      const result = await invokeDocumentAction('retry_extract', { documentId: doc.id })
+      setInfo(result.indexed
+        ? 'Analyse terminée. Validez maintenant la source pour autoriser le copilote à l’utiliser.'
+        : 'Le fichier reste stocké en privé, mais son analyse n’est pas terminée.')
+      await loadDocuments()
+    } catch (err) {
+      await loadDocuments()
+      setError('L’analyse n’a pas abouti. Le fichier reste stocké en privé ; aucun accès n’a été accordé au copilote.')
     } finally {
       setBusy(false)
     }
@@ -185,7 +216,7 @@ export default function AgentDocuments({ agentId }) {
           <p className="font-georgia text-gold text-xs tracking-[0.2em] uppercase mb-2">Mémoire métier sécurisée</p>
           <h3 className="font-georgia text-2xl text-deep mb-2">Documents & sources</h3>
           <p className="font-georgia text-sm text-mist max-w-2xl leading-relaxed">
-            Vos sources restent privées. Les écritures passent par le serveur MediumIA et une source n’est utilisable par le copilote qu’après votre validation explicite.
+            Vos sources restent privées. PDF avec couche texte, Word .docx et fichiers texte sont extraits côté serveur ; une source n’est utilisable par le copilote qu’après votre validation explicite.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -195,7 +226,7 @@ export default function AgentDocuments({ agentId }) {
               type="file"
               className="hidden"
               onChange={uploadFile}
-              accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,application/pdf,text/plain,text/markdown,text/csv,application/json,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,.txt,.md,.csv,.json,.docx,application/pdf,text/plain,text/markdown,text/csv,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             />
           </label>
           <button
@@ -209,9 +240,12 @@ export default function AgentDocuments({ agentId }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 mb-6">
+      <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 mb-6 space-y-1">
         <p className="font-georgia text-sm text-deep">
-          <strong>Règle MediumIA :</strong> stocké ≠ autorisé. Même après analyse, vous décidez source par source si le copilote peut l’utiliser.
+          <strong>Règle MediumIA :</strong> analysé ≠ autorisé. Vous décidez source par source si le copilote peut l’utiliser.
+        </p>
+        <p className="font-georgia text-xs text-mist">
+          Les anciens fichiers Word .doc doivent être réenregistrés en .docx. Un PDF scanné sans couche texte reste privé mais nécessite un futur moteur OCR pour être exploitable.
         </p>
       </div>
 
@@ -272,14 +306,24 @@ export default function AgentDocuments({ agentId }) {
                   {sizeLabel(doc.size_bytes) ? ` · ${sizeLabel(doc.size_bytes)}` : ''}
                 </p>
                 {doc.status === 'uploaded' && (
-                  <p className="font-georgia text-xs text-mist/70 mt-2">Stockage terminé. L’extraction PDF/Word sera activée dans l’étape documentaire suivante.</p>
+                  <p className="font-georgia text-xs text-mist/70 mt-2">Fichier conservé en privé. Relancez l’analyse pour créer ses extraits de mémoire.</p>
                 )}
                 {doc.status === 'error' && doc.error_message && (
-                  <p className="font-georgia text-xs text-red-500 mt-2">{doc.error_message}</p>
+                  <p className="font-georgia text-xs text-red-500 mt-2">{errorLabel(doc.error_message)}</p>
                 )}
               </div>
 
               <div className="flex flex-wrap gap-2 md:justify-end">
+                {doc.source_type === 'upload' && ['processing', 'uploaded', 'error'].includes(doc.status) && (
+                  <button
+                    type="button"
+                    onClick={() => retryExtraction(doc)}
+                    disabled={busy}
+                    className="font-georgia text-xs px-4 py-2.5 rounded-lg border border-gold/40 text-deep font-bold disabled:opacity-35"
+                  >
+                    Relancer l’analyse
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => toggleApproval(doc)}
@@ -303,7 +347,7 @@ export default function AgentDocuments({ agentId }) {
       )}
 
       <p className="font-georgia text-[11px] text-mist/60 mt-6 leading-relaxed">
-        Sécurité pilote : les métadonnées et extraits sont écrits par la fonction serveur authentifiée. Pour les fichiers, le navigateur reçoit uniquement un jeton signé lié à un chemin aléatoire précis ; aucune clé privilégiée n’est exposée.
+        Sécurité pilote : le fichier est envoyé avec un jeton signé lié à un chemin aléatoire précis. L’Edge Function authentifiée relit ensuite le fichier privé, extrait le texte, crée les chunks et les conserve désactivés pour l’IA jusqu’à votre validation.
       </p>
     </div>
   )

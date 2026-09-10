@@ -37,15 +37,27 @@ test('Founder chat stays inside client-readable columns and sends mutations thro
   assert.match(source, /documentsEnabled = true/)
 })
 
-test('Founder can start a fresh conversation without deleting prior history', () => {
+test('Founder can request a fresh conversation without deleting prior history', () => {
   const source = read('src/components/AgentChat.jsx')
 
   assert.match(source, /function startNewConversation\(\)/)
   assert.match(source, /setConversationId\(null\)/)
+  assert.match(source, /setNewConversationRequested\(true\)/)
   assert.match(source, /setMessages\(\[\]\)/)
   assert.match(source, /\+ Nouvelle conversation/)
-  assert.match(source, /JSON\.stringify\(\{ agentId: agent\.id, conversationId, message: text \}\)/)
+  assert.match(source, /newConversation: startingFresh/)
+  assert.match(source, /conversationId: startingFresh \? null : conversationId/)
   assert.doesNotMatch(source, /from\('agent_conversations'\)[\s\S]*\.delete\(/)
+})
+
+test('server enforces a fresh conversation even if a stale conversation id is sent', () => {
+  const source = read('api/agent-chat.js')
+
+  assert.match(source, /newConversation = false/)
+  assert.match(source, /typeof newConversation !== 'boolean'/)
+  assert.match(source, /let conversationId = newConversation === true \? null : \(requestedConversationId \|\| null\)/)
+  assert.match(source, /insert\(\{ agent_id: agent\.id, owner_id: auth\.userId, title \}\)/)
+  assert.match(source, /messageSaved: true, conversationId/)
 })
 
 test('public Pro waitlist remains available independently from Founder pilot', () => {

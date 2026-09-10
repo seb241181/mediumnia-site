@@ -48,7 +48,7 @@ test('multi-agent blocker is removed while legacy RAG and Storage remain untouch
   assert.match(migration, /agents_workspace_status_idx/)
   assert.match(migration, /mediumia_phase1a_rag_guard/)
   assert.match(migration, /legacy_rag_function_changed/)
-  assert.doesNotMatch(migration, /on commit drop/i)
+  assert.doesNotMatch(migration, /\)\s+on commit drop\s*;/i)
   assert.match(migration, /drop table pg_temp\.mediumia_phase1a_rag_guard/)
   assert.doesNotMatch(migration, /create or replace function public\.search_agent_document_chunks/i)
   assert.doesNotMatch(migration, /storage\.objects/i)

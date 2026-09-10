@@ -62,6 +62,17 @@ function buildKnowledgeContext(matches, maxChars) {
   return { text: blocks.join('\n\n---\n\n'), sources }
 }
 
+export function buildProviderHistory(history, approvedSourceCount = 0) {
+  if (!approvedSourceCount) return history
+
+  const currentUserMessage = [...(history || [])]
+    .reverse()
+    .find((entry) => entry?.role === 'user' && typeof entry.content === 'string' && entry.content.trim())
+
+  if (!currentUserMessage) return history
+  return [{ role: 'user', content: currentUserMessage.content.trim() }]
+}
+
 async function callAnthropic({ apiKey, model, instructions, history, maxOutputTokens }) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -291,6 +302,7 @@ export default async function handler(req, res) {
 
   const knowledge = buildKnowledgeContext(knowledgeMatches, runtime.limits.knowledgeChars)
   const instructions = buildAgentInstructions(agent, knowledge.text)
+  const providerHistory = buildProviderHistory(history, knowledge.sources.length)
 
   let result
   try {
@@ -301,7 +313,7 @@ export default async function handler(req, res) {
         apiKey,
         model: runtime.model,
         instructions,
-        history,
+        history: providerHistory,
         maxOutputTokens: runtime.limits.maxOutputTokens,
       })
     } else {
@@ -311,7 +323,7 @@ export default async function handler(req, res) {
         apiKey,
         model: runtime.model,
         instructions,
-        history,
+        history: providerHistory,
         maxOutputTokens: runtime.limits.maxOutputTokens,
       })
     }

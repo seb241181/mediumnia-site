@@ -37,6 +37,17 @@ test('Founder chat stays inside client-readable columns and sends mutations thro
   assert.match(source, /documentsEnabled = true/)
 })
 
+test('Founder can start a fresh conversation without deleting prior history', () => {
+  const source = read('src/components/AgentChat.jsx')
+
+  assert.match(source, /function startNewConversation\(\)/)
+  assert.match(source, /setConversationId\(null\)/)
+  assert.match(source, /setMessages\(\[\]\)/)
+  assert.match(source, /\+ Nouvelle conversation/)
+  assert.match(source, /JSON\.stringify\(\{ agentId: agent\.id, conversationId, message: text \}\)/)
+  assert.doesNotMatch(source, /from\('agent_conversations'\)[\s\S]*\.delete\(/)
+})
+
 test('public Pro waitlist remains available independently from Founder pilot', () => {
   const wrapper = read('src/components/ProWaitlistPage.jsx')
   const publicPage = read('src/components/ProWaitlistPublic.jsx')

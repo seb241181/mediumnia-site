@@ -59,11 +59,16 @@ test('agent chat API accepts no client runtime configuration', async () => {
   await import('../api/agent-chat.js')
 })
 
-test('/agents remains routed to the private Pro waitlist', () => {
+test('/pro stays public waitlist while /agents is delegated to the private Founder gate', () => {
   const app = read('src/App.jsx')
+  const proPage = read('src/components/ProWaitlistPage.jsx')
+
   assert.match(app, /p === '\/pro' \|\| p\.startsWith\('\/agents'\) \? 'pro'/)
   assert.match(app, /view === 'pro'.*ProWaitlistPage/)
-  assert.doesNotMatch(app, /view === 'agents'.*AgentsPlatform/)
+  assert.match(proPage, /window\.location\.pathname\.startsWith\('\/agents'\)/)
+  assert.match(proPage, /FounderCopilotAccess/)
+  assert.match(proPage, /ProWaitlistPublic/)
+  assert.doesNotMatch(proPage, /signUp/)
 })
 
 test('recovered migration history and additive hardening are versioned', () => {

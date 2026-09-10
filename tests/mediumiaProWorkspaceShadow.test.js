@@ -25,8 +25,12 @@ test('legacy workspace ids are backfilled, auto-derived for future writes and ma
     'pro_assign_document_workspace',
     'pro_assign_chunk_workspace',
   ]) {
-    assert.match(migration, new RegExp(`create or replace function public\\.${fn}`))
+    assert.match(migration, new RegExp(`create or replace function mediumia_private\\.${fn}`))
   }
+
+  assert.match(migration, /pg_advisory_xact_lock/)
+  assert.match(migration, /v_existing_workspace_id/)
+  assert.match(migration, /membership_workspace_mismatch/)
 
   assert.match(migration, /alter table public\.pro_memberships[\s\S]*alter column workspace_id set not null/)
   assert.match(migration, /alter table public\.agents alter column workspace_id set not null/)
@@ -44,15 +48,21 @@ test('multi-agent blocker is removed while legacy RAG and Storage remain untouch
   assert.match(migration, /agents_workspace_status_idx/)
   assert.match(migration, /mediumia_phase1a_rag_guard/)
   assert.match(migration, /legacy_rag_function_changed/)
+  assert.doesNotMatch(migration, /on commit drop/i)
+  assert.match(migration, /drop table pg_temp\.mediumia_phase1a_rag_guard/)
   assert.doesNotMatch(migration, /create or replace function public\.search_agent_document_chunks/i)
   assert.doesNotMatch(migration, /storage\.objects/i)
 })
 
-test('workspace RLS requires active customer workspace and active workspace membership', () => {
-  assert.match(migration, /create or replace function public\.pro_is_active_workspace_member/)
+test('workspace RLS helper is private, pinned and requires active customer membership', () => {
+  assert.match(migration, /create schema if not exists mediumia_private/)
+  assert.match(migration, /create or replace function mediumia_private\.pro_is_active_workspace_member/)
+  assert.match(migration, /security definer\s+set search_path = ''/)
   assert.match(migration, /w\.kind = 'customer'/)
   assert.match(migration, /w\.status = 'active'/)
   assert.match(migration, /wm\.status = 'active'/)
+  assert.match(migration, /revoke all on schema mediumia_private from public, anon/)
+  assert.match(migration, /grant usage on schema mediumia_private to authenticated, service_role/)
   assert.match(migration, /revoke all on table public\.pro_workspaces from public, anon, authenticated/)
   assert.match(migration, /revoke all on table public\.pro_workspace_members from public, anon, authenticated/)
   assert.match(migration, /grant all on table public\.pro_workspaces to service_role/)

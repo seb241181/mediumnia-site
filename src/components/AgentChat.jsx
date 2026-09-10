@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import AgentDocuments from './AgentDocuments.jsx'
 
-export default function AgentChat({ agentId, onBack }) {
+export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', documentsEnabled = true }) {
   const [agent, setAgent] = useState(null)
   const [conversationId, setConversationId] = useState(null)
   const [messages, setMessages] = useState([])
@@ -22,7 +22,7 @@ export default function AgentChat({ agentId, onBack }) {
 
       const { data: agentData, error: agentError } = await supabase
         .from('agents')
-        .select('id, name, status, mission, audience, tone, knowledge_summary, limits')
+        .select('id, name, status, mission, audience, tone, knowledge_summary')
         .eq('id', agentId)
         .single()
 
@@ -126,13 +126,13 @@ export default function AgentChat({ agentId, onBack }) {
   }
 
   if (status === 'error' || !agent) {
-    return <section className="px-6 pb-24 max-w-4xl mx-auto"><button onClick={onBack} className="font-georgia text-sm text-mist mb-6">← Mes agents</button><div className="rounded-2xl border border-red-300/40 bg-red-50 p-6 text-center"><p className="font-georgia text-red-500">{error || 'Agent introuvable.'}</p></div></section>
+    return <section className="px-6 pb-24 max-w-4xl mx-auto"><button onClick={onBack} className="font-georgia text-sm text-mist mb-6">← {backLabel}</button><div className="rounded-2xl border border-red-300/40 bg-red-50 p-6 text-center"><p className="font-georgia text-red-500">{error || 'Agent introuvable.'}</p></div></section>
   }
 
   return (
     <section className="px-4 md:px-6 pb-24 max-w-5xl mx-auto">
       <div className="mb-5 flex items-center justify-between gap-4">
-        <button onClick={onBack} className="font-georgia text-sm text-mist">← Mes agents</button>
+        <button onClick={onBack} className="font-georgia text-sm text-mist">← {backLabel}</button>
         <span className="font-georgia text-[11px] uppercase tracking-wider text-gold bg-deep/5 rounded-full px-3 py-1">{agent.status}</span>
       </div>
 
@@ -146,12 +146,14 @@ export default function AgentChat({ agentId, onBack }) {
           <span className="text-gold text-3xl">✦</span>
         </div>
 
-        <div className="border-b border-gold/15 bg-cream/80 px-4 md:px-8 py-3 flex gap-2 overflow-x-auto">
-          <button onClick={() => setWorkspaceTab('chat')} className={`font-georgia text-sm px-4 py-2 rounded-lg ${workspaceTab === 'chat' ? 'bg-deep text-gold' : 'text-mist'}`}>Conversation</button>
-          <button onClick={() => setWorkspaceTab('documents')} className={`font-georgia text-sm px-4 py-2 rounded-lg ${workspaceTab === 'documents' ? 'bg-deep text-gold' : 'text-mist'}`}>Documents & mémoire</button>
-        </div>
+        {documentsEnabled && (
+          <div className="border-b border-gold/15 bg-cream/80 px-4 md:px-8 py-3 flex gap-2 overflow-x-auto">
+            <button onClick={() => setWorkspaceTab('chat')} className={`font-georgia text-sm px-4 py-2 rounded-lg ${workspaceTab === 'chat' ? 'bg-deep text-gold' : 'text-mist'}`}>Conversation</button>
+            <button onClick={() => setWorkspaceTab('documents')} className={`font-georgia text-sm px-4 py-2 rounded-lg ${workspaceTab === 'documents' ? 'bg-deep text-gold' : 'text-mist'}`}>Documents & mémoire</button>
+          </div>
+        )}
 
-        {workspaceTab === 'documents' ? (
+        {documentsEnabled && workspaceTab === 'documents' ? (
           <AgentDocuments agentId={agent.id} />
         ) : (
           <>
@@ -208,7 +210,11 @@ export default function AgentChat({ agentId, onBack }) {
                 />
                 <button type="submit" disabled={!input.trim() || sending} className="font-georgia px-5 py-3.5 rounded-xl bg-gold text-deep font-bold disabled:opacity-30">Envoyer</button>
               </div>
-              <p className="font-georgia text-[11px] text-mist/55 mt-3">Conversation enregistrée dans MediumIA. Les documents ne sont utilisés qu’après validation et les actions externes restent désactivées.</p>
+              <p className="font-georgia text-[11px] text-mist/55 mt-3">
+                {documentsEnabled
+                  ? 'Conversation enregistrée dans MediumIA. Les documents ne sont utilisés qu’après validation et les actions externes restent désactivées.'
+                  : 'Conversation enregistrée dans MediumIA. Les documents et actions externes restent désactivés pendant le pilote Founder.'}
+              </p>
             </form>
           </>
         )}

@@ -25,6 +25,7 @@ const ids = {
   userViewer: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   userOutsider: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   agentA: '20000000-0000-4000-8000-000000000001',
+  agentA2: '20000000-0000-4000-8000-000000000004',
   agentB: '20000000-0000-4000-8000-000000000002',
   legacyDocumentA: '40000000-0000-4000-8000-000000000001',
   legacyDocumentB: '40000000-0000-4000-8000-000000000002',
@@ -184,6 +185,7 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
   let versionId
   let secondDocumentId
   let secondVersionId
+  let nextVersionId
 
   docker(['network', 'create', networkName])
   t.after(() => {
@@ -231,6 +233,13 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
   `))
   workspaceA = workspaces.find((row) => row.owner_user_id === ids.userA).id
   workspaceB = workspaces.find((row) => row.owner_user_id === ids.userB).id
+
+  psql(`
+    insert into public.agents(id, owner_id, name, status, workspace_id, membership_id)
+    select '${ids.agentA2}', owner_id, 'Second agent A', 'active', workspace_id, membership_id
+    from public.agents
+    where id = '${ids.agentA}';
+  `)
 
   await t.test('creates seven server-only tables with RLS and preserves the legacy RAG byte-for-byte', async () => {
     assert.equal(ragAfter, ragBefore)
@@ -340,10 +349,17 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
       'pro_documents_creator_idx',
       'pro_documents_current_version_idx',
       'pro_document_versions_document_idx',
+      'pro_document_versions_creation_request_uidx',
+      'pro_document_versions_upload_request_uidx',
+      'pro_document_versions_approval_request_uidx',
+      'pro_document_versions_completion_request_uidx',
+      'pro_document_versions_failure_request_uidx',
+      'pro_document_versions_publication_request_uidx',
       'pro_document_versions_creator_idx',
       'pro_document_versions_approver_idx',
       'pro_document_versions_processing_idx',
       'pro_document_chunks_document_version_idx',
+      'pro_document_chunks_version_fk_idx',
       'pro_document_agent_access_active_uidx',
       'pro_document_agent_access_agent_idx',
       'pro_document_agent_access_document_fk_idx',
@@ -352,6 +368,7 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
       'pro_document_agent_access_revoker_idx',
       'pro_document_sync_queue_retry_idx',
       'pro_document_storage_jobs_retry_idx',
+      'pro_document_storage_jobs_version_fk_idx',
       'pro_audit_events_request_uidx',
       'pro_audit_events_workspace_created_idx',
       'pro_audit_events_document_created_idx',
@@ -363,10 +380,61 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
       where schemaname = 'public'
         and indexname = any(array[${requiredIndexes.map((name) => `'${name}'`).join(', ')}]);
     `), String(requiredIndexes.length))
+
+    const compositeForeignKeyIndexes = [
+      ['pro_document_chunks_version_workspace_fkey', 'pro_document_chunks_version_fk_idx'],
+      ['pro_document_storage_jobs_version_workspace_fkey', 'pro_document_storage_jobs_version_fk_idx'],
+    ]
+    for (const [foreignKey, indexName] of compositeForeignKeyIndexes) {
+      assert.equal(psql(`
+        select (
+          select array_agg(att.attname order by key_position.ordinality)
+          from pg_constraint fk
+          cross join lateral unnest(fk.conkey) with ordinality as key_position(attnum, ordinality)
+          join pg_attribute att
+            on att.attrelid = fk.conrelid
+           and att.attnum = key_position.attnum
+          where fk.conname = '${foreignKey}'
+        ) = (
+          select array_agg(att.attname order by key_position.ordinality)
+          from pg_index idx
+          cross join lateral unnest(idx.indkey) with ordinality as key_position(attnum, ordinality)
+          join pg_attribute att
+            on att.attrelid = idx.indrelid
+           and att.attnum = key_position.attnum
+          join pg_class index_class on index_class.oid = idx.indexrelid
+          where index_class.relname = '${indexName}'
+        );
+      `), 't')
+    }
+    assert.equal(psql(`
+      select count(*)
+      from pg_constraint fk
+      join pg_class source_table on source_table.oid = fk.conrelid
+      join pg_namespace source_schema on source_schema.oid = source_table.relnamespace
+      where fk.contype = 'f'
+        and cardinality(fk.conkey) > 1
+        and source_schema.nspname = 'public'
+        and source_table.relname = any(array[${shadowTables.map((name) => `'${name}'`).join(', ')}])
+        and not exists (
+          select 1
+          from pg_index idx
+          where idx.indrelid = fk.conrelid
+            and idx.indisvalid
+            and idx.indisready
+            and (
+              select array_agg(key_column.attnum::smallint order by key_column.ordinality)
+              from unnest(idx.indkey) with ordinality as key_column(attnum, ordinality)
+              where key_column.ordinality <= cardinality(fk.conkey)
+            ) = fk.conkey
+        );
+    `), '0')
     assert.equal(psql('select count(*) from public.pro_documents;'), '0')
 
     const serverFunctions = [
       'public.pro_prepare_document_upload(uuid,uuid,uuid,text,text,bigint)',
+      'public.pro_prepare_document_version_upload(uuid,uuid,uuid,text,text,bigint)',
+      'public.pro_mark_document_version_uploaded(uuid,uuid,uuid)',
       'public.pro_claim_document_extraction(uuid,uuid,uuid,uuid,integer)',
       'public.pro_complete_document_extraction(uuid,uuid,uuid,uuid,text,jsonb,jsonb)',
       'public.pro_fail_document_extraction(uuid,uuid,uuid,uuid,text)',
@@ -497,6 +565,35 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     assert.equal(replay.data[0].version_id, versionId)
     assert.equal(replay.data[0].replayed, true)
 
+    const payloadMismatch = await api(baseUrl, '/rpc/pro_prepare_document_upload', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_agent_id: ids.agentA,
+        p_actor_user_id: ids.userA,
+        p_request_id: ids.prepareRequest,
+        p_name: 'Autre declaration.pdf',
+        p_mime_type: 'application/pdf',
+        p_size_bytes: 2048,
+      },
+    })
+    assertRejected(payloadMismatch, 'request_id_conflict')
+
+    const agentMismatch = await api(baseUrl, '/rpc/pro_prepare_document_upload', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_agent_id: ids.agentA2,
+        p_actor_user_id: ids.userA,
+        p_request_id: ids.prepareRequest,
+        p_name: 'Declaration Avril 2026.pdf',
+        p_mime_type: 'application/pdf',
+        p_size_bytes: 2048,
+      },
+    })
+    assertRejected(agentMismatch, 'request_id_conflict')
+    assert.equal(psql(`select count(*) from public.pro_documents where workspace_id = '${workspaceA}';`), '1')
+
     const concurrentBody = {
       p_agent_id: ids.agentA,
       p_actor_user_id: ids.userA,
@@ -581,6 +678,47 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     assert.ok([400, 409].includes(forgedDeletedAt.status), forgedDeletedAt.raw)
   })
 
+  await t.test('requires a server-verified upload before extraction can be claimed', async () => {
+    const prematureClaim = await api(baseUrl, '/rpc/pro_claim_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: versionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: ids.claimOne,
+        p_request_id: '69000000-0000-4000-8000-000000000001',
+        p_lease_seconds: 300,
+      },
+    })
+    assertRejected(prematureClaim, 'document_version_not_uploaded')
+
+    const uploaded = await api(baseUrl, '/rpc/pro_mark_document_version_uploaded', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: versionId,
+        p_actor_user_id: ids.userA,
+        p_request_id: '69000000-0000-4000-8000-000000000002',
+      },
+    })
+    assert.equal(uploaded.status, 200, uploaded.raw)
+    assert.equal(uploaded.data[0].extraction_status, 'uploaded')
+    assert.equal(uploaded.data[0].replayed, false)
+    assert.equal(psql(`select (upload_verified_at is not null)::text from public.pro_document_versions where id = '${versionId}';`), 'true')
+
+    const replay = await api(baseUrl, '/rpc/pro_mark_document_version_uploaded', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: versionId,
+        p_actor_user_id: ids.userA,
+        p_request_id: '69000000-0000-4000-8000-000000000002',
+      },
+    })
+    assert.equal(replay.status, 200, replay.raw)
+    assert.equal(replay.data[0].replayed, true)
+  })
+
   let activeClaim
   await t.test('serializes concurrent claims, recovers an expired lease, and rejects the stale worker', async () => {
     const claim = (claimId, requestSuffix) => api(baseUrl, '/rpc/pro_claim_document_extraction', {
@@ -656,6 +794,20 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     })
     assert.equal(failed.status, 200, failed.raw)
 
+    const failureMismatch = await api(baseUrl, '/rpc/pro_fail_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: versionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: ids.claimRecovered,
+        p_request_id: '72000000-0000-4000-8000-000000000002',
+        p_error_code: 'different_failure',
+      },
+    })
+    assertRejected(failureMismatch, 'failure_payload_conflict')
+    assert.equal(psql(`select error_code from public.pro_document_versions where id = '${versionId}';`), 'test_failure')
+
     const failedPublish = await api(baseUrl, '/rpc/pro_publish_document_version', {
       token: serviceToken,
       method: 'POST',
@@ -712,6 +864,21 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     assert.equal(psql(`select count(*) from public.pro_document_chunks where document_version_id = '${versionId}';`), '2')
     assert.equal(psql(`select count(*) from public.agent_document_chunks where document_id = '${documentId}';`), '2')
 
+    const completionMismatch = await api(baseUrl, '/rpc/pro_complete_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        ...body,
+        p_chunks: [
+          { chunk_index: 0, content: 'Premier fragment modifie' },
+          { chunk_index: 1, content: 'Second fragment valide' },
+        ],
+      },
+    })
+    assertRejected(completionMismatch, 'completion_payload_conflict')
+    assert.equal(psql(`select content from public.pro_document_chunks where document_version_id = '${versionId}' and chunk_index = 0;`), 'Premier fragment valide')
+    assert.equal(psql(`select char_length(completion_payload_hash) from public.pro_document_versions where id = '${versionId}';`), '64')
+
     const unapproved = await api(baseUrl, '/rpc/pro_publish_document_version', {
       token: serviceToken,
       method: 'POST',
@@ -748,7 +915,7 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     assert.equal(published.status, 200, published.raw)
     assert.equal(published.data[0].ai_enabled, true)
     assert.equal(psql(`select (current_version_id = '${versionId}')::text || ':' || ai_enabled::text from public.pro_documents where id = '${documentId}';`), 'true:true')
-    assert.equal(psql(`select approved_for_ai::text || ':' || (published_at is not null)::text from public.pro_document_versions where id = '${versionId}';`), 'true:true')
+    assert.equal(psql(`select approved_for_ai::text || ':' || (published_at is not null)::text || ':' || approval_origin || ':' || publication_origin from public.pro_document_versions where id = '${versionId}';`), 'true:true:explicit:explicit')
     assert.equal(psql(`select approved_for_ai from public.agent_documents where id = '${documentId}';`), 't')
 
     const versionMutation = await api(baseUrl, `/pro_document_versions?id=eq.${versionId}`, {
@@ -764,6 +931,91 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
       body: { content: 'mutated' },
     })
     assertRejected(chunkMutation, 'published_version_chunks_immutable')
+  })
+
+  await t.test('prepares N+1 versions under the document lock without changing the published version', async () => {
+    const preparedV2 = await api(baseUrl, '/rpc/pro_prepare_document_version_upload', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_document_id: documentId,
+        p_actor_user_id: ids.userA,
+        p_request_id: '74500000-0000-4000-8000-000000000001',
+        p_name: 'Declaration Mai 2026.pdf',
+        p_mime_type: 'application/pdf',
+        p_size_bytes: 3072,
+      },
+    })
+    assert.equal(preparedV2.status, 200, preparedV2.raw)
+    nextVersionId = preparedV2.data[0].version_id
+    assert.equal(preparedV2.data[0].version_number, 2)
+    assert.equal(preparedV2.data[0].extraction_status, 'pending_upload')
+    assert.equal(psql(`select current_version_id from public.pro_documents where id = '${documentId}';`), versionId)
+    assert.equal(psql(`select version from public.agent_documents where id = '${documentId}';`), '1')
+    assert.equal(psql(`select count(*) from public.agent_document_chunks where document_id = '${documentId}';`), '2')
+
+    const replayV2 = await api(baseUrl, '/rpc/pro_prepare_document_version_upload', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_document_id: documentId,
+        p_actor_user_id: ids.userA,
+        p_request_id: '74500000-0000-4000-8000-000000000001',
+        p_name: 'Declaration Mai 2026.pdf',
+        p_mime_type: 'application/pdf',
+        p_size_bytes: 3072,
+      },
+    })
+    assert.equal(replayV2.status, 200, replayV2.raw)
+    assert.equal(replayV2.data[0].version_id, nextVersionId)
+    assert.equal(replayV2.data[0].replayed, true)
+
+    const replayMismatch = await api(baseUrl, '/rpc/pro_prepare_document_version_upload', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_document_id: documentId,
+        p_actor_user_id: ids.userA,
+        p_request_id: '74500000-0000-4000-8000-000000000001',
+        p_name: 'Declaration Mai 2026.pdf',
+        p_mime_type: 'application/pdf',
+        p_size_bytes: 3073,
+      },
+    })
+    assertRejected(replayMismatch, 'request_id_conflict')
+
+    const concurrentVersions = await Promise.all([
+      api(baseUrl, '/rpc/pro_prepare_document_version_upload', {
+        token: serviceToken,
+        method: 'POST',
+        body: {
+          p_document_id: documentId,
+          p_actor_user_id: ids.userA,
+          p_request_id: '74500000-0000-4000-8000-000000000002',
+          p_name: 'Declaration Juin 2026.pdf',
+          p_mime_type: 'application/pdf',
+          p_size_bytes: 4096,
+        },
+      }),
+      api(baseUrl, '/rpc/pro_prepare_document_version_upload', {
+        token: serviceToken,
+        method: 'POST',
+        body: {
+          p_document_id: documentId,
+          p_actor_user_id: ids.userA,
+          p_request_id: '74500000-0000-4000-8000-000000000003',
+          p_name: 'Declaration Juillet 2026.pdf',
+          p_mime_type: 'application/pdf',
+          p_size_bytes: 5120,
+        },
+      }),
+    ])
+    assert.deepEqual(concurrentVersions.map((result) => result.status), [200, 200])
+    assert.deepEqual(concurrentVersions.map((result) => result.data[0].version_number).sort(), [3, 4])
+    assert.equal(psql(`select count(distinct version_number) from public.pro_document_versions where document_id = '${documentId}';`), '4')
+    assert.equal(psql(`select count(*) from public.pro_document_versions where document_id = '${documentId}' and version_number > 1 and extraction_status = 'pending_upload' and not approved_for_ai;`), '3')
+    assert.equal(psql(`select current_version_id from public.pro_documents where id = '${documentId}';`), versionId)
+    assert.equal(psql(`select count(*) from public.agent_document_chunks where document_id = '${documentId}';`), '2')
   })
 
   await t.test('revokes and restores runtime AI access without changing historical approval', async () => {
@@ -813,6 +1065,17 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     assert.equal(prepared.status, 200, prepared.raw)
     secondDocumentId = prepared.data[0].document_id
     secondVersionId = prepared.data[0].version_id
+
+    const uploaded = await api(baseUrl, '/rpc/pro_mark_document_version_uploaded', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: secondVersionId,
+        p_actor_user_id: ids.userA,
+        p_request_id: '75500000-0000-4000-8000-000000000001',
+      },
+    })
+    assert.equal(uploaded.status, 200, uploaded.raw)
 
     const claimed = await api(baseUrl, '/rpc/pro_claim_document_extraction', {
       token: serviceToken,
@@ -909,6 +1172,17 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     const maximumVersionId = prepared.data[0].version_id
     const maximumClaimId = '60000000-0000-4000-8000-000000000020'
 
+    const uploaded = await api(baseUrl, '/rpc/pro_mark_document_version_uploaded', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: maximumVersionId,
+        p_actor_user_id: ids.userA,
+        p_request_id: '75500000-0000-4000-8000-000000000020',
+      },
+    })
+    assert.equal(uploaded.status, 200, uploaded.raw)
+
     const claimed = await api(baseUrl, '/rpc/pro_claim_document_extraction', {
       token: serviceToken,
       method: 'POST',
@@ -978,6 +1252,25 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     assert.equal(psql(`select count(*) from public.pro_document_chunks where document_id = '${ids.legacyDocumentB}';`), '120')
     assert.equal(psql(`select count(*) from public.pro_document_sync_queue where document_id = '${ids.legacyDocumentB}';`), '0')
 
+    const provenance = JSON.parse(psql(`
+      select row_to_json(result)
+      from (
+        select
+          approval_origin,
+          approved_by,
+          approved_at,
+          publication_origin,
+          published_at is not null as published_now
+        from public.pro_document_versions
+        where document_id = '${ids.legacyDocumentB}'
+      ) result;
+    `))
+    assert.equal(provenance.approval_origin, 'legacy_state')
+    assert.equal(provenance.approved_by, null)
+    assert.equal(provenance.approved_at, null)
+    assert.equal(provenance.publication_origin, 'legacy_backfill')
+    assert.equal(provenance.published_now, true)
+
     const replay = await api(baseUrl, '/rpc/pro_reconcile_legacy_document', {
       token: serviceToken,
       method: 'POST',
@@ -989,6 +1282,48 @@ test('MediumIA Pro Phase 1B-A enforces a transactional server-only document shad
     assert.equal(replay.status, 200, replay.raw)
     assert.equal(replay.data[0].replayed, true)
     assert.equal(psql(`select count(*) from public.pro_document_versions where document_id = '${ids.legacyDocumentB}';`), '1')
+  })
+
+  await t.test('persists legacy divergence attempts and replays the same reconciliation request', async () => {
+    psql(`
+      update public.agent_documents
+      set name = 'Document B diverged'
+      where id = '${ids.legacyDocumentB}';
+    `)
+    assert.equal(psql(`select attempts || ':' || coalesce(last_error_code, '') from public.pro_document_sync_queue where document_id = '${ids.legacyDocumentB}';`), '0:')
+
+    const requestId = '77500000-0000-4000-8000-000000000001'
+    const divergence = await api(baseUrl, '/rpc/pro_reconcile_legacy_document', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_document_id: ids.legacyDocumentB,
+        p_request_id: requestId,
+      },
+    })
+    assert.equal(divergence.status, 200, divergence.raw)
+    assert.equal(divergence.data[0].reconciliation_action, 'divergence')
+    assert.equal(divergence.data[0].replayed, false)
+    assert.equal(psql(`
+      select attempts::text || ':' || last_error_code || ':'
+        || (next_attempt_at > now())::text || ':' || (locked_at is null)::text
+      from public.pro_document_sync_queue
+      where document_id = '${ids.legacyDocumentB}';
+    `), '1:legacy_shadow_divergence:true:true')
+    assert.equal(psql(`select name from public.pro_documents where id = '${ids.legacyDocumentB}';`), 'Document B')
+
+    const replay = await api(baseUrl, '/rpc/pro_reconcile_legacy_document', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_document_id: ids.legacyDocumentB,
+        p_request_id: requestId,
+      },
+    })
+    assert.equal(replay.status, 200, replay.raw)
+    assert.equal(replay.data[0].reconciliation_action, 'divergence')
+    assert.equal(replay.data[0].replayed, true)
+    assert.equal(psql(`select attempts from public.pro_document_sync_queue where document_id = '${ids.legacyDocumentB}';`), '1')
   })
 
   await t.test('logically deletes before scheduling Storage and preserves legacy chunks and objects', async () => {

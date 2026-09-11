@@ -11,6 +11,36 @@ select md5(pg_get_functiondef(
   'public.search_agent_document_chunks(uuid,text,integer)'::regprocedure
 ));
 
+alter table public.pro_document_versions
+  add column extraction_attempts integer not null default 0,
+  add column last_extraction_operation_id uuid,
+  add column last_extraction_claim_id uuid,
+  add column last_extraction_claim_request_id uuid;
+
+alter table public.pro_document_versions
+  add constraint pro_document_versions_extraction_attempt_check check (
+    (
+      extraction_attempts = 0
+      and last_extraction_operation_id is null
+      and last_extraction_claim_id is null
+      and last_extraction_claim_request_id is null
+    )
+    or (
+      extraction_attempts > 0
+      and last_extraction_operation_id is not null
+      and last_extraction_claim_id is not null
+      and last_extraction_claim_request_id is not null
+    )
+  );
+
+create unique index pro_document_versions_last_extraction_claim_uidx
+  on public.pro_document_versions(workspace_id, last_extraction_claim_id)
+  where last_extraction_claim_id is not null;
+
+create unique index pro_document_versions_last_extraction_claim_request_uidx
+  on public.pro_document_versions(workspace_id, last_extraction_claim_request_id)
+  where last_extraction_claim_request_id is not null;
+
 alter table public.pro_document_storage_jobs
   add column processing_claim_id uuid,
   add column processing_expires_at timestamptz,
@@ -457,6 +487,160 @@ begin
 end;
 $$;
 
+-- An HTTP operation identifies one logical extraction attempt. Replaying that
+-- operation while its lease is active returns the same claim; retrying after a
+-- committed failure requires a new operation and therefore receives a fresh
+-- fenced claim. A stale lease always becomes a new numbered attempt.
+create or replace function public.pro_claim_document_extraction_attempt(
+  p_version_id uuid,
+  p_actor_user_id uuid,
+  p_operation_id uuid,
+  p_lease_seconds integer default 300
+)
+returns table (
+  document_id uuid,
+  version_id uuid,
+  claim_id uuid,
+  lease_expires_at timestamptz,
+  extraction_status text,
+  attempt_number integer,
+  error_code text,
+  replayed boolean
+)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_document public.pro_documents%rowtype;
+  v_version public.pro_document_versions%rowtype;
+  v_claim record;
+  v_claim_id uuid;
+  v_claim_request_id uuid;
+  v_attempt_number integer;
+begin
+  if p_version_id is null or p_actor_user_id is null or p_operation_id is null then
+    raise exception using errcode = 'P0001', message = 'invalid_extraction_attempt';
+  end if;
+  if p_lease_seconds not between 30 and 900 then
+    raise exception using errcode = 'P0001', message = 'invalid_claim_lease';
+  end if;
+
+  select d.* into v_document
+  from public.pro_documents d
+  where d.id = (
+    select v.document_id
+    from public.pro_document_versions v
+    where v.id = p_version_id
+  )
+  for update;
+
+  if v_document.id is null then
+    raise exception using errcode = 'P0001', message = 'document_version_not_found';
+  end if;
+
+  perform mediumia_private.pro_assert_workspace_actor(
+    v_document.workspace_id,
+    p_actor_user_id,
+    array['owner', 'admin', 'editor']::text[]
+  );
+
+  select v.* into v_version
+  from public.pro_document_versions v
+  where v.id = p_version_id
+    and v.workspace_id = v_document.workspace_id
+    and v.document_id = v_document.id
+  for update;
+
+  if v_version.id is null then
+    raise exception using errcode = 'P0001', message = 'document_version_not_found';
+  end if;
+  if v_document.lifecycle_status <> 'active' then
+    raise exception using errcode = 'P0001', message = 'document_not_active';
+  end if;
+  if v_version.published_at is not null then
+    raise exception using errcode = 'P0001', message = 'published_version_immutable';
+  end if;
+
+  if v_version.extraction_status = 'ready' then
+    return query select
+      v_document.id,
+      p_version_id,
+      v_version.completed_claim_id,
+      null::timestamptz,
+      'ready'::text,
+      v_version.extraction_attempts,
+      null::text,
+      true;
+    return;
+  end if;
+
+  if v_version.extraction_status = 'processing'
+     and v_version.processing_expires_at > now() then
+    if v_version.last_extraction_operation_id = p_operation_id
+       and v_version.last_extraction_claim_id = v_version.processing_claim_id then
+      return query select
+        v_document.id,
+        p_version_id,
+        v_version.processing_claim_id,
+        v_version.processing_expires_at,
+        'processing'::text,
+        v_version.extraction_attempts,
+        null::text,
+        true;
+      return;
+    end if;
+    raise exception using errcode = 'P0001', message = 'extraction_in_progress';
+  end if;
+
+  if v_version.extraction_status = 'failed'
+     and v_version.last_extraction_operation_id = p_operation_id
+     and v_version.last_extraction_claim_id is not null then
+    return query select
+      v_document.id,
+      p_version_id,
+      v_version.last_extraction_claim_id,
+      null::timestamptz,
+      'failed'::text,
+      v_version.extraction_attempts,
+      v_version.error_code,
+      true;
+    return;
+  end if;
+
+  v_claim_id := gen_random_uuid();
+  v_claim_request_id := gen_random_uuid();
+  v_attempt_number := v_version.extraction_attempts + 1;
+
+  select c.* into v_claim
+  from public.pro_claim_document_extraction(
+    p_version_id,
+    p_actor_user_id,
+    v_claim_id,
+    v_claim_request_id,
+    p_lease_seconds
+  ) c;
+
+  update public.pro_document_versions v
+  set extraction_attempts = v_attempt_number,
+      last_extraction_operation_id = p_operation_id,
+      last_extraction_claim_id = v_claim_id,
+      last_extraction_claim_request_id = v_claim_request_id
+  where v.id = p_version_id
+    and v.workspace_id = v_document.workspace_id;
+
+  return query select
+    v_claim.document_id,
+    v_claim.version_id,
+    v_claim.claim_id,
+    v_claim.lease_expires_at,
+    v_claim.extraction_status,
+    v_attempt_number,
+    null::text,
+    false;
+end;
+$$;
+
 create or replace function public.pro_claim_document_storage_job(
   p_document_id uuid,
   p_actor_user_id uuid,
@@ -867,6 +1051,8 @@ revoke all on function public.pro_prepare_text_document(uuid, uuid, uuid, text, 
   from public, anon, authenticated;
 revoke all on function public.pro_abandon_document_version(uuid, uuid, uuid)
   from public, anon, authenticated;
+revoke all on function public.pro_claim_document_extraction_attempt(uuid, uuid, uuid, integer)
+  from public, anon, authenticated;
 revoke all on function public.pro_claim_document_storage_job(uuid, uuid, uuid, uuid, integer)
   from public, anon, authenticated;
 revoke all on function public.pro_complete_document_storage_job(uuid, uuid, uuid, uuid)
@@ -879,6 +1065,8 @@ revoke all on function public.pro_finalize_document_deletion(uuid, uuid, uuid)
 grant execute on function public.pro_prepare_text_document(uuid, uuid, uuid, text, text, bigint)
   to service_role;
 grant execute on function public.pro_abandon_document_version(uuid, uuid, uuid)
+  to service_role;
+grant execute on function public.pro_claim_document_extraction_attempt(uuid, uuid, uuid, integer)
   to service_role;
 grant execute on function public.pro_claim_document_storage_job(uuid, uuid, uuid, uuid, integer)
   to service_role;
@@ -907,6 +1095,8 @@ comment on function public.pro_prepare_text_document(uuid, uuid, uuid, text, tex
   'Idempotently prepares one pasted-text document in legacy and shadow models.';
 comment on function public.pro_abandon_document_version(uuid, uuid, uuid) is
   'Abandons one unpublished N+1 upload without changing the current published version.';
+comment on function public.pro_claim_document_extraction_attempt(uuid, uuid, uuid, integer) is
+  'Claims one attempt-aware extraction lease while preserving network-retry idempotence and stale-worker fencing.';
 comment on function public.pro_claim_document_storage_job(uuid, uuid, uuid, uuid, integer) is
   'Claims one retryable Storage deletion job with a bounded lease.';
 comment on function public.pro_complete_document_storage_job(uuid, uuid, uuid, uuid) is

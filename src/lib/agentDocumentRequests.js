@@ -5,7 +5,10 @@ function actionRequestKey(action, payload) {
   return `${action}:${payload.name || ''}`
 }
 
-function isRetryableFunctionError(error) {
+function isAmbiguousFunctionError(error, payload) {
+  // A parser failure recorded by PostgreSQL closes its attempt. Other 5xx
+  // responses may still be transport-ambiguous and must keep their key.
+  if (payload?.extractionAttemptFinalized === true) return false
   const status = Number(error?.context?.status)
   return !Number.isFinite(status) || status >= 500
 }
@@ -52,7 +55,7 @@ export async function invokeAgentDocumentAction({
     }
 
     const errorPayload = await readFunctionErrorPayload(data, functionError)
-    const retryable = Boolean(functionError) && isRetryableFunctionError(functionError)
+    const retryable = Boolean(functionError) && isAmbiguousFunctionError(functionError, errorPayload)
     if (!retryable || attempt === 1) {
       if (!retryable) pendingRequestIds.delete(requestKey)
       throw actionError(errorPayload, functionError)

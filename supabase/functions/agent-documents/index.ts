@@ -4,6 +4,8 @@ import { extractText, getDocumentProxy } from "unpdf";
 import {
   actorContext,
   clientRequestId,
+  documentErrorStatus,
+  extractionAttemptWasFinalized,
   MAX_CHUNKS,
   MAX_FILE_BYTES,
   type RpcCaller,
@@ -314,23 +316,6 @@ function createRpcCaller(admin: any): RpcCaller {
     if (Array.isArray(data)) return data[0] || null;
     return data || null;
   };
-}
-
-function errorStatus(code: string) {
-  if (code.includes("not_found") || code.includes("missing")) return 404;
-  if (
-    code.includes("required") || code.includes("invalid") ||
-    code.includes("unsupported")
-  ) return 400;
-  if (
-    code.includes("conflict") || code.includes("in_progress") ||
-    code.includes("claim")
-  ) return 409;
-  if (
-    code.includes("too_large") || code.includes("no_extractable") ||
-    code.includes("empty")
-  ) return 422;
-  return 500;
 }
 
 async function getShadowDocument(admin: any, documentId: string) {
@@ -692,7 +677,10 @@ export async function handleAgentDocumentsRequest(
       });
     } catch (error) {
       const code = safeErrorCode(error, "document_index_failed");
-      return response({ error: code }, errorStatus(code));
+      return response({
+        error: code,
+        extractionAttemptFinalized: extractionAttemptWasFinalized(error),
+      }, documentErrorStatus(code));
     }
   }
 
@@ -750,7 +738,7 @@ export async function handleAgentDocumentsRequest(
       });
     } catch (error) {
       const code = safeErrorCode(error, "document_create_failed");
-      return response({ error: code }, errorStatus(code));
+      return response({ error: code }, documentErrorStatus(code));
     }
   }
 
@@ -790,8 +778,9 @@ export async function handleAgentDocumentsRequest(
           documentId: document.id,
           stored: code !== "storage_download_failed" &&
             code !== "storage_path_missing",
+          extractionAttemptFinalized: extractionAttemptWasFinalized(error),
         },
-        errorStatus(code),
+        documentErrorStatus(code),
       );
     }
   }
@@ -837,8 +826,13 @@ export async function handleAgentDocumentsRequest(
     } catch (error) {
       const code = safeErrorCode(error, "document_extraction_failed");
       return response(
-        { error: code, documentId: document.id, stored: true },
-        errorStatus(code),
+        {
+          error: code,
+          documentId: document.id,
+          stored: true,
+          extractionAttemptFinalized: extractionAttemptWasFinalized(error),
+        },
+        documentErrorStatus(code),
       );
     }
   }
@@ -882,7 +876,7 @@ export async function handleAgentDocumentsRequest(
       return response({ documentId: document.id, approved_for_ai: approved });
     } catch (error) {
       const code = safeErrorCode(error, "approval_update_failed");
-      return response({ error: code }, errorStatus(code));
+      return response({ error: code }, documentErrorStatus(code));
     }
   }
 
@@ -932,7 +926,7 @@ export async function handleAgentDocumentsRequest(
       const code = safeErrorCode(error, "document_delete_failed");
       return response(
         { error: code, documentId: document.id },
-        errorStatus(code),
+        documentErrorStatus(code),
       );
     }
   }

@@ -75,6 +75,53 @@ export function safeErrorCode(error: unknown, fallback: string) {
   return normalized || fallback;
 }
 
+function committedExtractionError(code: string) {
+  return Object.assign(new Error(code), { extractionAttemptFinalized: true });
+}
+
+export function extractionAttemptWasFinalized(error: unknown) {
+  return Boolean(
+    error && typeof error === "object" &&
+      (error as { extractionAttemptFinalized?: unknown })
+          .extractionAttemptFinalized === true,
+  );
+}
+
+const UNPROCESSABLE_DOCUMENT_ERRORS = new Set([
+  "pdf_page_limit",
+  "invalid_pdf",
+  "invalid_pdf_signature",
+  "invalid_docx",
+  "invalid_docx_signature",
+  "docx_document_xml_missing",
+  "pdf_no_extractable_text",
+  "docx_no_extractable_text",
+  "text_too_large",
+  "empty_document_text",
+  "stored_file_too_large",
+  "upload_size_mismatch",
+]);
+
+export function documentErrorStatus(code: string) {
+  if (UNPROCESSABLE_DOCUMENT_ERRORS.has(code)) return 422;
+  // A timeout closes the current lease. A user retry starts a fresh attempt.
+  if (code === "pdf_extraction_timeout") return 504;
+  if (code.includes("not_found") || code.includes("missing")) return 404;
+  if (
+    code.includes("required") || code.includes("invalid") ||
+    code.includes("unsupported")
+  ) return 400;
+  if (
+    code.includes("conflict") || code.includes("in_progress") ||
+    code.includes("claim")
+  ) return 409;
+  if (
+    code.includes("too_large") || code.includes("no_extractable") ||
+    code.includes("empty")
+  ) return 422;
+  return 500;
+}
+
 export function actorContext(
   user: { id: string },
   agent: { id: string; workspace_id?: string | null; membership_id: string },
@@ -117,12 +164,6 @@ export async function runShadowExtraction({
     operationId,
     `mark:${version.id}`,
   );
-  const claimId = await scopedRequestId(operationId, `claim:${version.id}`);
-  const claimRequestId = await scopedRequestId(
-    operationId,
-    `claim-request:${version.id}`,
-  );
-
   if (
     (version.source_type || "upload") === "upload" &&
     (!version.upload_verified_at ||
@@ -135,11 +176,10 @@ export async function runShadowExtraction({
     });
   }
 
-  const claim = await rpc("pro_claim_document_extraction", {
+  const claim = await rpc("pro_claim_document_extraction_attempt", {
     p_version_id: version.id,
     p_actor_user_id: actorUserId,
-    p_claim_id: claimId,
-    p_request_id: claimRequestId,
+    p_operation_id: operationId,
     p_lease_seconds: 300,
   });
 
@@ -151,6 +191,20 @@ export async function runShadowExtraction({
       replayed: true,
     };
   }
+  if (claim?.extraction_status === "failed") {
+    throw committedExtractionError(
+      typeof claim.error_code === "string" && claim.error_code
+        ? claim.error_code
+        : "document_extraction_failed",
+    );
+  }
+  if (
+    claim?.extraction_status !== "processing" ||
+    typeof claim.claim_id !== "string" || !UUID_PATTERN.test(claim.claim_id)
+  ) {
+    throw new Error("extraction_claim_missing");
+  }
+  const claimId = claim.claim_id.toLowerCase();
 
   let extracted: ExtractedSource;
   try {
@@ -158,7 +212,7 @@ export async function runShadowExtraction({
   } catch (error) {
     const code = safeErrorCode(error, "document_extraction_failed");
     const failureRequestId = await scopedRequestId(
-      operationId,
+      claimId,
       `failure:${version.id}`,
     );
     await rpc("pro_fail_document_extraction", {
@@ -168,11 +222,11 @@ export async function runShadowExtraction({
       p_request_id: failureRequestId,
       p_error_code: code,
     });
-    throw error;
+    throw committedExtractionError(code);
   }
 
   const completionRequestId = await scopedRequestId(
-    operationId,
+    claimId,
     `complete:${version.id}`,
   );
   const completed = await rpc("pro_complete_document_extraction", {
@@ -293,26 +347,28 @@ export async function runShadowDeletionSaga({
     }
 
     try {
+      const activeClaimId = String(job.claim_id || claimId);
       await removeObject(String(job.storage_bucket), String(job.storage_path));
       await rpc("pro_complete_document_storage_job", {
         p_job_id: job.job_id,
         p_actor_user_id: actorUserId,
-        p_claim_id: claimId,
+        p_claim_id: activeClaimId,
         p_request_id: await scopedRequestId(
           operationId,
-          `storage-complete:${job.job_id}`,
+          `storage-complete:${job.job_id}:${activeClaimId}`,
         ),
       });
       processed += 1;
     } catch (error) {
       if (storageObjectAlreadyAbsent(error)) {
+        const activeClaimId = String(job.claim_id || claimId);
         await rpc("pro_complete_document_storage_job", {
           p_job_id: job.job_id,
           p_actor_user_id: actorUserId,
-          p_claim_id: claimId,
+          p_claim_id: activeClaimId,
           p_request_id: await scopedRequestId(
             operationId,
-            `storage-complete:${job.job_id}`,
+            `storage-complete:${job.job_id}:${activeClaimId}`,
           ),
         });
         processed += 1;
@@ -320,13 +376,14 @@ export async function runShadowDeletionSaga({
       }
 
       failures += 1;
+      const activeClaimId = String(job.claim_id || claimId);
       await rpc("pro_fail_document_storage_job", {
         p_job_id: job.job_id,
         p_actor_user_id: actorUserId,
-        p_claim_id: claimId,
+        p_claim_id: activeClaimId,
         p_request_id: await scopedRequestId(
           operationId,
-          `storage-failure:${job.job_id}`,
+          `storage-failure:${job.job_id}:${activeClaimId}`,
         ),
         p_error_code: "storage_delete_failed",
         p_retry_seconds: 60,

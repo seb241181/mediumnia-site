@@ -33,7 +33,7 @@ test('new file uploads use server-derived RPC identities and atomic extraction c
   assert.match(edge, /prepared\.storage_bucket/)
   assert.match(edge, /prepared\.storage_path/)
   assert.match(bridge, /pro_mark_document_version_uploaded/)
-  assert.match(bridge, /pro_claim_document_extraction/)
+  assert.match(bridge, /pro_claim_document_extraction_attempt/)
   assert.match(bridge, /pro_complete_document_extraction/)
   assert.match(bridge, /pro_fail_document_extraction/)
   assert.doesNotMatch(shadowProcessor, /agent_document_chunks/)
@@ -74,6 +74,7 @@ test('support migration adds narrow saga RPCs without changing or backfilling RA
   for (const routine of [
     'pro_prepare_text_document',
     'pro_abandon_document_version',
+    'pro_claim_document_extraction_attempt',
     'pro_claim_document_storage_job',
     'pro_complete_document_storage_job',
     'pro_fail_document_storage_job',

@@ -1,5 +1,7 @@
 import {
   actorContext,
+  documentErrorStatus,
+  extractionAttemptWasFinalized,
   MAX_CHUNKS,
   MAX_FILE_BYTES,
   runShadowDeletionSaga,
@@ -31,13 +33,14 @@ const actorUserId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const documentId = "40000000-0000-4000-8000-000000000001";
 const versionId = "70000000-0000-4000-8000-000000000001";
 const operationId = "50000000-0000-4000-8000-000000000001";
+const extractionClaimId = "60000000-0000-4000-8000-000000000001";
 
 Deno.test("shadow upload verifies Storage before mark, claim, parse and atomic completion", async () => {
   const events: string[] = [];
   const rpc = async (name: string) => {
     events.push(name);
-    if (name === "pro_claim_document_extraction") {
-      return { extraction_status: "processing" };
+    if (name === "pro_claim_document_extraction_attempt") {
+      return { extraction_status: "processing", claim_id: extractionClaimId };
     }
     if (name === "pro_complete_document_extraction") {
       return { chunk_count: 1, replayed: false };
@@ -73,7 +76,7 @@ Deno.test("shadow upload verifies Storage before mark, claim, parse and atomic c
   assertEquals(events, [
     "storage_verified",
     "pro_mark_document_version_uploaded",
-    "pro_claim_document_extraction",
+    "pro_claim_document_extraction_attempt",
     "parser",
     "pro_complete_document_extraction",
   ]);
@@ -130,8 +133,11 @@ Deno.test("parser failure is recorded through pro_fail_document_extraction", asy
       operationId,
       rpc: async (name) => {
         events.push(name);
-        if (name === "pro_claim_document_extraction") {
-          return { extraction_status: "processing" };
+        if (name === "pro_claim_document_extraction_attempt") {
+          return {
+            extraction_status: "processing",
+            claim_id: extractionClaimId,
+          };
         }
         return {};
       },
@@ -146,9 +152,10 @@ Deno.test("parser failure is recorded through pro_fail_document_extraction", asy
     throw new Error("parser_failure_not_propagated");
   } catch (error) {
     assert(String(error).includes("invalid_pdf_signature"));
+    assert(extractionAttemptWasFinalized(error));
   }
   assertEquals(events, [
-    "pro_claim_document_extraction",
+    "pro_claim_document_extraction_attempt",
     "pro_fail_document_extraction",
   ]);
 });
@@ -165,8 +172,11 @@ Deno.test("pasted text skips upload verification but keeps claim and atomic comp
     operationId,
     rpc: async (name) => {
       events.push(name);
-      if (name === "pro_claim_document_extraction") {
-        return { extraction_status: "processing" };
+      if (name === "pro_claim_document_extraction_attempt") {
+        return {
+          extraction_status: "processing",
+          claim_id: extractionClaimId,
+        };
       }
       return {};
     },
@@ -181,14 +191,20 @@ Deno.test("pasted text skips upload verification but keeps claim and atomic comp
   });
 
   assertEquals(events, [
-    "pro_claim_document_extraction",
+    "pro_claim_document_extraction_attempt",
     "pro_complete_document_extraction",
   ]);
 });
 
-Deno.test("completion retries keep stable ids and payload conflicts are rejected", async () => {
-  const first = await scopedRequestId(operationId, `complete:${versionId}`);
-  const second = await scopedRequestId(operationId, `complete:${versionId}`);
+Deno.test("completion retries keep claim-scoped ids and payload conflicts are rejected", async () => {
+  const first = await scopedRequestId(
+    extractionClaimId,
+    `complete:${versionId}`,
+  );
+  const second = await scopedRequestId(
+    extractionClaimId,
+    `complete:${versionId}`,
+  );
   assertEquals(first, second);
 
   const calls: string[] = [];
@@ -203,8 +219,11 @@ Deno.test("completion retries keep stable ids and payload conflicts are rejected
       operationId,
       rpc: async (name) => {
         calls.push(name);
-        if (name === "pro_claim_document_extraction") {
-          return { extraction_status: "processing" };
+        if (name === "pro_claim_document_extraction_attempt") {
+          return {
+            extraction_status: "processing",
+            claim_id: extractionClaimId,
+          };
         }
         if (name === "pro_complete_document_extraction") {
           throw new Error("completion_payload_conflict");
@@ -228,6 +247,84 @@ Deno.test("completion retries keep stable ids and payload conflicts are rejected
     !calls.includes("pro_fail_document_extraction"),
     "completion ambiguity must not be rewritten as parser failure",
   );
+});
+
+Deno.test("a committed extraction failure replay does not start a second parser", async () => {
+  const calls: string[] = [];
+  let parserCalled = false;
+  try {
+    await runShadowExtraction({
+      version: {
+        id: versionId,
+        source_type: "paste",
+        extraction_status: "failed",
+      },
+      actorUserId,
+      operationId,
+      rpc: async (name) => {
+        calls.push(name);
+        if (name === "pro_claim_document_extraction_attempt") {
+          return {
+            extraction_status: "failed",
+            claim_id: extractionClaimId,
+            error_code: "pdf_page_limit",
+            replayed: true,
+          };
+        }
+        return {};
+      },
+      verifySource: async () => ({
+        bytes: new Uint8Array([1]),
+        contentSha256: "e".repeat(64),
+      }),
+      extractSource: async () => {
+        parserCalled = true;
+        return { chunks: [], metadata: {} };
+      },
+    });
+    throw new Error("committed_failure_not_propagated");
+  } catch (error) {
+    assert(String(error).includes("pdf_page_limit"));
+    assert(extractionAttemptWasFinalized(error));
+  }
+
+  assertEquals(calls, ["pro_claim_document_extraction_attempt"]);
+  assertEquals(parserCalled, false);
+});
+
+Deno.test("completion and failure identities are stable per claim and rotate per attempt", async () => {
+  const claimTwo = "60000000-0000-4000-8000-000000000002";
+  const firstFailure = await scopedRequestId(
+    extractionClaimId,
+    `failure:${versionId}`,
+  );
+  const replayedFailure = await scopedRequestId(
+    extractionClaimId,
+    `failure:${versionId}`,
+  );
+  const secondFailure = await scopedRequestId(
+    claimTwo,
+    `failure:${versionId}`,
+  );
+
+  assertEquals(firstFailure, replayedFailure);
+  assert(firstFailure !== secondFailure);
+});
+
+Deno.test("deterministic parser errors are 422 and extraction timeout closes the attempt", () => {
+  for (
+    const code of [
+      "pdf_page_limit",
+      "invalid_pdf_signature",
+      "invalid_docx",
+      "pdf_no_extractable_text",
+      "text_too_large",
+      "empty_document_text",
+    ]
+  ) {
+    assertEquals(documentErrorStatus(code), 422, code);
+  }
+  assertEquals(documentErrorStatus("pdf_extraction_timeout"), 504);
 });
 
 Deno.test("shadow approval calls approve then publish while revocation uses runtime toggle", async () => {
@@ -308,6 +405,50 @@ Deno.test("delete neutralizes DB before Storage and records a retryable failure"
   );
   assertEquals(result.deleted, false);
   assertEquals(result.pendingStorageJobs, 1);
+});
+
+Deno.test("successive Storage leases use distinct claim-scoped failure identities", async () => {
+  const jobId = "80000000-0000-4000-8000-000000000001";
+  const claims = [
+    "90000000-0000-4000-8000-000000000001",
+    "90000000-0000-4000-8000-000000000002",
+  ];
+  const failures: Array<Record<string, unknown>> = [];
+
+  for (const storageClaimId of claims) {
+    let claimCount = 0;
+    await runShadowDeletionSaga({
+      documentId,
+      actorUserId,
+      operationId,
+      maxJobs: 2,
+      rpc: async (name, args) => {
+        if (name === "pro_claim_document_storage_job") {
+          claimCount += 1;
+          return claimCount === 1
+            ? {
+              job_id: jobId,
+              job_status: "processing",
+              claim_id: storageClaimId,
+              storage_bucket: "agent-documents",
+              storage_path: "private/source.pdf",
+            }
+            : null;
+        }
+        if (name === "pro_fail_document_storage_job") failures.push(args);
+        if (name === "pro_finalize_document_deletion") {
+          return { lifecycle_status: "deleting", pending_storage_jobs: 1 };
+        }
+        return {};
+      },
+      removeObject: async () => {
+        throw new Error("storage_unavailable");
+      },
+    });
+  }
+
+  assertEquals(failures.map((failure) => failure.p_claim_id), claims);
+  assert(failures[0].p_request_id !== failures[1].p_request_id);
 });
 
 Deno.test("already absent Storage object completes idempotently", async () => {

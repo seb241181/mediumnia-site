@@ -29,6 +29,18 @@ const ids = {
   claimText: '61000000-0000-4000-8000-000000000021',
   claimRequestText: '51000000-0000-4000-8000-000000000022',
   completeText: '51000000-0000-4000-8000-000000000023',
+  prepareAttempt: '51000000-0000-4000-8000-000000000031',
+  extractionOperationOne: '52000000-0000-4000-8000-000000000031',
+  extractionOperationTwo: '52000000-0000-4000-8000-000000000032',
+  extractionFailOne: '53000000-0000-4000-8000-000000000031',
+  extractionFailTwo: '53000000-0000-4000-8000-000000000032',
+  staleExtractionComplete: '53000000-0000-4000-8000-000000000033',
+  staleExtractionFail: '53000000-0000-4000-8000-000000000034',
+  prepareStaleAttempt: '51000000-0000-4000-8000-000000000041',
+  staleExtractionOperation: '52000000-0000-4000-8000-000000000041',
+  staleLeaseComplete: '53000000-0000-4000-8000-000000000041',
+  staleLeaseOldComplete: '53000000-0000-4000-8000-000000000042',
+  staleLeaseOldFail: '53000000-0000-4000-8000-000000000043',
   markV1: '51000000-0000-4000-8000-000000000002',
   claimV1: '61000000-0000-4000-8000-000000000001',
   claimRequestV1: '51000000-0000-4000-8000-000000000003',
@@ -44,7 +56,11 @@ const ids = {
   storageFailOne: '51000000-0000-4000-8000-000000000011',
   storageClaimTwo: '61000000-0000-4000-8000-000000000011',
   storageClaimRequestTwo: '51000000-0000-4000-8000-000000000012',
-  storageCompleteTwo: '51000000-0000-4000-8000-000000000013',
+  storageFailTwo: '51000000-0000-4000-8000-000000000013',
+  storageClaimThree: '61000000-0000-4000-8000-000000000013',
+  storageClaimRequestThree: '51000000-0000-4000-8000-000000000018',
+  storageCompleteThree: '51000000-0000-4000-8000-000000000019',
+  storageStaleCompleteTwo: '51000000-0000-4000-8000-000000000020',
   deleteDocument: '51000000-0000-4000-8000-000000000014',
   storageClaimDelete: '61000000-0000-4000-8000-000000000012',
   storageClaimRequestDelete: '51000000-0000-4000-8000-000000000015',
@@ -231,6 +247,7 @@ test('MediumIA Pro Phase 1B-B adds a safe Edge bridge contract on PostgreSQL 17'
     const signatures = [
       'public.pro_prepare_text_document(uuid,uuid,uuid,text,text,bigint)',
       'public.pro_abandon_document_version(uuid,uuid,uuid)',
+      'public.pro_claim_document_extraction_attempt(uuid,uuid,uuid,integer)',
       'public.pro_claim_document_storage_job(uuid,uuid,uuid,uuid,integer)',
       'public.pro_complete_document_storage_job(uuid,uuid,uuid,uuid)',
       'public.pro_fail_document_storage_job(uuid,uuid,uuid,uuid,text,integer)',
@@ -250,6 +267,15 @@ test('MediumIA Pro Phase 1B-B adds a safe Edge bridge contract on PostgreSQL 17'
           'claim_request_id', 'completion_request_id', 'failure_request_id'
         );
     `), '6')
+    assert.equal(psql(`
+      select count(*) from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'pro_document_versions'
+        and column_name in (
+          'extraction_attempts', 'last_extraction_operation_id',
+          'last_extraction_claim_id', 'last_extraction_claim_request_id'
+        );
+    `), '4')
   })
 
   await t.test('pasted text is prepared idempotently and completed atomically in both models', async () => {
@@ -312,6 +338,243 @@ test('MediumIA Pro Phase 1B-B adds a safe Edge bridge contract on PostgreSQL 17'
     assert.equal(psql(`select source_type || ':' || extraction_status from public.pro_document_versions where id = '${textVersionId}';`), 'paste:ready')
     assert.equal(psql(`select content from public.agent_document_chunks where document_id = '${textDocumentId}';`), 'Pasted bridge content')
     assert.equal(psql(`select count(*) from public.pro_document_sync_queue where document_id = '${textDocumentId}';`), '0')
+  })
+
+  await t.test('extraction attempts replay one lease, rotate after failure and fence stale workers', async () => {
+    const prepared = await api(baseUrl, '/rpc/pro_prepare_text_document', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_agent_id: ids.agentA,
+        p_actor_user_id: ids.userA,
+        p_request_id: ids.prepareAttempt,
+        p_name: 'Source avec reprises',
+        p_content_sha256: 'e'.repeat(64),
+        p_size_bytes: 31,
+      },
+    })
+    assert.equal(prepared.status, 200, prepared.raw)
+    const attemptDocumentId = prepared.data[0].document_id
+    const attemptVersionId = prepared.data[0].version_id
+
+    const claimAttempt = async (operationId) => await api(baseUrl, '/rpc/pro_claim_document_extraction_attempt', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: attemptVersionId,
+        p_actor_user_id: ids.userA,
+        p_operation_id: operationId,
+        p_lease_seconds: 300,
+      },
+    })
+
+    const firstClaim = await claimAttempt(ids.extractionOperationOne)
+    assert.equal(firstClaim.status, 200, firstClaim.raw)
+    assert.equal(firstClaim.data[0].attempt_number, 1)
+    assert.equal(firstClaim.data[0].replayed, false)
+    const claimOne = firstClaim.data[0].claim_id
+
+    const ambiguousReplay = await claimAttempt(ids.extractionOperationOne)
+    assert.equal(ambiguousReplay.status, 200, ambiguousReplay.raw)
+    assert.equal(ambiguousReplay.data[0].claim_id, claimOne)
+    assert.equal(ambiguousReplay.data[0].attempt_number, 1)
+    assert.equal(ambiguousReplay.data[0].replayed, true)
+    assert.equal(psql(`
+      select count(*)
+      from public.pro_audit_events
+      where document_id = '${attemptDocumentId}'
+        and event_type = 'document_extraction_claimed';
+    `), '1')
+
+    const firstFailure = await api(baseUrl, '/rpc/pro_fail_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: attemptVersionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: claimOne,
+        p_request_id: ids.extractionFailOne,
+        p_error_code: 'pdf_extraction_timeout',
+      },
+    })
+    assert.equal(firstFailure.status, 200, firstFailure.raw)
+
+    const committedFailureReplay = await claimAttempt(ids.extractionOperationOne)
+    assert.equal(committedFailureReplay.status, 200, committedFailureReplay.raw)
+    assert.equal(committedFailureReplay.data[0].extraction_status, 'failed')
+    assert.equal(committedFailureReplay.data[0].error_code, 'pdf_extraction_timeout')
+    assert.equal(committedFailureReplay.data[0].claim_id, claimOne)
+    assert.equal(committedFailureReplay.data[0].attempt_number, 1)
+    assert.equal(committedFailureReplay.data[0].replayed, true)
+    assert.equal(psql(`
+      select count(*)
+      from public.pro_audit_events
+      where document_id = '${attemptDocumentId}'
+        and event_type = 'document_extraction_claimed';
+    `), '1')
+
+    const secondClaim = await claimAttempt(ids.extractionOperationTwo)
+    assert.equal(secondClaim.status, 200, secondClaim.raw)
+    assert.equal(secondClaim.data[0].attempt_number, 2)
+    assert.equal(secondClaim.data[0].replayed, false)
+    const claimTwo = secondClaim.data[0].claim_id
+    assert.notEqual(claimTwo, claimOne)
+
+    const staleComplete = await api(baseUrl, '/rpc/pro_complete_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: attemptVersionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: claimOne,
+        p_request_id: ids.staleExtractionComplete,
+        p_content_sha256: 'e'.repeat(64),
+        p_chunks: [{ chunk_index: 0, content: 'stale worker content' }],
+        p_extraction_metadata: { extraction_parser: 'integration-test' },
+      },
+    })
+    assertRejected(staleComplete, 'extraction_claim_lost')
+
+    const staleFail = await api(baseUrl, '/rpc/pro_fail_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: attemptVersionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: claimOne,
+        p_request_id: ids.staleExtractionFail,
+        p_error_code: 'stale_worker_failure',
+      },
+    })
+    assertRejected(staleFail, 'extraction_claim_lost')
+
+    const secondFailure = await api(baseUrl, '/rpc/pro_fail_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: attemptVersionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: claimTwo,
+        p_request_id: ids.extractionFailTwo,
+        p_error_code: 'pdf_extraction_timeout',
+      },
+    })
+    assert.equal(secondFailure.status, 200, secondFailure.raw)
+
+    assert.equal(psql(`
+      select extraction_status || ':' || extraction_attempts::text
+      from public.pro_document_versions
+      where id = '${attemptVersionId}';
+    `), 'failed:2')
+    assert.equal(psql(`
+      select count(*)
+      from public.pro_audit_events
+      where document_id = '${attemptDocumentId}'
+        and event_type = 'document_extraction_claimed';
+    `), '2')
+    assert.equal(psql(`
+      select count(*)
+      from public.pro_audit_events
+      where document_id = '${attemptDocumentId}'
+        and event_type = 'document_extraction_failed';
+    `), '2')
+  })
+
+  await t.test('an expired extraction lease receives a fresh fenced claim even for the same operation', async () => {
+    const prepared = await api(baseUrl, '/rpc/pro_prepare_text_document', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_agent_id: ids.agentA,
+        p_actor_user_id: ids.userA,
+        p_request_id: ids.prepareStaleAttempt,
+        p_name: 'Source avec lease expiré',
+        p_content_sha256: 'f'.repeat(64),
+        p_size_bytes: 32,
+      },
+    })
+    assert.equal(prepared.status, 200, prepared.raw)
+    const staleVersionId = prepared.data[0].version_id
+
+    const claimBody = {
+      p_version_id: staleVersionId,
+      p_actor_user_id: ids.userA,
+      p_operation_id: ids.staleExtractionOperation,
+      p_lease_seconds: 300,
+    }
+    const firstClaim = await api(baseUrl, '/rpc/pro_claim_document_extraction_attempt', {
+      token: serviceToken,
+      method: 'POST',
+      body: claimBody,
+    })
+    assert.equal(firstClaim.status, 200, firstClaim.raw)
+    const staleClaim = firstClaim.data[0].claim_id
+
+    psql(`
+      update public.pro_document_versions
+      set processing_started_at = now() - interval '2 minutes',
+          processing_expires_at = now() - interval '1 minute'
+      where id = '${staleVersionId}';
+    `)
+
+    const recovered = await api(baseUrl, '/rpc/pro_claim_document_extraction_attempt', {
+      token: serviceToken,
+      method: 'POST',
+      body: claimBody,
+    })
+    assert.equal(recovered.status, 200, recovered.raw)
+    assert.equal(recovered.data[0].attempt_number, 2)
+    assert.equal(recovered.data[0].replayed, false)
+    const recoveredClaim = recovered.data[0].claim_id
+    assert.notEqual(recoveredClaim, staleClaim)
+
+    const oldCompletion = await api(baseUrl, '/rpc/pro_complete_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: staleVersionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: staleClaim,
+        p_request_id: ids.staleLeaseOldComplete,
+        p_content_sha256: 'f'.repeat(64),
+        p_chunks: [{ chunk_index: 0, content: 'expired worker content' }],
+        p_extraction_metadata: { extraction_parser: 'integration-test' },
+      },
+    })
+    assertRejected(oldCompletion, 'extraction_claim_lost')
+
+    const oldFailure = await api(baseUrl, '/rpc/pro_fail_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: staleVersionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: staleClaim,
+        p_request_id: ids.staleLeaseOldFail,
+        p_error_code: 'stale_worker_failure',
+      },
+    })
+    assertRejected(oldFailure, 'extraction_claim_lost')
+
+    const completed = await api(baseUrl, '/rpc/pro_complete_document_extraction', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_version_id: staleVersionId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: recoveredClaim,
+        p_request_id: ids.staleLeaseComplete,
+        p_content_sha256: 'f'.repeat(64),
+        p_chunks: [{ chunk_index: 0, content: 'recovered worker content' }],
+        p_extraction_metadata: { extraction_parser: 'integration-test' },
+      },
+    })
+    assert.equal(completed.status, 200, completed.raw)
+    assert.equal(psql(`
+      select extraction_status || ':' || extraction_attempts::text
+      from public.pro_document_versions
+      where id = '${staleVersionId}';
+    `), 'ready:2')
   })
 
   await t.test('creates, extracts, approves and publishes v1 through existing atomic RPCs', async () => {
@@ -449,7 +712,7 @@ test('MediumIA Pro Phase 1B-B adds a safe Edge bridge contract on PostgreSQL 17'
     assertRejected(rejected, 'workspace_membership_required')
   })
 
-  await t.test('Storage failure is retryable and only the newest claim can complete', async () => {
+  await t.test('successive Storage failures keep unique audits and only the newest claim can complete', async () => {
     const firstClaim = await api(baseUrl, '/rpc/pro_claim_document_storage_job', {
       token: serviceToken,
       method: 'POST',
@@ -519,18 +782,65 @@ test('MediumIA Pro Phase 1B-B adds a safe Edge bridge contract on PostgreSQL 17'
     })
     assertRejected(staleComplete, 'storage_job_claim_lost')
 
-    const completed = await api(baseUrl, '/rpc/pro_complete_document_storage_job', {
+    const secondFailure = await api(baseUrl, '/rpc/pro_fail_document_storage_job', {
       token: serviceToken,
       method: 'POST',
       body: {
         p_job_id: abandonedStorageJob,
         p_actor_user_id: ids.userA,
         p_claim_id: ids.storageClaimTwo,
-        p_request_id: ids.storageCompleteTwo,
+        p_request_id: ids.storageFailTwo,
+        p_error_code: 'storage_unavailable_again',
+        p_retry_seconds: 0,
+      },
+    })
+    assert.equal(secondFailure.status, 200, secondFailure.raw)
+    assert.equal(secondFailure.data[0].job_status, 'failed')
+    assert.equal(psql(`
+      select count(*)
+      from public.pro_audit_events
+      where resource_id = '${abandonedStorageJob}'
+        and event_type = 'document_storage_delete_failed';
+    `), '2')
+
+    const thirdClaim = await api(baseUrl, '/rpc/pro_claim_document_storage_job', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_document_id: documentId,
+        p_actor_user_id: ids.userA,
+        p_claim_id: ids.storageClaimThree,
+        p_request_id: ids.storageClaimRequestThree,
+        p_lease_seconds: 120,
+      },
+    })
+    assert.equal(thirdClaim.status, 200, thirdClaim.raw)
+    assert.equal(thirdClaim.data[0].attempts, 3)
+
+    const staleSecondComplete = await api(baseUrl, '/rpc/pro_complete_document_storage_job', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_job_id: abandonedStorageJob,
+        p_actor_user_id: ids.userA,
+        p_claim_id: ids.storageClaimTwo,
+        p_request_id: ids.storageStaleCompleteTwo,
+      },
+    })
+    assertRejected(staleSecondComplete, 'storage_job_claim_lost')
+
+    const completed = await api(baseUrl, '/rpc/pro_complete_document_storage_job', {
+      token: serviceToken,
+      method: 'POST',
+      body: {
+        p_job_id: abandonedStorageJob,
+        p_actor_user_id: ids.userA,
+        p_claim_id: ids.storageClaimThree,
+        p_request_id: ids.storageCompleteThree,
       },
     })
     assert.equal(completed.status, 200, completed.raw)
-    assert.equal(psql(`select status || ':' || attempts::text from public.pro_document_storage_jobs where id = '${abandonedStorageJob}';`), 'completed:2')
+    assert.equal(psql(`select status || ':' || attempts::text from public.pro_document_storage_jobs where id = '${abandonedStorageJob}';`), 'completed:3')
   })
 
   await t.test('document deletion neutralizes DB before Storage completion and finalizes idempotently', async () => {

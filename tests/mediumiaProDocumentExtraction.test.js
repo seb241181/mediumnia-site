@@ -10,9 +10,10 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 test('document Edge function extracts PDF and modern Word files from private Storage', () => {
   const source = read('supabase/functions/agent-documents/index.ts')
 
-  assert.match(source, /npm:unpdf@1\.8\.1/)
-  assert.match(source, /npm:fflate@0\.8\.3/)
-  assert.match(source, /npm:@supabase\/supabase-js@2\.112\.3/)
+  const denoConfig = read('supabase/functions/agent-documents/deno.json')
+  assert.match(denoConfig, /npm:unpdf@1\.8\.1/)
+  assert.match(denoConfig, /npm:fflate@0\.8\.3/)
+  assert.match(denoConfig, /npm:@supabase\/supabase-js@2\.112\.3/)
   assert.match(source, /getDocumentProxy\(bytes\)/)
   assert.match(source, /extractText\(pdf, \{ mergePages: true \}\)/)
   assert.match(source, /MAX_PDF_PAGES = 400/)
@@ -20,20 +21,21 @@ test('document Edge function extracts PDF and modern Word files from private Sto
   assert.match(source, /unzipSync\(bytes/)
   assert.match(source, /word\/document\.xml/)
   assert.match(source, /MAX_DOCX_XML_BYTES = 10 \* 1024 \* 1024/)
-  assert.match(source, /\.storage[\s\S]*\.download\(document\.storage_path, \{\}, \{ cache: 'no-store' \}\)/)
-  assert.match(source, /processUploadedDocument\(document, 'document_uploaded_and_extracted'\)/)
+  assert.match(source, /\.storage[\s\S]*\.download\(storagePath, \{\}, \{ cache: ["']no-store["'] \}\)/)
+  assert.match(source, /processShadowUploadedDocument\(/)
+  assert.match(source, /processLegacyUploadedDocument\(/)
 })
 
 test('uploaded documents stay disabled until extraction succeeds and Founder approves them', () => {
   const source = read('supabase/functions/agent-documents/index.ts')
 
   assert.match(source, /approved_for_ai: false/)
-  assert.match(source, /status: 'ready'/)
+  assert.match(source, /status: ["']ready["']/)
   assert.match(source, /chunks: chunks\.length/)
   assert.match(source, /indexed_server: true/)
-  assert.match(source, /event_type: 'document_extraction_failed'/)
-  assert.match(source, /status: 'error', approved_for_ai: false, approved_at: null, error_message: code/)
-  assert.match(source, /action === 'retry_extract'/)
+  assert.match(source, /event_type: ["']document_extraction_failed["']/)
+  assert.match(source, /status: ["']error["'][\s\S]*approved_for_ai: false[\s\S]*approved_at: null[\s\S]*error_message: code/)
+  assert.match(source, /action === ["']retry_extract["']/)
   assert.match(source, /document_extraction_retried/)
 })
 

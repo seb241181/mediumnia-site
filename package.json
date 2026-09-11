@@ -13,6 +13,7 @@
     "test:pro-phase0": "node --test tests/integration/mediumiaProPhase0.postgres.test.js",
     "test:pro-workspace": "node --test tests/integration/mediumiaProWorkspacePhase1A.postgres.test.js",
     "test:pro-documents": "node --test tests/integration/mediumiaProDocumentShadowPhase1B.postgres.test.js",
+    "test:pro-edge-bridge": "deno test --config supabase/functions/agent-documents/deno.json supabase/functions/agent-documents/*.test.ts && node --test tests/integration/mediumiaProEdgeBridgePhase1B.postgres.test.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

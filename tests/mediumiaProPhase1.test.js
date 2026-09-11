@@ -91,19 +91,22 @@ test('Founder document UI keeps reads client-side but sends every mutation throu
 
 test('document Edge function authenticates ownership and keeps privileged writes server-side', () => {
   const source = read('supabase/functions/agent-documents/index.ts')
+  const bridge = read('supabase/functions/agent-documents/bridge.ts')
 
   assert.match(source, /SUPABASE_SERVICE_ROLE_KEY/)
   assert.match(source, /userClient\.auth\.getUser\(\)/)
-  assert.match(source, /from\('pro_memberships'\)[\s\S]*\.eq\('status', 'active'\)/)
-  assert.match(source, /from\('agents'\)[\s\S]*\.eq\('owner_id', user\.id\)[\s\S]*\.eq\('membership_id', membership\.id\)/)
-  assert.match(source, /createSignedUploadUrl\(storagePath, \{ upsert: false \}\)/)
-  assert.match(source, /storagePath = `\$\{user\.id\}\/\$\{agent\.id\}\/\$\{crypto\.randomUUID\(\)\}/)
-  assert.match(source, /MAX_FILE_BYTES = 25 \* 1024 \* 1024/)
+  assert.match(source, /from\(["']pro_memberships["']\)[\s\S]*\.eq\(["']id["'], agent\.membership_id\)[\s\S]*\.eq\(["']user_id["'], user\.id\)[\s\S]*\.eq\(["']status["'], ["']active["']\)/)
+  assert.match(source, /from\(["']agents["']\)[\s\S]*\.eq\(["']owner_id["'], user\.id\)/)
+  assert.match(source, /membership\.workspace_id !== agent\.workspace_id/)
+  assert.match(source, /pro_prepare_document_upload/)
+  assert.match(source, /createSignedUploadUrl\(String\(prepared\.storage_path\)/)
+  assert.doesNotMatch(source, /storagePath = `\$\{user\.id\}/)
+  assert.match(bridge, /MAX_FILE_BYTES = 25 \* 1024 \* 1024/)
   assert.match(source, /MAX_TEXT_CHARS = 750_000/)
   assert.match(source, /approved_for_ai: false/)
-  assert.match(source, /action === 'set_approval'/)
-  assert.match(source, /action === 'delete'/)
-  assert.doesNotMatch(source, /Deno\.env\.get\('.*VITE_/)
+  assert.match(source, /action === ["']set_approval["']/)
+  assert.match(source, /action === ["']delete["']/)
+  assert.doesNotMatch(source, /Deno\.env\.get\(["'].*VITE_/)
 })
 
 test('Phase 1 migration removes prototype raw Storage access for document clients', () => {

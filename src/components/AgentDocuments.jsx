@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { invokeAgentDocumentAction } from '../lib/agentDocumentRequests.js'
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024
 
@@ -48,14 +49,16 @@ export default function AgentDocuments({ agentId }) {
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteName, setPasteName] = useState('')
   const [pasteContent, setPasteContent] = useState('')
+  const pendingRequestIds = useRef(new Map())
 
   async function invokeDocumentAction(action, payload = {}) {
-    const { data, error: functionError } = await supabase.functions.invoke('agent-documents', {
-      body: { action, agentId, ...payload },
+    return invokeAgentDocumentAction({
+      action,
+      agentId,
+      payload,
+      pendingRequestIds: pendingRequestIds.current,
+      invoke: (body) => supabase.functions.invoke('agent-documents', { body }),
     })
-    if (functionError) throw new Error(data?.error || functionError.message || 'Action documentaire indisponible.')
-    if (data?.error) throw new Error(data.error)
-    return data || {}
   }
 
   async function loadDocuments() {
@@ -73,7 +76,11 @@ export default function AgentDocuments({ agentId }) {
     setLoading(false)
   }
 
-  useEffect(() => { loadDocuments() }, [agentId])
+  const loadDocumentsForAgent = useEffectEvent(loadDocuments)
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void loadDocumentsForAgent() }, 0)
+    return () => window.clearTimeout(timer)
+  }, [agentId])
 
   async function uploadFile(event) {
     const file = event.target.files?.[0]
@@ -106,7 +113,20 @@ export default function AgentDocuments({ agentId }) {
           contentType: prepared.mimeType || mimeType,
           upsert: false,
         })
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        try {
+          const finalized = await invokeDocumentAction('finalize_upload', { documentId })
+          uploadCompleted = true
+          setInfo(finalized.indexed
+            ? 'Document extrait et analysé côté serveur. Validez-le pour autoriser le copilote à l’utiliser.'
+            : 'Document stocké en privé. Relancez l’analyse pour créer sa mémoire exploitable.')
+          await loadDocuments()
+          return
+        } catch (finalizeError) {
+          if (finalizeError.stored) uploadCompleted = true
+          throw finalizeError.stored ? finalizeError : uploadError
+        }
+      }
       uploadCompleted = true
 
       const finalized = await invokeDocumentAction('finalize_upload', { documentId })
@@ -140,7 +160,7 @@ export default function AgentDocuments({ agentId }) {
         ? 'Analyse terminée. Validez maintenant la source pour autoriser le copilote à l’utiliser.'
         : 'Le fichier reste stocké en privé, mais son analyse n’est pas terminée.')
       await loadDocuments()
-    } catch (err) {
+    } catch {
       await loadDocuments()
       setError('L’analyse n’a pas abouti. Le fichier reste stocké en privé ; aucun accès n’a été accordé au copilote.')
     } finally {

@@ -31,10 +31,10 @@ test('homepage prioritizes the hero image and defers heavy below-fold imagery', 
     readFile(cosmicHeroPath, 'utf8'),
     readFile(indexPath, 'utf8'),
   ])
-  assert.match(index, /rel="preload" as="image" href="\/images\/brand\/MEDIUMIA_logo_officiel_2026-09-12\.png" fetchpriority="high"/)
+  assert.match(index, /rel="preload" as="image" href="\/images\/brand\/MEDIUMIA_logo_officiel_transparent_2026-09-12\.png" fetchpriority="high"/)
   assert.match(index, /rel="preload" as="image" href="\/images\/home\/mediumia-cosmic-library-hero\.webp" type="image\/webp" media="\(min-width: 761px\)" fetchpriority="high"/)
   assert.match(index, /rel="preload" as="image" href="\/images\/home\/mediumia-cosmic-library-hero-mobile\.webp" type="image\/webp" media="\(max-width: 760px\)" fetchpriority="high"/)
-  assert.match(cosmicHero, /MEDIUMIA_logo_officiel_2026-09-12\.png"[\s\S]*fetchPriority="high"[\s\S]*decoding="async"/)
+  assert.match(cosmicHero, /MEDIUMIA_logo_officiel_transparent_2026-09-12\.png"[\s\S]*fetchPriority="high"[\s\S]*decoding="async"/)
   assert.match(app, /MEDIUMIA_logo_maitre_2026-08-16\.png"[\s\S]*loading="lazy"[\s\S]*fetchPriority="low"/)
 })
 

@@ -246,14 +246,16 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
       <div className="cosmic-library__content">
         <div className="cosmic-library__centerpiece">
           <div className="cosmic-library__brand cosmic-reveal cosmic-reveal--brand">
+            <span className="cosmic-library__brand-aura" aria-hidden="true" />
             <img
-              src="/images/brand/MEDIUMIA_logo_officiel_2026-09-12.png"
+              src="/images/brand/MEDIUMIA_logo_officiel_transparent_2026-09-12.png"
               alt="MediumIA, le monde spirituel, relié autrement"
-              width="1514"
+              width="1015"
               height="696"
               fetchPriority="high"
               decoding="async"
             />
+            <span className="cosmic-library__eye-pulse" aria-hidden="true" />
           </div>
 
           <div className="cosmic-library__message cosmic-reveal cosmic-reveal--message">

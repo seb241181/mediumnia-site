@@ -8,14 +8,165 @@
   --cosmic-gold: #b77a12;
   --cosmic-gold-soft: #e3c37c;
   --cosmic-line: rgba(183, 122, 18, 0.3);
+  --cosmic-surface: rgba(255, 254, 250, 0.82);
+  --cosmic-surface-strong: rgba(255, 255, 255, 0.92);
+  --cosmic-glass-line: rgba(188, 137, 43, 0.28);
+  --cosmic-shadow-soft: 0 18px 54px rgba(16, 25, 56, 0.09);
+  --cosmic-shadow-float: 0 28px 80px rgba(16, 25, 56, 0.14);
+  --cosmic-radius-panel: clamp(28px, 4vw, 52px);
+  --cosmic-ease: cubic-bezier(0.22, 1, 0.36, 1);
   background: linear-gradient(180deg, #fff 0%, var(--cosmic-paper) 48%, #f7f4ed 100%);
 }
 
 .cosmic-nav {
-  background: rgba(255, 255, 255, 0.83) !important;
-  border-color: rgba(183, 122, 18, 0.24) !important;
-  box-shadow: 0 10px 36px rgba(16, 25, 56, 0.07);
-  backdrop-filter: blur(18px) saturate(1.1);
+  top: clamp(0.55rem, 1.3vw, 1rem) !important;
+  right: clamp(0.55rem, 1.5vw, 1.35rem) !important;
+  left: clamp(0.55rem, 1.5vw, 1.35rem) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.cosmic-nav > div {
+  position: relative;
+  width: min(100%, 1280px);
+  max-width: none !important;
+  min-height: 66px;
+  margin: 0 auto;
+  padding: 0.46rem 0.55rem 0.46rem 0.72rem !important;
+  border: 1px solid var(--cosmic-glass-line);
+  border-radius: 999px;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.9), rgba(250, 247, 238, 0.72)),
+    var(--cosmic-surface);
+  box-shadow:
+    0 16px 50px rgba(16, 25, 56, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(22px) saturate(1.16);
+  pointer-events: auto;
+}
+
+.cosmic-nav > div::after {
+  position: absolute;
+  right: 10%;
+  bottom: -1px;
+  left: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(217, 172, 86, 0.54), transparent);
+  content: '';
+  pointer-events: none;
+}
+
+.cosmic-nav > div > a[aria-label] {
+  gap: 0.7rem !important;
+  padding: 0.1rem 0.42rem 0.1rem 0.12rem;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.cosmic-nav > div > a[aria-label] img {
+  width: auto;
+  height: 38px !important;
+  filter: drop-shadow(0 4px 8px rgba(183, 122, 18, 0.12));
+}
+
+.cosmic-nav > div > a[aria-label] span {
+  color: var(--cosmic-deep);
+  font-size: 0.8rem !important;
+  font-weight: 600;
+  letter-spacing: 0.23em !important;
+}
+
+.cosmic-nav nav {
+  gap: clamp(1rem, 1.65vw, 1.65rem) !important;
+}
+
+.cosmic-nav nav > a,
+.cosmic-nav nav > button {
+  position: relative;
+  padding: 0.55rem 0;
+  color: rgba(16, 25, 56, 0.78);
+  font-size: clamp(0.66rem, 0.78vw, 0.77rem) !important;
+  font-weight: 600;
+  letter-spacing: 0.055em;
+  line-height: 1;
+  transition: color 0.28s ease;
+}
+
+.cosmic-nav nav > a::after,
+.cosmic-nav nav > button::after {
+  position: absolute;
+  right: 50%;
+  bottom: 0.12rem;
+  left: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cosmic-gold), transparent);
+  content: '';
+  transition: right 0.32s var(--cosmic-ease), left 0.32s var(--cosmic-ease);
+}
+
+.cosmic-nav nav > a:hover::after,
+.cosmic-nav nav > a:focus-visible::after,
+.cosmic-nav nav > button:hover::after,
+.cosmic-nav nav > button:focus-visible::after {
+  right: 8%;
+  left: 8%;
+}
+
+.cosmic-nav nav > a:first-child {
+  color: #9b640b;
+}
+
+.cosmic-nav > div > div {
+  gap: 0.42rem !important;
+}
+
+.cosmic-nav > div > div > a,
+.cosmic-nav > div > div > button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.05rem !important;
+  border-radius: 999px !important;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.045em !important;
+  box-shadow: none;
+  transition: transform 0.28s var(--cosmic-ease), border-color 0.28s ease, background 0.28s ease, box-shadow 0.28s ease;
+}
+
+.cosmic-nav > div > div > a {
+  border-color: rgba(183, 122, 18, 0.38) !important;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.cosmic-nav > div > div > button {
+  border: 1px solid rgba(218, 177, 95, 0.58);
+  background: linear-gradient(140deg, #1c2b55, #0d1737) !important;
+  color: #f1d08b !important;
+  box-shadow: 0 8px 22px rgba(16, 25, 56, 0.17);
+}
+
+.cosmic-nav > div > div > a:hover,
+.cosmic-nav > div > div > button:hover {
+  transform: translateY(-1px);
+}
+
+.cosmic-nav > div > div > a:hover {
+  border-color: rgba(183, 122, 18, 0.68) !important;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.cosmic-nav > div > div > button:hover {
+  box-shadow: 0 11px 27px rgba(16, 25, 56, 0.25);
+}
+
+.cosmic-nav a:focus-visible,
+.cosmic-nav button:focus-visible {
+  outline: 2px solid rgba(183, 122, 18, 0.62);
+  outline-offset: 3px;
 }
 
 .cosmic-library {
@@ -261,22 +412,67 @@
 }
 
 .cosmic-library__brand {
-  width: clamp(286px, 27vw, 420px);
-  padding: 0.42rem 1.25rem 0.28rem;
-  border: 1px solid rgba(198, 146, 52, 0.26);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow:
-    0 18px 50px rgba(24, 49, 89, 0.13),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.84);
-  backdrop-filter: blur(8px);
+  position: relative;
+  width: clamp(350px, 34vw, 500px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 13px 23px rgba(33, 48, 82, 0.12));
+}
+
+.cosmic-library__brand-aura {
+  position: absolute;
+  z-index: -1;
+  top: 48%;
+  left: 50%;
+  width: 118%;
+  height: 83%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.78) 0 22%, rgba(255, 251, 236, 0.38) 44%, transparent 72%);
+  filter: blur(11px);
+  opacity: 0.86;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .cosmic-library__brand img {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
   object-fit: contain;
+  user-select: none;
+}
+
+.cosmic-library__eye-pulse {
+  position: absolute;
+  z-index: 2;
+  top: 52.8%;
+  left: 50.45%;
+  width: 4.4%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(234, 190, 100, 0.18);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 209, 0.58) 0 16%, rgba(219, 162, 54, 0.22) 34%, transparent 68%);
+  box-shadow: 0 0 13px rgba(232, 187, 94, 0.18);
+  opacity: 0.08;
+  transform: translate(-50%, -50%) scale(0.96);
+  transform-origin: center;
+  animation: cosmic-eye-awaken 14.7s -4.1s var(--cosmic-ease) infinite;
+  pointer-events: none;
+}
+
+.cosmic-library__eye-pulse::after {
+  position: absolute;
+  inset: 24%;
+  border-radius: 50%;
+  background: rgba(255, 238, 181, 0.72);
+  box-shadow: 0 0 10px rgba(231, 180, 75, 0.42);
+  content: '';
+  opacity: 0.12;
+  animation: cosmic-eye-iris 17.3s -9.6s ease-in-out infinite;
 }
 
 .cosmic-library__message {
@@ -330,7 +526,7 @@
   font-weight: 700;
   line-height: 1.2;
   text-decoration: none;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease, color 0.3s ease;
+  transition: transform 0.3s var(--cosmic-ease), box-shadow 0.3s ease, background 0.3s ease, color 0.3s ease;
 }
 
 .cosmic-library__primary {
@@ -377,7 +573,7 @@
   padding: 0.58rem;
   border: 1px solid rgba(188, 135, 37, 0.34);
   border-radius: 27px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--cosmic-surface);
   box-shadow:
     0 24px 74px rgba(15, 33, 74, 0.2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.86);
@@ -517,11 +713,12 @@
   margin-top: clamp(3rem, 6vw, 6rem);
   margin-bottom: clamp(3rem, 6vw, 6rem);
   border: 1px solid rgba(183, 122, 18, 0.16);
-  border-radius: clamp(28px, 4vw, 52px);
+  border-radius: var(--cosmic-radius-panel);
   background:
     radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.94), transparent 27rem),
     rgba(255, 254, 250, 0.5);
-  box-shadow: 0 28px 90px rgba(16, 25, 56, 0.06);
+  box-shadow: var(--cosmic-shadow-soft);
+  overflow: hidden;
 }
 
 .cosmic-section-heading {
@@ -540,12 +737,13 @@
 }
 
 .cosmic-card-lift {
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+  backdrop-filter: blur(8px) saturate(1.05);
+  transition: transform 0.4s var(--cosmic-ease), box-shadow 0.4s ease, border-color 0.4s ease;
 }
 
 .cosmic-card-lift:hover {
   border-color: rgba(183, 122, 18, 0.5) !important;
-  box-shadow: 0 24px 58px rgba(16, 25, 56, 0.12) !important;
+  box-shadow: var(--cosmic-shadow-float) !important;
   transform: translateY(-5px);
 }
 
@@ -590,7 +788,62 @@
   50% { translate: 5px -10px; }
 }
 
+@keyframes cosmic-eye-awaken {
+  0%, 66%, 74%, 100% {
+    opacity: 0.08;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  68.2% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scaleX(0.94) scaleY(0.62);
+  }
+  69.1% {
+    opacity: 0.68;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  70.4% {
+    opacity: 0.18;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+  71.1% {
+    opacity: 0.42;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+}
+
+@keyframes cosmic-eye-iris {
+  0%, 57%, 65%, 100% { opacity: 0.1; scale: 0.82; }
+  59% { opacity: 0.5; scale: 1.08; }
+  61% { opacity: 0.18; scale: 0.9; }
+}
+
+@media (max-width: 1040px) {
+  .cosmic-nav nav {
+    display: none !important;
+  }
+}
+
 @media (max-width: 1120px) {
+  .cosmic-nav > div {
+    min-height: 62px;
+  }
+
+  .cosmic-nav nav {
+    gap: 1rem !important;
+  }
+
+  .cosmic-nav nav > a,
+  .cosmic-nav nav > button {
+    font-size: 0.64rem !important;
+  }
+
+  .cosmic-nav > div > div > a,
+  .cosmic-nav > div > div > button {
+    min-height: 39px;
+    padding-right: 0.82rem !important;
+    padding-left: 0.82rem !important;
+  }
+
   .cosmic-library__content {
     padding-right: 1.25rem;
     padding-left: 1.25rem;
@@ -615,7 +868,46 @@
 
 @media (max-width: 760px) {
   .cosmic-nav {
-    background: rgba(255, 255, 255, 0.9) !important;
+    top: 0.48rem !important;
+    right: 0.48rem !important;
+    left: 0.48rem !important;
+    background: transparent !important;
+  }
+
+  .cosmic-nav > div {
+    min-height: 56px;
+    gap: 0.35rem !important;
+    padding: 0.35rem 0.4rem 0.35rem 0.5rem !important;
+    border-radius: 22px;
+    background: rgba(255, 254, 250, 0.88);
+    box-shadow: 0 10px 34px rgba(16, 25, 56, 0.1);
+    backdrop-filter: blur(18px) saturate(1.1);
+  }
+
+  .cosmic-nav > div > a[aria-label] {
+    gap: 0.42rem !important;
+    padding: 0;
+  }
+
+  .cosmic-nav > div > a[aria-label] img {
+    height: 33px !important;
+  }
+
+  .cosmic-nav > div > a[aria-label] span {
+    font-size: 0.66rem !important;
+    letter-spacing: 0.17em !important;
+  }
+
+  .cosmic-nav > div > div {
+    gap: 0.3rem !important;
+  }
+
+  .cosmic-nav > div > div > a,
+  .cosmic-nav > div > div > button {
+    min-height: 37px;
+    padding: 0.52rem 0.67rem !important;
+    font-size: 0.58rem !important;
+    letter-spacing: 0.025em !important;
   }
 
   .cosmic-library {
@@ -667,9 +959,7 @@
   }
 
   .cosmic-library__brand {
-    width: min(78vw, 320px);
-    padding: 0.3rem 0.75rem 0.2rem;
-    border-radius: 22px;
+    width: min(86vw, 360px);
   }
 
   .cosmic-library__message h1 {
@@ -747,6 +1037,10 @@
 }
 
 @media (max-width: 420px) {
+  .cosmic-nav > div > a[aria-label] span {
+    display: none;
+  }
+
   .cosmic-library__actions {
     flex-direction: column;
   }

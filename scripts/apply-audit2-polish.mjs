@@ -114,7 +114,7 @@ await writeFile(guardianPath, guardian)
 
 let index = await readFile(indexPath, 'utf8')
 const heroImage = hasCosmicLibraryHero
-  ? '/images/brand/MEDIUMIA_logo_officiel_2026-09-12.png'
+  ? '/images/brand/MEDIUMIA_logo_officiel_transparent_2026-09-12.png'
   : '/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png'
 if (!index.includes(`${heroImage}" fetchpriority="high"`)) {
   index = replaceRequired(

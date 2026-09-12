@@ -7,17 +7,25 @@ const appPath = new URL('../src/App.jsx', import.meta.url)
 const componentPath = new URL('../src/components/CosmicLibraryHero.jsx', import.meta.url)
 const stylesPath = new URL('../src/styles/cosmic-library-home.css', import.meta.url)
 const officialLogoPath = new URL('../public/images/brand/MEDIUMIA_logo_officiel_2026-09-12.png', import.meta.url)
+const transparentLogoPath = new URL('../public/images/brand/MEDIUMIA_logo_officiel_transparent_2026-09-12.png', import.meta.url)
+const goldLogoPath = new URL('../public/images/brand/MEDIUMIA_logo_officiel_or_champagne_2026-09-12.png', import.meta.url)
 const desktopScenePath = new URL('../public/images/home/mediumia-cosmic-library-hero.webp', import.meta.url)
 const mobileScenePath = new URL('../public/images/home/mediumia-cosmic-library-hero-mobile.webp', import.meta.url)
 
-test('cosmic homepage uses the supplied official logo without generated substitutes', async () => {
-  const [component, logo] = await Promise.all([
+test('cosmic homepage preserves the supplied official logo and uses its transparent presentation asset', async () => {
+  const [component, logo, transparentLogo, goldLogo] = await Promise.all([
     readFile(componentPath, 'utf8'),
     readFile(officialLogoPath),
+    readFile(transparentLogoPath),
+    readFile(goldLogoPath),
   ])
 
   assert.equal(createHash('sha256').update(logo).digest('hex'), '93cfebd39d341f42bb230a54bf81564e4deaaec0e5ae6a82b5afa4eb03c039a2')
-  assert.match(component, /src="\/images\/brand\/MEDIUMIA_logo_officiel_2026-09-12\.png"/)
+  assert.match(component, /src="\/images\/brand\/MEDIUMIA_logo_officiel_transparent_2026-09-12\.png"/)
+  assert.ok(transparentLogo.byteLength < logo.byteLength)
+  assert.ok(goldLogo.byteLength < logo.byteLength)
+  assert.deepEqual([...transparentLogo.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10])
+  assert.deepEqual([...goldLogo.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10])
   assert.doesNotMatch(component, /filter:|brightness-|saturate-|hue-rotate/)
 })
 
@@ -57,10 +65,23 @@ test('cosmic motion is CSS-only, responsive and disabled for reduced motion', as
   assert.match(component, /cosmic-sphere/)
   assert.match(component, /cosmic-orbit--outer/)
   assert.match(component, /cosmic-dock__item/)
+  assert.match(component, /cosmic-library__eye-pulse/)
   assert.match(component, /setDockInfluence/)
   assert.match(component, /0\.94 \+ easedInfluence \* 0\.24/)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
   assert.match(styles, /@media \(max-width: 760px\)/)
   assert.match(styles, /transform: translateY\(var\(--dock-lift\)\) scale\(var\(--dock-scale\)\)/)
+  assert.match(styles, /animation: cosmic-eye-awaken 14\.7s/)
+  assert.match(styles, /animation: cosmic-eye-iris 17\.3s/)
   assert.doesNotMatch(component, /three|webgl|canvas/i)
+})
+
+test('logo treatment has no rectangular panel and the navigation uses the cosmic glass system', async () => {
+  const styles = await readFile(stylesPath, 'utf8')
+
+  assert.match(styles, /\.cosmic-library__brand \{[\s\S]*border: 0;[\s\S]*background: transparent;/)
+  assert.match(styles, /\.cosmic-library__brand-aura/)
+  assert.match(styles, /\.cosmic-nav > div \{[\s\S]*border-radius: 999px;[\s\S]*backdrop-filter: blur\(22px\)/)
+  assert.match(styles, /--cosmic-surface:/)
+  assert.match(styles, /--cosmic-shadow-float:/)
 })

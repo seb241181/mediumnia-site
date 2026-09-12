@@ -99,8 +99,6 @@ function CosmicSphereAtmosphere() {
       <div className="cosmic-orbit cosmic-orbit--outer"><span /></div>
       <div className="cosmic-orbit cosmic-orbit--middle"><span /></div>
       <div className="cosmic-orbit cosmic-orbit--inner"><span /></div>
-      <i className="cosmic-satellite cosmic-satellite--one" />
-      <i className="cosmic-satellite cosmic-satellite--two" />
     </div>
   )
 }
@@ -191,12 +189,12 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
     const bounds = event.currentTarget.getBoundingClientRect()
     const x = ((event.clientX - bounds.left) / bounds.width) - 0.5
     const y = ((event.clientY - bounds.top) / bounds.height) - 0.5
-    event.currentTarget.style.setProperty('--scene-x', `${x * -10}px`)
-    event.currentTarget.style.setProperty('--scene-y', `${y * -6}px`)
-    event.currentTarget.style.setProperty('--sphere-x', `${x * 18}px`)
-    event.currentTarget.style.setProperty('--sphere-y', `${y * 10}px`)
-    event.currentTarget.style.setProperty('--particle-x', `${x * 28}px`)
-    event.currentTarget.style.setProperty('--particle-y', `${y * 18}px`)
+    event.currentTarget.style.setProperty('--scene-x', `${x * -5}px`)
+    event.currentTarget.style.setProperty('--scene-y', `${y * -3}px`)
+    event.currentTarget.style.setProperty('--sphere-x', `${x * 8}px`)
+    event.currentTarget.style.setProperty('--sphere-y', `${y * 5}px`)
+    event.currentTarget.style.setProperty('--particle-x', `${x * 12}px`)
+    event.currentTarget.style.setProperty('--particle-y', `${y * 8}px`)
   }
 
   const resetParallax = () => {

@@ -83,7 +83,7 @@ formation = replaceRequired(
 
 const discoveryCard = `
 
-            <div className="rounded-2xl border border-deep/15 bg-deep/[0.035] p-7 md:p-8 text-left">
+            <div className="relative rounded-2xl border-2 border-gold/35 bg-white/75 p-7 md:p-8 text-left shadow-[0_16px_46px_rgba(26,21,53,0.07)]">
               <div className="text-center mb-6">
                 <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">Pour commencer en douceur</p>
                 <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep">Découverte MediumIA</h3>

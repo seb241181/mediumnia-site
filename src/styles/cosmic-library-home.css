@@ -1,5 +1,7 @@
 .cosmic-home {
-  background: linear-gradient(180deg, #fff 0%, var(--cosmic-paper) 48%, #f7f4ed 100%);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.98), transparent 38%),
+    linear-gradient(180deg, var(--cosmic-ivory) 0%, var(--cosmic-paper) 58%, #f7f4ed 100%);
 }
 
 .cosmic-nav {
@@ -312,32 +314,6 @@
   animation: cosmic-orbit-inner 24s linear infinite;
 }
 
-.cosmic-satellite {
-  position: absolute;
-  z-index: 4;
-  display: block;
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 50%;
-  background: radial-gradient(circle at 34% 29%, #fff 0 8%, #bbd4ed 23%, #35568e 65%, #121d44 100%);
-  box-shadow: 0 0 24px rgba(108, 150, 208, 0.45);
-}
-
-.cosmic-satellite--one {
-  top: 20%;
-  right: -8%;
-  width: 22px;
-  height: 22px;
-  animation: cosmic-satellite-float 8s ease-in-out infinite;
-}
-
-.cosmic-satellite--two {
-  bottom: 14%;
-  left: -1%;
-  width: 13px;
-  height: 13px;
-  animation: cosmic-satellite-float 10s -4s ease-in-out infinite reverse;
-}
-
 .cosmic-library__particles {
   position: absolute;
   z-index: 0;
@@ -450,8 +426,8 @@
 }
 
 .cosmic-library__eyelid {
-  fill: rgba(250, 248, 239, 0.97);
-  stroke: rgba(184, 132, 39, 0.25);
+  fill: rgba(251, 249, 243, 0.96);
+  stroke: rgba(184, 132, 39, 0.18);
   stroke-width: 1.2;
   transform-box: fill-box;
 }
@@ -459,22 +435,22 @@
 .cosmic-library__eyelid--upper {
   transform: translateY(-106%);
   transform-origin: center bottom;
-  animation: cosmic-blink-upper 31.4s linear infinite;
+  animation: cosmic-blink-upper 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
 .cosmic-library__eyelid--lower {
   transform: translateY(106%);
   transform-origin: center top;
-  animation: cosmic-blink-lower 31.4s linear infinite;
+  animation: cosmic-blink-lower 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
 .cosmic-library__blink-seam {
   fill: none;
-  stroke: rgba(179, 124, 27, 0.78);
+  stroke: rgba(179, 124, 27, 0.62);
   stroke-linecap: round;
   stroke-width: 2;
   opacity: 0;
-  animation: cosmic-blink-seam 31.4s linear infinite;
+  animation: cosmic-blink-seam 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
 .cosmic-library__message {
@@ -696,12 +672,12 @@
 .cosmic-dock__detail {
   margin-top: 0.16rem;
   overflow: hidden;
-  color: rgba(16, 25, 56, 0.55);
+  color: rgba(16, 25, 56, 0.72);
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 0.54rem;
-  line-height: 1.2;
+  font-size: 0.64rem;
+  line-height: 1.22;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .cosmic-reveal {
@@ -791,24 +767,19 @@
   to { transform: translate(-50%, -50%) rotate(377deg); }
 }
 
-@keyframes cosmic-satellite-float {
-  0%, 100% { translate: 0 0; }
-  50% { translate: 5px -10px; }
-}
-
 @keyframes cosmic-blink-upper {
-  0%, 27.55%, 28.09%, 72.8%, 73.34%, 74%, 74.54%, 100% { transform: translateY(-106%); }
-  27.82%, 73.07%, 74.27% { transform: translateY(0); }
+  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { transform: translateY(-106%); }
+  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { transform: translateY(0); }
 }
 
 @keyframes cosmic-blink-lower {
-  0%, 27.55%, 28.09%, 72.8%, 73.34%, 74%, 74.54%, 100% { transform: translateY(106%); }
-  27.82%, 73.07%, 74.27% { transform: translateY(0); }
+  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { transform: translateY(106%); }
+  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { transform: translateY(0); }
 }
 
 @keyframes cosmic-blink-seam {
-  0%, 27.55%, 28.09%, 72.8%, 73.34%, 74%, 74.54%, 100% { opacity: 0; }
-  27.82%, 73.07%, 74.27% { opacity: 0.9; }
+  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { opacity: 0; }
+  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { opacity: 0.68; }
 }
 
 @media (max-width: 1040px) {
@@ -929,9 +900,6 @@
 
   .cosmic-orbit--outer { width: 116%; }
   .cosmic-orbit--middle { width: 96%; }
-  .cosmic-satellite--one { right: 4%; }
-  .cosmic-satellite--two { left: 5%; }
-
   .cosmic-library__particles span:nth-child(n + 9) {
     display: none;
   }
@@ -1020,7 +988,13 @@
   }
 
   .cosmic-dock__detail {
-    display: none;
+    display: -webkit-box;
+    max-width: 94px;
+    overflow: hidden;
+    font-size: 0.56rem;
+    line-height: 1.18;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .cosmic-discovery {

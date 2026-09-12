@@ -88,11 +88,11 @@ export default function SiteGuardian() {
       <style>{`
         @keyframes guardian-breathe {
           0%, 100% {
-            box-shadow: 0 0 18px 5px rgba(201,168,76,0.3), 0 0 40px 10px rgba(90,60,140,0.15), 0 0 60px 16px rgba(26,21,53,0.12);
+            box-shadow: 0 0 18px 5px rgba(201,168,76,0.28), 0 0 40px 10px rgba(24,63,112,0.15), 0 0 60px 16px rgba(10,31,70,0.12);
             transform: scale(1);
           }
           50% {
-            box-shadow: 0 0 28px 10px rgba(201,168,76,0.45), 0 0 52px 16px rgba(90,60,140,0.22), 0 0 72px 22px rgba(26,21,53,0.15);
+            box-shadow: 0 0 28px 10px rgba(201,168,76,0.4), 0 0 52px 16px rgba(24,63,112,0.2), 0 0 72px 22px rgba(10,31,70,0.15);
             transform: scale(1.025);
           }
         }
@@ -139,7 +139,10 @@ export default function SiteGuardian() {
         <button
           onClick={() => setOpen(true)}
           className="guardian-fab fixed bottom-5 right-5 z-[60] w-[84px] h-[84px] md:w-[100px] md:h-[100px] rounded-full flex items-center justify-center transition-all overflow-hidden"
-          style={{ border: '1.5px solid rgba(201,168,76,0.45)' }}
+          style={{
+            border: '1.5px solid rgba(201,168,76,0.58)',
+            background: 'radial-gradient(circle at 50% 38%, #294f86 0%, #142e5c 55%, #091a3e 100%)',
+          }}
           aria-label="Ouvrir le Gardien de MediumIA"
           title="Le Gardien de MediumIA"
         >
@@ -147,17 +150,17 @@ export default function SiteGuardian() {
             src={AVATAR}
             alt="Le Gardien de MediumIA"
             className="rounded-full object-cover"
-            style={{ width: '130%', height: '130%', objectPosition: '50% 38%' }}
+            style={{ width: '112%', height: '112%', objectPosition: '50% 38%' }}
           />
         </button>
       )}
 
       {open && (
         <div className="fixed bottom-4 right-4 z-[60] w-[calc(100vw-2rem)] sm:w-96 max-h-[80vh] flex flex-col rounded-2xl shadow-2xl border border-gold/25 overflow-hidden"
-          style={{ background: '#FAFAF7' }}
+          style={{ background: '#FBFAF5' }}
         >
           <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-gold/20"
-            style={{ background: 'linear-gradient(135deg, #1A1535, #2A2050)' }}
+            style={{ background: 'linear-gradient(135deg, #1c2b55, #0d1737)' }}
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="guardian-header-avatar shrink-0 rounded-full overflow-hidden w-[54px] h-[54px] md:w-[60px] md:h-[60px]"

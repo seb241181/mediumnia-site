@@ -55,3 +55,14 @@ test('the homepage hero keeps main editorial copy and existing destinations', as
     assert.match(component, new RegExp(href.replace('/', '\\/')))
   }
 })
+
+test('targeted visual polish keeps the guardian and discovery offer in the shared palette', async () => {
+  const [guardian, discoveryGenerator] = await Promise.all([
+    source('src/components/SiteGuardian.jsx'),
+    source('scripts/apply-discovery-offer.mjs'),
+  ])
+
+  assert.match(guardian, /radial-gradient\(circle at 50% 38%, #294f86 0%, #142e5c 55%, #091a3e 100%\)/)
+  assert.match(guardian, /linear-gradient\(135deg, #1c2b55, #0d1737\)/)
+  assert.match(discoveryGenerator, /border-2 border-gold\/35 bg-white\/75/)
+})

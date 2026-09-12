@@ -194,6 +194,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenReseauDir={onOpenReseauDir}
         />
 
+        {/* ── Consulter ── */}
+        <ConsultationSection id="consulter" onOpenRdv={onOpenRdv} />
+
         {/* ── Découvrir ── */}
         <section id="decouvrir" className="cosmic-discovery px-6 py-16 max-w-6xl mx-auto">
           <div className="cosmic-section-heading text-center max-w-3xl mx-auto mb-12">
@@ -228,9 +231,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
             </aside>
           </div>
         </section>
-
-        {/* ── Consulter ── */}
-        <ConsultationSection id="consulter" onOpenRdv={onOpenRdv} />
 
         {/* ── Boutique ── */}
         <section id="boutique" className="border-t border-gold/15">

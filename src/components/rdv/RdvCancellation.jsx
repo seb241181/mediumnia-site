@@ -69,8 +69,8 @@ export default function RdvCancellation({ onBack }) {
   const isCancelled = booking?.status === 'cancelled'
 
   return (
-    <div className="min-h-screen bg-cream text-deep flex flex-col">
-      <header className="border-b border-gold/20 bg-cream/95">
+    <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream text-deep flex flex-col">
+      <header className="cosmic-page__header border-b border-gold/20 bg-cream/95">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">✦ MEDIUMIA</button>
           <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep">← Retour</button>

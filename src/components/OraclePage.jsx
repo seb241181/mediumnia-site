@@ -3,10 +3,10 @@ import OracleTest from './OracleTest'
 
 export default function OraclePage({ onBack, onNavigate }) {
   return (
-    <div className="bg-cream min-h-screen text-deep">
+    <div className="cosmic-page cosmic-page--oracle bg-cream min-h-screen text-deep">
 
       {/* ── Nav ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+      <header className="cosmic-page__header fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
         <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
           <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors flex items-center gap-2">
             ← MediumIA

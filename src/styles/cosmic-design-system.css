@@ -1,0 +1,262 @@
+:root {
+  --cosmic-paper: #fbfaf5;
+  --cosmic-ivory: #f5f1e8;
+  --cosmic-white: #fffefa;
+  --cosmic-deep: #101938;
+  --cosmic-blue: #243762;
+  --cosmic-mist: #666779;
+  --cosmic-gold: #b77a12;
+  --cosmic-gold-soft: #e3c37c;
+  --cosmic-line: rgba(183, 122, 18, 0.3);
+  --cosmic-surface: rgba(255, 254, 250, 0.82);
+  --cosmic-surface-strong: rgba(255, 255, 255, 0.92);
+  --cosmic-glass-line: rgba(188, 137, 43, 0.28);
+  --cosmic-shadow-soft: 0 18px 54px rgba(16, 25, 56, 0.09);
+  --cosmic-shadow-float: 0 28px 80px rgba(16, 25, 56, 0.14);
+  --cosmic-radius-panel: clamp(28px, 4vw, 52px);
+  --cosmic-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cosmic-page {
+  --cosmic-wing-focus: rgba(197, 149, 58, 0.2);
+  --cosmic-wing-orbit: rgba(183, 122, 18, 0.24);
+  --cosmic-wing-position: 50%;
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow-x: clip;
+  color: var(--cosmic-deep);
+  background:
+    radial-gradient(circle at var(--cosmic-wing-position) 7rem, var(--cosmic-wing-focus), transparent 30rem),
+    linear-gradient(180deg, #fffefa 0%, var(--cosmic-paper) 44%, #f4f1e9 100%) !important;
+}
+
+.cosmic-page::before {
+  position: absolute;
+  z-index: -2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: min(50rem, 82vh);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(251, 250, 245, 0.72) 72%, var(--cosmic-paper)),
+    url('/images/home/mediumia-cosmic-library-hero.webp') center top / cover no-repeat;
+  content: '';
+  filter: saturate(0.82) brightness(1.06);
+  mask-image: linear-gradient(to bottom, #000 0 52%, transparent 100%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.cosmic-page::after {
+  position: absolute;
+  z-index: -1;
+  top: 4.5rem;
+  left: 50%;
+  width: min(74rem, 124vw);
+  aspect-ratio: 2.25;
+  border: 1px solid var(--cosmic-wing-orbit);
+  border-radius: 50%;
+  box-shadow: 0 0 48px rgba(227, 195, 124, 0.1);
+  content: '';
+  mask-image: linear-gradient(90deg, transparent, #000 18% 82%, transparent);
+  pointer-events: none;
+  transform: translateX(-50%) rotate(-3deg);
+}
+
+.cosmic-page--formation {
+  --cosmic-wing-focus: rgba(227, 195, 124, 0.25);
+  --cosmic-wing-position: 30%;
+}
+
+.cosmic-page--oracle {
+  --cosmic-wing-focus: rgba(112, 91, 175, 0.18);
+  --cosmic-wing-orbit: rgba(148, 113, 180, 0.24);
+  --cosmic-wing-position: 72%;
+}
+
+.cosmic-page--chronosphere {
+  --cosmic-wing-focus: rgba(85, 135, 198, 0.2);
+  --cosmic-wing-orbit: rgba(94, 133, 190, 0.3);
+  --cosmic-wing-position: 50%;
+}
+
+.cosmic-page--agents {
+  --cosmic-wing-focus: rgba(70, 145, 164, 0.18);
+  --cosmic-wing-orbit: rgba(85, 151, 165, 0.26);
+  --cosmic-wing-position: 24%;
+}
+
+.cosmic-page--conferences {
+  --cosmic-wing-focus: rgba(211, 157, 73, 0.22);
+  --cosmic-wing-position: 50%;
+}
+
+.cosmic-page--network,
+.cosmic-page--rdv {
+  --cosmic-wing-focus: rgba(104, 135, 180, 0.16);
+  --cosmic-wing-orbit: rgba(193, 145, 72, 0.25);
+  --cosmic-wing-position: 78%;
+}
+
+.cosmic-page--legal {
+  --cosmic-wing-focus: rgba(188, 155, 95, 0.13);
+  --cosmic-wing-position: 50%;
+}
+
+.cosmic-page__header {
+  position: sticky !important;
+  z-index: 50;
+  top: 0.65rem !important;
+  right: auto !important;
+  left: auto !important;
+  width: min(calc(100% - 1.25rem), 1280px);
+  margin: 0.65rem auto 0;
+  border: 1px solid var(--cosmic-glass-line) !important;
+  border-radius: 999px;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.91), rgba(250, 247, 238, 0.76)),
+    var(--cosmic-surface) !important;
+  box-shadow:
+    0 16px 50px rgba(16, 25, 56, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(22px) saturate(1.16);
+  transform: none !important;
+}
+
+.cosmic-page__header::after {
+  position: absolute;
+  right: 10%;
+  bottom: -1px;
+  left: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(217, 172, 86, 0.58), transparent);
+  content: '';
+  pointer-events: none;
+}
+
+.cosmic-page__header > div {
+  min-height: 58px;
+}
+
+.cosmic-page__header :where(button, a) {
+  border-radius: 999px;
+}
+
+.cosmic-page__header :where(button, a):focus-visible,
+.cosmic-page :where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid rgba(183, 122, 18, 0.62);
+  outline-offset: 3px;
+}
+
+.cosmic-page main {
+  position: relative;
+}
+
+.cosmic-page main > section:first-child {
+  animation: cosmic-page-arrive 0.72s var(--cosmic-ease) both;
+}
+
+.cosmic-page h1,
+.cosmic-page h2,
+.cosmic-page h3 {
+  text-wrap: balance;
+}
+
+.cosmic-page h1 {
+  text-shadow: 0 3px 24px rgba(255, 255, 255, 0.82);
+}
+
+.cosmic-page :where(article, aside, form, section, div)[class*='bg-white'][class*='border'] {
+  border-color: var(--cosmic-glass-line) !important;
+  background-color: var(--cosmic-surface) !important;
+  box-shadow: var(--cosmic-shadow-soft);
+  backdrop-filter: blur(12px) saturate(1.08);
+}
+
+.cosmic-page :where(button, a)[class*='bg-deep'] {
+  border: 1px solid rgba(227, 195, 124, 0.48);
+  border-radius: 999px !important;
+  background: linear-gradient(140deg, #1c2b55, #0d1737) !important;
+  color: #f1d08b !important;
+  box-shadow: 0 10px 26px rgba(16, 25, 56, 0.19);
+}
+
+.cosmic-page :where(button, a)[class*='bg-gold'] {
+  border: 1px solid #aa6e0c;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, #c98d22, #aa6d0d) !important;
+  color: var(--cosmic-white) !important;
+  box-shadow: 0 11px 28px rgba(132, 83, 8, 0.2);
+}
+
+.cosmic-page :where(button, a)[class*='border-gold'][class*='rounded-lg'] {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(10px);
+}
+
+.cosmic-page :where(button, a)[class*='bg-deep'],
+.cosmic-page :where(button, a)[class*='bg-gold'],
+.cosmic-page :where(button, a)[class*='border-gold'][class*='rounded-lg'] {
+  transition: transform 0.3s var(--cosmic-ease), box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.cosmic-page :where(button, a)[class*='bg-deep']:hover,
+.cosmic-page :where(button, a)[class*='bg-gold']:hover,
+.cosmic-page :where(button, a)[class*='border-gold'][class*='rounded-lg']:hover {
+  transform: translateY(-2px);
+}
+
+.cosmic-page :where(input, textarea, select)[class*='border'] {
+  border-color: rgba(183, 122, 18, 0.26) !important;
+  background-color: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.cosmic-page :where(input, textarea, select)[class*='border']:focus {
+  border-color: rgba(183, 122, 18, 0.68) !important;
+  box-shadow: 0 0 0 3px rgba(183, 122, 18, 0.1);
+}
+
+@keyframes cosmic-page-arrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 760px) {
+  .cosmic-page::before {
+    height: 42rem;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(251, 250, 245, 0.78) 68%, var(--cosmic-paper)),
+      url('/images/home/mediumia-cosmic-library-hero-mobile.webp');
+    background-position: center top;
+    opacity: 0.28;
+  }
+
+  .cosmic-page__header {
+    top: 0.45rem !important;
+    width: calc(100% - 0.9rem);
+    margin-top: 0.45rem;
+    border-radius: 22px;
+  }
+
+  .cosmic-page__header > div {
+    min-height: 52px;
+    padding-right: 0.75rem !important;
+    padding-left: 0.75rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmic-page,
+  .cosmic-page * {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .cosmic-page :where(button, a):hover {
+    transform: none !important;
+  }
+}

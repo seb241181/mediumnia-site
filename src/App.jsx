@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './index.css'
+import './styles/cosmic-design-system.css'
 import AgentsPlatform from './components/AgentsPlatform'
 import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'

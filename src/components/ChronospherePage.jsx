@@ -649,9 +649,9 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   const creditsLabel = creditState?.creditsRemaining === 1 ? '1 tirage disponible' : `${creditState?.creditsRemaining || 0} tirages disponibles`
 
   return (
-    <div className="min-h-screen bg-cream text-deep">
+    <div className="cosmic-page cosmic-page--chronosphere min-h-screen bg-cream text-deep">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
+      <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <button onClick={onBack} className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">
             ✦ MEDIUMIA

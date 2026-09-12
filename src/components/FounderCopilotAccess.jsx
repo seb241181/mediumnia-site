@@ -144,8 +144,8 @@ export default function FounderCopilotAccess({ onBack }) {
   }
 
   return (
-    <div className="min-h-screen bg-cream text-deep">
-      <header className="sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
+    <div className="cosmic-page cosmic-page--agents min-h-screen bg-cream text-deep">
+      <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
           <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">← MediumIA</button>
           <div className="flex items-center gap-3">

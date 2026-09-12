@@ -78,7 +78,7 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
 
   if (!practitioner) {
     return (
-      <div className="min-h-screen bg-cream text-deep">
+      <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
         <div className="mx-auto max-w-2xl px-6 py-24 text-center">
           <p className="font-georgia text-xs uppercase tracking-[0.22em] text-gold">Réseau MediumIA</p>
           <h1 className="mt-4 font-georgia text-3xl font-medium">Ce profil n’est pas disponible.</h1>
@@ -103,8 +103,8 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
     || practical.email
 
   return (
-    <div className="min-h-screen bg-cream text-deep">
-      <header className="sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
+    <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
+      <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <button onClick={onBack} className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">✦ MEDIUMIA</button>
           <button onClick={onBack} className="font-georgia text-xs text-mist transition-colors hover:text-deep">← Tous les praticiens</button>

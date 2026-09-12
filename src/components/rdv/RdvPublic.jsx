@@ -648,7 +648,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   if (configLoading) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
       </div>
     )
@@ -658,7 +658,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   if (!configData?.practitioner && configData?.mode !== 'demo') {
     return (
-      <div className="min-h-screen bg-cream flex flex-col items-center justify-center px-6 text-center">
+      <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream flex flex-col items-center justify-center px-6 text-center">
         <p className="text-gold text-4xl mb-4">◌</p>
         <p className="font-georgia text-mist mb-2">Praticien introuvable.</p>
         <button onClick={onBack} className="font-georgia text-sm text-deep underline">← Retour</button>
@@ -765,8 +765,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   if (step === 'request-sent') {
     return (
-      <div className="min-h-screen bg-cream flex flex-col">
-        <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+      <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream flex flex-col">
+        <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
           <div className="max-w-5xl mx-auto px-6 py-4">
             <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">✦ MEDIUMIA</button>
           </div>
@@ -796,8 +796,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   if (step === 3 && bookingResult) {
     return (
-      <div className="min-h-screen bg-cream flex flex-col">
-        <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+      <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream flex flex-col">
+        <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
           <div className="max-w-5xl mx-auto px-6 py-4">
             <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">✦ MEDIUMIA</button>
           </div>
@@ -825,8 +825,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
   }
 
   return (
-    <div className="min-h-screen bg-cream text-deep">
-      <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+    <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream text-deep">
+      <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">✦ MEDIUMIA</button>
           <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Retour</button>

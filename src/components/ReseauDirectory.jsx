@@ -42,8 +42,8 @@ export default function ReseauDirectory({ onBack, onNavigate, onOpenProfile }) {
   }, [activeFilter])
 
   return (
-    <div className="min-h-screen bg-cream text-deep">
-      <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+    <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
+      <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">
             ✦ MEDIUMIA

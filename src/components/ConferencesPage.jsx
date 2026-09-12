@@ -31,8 +31,8 @@ export default function ConferencesPage({ onBack, onNavigate }) {
   }
 
   return (
-    <div className="min-h-screen bg-cream text-deep">
-      <header className="sticky top-0 z-40 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
+    <div className="cosmic-page cosmic-page--conferences min-h-screen bg-cream text-deep">
+      <header className="cosmic-page__header sticky top-0 z-40 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-6">
           <button onClick={onBack} className="font-georgia text-xs text-mist transition-colors hover:text-deep">← MediumIA</button>
           <div className="flex items-center gap-2.5">

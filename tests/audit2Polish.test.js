@@ -19,7 +19,7 @@ test('homepage has one clear H1 and commercial navigation uses real links', asyn
     readFile(cosmicHeroPath, 'utf8'),
   ])
   assert.match(cosmicHero, /<h1 id="cosmic-home-title">[\s\S]*COSMIC_HOME_CONFIG\.title/)
-  assert.match(cosmicHero, /Découvrir la Formation/)
+  assert.match(cosmicHero, /Découvrir l'accompagnement/)
   assert.match(app, /href="\/formation"[\s\S]*>Se former<\/a>/)
   assert.match(app, /href="\/conferences"[\s\S]*>Conférences<\/a>/)
   assert.match(app, /href="\/reseau"[\s\S]*>Trouver un praticien<\/a>/)

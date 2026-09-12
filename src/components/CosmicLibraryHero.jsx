@@ -2,10 +2,10 @@ import { useRef } from 'react'
 import '../styles/cosmic-library-home.css'
 
 export const COSMIC_HOME_CONFIG = Object.freeze({
-  title: 'Là où la conscience rencontre l’intelligence artificielle',
-  disciplines: 'Formation · Guidance · Exploration · Transmission',
-  primaryAction: 'Commencer l’exploration',
-  secondaryAction: 'Découvrir la Formation',
+  title: 'Comprendre. Apprendre. Rencontrer.',
+  emphasis: 'Exercer autrement.',
+  description: "MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l'univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l'humain.",
+  primaryAction: "Découvrir l'accompagnement",
 })
 
 const LIGHT_PARTICLES = [
@@ -255,24 +255,30 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
               fetchPriority="high"
               decoding="async"
             />
-            <span className="cosmic-library__eye-pulse" aria-hidden="true" />
+            <span className="cosmic-library__eye-blink" aria-hidden="true">
+              <svg viewBox="0 0 220 108" focusable="false">
+                <path className="cosmic-library__eyelid cosmic-library__eyelid--upper" d="M4 54 Q110 -3 216 54 Q110 55 4 54Z" />
+                <path className="cosmic-library__eyelid cosmic-library__eyelid--lower" d="M4 54 Q110 111 216 54 Q110 53 4 54Z" />
+                <path className="cosmic-library__blink-seam" d="M5 54 Q110 49 215 54" />
+              </svg>
+            </span>
           </div>
 
           <div className="cosmic-library__message cosmic-reveal cosmic-reveal--message">
-            <h1 id="cosmic-home-title">{COSMIC_HOME_CONFIG.title}</h1>
-            <p>{COSMIC_HOME_CONFIG.disciplines}</p>
+            <h1 id="cosmic-home-title">
+              {COSMIC_HOME_CONFIG.title}
+              <span>{COSMIC_HOME_CONFIG.emphasis}</span>
+            </h1>
+            <p>{COSMIC_HOME_CONFIG.description}</p>
           </div>
 
           <div className="cosmic-library__actions cosmic-reveal cosmic-reveal--actions">
-            <a className="cosmic-library__primary" href="#decouvrir">
-              {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
-            </a>
             <a
-              className="cosmic-library__secondary"
+              className="cosmic-library__primary"
               href="/formation"
               onClick={(event) => { event.preventDefault(); onOpenFormation() }}
             >
-              {COSMIC_HOME_CONFIG.secondaryAction}<span aria-hidden="true">→</span>
+              {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
             </a>
           </div>
         </div>

@@ -3,8 +3,8 @@ import LegalFooter from './LegalFooter'
 
 function LegalShell({ onBack, onNavigate, title, children }) {
   return (
-    <div className="bg-cream min-h-screen text-deep">
-      <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+    <div className="cosmic-page cosmic-page--legal bg-cream min-h-screen text-deep">
+      <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">← MediumIA</button>
           <span className="font-georgia text-deep tracking-[0.12em] text-sm font-semibold hidden md:block">{title}</span>

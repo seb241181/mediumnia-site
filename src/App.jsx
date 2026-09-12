@@ -186,6 +186,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
 
         {/* ── Hero ── */}
         <CosmicLibraryHero
+          onOpenPro={onOpenPro}
           onOpenFormation={onOpenFormation}
           onOpenOracle={onOpenOracle}
           onOpenChronosphere={onOpenChronosphere}

@@ -1,127 +1,208 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import '../styles/cosmic-library-home.css'
 
 export const COSMIC_HOME_CONFIG = Object.freeze({
-  eyebrow: 'La bibliothèque cosmique de MediumIA',
-  title: 'Comprendre. Apprendre. Rencontrer.',
-  accent: 'Exercer autrement.',
-  description:
-    "MediumIA relie conscience, transmission et intelligence artificielle dans un espace vivant, pensé pour éclairer sans jamais remplacer l'humain.",
-  primaryAction: 'Explorer l’univers MediumIA',
-  secondaryAction: 'Découvrir la Formation MediumIA',
+  title: 'Là où la conscience rencontre l’intelligence artificielle',
+  disciplines: 'Formation · Guidance · Exploration · Transmission',
+  primaryAction: 'Commencer l’exploration',
+  secondaryAction: 'Découvrir la Formation',
 })
 
 const LIGHT_PARTICLES = [
-  { x: 8, y: 19, size: 3, delay: -2, duration: 9 },
-  { x: 15, y: 63, size: 2, delay: -5, duration: 11 },
-  { x: 22, y: 33, size: 4, delay: -7, duration: 13 },
-  { x: 31, y: 76, size: 2, delay: -1, duration: 10 },
-  { x: 39, y: 16, size: 2, delay: -8, duration: 12 },
-  { x: 48, y: 47, size: 3, delay: -4, duration: 14 },
-  { x: 57, y: 11, size: 2, delay: -6, duration: 9 },
-  { x: 64, y: 69, size: 4, delay: -3, duration: 12 },
-  { x: 72, y: 29, size: 2, delay: -9, duration: 15 },
-  { x: 79, y: 58, size: 3, delay: -2, duration: 11 },
-  { x: 87, y: 21, size: 2, delay: -6, duration: 13 },
-  { x: 93, y: 72, size: 3, delay: -4, duration: 10 },
+  { x: 9, y: 18, size: 3, delay: -2, duration: 9 },
+  { x: 16, y: 51, size: 2, delay: -5, duration: 11 },
+  { x: 25, y: 28, size: 4, delay: -7, duration: 13 },
+  { x: 34, y: 67, size: 2, delay: -1, duration: 10 },
+  { x: 42, y: 13, size: 2, delay: -8, duration: 12 },
+  { x: 51, y: 39, size: 3, delay: -4, duration: 14 },
+  { x: 59, y: 16, size: 2, delay: -6, duration: 9 },
+  { x: 67, y: 64, size: 4, delay: -3, duration: 12 },
+  { x: 74, y: 25, size: 2, delay: -9, duration: 15 },
+  { x: 82, y: 56, size: 3, delay: -2, duration: 11 },
+  { x: 89, y: 20, size: 2, delay: -6, duration: 13 },
+  { x: 94, y: 70, size: 3, delay: -4, duration: 10 },
 ]
 
-const SHELF_LEVELS = [0, 1, 2, 3, 4]
+function DockIcon({ type }) {
+  const commonProps = {
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.55,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  }
 
-function CosmicArchitecture() {
+  if (type === 'formation') {
+    return (
+      <svg {...commonProps}>
+        <path d="M4 5.5c2.5-.8 5.2-.35 8 1.35v12c-2.8-1.7-5.5-2.15-8-1.35z" />
+        <path d="M20 5.5c-2.5-.8-5.2-.35-8 1.35v12c2.8-1.7 5.5-2.15 8-1.35z" />
+      </svg>
+    )
+  }
+
+  if (type === 'oracle') {
+    return (
+      <svg {...commonProps}>
+        <path d="m12 3 1.55 5.45L19 10l-5.45 1.55L12 17l-1.55-5.45L5 10l5.45-1.55z" />
+        <path d="M18.5 3.5v3M20 5h-3M5.5 17.5v3M7 19H4" />
+      </svg>
+    )
+  }
+
+  if (type === 'chronosphere') {
+    return (
+      <svg {...commonProps}>
+        <circle cx="12" cy="12" r="3.4" />
+        <ellipse cx="12" cy="12" rx="9" ry="4.5" />
+        <ellipse cx="12" cy="12" rx="4.5" ry="9" transform="rotate(35 12 12)" />
+      </svg>
+    )
+  }
+
+  if (type === 'agents') {
+    return (
+      <svg {...commonProps}>
+        <circle cx="12" cy="6" r="2" />
+        <circle cx="6" cy="16.5" r="2" />
+        <circle cx="18" cy="16.5" r="2" />
+        <path d="m10.9 7.8-3.8 6.8M13.1 7.8l3.8 6.8M8 16.5h8" />
+      </svg>
+    )
+  }
+
+  if (type === 'conferences') {
+    return (
+      <svg {...commonProps}>
+        <rect x="9" y="3" width="6" height="11" rx="3" />
+        <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0M12 17v4M9 21h6" />
+      </svg>
+    )
+  }
+
   return (
-    <div className="cosmic-library__architecture" aria-hidden="true">
-      <div className="cosmic-library__arch" />
-      <div className="cosmic-library__wing cosmic-library__wing--left">
-        <div className="cosmic-library__column" />
-        <div className="cosmic-library__shelves">
-          {SHELF_LEVELS.map(level => <span key={level} style={{ '--shelf-level': level }} />)}
-        </div>
-      </div>
-      <div className="cosmic-library__wing cosmic-library__wing--right">
-        <div className="cosmic-library__column" />
-        <div className="cosmic-library__shelves">
-          {SHELF_LEVELS.map(level => <span key={level} style={{ '--shelf-level': level }} />)}
-        </div>
-      </div>
-      <div className="cosmic-library__floor" />
-    </div>
+    <svg {...commonProps}>
+      <circle cx="9" cy="8" r="3" />
+      <circle cx="17" cy="9" r="2.4" />
+      <path d="M3.5 20c.4-4.1 2.2-6.1 5.5-6.1s5.1 2 5.5 6.1M14 14.7c3.8-.55 5.9 1.2 6.5 4.8" />
+    </svg>
   )
 }
 
-function CosmicSphere() {
+function CosmicSphereAtmosphere() {
   return (
-    <div className="cosmic-sphere-stage" aria-hidden="true">
-      <div className="cosmic-sphere-stage__portal" />
+    <div className="cosmic-sphere-stage cosmic-reveal cosmic-reveal--sphere" aria-hidden="true">
+      <div className="cosmic-sphere-stage__halo" />
+      <div className="cosmic-sphere-stage__texture" />
       <div className="cosmic-orbit cosmic-orbit--outer"><span /></div>
       <div className="cosmic-orbit cosmic-orbit--middle"><span /></div>
       <div className="cosmic-orbit cosmic-orbit--inner"><span /></div>
-      <div className="cosmic-sphere">
-        <div className="cosmic-sphere__current" />
-        <div className="cosmic-sphere__latitude" />
-        <div className="cosmic-sphere__glint" />
-      </div>
-      <div className="cosmic-sphere-stage__shadow" />
+      <i className="cosmic-satellite cosmic-satellite--one" />
+      <i className="cosmic-satellite cosmic-satellite--two" />
     </div>
   )
 }
 
 function CosmicDock({ items }) {
-  const [activeIndex, setActiveIndex] = useState(null)
+  const dockRef = useRef(null)
+
+  const setDockInfluence = (pointerX) => {
+    const elements = dockRef.current?.querySelectorAll('.cosmic-dock__item') || []
+    elements.forEach((element) => {
+      const bounds = element.getBoundingClientRect()
+      const distance = Math.abs(pointerX - (bounds.left + bounds.width / 2))
+      const influence = Math.max(0, 1 - distance / 170)
+      const easedInfluence = influence * influence
+      element.style.setProperty('--dock-scale', String(0.94 + easedInfluence * 0.24))
+      element.style.setProperty('--dock-lift', `${easedInfluence * -15}px`)
+      element.style.setProperty('--dock-glow', String(influence))
+    })
+  }
+
+  const resetDock = () => {
+    dockRef.current?.querySelectorAll('.cosmic-dock__item').forEach((element) => {
+      element.style.removeProperty('--dock-scale')
+      element.style.removeProperty('--dock-lift')
+      element.style.removeProperty('--dock-glow')
+    })
+  }
+
+  const focusDockItem = (index) => {
+    const elements = dockRef.current?.querySelectorAll('.cosmic-dock__item') || []
+    elements.forEach((element, itemIndex) => {
+      const distance = Math.abs(itemIndex - index)
+      const scale = distance === 0 ? 1.18 : distance === 1 ? 1.03 : 0.94
+      element.style.setProperty('--dock-scale', String(scale))
+      element.style.setProperty('--dock-lift', distance === 0 ? '-15px' : distance === 1 ? '-5px' : '0px')
+      element.style.setProperty('--dock-glow', distance === 0 ? '1' : distance === 1 ? '0.38' : '0')
+    })
+  }
 
   return (
-    <nav className="cosmic-dock cosmic-reveal cosmic-reveal--dock" aria-label="Explorer les univers MediumIA" onMouseLeave={() => setActiveIndex(null)}>
-      <p className="cosmic-dock__legend">Choisir une porte d’entrée</p>
+    <nav
+      ref={dockRef}
+      className="cosmic-dock cosmic-reveal cosmic-reveal--dock"
+      aria-label="Explorer les univers MediumIA"
+      onPointerMove={(event) => {
+        if (!window.matchMedia('(prefers-reduced-motion: reduce), (pointer: coarse)').matches) {
+          setDockInfluence(event.clientX)
+        }
+      }}
+      onPointerLeave={resetDock}
+    >
       <div className="cosmic-dock__items">
-        {items.map((item, index) => {
-          const distance = activeIndex === null ? null : Math.abs(activeIndex - index)
-          const proximityClass = distance === 0 ? 'is-active' : distance === 1 ? 'is-near' : ''
-          return (
-            <a
-              key={item.label}
-              href={item.href}
-              className={`cosmic-dock__item ${proximityClass}`}
-              onClick={item.onSelect ? (event) => { event.preventDefault(); item.onSelect() } : undefined}
-              onMouseEnter={() => setActiveIndex(index)}
-              onFocus={() => setActiveIndex(index)}
-              onBlur={() => setActiveIndex(null)}
-            >
-              <span className="cosmic-dock__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+        {items.map((item, index) => (
+          <a
+            key={item.label}
+            href={item.href}
+            className="cosmic-dock__item"
+            onClick={item.onSelect ? (event) => { event.preventDefault(); item.onSelect() } : undefined}
+            onFocus={() => focusDockItem(index)}
+            onBlur={resetDock}
+          >
+            <span className="cosmic-dock__icon"><DockIcon type={item.icon} /></span>
+            <span className="cosmic-dock__copy">
               <span className="cosmic-dock__label">{item.label}</span>
               <span className="cosmic-dock__detail">{item.detail}</span>
-            </a>
-          )
-        })}
+            </span>
+          </a>
+        ))}
       </div>
     </nav>
   )
 }
 
-export default function CosmicLibraryHero({ onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir }) {
+export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir }) {
   const heroRef = useRef(null)
 
   const categories = [
-    { label: 'Explorer', detail: 'L’univers', href: '#decouvrir' },
-    { label: 'Se former', detail: '25 modules', href: '/formation', onSelect: onOpenFormation },
-    { label: 'Oracle', detail: 'Être éclairé', href: '/oracle', onSelect: onOpenOracle },
-    { label: 'Chronosphère', detail: 'Lignes de temps', href: '/chronosphere', onSelect: onOpenChronosphere },
-    { label: 'Consulter', detail: 'Prendre rendez-vous', href: '#consulter' },
-    { label: 'Réseau', detail: 'Les praticiens', href: '/reseau', onSelect: onOpenReseauDir },
+    { label: 'Formation', detail: 'Apprendre et pratiquer', icon: 'formation', href: '/formation', onSelect: onOpenFormation },
+    { label: 'Oracle', detail: 'Éclairer une question', icon: 'oracle', href: '/oracle', onSelect: onOpenOracle },
+    { label: 'Chronosphère', detail: 'Explorer le temps', icon: 'chronosphere', href: '/chronosphere', onSelect: onOpenChronosphere },
+    { label: 'Agents', detail: 'Amplifier sa pratique', icon: 'agents', href: '/agents', onSelect: onOpenPro },
+    { label: 'Conférences', detail: 'Partager les savoirs', icon: 'conferences', href: '/conferences' },
+    { label: 'Réseau', detail: 'Rencontrer un praticien', icon: 'reseau', href: '/reseau', onSelect: onOpenReseauDir },
   ]
 
   const handlePointerMove = (event) => {
     if (window.matchMedia('(prefers-reduced-motion: reduce), (pointer: coarse)').matches) return
-    const x = ((event.clientX / window.innerWidth) - 0.5) * 18
-    const y = ((event.clientY / window.innerHeight) - 0.5) * 14
-    event.currentTarget.style.setProperty('--parallax-x', `${x}px`)
-    event.currentTarget.style.setProperty('--parallax-x-inverse', `${-x}px`)
-    event.currentTarget.style.setProperty('--parallax-y', `${y}px`)
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const x = ((event.clientX - bounds.left) / bounds.width) - 0.5
+    const y = ((event.clientY - bounds.top) / bounds.height) - 0.5
+    event.currentTarget.style.setProperty('--scene-x', `${x * -10}px`)
+    event.currentTarget.style.setProperty('--scene-y', `${y * -6}px`)
+    event.currentTarget.style.setProperty('--sphere-x', `${x * 18}px`)
+    event.currentTarget.style.setProperty('--sphere-y', `${y * 10}px`)
+    event.currentTarget.style.setProperty('--particle-x', `${x * 28}px`)
+    event.currentTarget.style.setProperty('--particle-y', `${y * 18}px`)
   }
 
   const resetParallax = () => {
-    heroRef.current?.style.setProperty('--parallax-x', '0px')
-    heroRef.current?.style.setProperty('--parallax-x-inverse', '0px')
-    heroRef.current?.style.setProperty('--parallax-y', '0px')
+    for (const property of ['--scene-x', '--scene-y', '--sphere-x', '--sphere-y', '--particle-x', '--particle-y']) {
+      heroRef.current?.style.setProperty(property, '0px')
+    }
   }
 
   return (
@@ -132,59 +213,65 @@ export default function CosmicLibraryHero({ onOpenFormation, onOpenOracle, onOpe
       onPointerMove={handlePointerMove}
       onPointerLeave={resetParallax}
     >
-      <div className="cosmic-library__sky" aria-hidden="true" />
-      <CosmicArchitecture />
+      <div className="cosmic-library__scene" aria-hidden="true">
+        <picture>
+          <source media="(max-width: 760px)" srcSet="/images/home/mediumia-cosmic-library-hero-mobile.webp" />
+          <img
+            src="/images/home/mediumia-cosmic-library-hero.webp"
+            alt=""
+            width="1672"
+            height="941"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
+      </div>
+      <div className="cosmic-library__depth" aria-hidden="true" />
+      <CosmicSphereAtmosphere />
       <div className="cosmic-library__particles" aria-hidden="true">
-        {LIGHT_PARTICLES.map((particle, index) => (
+        {LIGHT_PARTICLES.map((particle) => (
           <span
             key={`${particle.x}-${particle.y}`}
             style={{
-              '--particle-x': `${particle.x}%`,
-              '--particle-y': `${particle.y}%`,
+              '--particle-left': `${particle.x}%`,
+              '--particle-top': `${particle.y}%`,
               '--particle-size': `${particle.size}px`,
               '--particle-delay': `${particle.delay}s`,
               '--particle-duration': `${particle.duration}s`,
-              '--particle-index': index,
             }}
           />
         ))}
       </div>
 
       <div className="cosmic-library__content">
-        <div className="cosmic-library__brand cosmic-reveal cosmic-reveal--brand">
-          <img
-            src="/images/brand/MEDIUMIA_logo_officiel_2026-09-12.png"
-            alt="MediumIA, le monde spirituel, relié autrement"
-            width="1514"
-            height="696"
-            fetchPriority="high"
-            decoding="async"
-          />
-        </div>
-
-        <div className="cosmic-library__stage">
-          <div className="cosmic-library__copy cosmic-reveal cosmic-reveal--copy">
-            <p className="cosmic-library__eyebrow">{COSMIC_HOME_CONFIG.eyebrow}</p>
-            <h1 id="cosmic-home-title">
-              {COSMIC_HOME_CONFIG.title}<br />
-              <em>{COSMIC_HOME_CONFIG.accent}</em>
-            </h1>
-            <p className="cosmic-library__description">{COSMIC_HOME_CONFIG.description}</p>
-            <div className="cosmic-library__actions">
-              <a className="cosmic-library__primary" href="#decouvrir">
-                {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">↓</span>
-              </a>
-              <a
-                className="cosmic-library__secondary"
-                href="/formation"
-                onClick={(event) => { event.preventDefault(); onOpenFormation() }}
-              >
-                {COSMIC_HOME_CONFIG.secondaryAction}<span aria-hidden="true">→</span>
-              </a>
-            </div>
+        <div className="cosmic-library__centerpiece">
+          <div className="cosmic-library__brand cosmic-reveal cosmic-reveal--brand">
+            <img
+              src="/images/brand/MEDIUMIA_logo_officiel_2026-09-12.png"
+              alt="MediumIA, le monde spirituel, relié autrement"
+              width="1514"
+              height="696"
+              fetchPriority="high"
+              decoding="async"
+            />
           </div>
-          <div className="cosmic-reveal cosmic-reveal--sphere">
-            <CosmicSphere />
+
+          <div className="cosmic-library__message cosmic-reveal cosmic-reveal--message">
+            <h1 id="cosmic-home-title">{COSMIC_HOME_CONFIG.title}</h1>
+            <p>{COSMIC_HOME_CONFIG.disciplines}</p>
+          </div>
+
+          <div className="cosmic-library__actions cosmic-reveal cosmic-reveal--actions">
+            <a className="cosmic-library__primary" href="#decouvrir">
+              {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
+            </a>
+            <a
+              className="cosmic-library__secondary"
+              href="/formation"
+              onClick={(event) => { event.preventDefault(); onOpenFormation() }}
+            >
+              {COSMIC_HOME_CONFIG.secondaryAction}<span aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
 

@@ -19,7 +19,7 @@ test('homepage has one clear H1 and commercial navigation uses real links', asyn
     readFile(cosmicHeroPath, 'utf8'),
   ])
   assert.match(cosmicHero, /<h1 id="cosmic-home-title">[\s\S]*COSMIC_HOME_CONFIG\.title/)
-  assert.match(cosmicHero, /Découvrir la Formation MediumIA/)
+  assert.match(cosmicHero, /Découvrir la Formation/)
   assert.match(app, /href="\/formation"[\s\S]*>Se former<\/a>/)
   assert.match(app, /href="\/conferences"[\s\S]*>Conférences<\/a>/)
   assert.match(app, /href="\/reseau"[\s\S]*>Trouver un praticien<\/a>/)
@@ -32,6 +32,8 @@ test('homepage prioritizes the hero image and defers heavy below-fold imagery', 
     readFile(indexPath, 'utf8'),
   ])
   assert.match(index, /rel="preload" as="image" href="\/images\/brand\/MEDIUMIA_logo_officiel_2026-09-12\.png" fetchpriority="high"/)
+  assert.match(index, /rel="preload" as="image" href="\/images\/home\/mediumia-cosmic-library-hero\.webp" type="image\/webp" media="\(min-width: 761px\)" fetchpriority="high"/)
+  assert.match(index, /rel="preload" as="image" href="\/images\/home\/mediumia-cosmic-library-hero-mobile\.webp" type="image\/webp" media="\(max-width: 760px\)" fetchpriority="high"/)
   assert.match(cosmicHero, /MEDIUMIA_logo_officiel_2026-09-12\.png"[\s\S]*fetchPriority="high"[\s\S]*decoding="async"/)
   assert.match(app, /MEDIUMIA_logo_maitre_2026-08-16\.png"[\s\S]*loading="lazy"[\s\S]*fetchPriority="low"/)
 })

@@ -124,6 +124,14 @@ if (!index.includes(`${heroImage}" fetchpriority="high"`)) {
     'hero image preload',
   )
 }
+if (hasCosmicLibraryHero && !index.includes('/images/home/mediumia-cosmic-library-hero.webp"')) {
+  index = replaceRequired(
+    index,
+    `    <!-- Bodoni Moda — pont typographique avec le logo -->`,
+    `    <link rel="preload" as="image" href="/images/home/mediumia-cosmic-library-hero.webp" type="image/webp" media="(min-width: 761px)" fetchpriority="high" />\n    <link rel="preload" as="image" href="/images/home/mediumia-cosmic-library-hero-mobile.webp" type="image/webp" media="(max-width: 760px)" fetchpriority="high" />\n\n    <!-- Bodoni Moda — pont typographique avec le logo -->`,
+    'cosmic library scene preloads',
+  )
+}
 await writeFile(indexPath, index)
 
 let transactionalEmail = await readFile(transactionalEmailPath, 'utf8')

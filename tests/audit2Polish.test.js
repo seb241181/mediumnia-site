@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 const appPath = new URL('../src/App.jsx', import.meta.url)
+const cosmicHeroPath = new URL('../src/components/CosmicLibraryHero.jsx', import.meta.url)
 const chronoPath = new URL('../src/components/ChronospherePage.jsx', import.meta.url)
 const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
 const guardianPath = new URL('../src/components/SiteGuardian.jsx', import.meta.url)
@@ -13,21 +14,25 @@ const formationEmailLeadPath = new URL('../lib/formationEmailLead.js', import.me
 const packagePath = new URL('../package.json', import.meta.url)
 
 test('homepage has one clear H1 and commercial navigation uses real links', async () => {
-  const app = await readFile(appPath, 'utf8')
-  assert.match(app, /<h1 className="font-bodoni[\s\S]*Comprendre\. Apprendre\. Rencontrer\./)
-  assert.match(app, /Découvrir la Formation MediumIA →/)
+  const [app, cosmicHero] = await Promise.all([
+    readFile(appPath, 'utf8'),
+    readFile(cosmicHeroPath, 'utf8'),
+  ])
+  assert.match(cosmicHero, /<h1 id="cosmic-home-title">[\s\S]*COSMIC_HOME_CONFIG\.title/)
+  assert.match(cosmicHero, /Découvrir la Formation MediumIA/)
   assert.match(app, /href="\/formation"[\s\S]*>Se former<\/a>/)
   assert.match(app, /href="\/conferences"[\s\S]*>Conférences<\/a>/)
   assert.match(app, /href="\/reseau"[\s\S]*>Trouver un praticien<\/a>/)
 })
 
 test('homepage prioritizes the hero image and defers heavy below-fold imagery', async () => {
-  const [app, index] = await Promise.all([
+  const [app, cosmicHero, index] = await Promise.all([
     readFile(appPath, 'utf8'),
+    readFile(cosmicHeroPath, 'utf8'),
     readFile(indexPath, 'utf8'),
   ])
-  assert.match(index, /rel="preload" as="image" href="\/images\/brand\/MEDIUMIA_logo_transparent_2026-08-16\.png" fetchpriority="high"/)
-  assert.match(app, /MEDIUMIA_logo_transparent_2026-08-16\.png"[\s\S]*fetchPriority="high"[\s\S]*decoding="async"/)
+  assert.match(index, /rel="preload" as="image" href="\/images\/brand\/MEDIUMIA_logo_officiel_2026-09-12\.png" fetchpriority="high"/)
+  assert.match(cosmicHero, /MEDIUMIA_logo_officiel_2026-09-12\.png"[\s\S]*fetchPriority="high"[\s\S]*decoding="async"/)
   assert.match(app, /MEDIUMIA_logo_maitre_2026-08-16\.png"[\s\S]*loading="lazy"[\s\S]*fetchPriority="low"/)
 })
 

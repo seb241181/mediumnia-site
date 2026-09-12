@@ -16,10 +16,11 @@ import RdvCancellation from './components/rdv/RdvCancellation'
 import ChronospherePage from './components/ChronospherePage'
 import ChronosphereExamplePage from './components/ChronosphereExamplePage'
 import SiteGuardian from './components/SiteGuardian'
+import CosmicLibraryHero from './components/CosmicLibraryHero'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
+    <header className="cosmic-nav fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
       <div className="max-w-6xl mx-auto px-5 md:px-6 py-4 md:py-5 flex items-center justify-between gap-5">
         <a href="#top" className="shrink-0 flex items-center gap-2.5" aria-label="MediumIA — retour en haut">
           <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-9 md:h-12 w-auto" />
@@ -50,7 +51,7 @@ function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, b
   const classes = 'border-gold/35 bg-white/75 text-deep shadow-[0_10px_28px_rgba(26,21,53,.06)] transition-shadow hover:shadow-[0_14px_34px_rgba(26,21,53,.1)]'
   const buttonClasses = 'text-deep transition-colors hover:text-gold'
   return (
-    <article className={`rounded-3xl border p-7 md:p-8 shadow-sm flex flex-col min-h-[300px] ${classes}`}>
+    <article className={`cosmic-card-lift rounded-3xl border p-7 md:p-8 shadow-sm flex flex-col min-h-[300px] ${classes}`}>
       <div className="flex items-start justify-between gap-4 mb-6">
         <span className="text-gold text-3xl">{icon}</span>
         {badge && <span className="font-georgia text-[10px] uppercase tracking-[0.16em] rounded-full bg-gold/10 px-3 py-1 text-gold">{badge}</span>}
@@ -76,7 +77,7 @@ function FeaturedAccompagnement({ onOpen }) {
   ]
   return (
     <article
-      className="rounded-3xl border border-gold/25 p-8 md:p-12 shadow-lg flex flex-col md:flex-row md:items-center gap-8 md:gap-12"
+      className="cosmic-card-lift rounded-3xl border border-gold/25 p-8 md:p-12 shadow-lg flex flex-col md:flex-row md:items-center gap-8 md:gap-12"
       style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
     >
       <div className="flex-1 min-w-0">
@@ -125,7 +126,7 @@ function FeaturedAccompagnement({ onOpen }) {
 function FeaturedChronosphere({ onOpen, onOpenExample }) {
   return (
     <article
-      className="relative isolate overflow-hidden rounded-3xl border border-gold/35 px-7 py-9 shadow-xl md:px-12 md:py-12"
+      className="cosmic-card-lift relative isolate overflow-hidden rounded-3xl border border-gold/35 px-7 py-9 shadow-xl md:px-12 md:py-12"
       style={{ background: 'radial-gradient(circle at 84% 18%, rgba(201,168,76,.2), transparent 26%), linear-gradient(135deg, #0d1730 0%, #1a1535 54%, #241d42 100%)' }}
     >
       <div className="pointer-events-none absolute -left-20 top-12 h-56 w-56 rounded-full border border-gold/15" />
@@ -179,33 +180,21 @@ function FeaturedChronosphere({ onOpen, onOpenExample }) {
 
 function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
-    <div id="top" className="bg-cream min-h-screen text-deep">
+    <div id="top" className="cosmic-home bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
       <main>
 
         {/* ── Hero ── */}
-        <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-6 pt-28 pb-16">
-          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-4">Le monde spirituel, relié autrement</p>
-          <img
-            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"
-            alt="MediumIA — Le monde spirituel, relié autrement"
-            className="w-80 md:w-[32rem] mx-auto mb-5"
-          />
-          <p className="font-bodoni text-deep text-2xl md:text-4xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-7">
-            Comprendre. Apprendre. Rencontrer.<br/>
-            <span className="text-gold">Exercer autrement.</span>
-          </p>
-          <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-[700px] mx-auto mb-10">
-            MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent dans l'univers de la médiumnité, du spirituel et du bien-être — avec des outils modernes qui respectent l'humain.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button onClick={onOpenFormation} className="font-georgia px-9 py-4 rounded-lg bg-gold text-deep font-bold text-base">Découvrir l'accompagnement →</button>
-          </div>
-        </section>
+        <CosmicLibraryHero
+          onOpenFormation={onOpenFormation}
+          onOpenOracle={onOpenOracle}
+          onOpenChronosphere={onOpenChronosphere}
+          onOpenReseauDir={onOpenReseauDir}
+        />
 
         {/* ── Découvrir ── */}
-        <section id="decouvrir" className="px-6 py-16 max-w-6xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
+        <section id="decouvrir" className="cosmic-discovery px-6 py-16 max-w-6xl mx-auto">
+          <div className="cosmic-section-heading text-center max-w-3xl mx-auto mb-12">
             <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="h-10 w-auto mx-auto mb-5 opacity-60" />
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">L'univers MediumIA</p>
             <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Ce que vous trouverez ici.</h2>
@@ -225,7 +214,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
                 Assistants IA métier, mémoire professionnelle, aide à la communication, rendez-vous et automatisations — des outils pensés pour les professionnels de l'accompagnement.
               </UniverseCard>
             </div>
-            <aside className="rounded-3xl border border-gold/35 bg-white/75 px-7 py-8 shadow-[0_10px_28px_rgba(26,21,53,.06)] md:flex md:items-center md:justify-between md:gap-10 md:px-10">
+            <aside className="cosmic-card-lift rounded-3xl border border-gold/35 bg-white/75 px-7 py-8 shadow-[0_10px_28px_rgba(26,21,53,.06)] md:flex md:items-center md:justify-between md:gap-10 md:px-10">
               <div className="max-w-3xl">
                 <p className="font-georgia text-gold text-[11px] uppercase tracking-[0.2em]">Vous êtes praticien ?</p>
                 <h3 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">Rejoignez le réseau MediumIA</h3>

@@ -16,20 +16,23 @@ function replaceRequired(source, before, after, label) {
 }
 
 let app = await readFile(appPath, 'utf8')
+const hasCosmicLibraryHero = app.includes("import CosmicLibraryHero from './components/CosmicLibraryHero'")
 
-app = replaceRequired(
-  app,
-  `          <p className="font-bodoni text-deep text-2xl md:text-4xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-7">\n            Comprendre. Apprendre. Rencontrer.<br/>\n            <span className="text-gold">Exercer autrement.</span>\n          </p>`,
-  `          <h1 className="font-bodoni text-deep text-2xl md:text-4xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-7">\n            Comprendre. Apprendre. Rencontrer.<br/>\n            <span className="text-gold">Exercer autrement.</span>\n          </h1>`,
-  'homepage H1',
-)
+if (!hasCosmicLibraryHero) {
+  app = replaceRequired(
+    app,
+    `          <p className="font-bodoni text-deep text-2xl md:text-4xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-7">\n            Comprendre. Apprendre. Rencontrer.<br/>\n            <span className="text-gold">Exercer autrement.</span>\n          </p>`,
+    `          <h1 className="font-bodoni text-deep text-2xl md:text-4xl leading-relaxed max-w-3xl mx-auto -mt-4 md:-mt-8 mb-7">\n            Comprendre. Apprendre. Rencontrer.<br/>\n            <span className="text-gold">Exercer autrement.</span>\n          </h1>`,
+    'homepage H1',
+  )
 
-app = replaceRequired(
-  app,
-  `            <button onClick={onOpenFormation} className="font-georgia px-9 py-4 rounded-lg bg-gold text-deep font-bold text-base">Découvrir l'accompagnement →</button>`,
-  `            <button onClick={onOpenFormation} className="font-georgia px-9 py-4 rounded-lg bg-gold text-deep font-bold text-base">Découvrir la Formation MediumIA →</button>`,
-  'homepage primary CTA clarity',
-)
+  app = replaceRequired(
+    app,
+    `            <button onClick={onOpenFormation} className="font-georgia px-9 py-4 rounded-lg bg-gold text-deep font-bold text-base">Découvrir l'accompagnement →</button>`,
+    `            <button onClick={onOpenFormation} className="font-georgia px-9 py-4 rounded-lg bg-gold text-deep font-bold text-base">Découvrir la Formation MediumIA →</button>`,
+    'homepage primary CTA clarity',
+  )
+}
 
 app = replaceRequired(
   app,
@@ -52,12 +55,14 @@ app = replaceRequired(
   'network nav link',
 )
 
-app = replaceRequired(
-  app,
-  `            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"\n            alt="MediumIA — Le monde spirituel, relié autrement"\n            className="w-80 md:w-[32rem] mx-auto mb-5"`,
-  `            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"\n            alt="MediumIA — Le monde spirituel, relié autrement"\n            fetchPriority="high"\n            decoding="async"\n            className="w-80 md:w-[32rem] mx-auto mb-5"`,
-  'homepage hero image priority',
-)
+if (!hasCosmicLibraryHero) {
+  app = replaceRequired(
+    app,
+    `            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"\n            alt="MediumIA — Le monde spirituel, relié autrement"\n            className="w-80 md:w-[32rem] mx-auto mb-5"`,
+    `            src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png"\n            alt="MediumIA — Le monde spirituel, relié autrement"\n            fetchPriority="high"\n            decoding="async"\n            className="w-80 md:w-[32rem] mx-auto mb-5"`,
+    'homepage hero image priority',
+  )
+}
 
 app = replaceRequired(
   app,
@@ -108,11 +113,14 @@ guardian = replaceRequired(
 await writeFile(guardianPath, guardian)
 
 let index = await readFile(indexPath, 'utf8')
-if (!index.includes('MEDIUMIA_logo_transparent_2026-08-16.png" fetchpriority="high"')) {
+const heroImage = hasCosmicLibraryHero
+  ? '/images/brand/MEDIUMIA_logo_officiel_2026-09-12.png'
+  : '/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png'
+if (!index.includes(`${heroImage}" fetchpriority="high"`)) {
   index = replaceRequired(
     index,
     `    <!-- Bodoni Moda — pont typographique avec le logo -->`,
-    `    <link rel="preload" as="image" href="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" fetchpriority="high" />\n\n    <!-- Bodoni Moda — pont typographique avec le logo -->`,
+    `    <link rel="preload" as="image" href="${heroImage}" fetchpriority="high" />\n\n    <!-- Bodoni Moda — pont typographique avec le logo -->`,
     'hero image preload',
   )
 }

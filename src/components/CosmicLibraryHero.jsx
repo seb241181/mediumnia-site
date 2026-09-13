@@ -253,13 +253,6 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
               fetchPriority="high"
               decoding="async"
             />
-            <span className="cosmic-library__eye-blink" aria-hidden="true">
-              <svg viewBox="0 0 220 108" focusable="false">
-                <path className="cosmic-library__eyelid cosmic-library__eyelid--upper" d="M4 54 Q110 -3 216 54 Q110 55 4 54Z" />
-                <path className="cosmic-library__eyelid cosmic-library__eyelid--lower" d="M4 54 Q110 111 216 54 Q110 53 4 54Z" />
-                <path className="cosmic-library__blink-seam" d="M5 54 Q110 49 215 54" />
-              </svg>
-            </span>
           </div>
 
           <div className="cosmic-library__message cosmic-reveal cosmic-reveal--message">

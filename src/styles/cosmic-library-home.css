@@ -406,53 +406,6 @@
   user-select: none;
 }
 
-.cosmic-library__eye-blink {
-  position: absolute;
-  z-index: 2;
-  top: 52.8%;
-  left: 50.45%;
-  width: 20.6%;
-  height: 14.8%;
-  overflow: hidden;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.cosmic-library__eye-blink svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.cosmic-library__eyelid {
-  fill: rgba(251, 249, 243, 0.96);
-  stroke: rgba(184, 132, 39, 0.18);
-  stroke-width: 1.2;
-  transform-box: fill-box;
-}
-
-.cosmic-library__eyelid--upper {
-  transform: translateY(-106%);
-  transform-origin: center bottom;
-  animation: cosmic-blink-upper 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
-}
-
-.cosmic-library__eyelid--lower {
-  transform: translateY(106%);
-  transform-origin: center top;
-  animation: cosmic-blink-lower 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
-}
-
-.cosmic-library__blink-seam {
-  fill: none;
-  stroke: rgba(179, 124, 27, 0.62);
-  stroke-linecap: round;
-  stroke-width: 2;
-  opacity: 0;
-  animation: cosmic-blink-seam 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
-}
-
 .cosmic-library__message {
   margin-top: clamp(0.65rem, 1.4vh, 1rem);
 }
@@ -765,21 +718,6 @@
 
 @keyframes cosmic-orbit-inner {
   to { transform: translate(-50%, -50%) rotate(377deg); }
-}
-
-@keyframes cosmic-blink-upper {
-  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { transform: translateY(-106%); }
-  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { transform: translateY(0); }
-}
-
-@keyframes cosmic-blink-lower {
-  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { transform: translateY(106%); }
-  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { transform: translateY(0); }
-}
-
-@keyframes cosmic-blink-seam {
-  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { opacity: 0; }
-  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { opacity: 0.68; }
 }
 
 @media (max-width: 1040px) {

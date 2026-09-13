@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 
 const MAX_CHARS = 1200
 const MAX_MESSAGES = 20
-const WELCOME = 'Bienvenue. Je suis le Gardien de MediumIA.\nJe peux vous guider, répondre à vos questions et vous aider à trouver ce que vous cherchez.'
+const WELCOME = 'Bienvenue. Je suis Aël, le Gardien de la Bibliothèque de MediumIA. Que cherchez-vous à comprendre, explorer ou découvrir aujourd’hui ?'
 const AVATAR = '/images/guardian/guardian-mediumia.png'
 
 export default function SiteGuardian() {
@@ -174,8 +174,8 @@ export default function SiteGuardian() {
                 />
               </div>
               <div className="min-w-0">
-                <h3 className="font-georgia text-cream text-sm font-semibold tracking-wide">Le Gardien de MediumIA</h3>
-                <p className="font-georgia text-cream/50 text-[11px] mt-0.5">Je peux vous guider dans cet univers.</p>
+                <h3 className="font-georgia text-cream text-sm font-semibold tracking-wide">AËL</h3>
+                <p className="font-georgia text-cream/50 text-[11px] mt-0.5">Gardien de la Bibliothèque</p>
               </div>
             </div>
             <button

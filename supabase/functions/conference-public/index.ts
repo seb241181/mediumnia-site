@@ -5,6 +5,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALLOWED_ORIGINS = new Set(["https://mediumia.fr", "https://www.mediumia.fr"]);
 const EVENT_SLUG = "premiere-conference-mediumia";
 const FROM_EMAIL = "MediumIA <conference@mail.mediumia.fr>";
+const PREPARATION_BUCKET = "conference-preparation";
 
 function clean(value: unknown, max = 200) {
   return String(value ?? "").trim().slice(0, max);
@@ -52,17 +53,62 @@ function publicEvent(event: any) {
   };
 }
 
-async function sendConfirmation(firstName: string, email: string, registrationId: string) {
+async function buildPreparationUrl(supabase: any, path?: string | null, endsAt?: string | null) {
+  if (!path) return null;
+
+  const now = Date.now();
+  const fallbackExpiry = now + 45 * 24 * 60 * 60 * 1000;
+  const desiredExpiry = endsAt ? new Date(endsAt).getTime() + 24 * 60 * 60 * 1000 : fallbackExpiry;
+  const expiryMs = Number.isFinite(desiredExpiry)
+    ? Math.max(now + 60 * 60 * 1000, Math.min(desiredExpiry, now + 60 * 24 * 60 * 60 * 1000))
+    : fallbackExpiry;
+  const expiresIn = Math.max(3600, Math.floor((expiryMs - now) / 1000));
+
+  const { data, error } = await supabase.storage
+    .from(PREPARATION_BUCKET)
+    .createSignedUrl(path, expiresIn, {
+      download: "MEDIUMIA_Carnet_Preparation_Conference_23-10-2026.pdf",
+    });
+
+  if (error || !data?.signedUrl) {
+    console.error("conference_preparation_signed_url_failed");
+    return null;
+  }
+
+  return data.signedUrl;
+}
+
+async function sendConfirmation(supabase: any, firstName: string, email: string, registrationId: string, event: any) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     console.warn("conference_confirmation_not_configured");
-    return "not_configured";
+    return { status: "not_configured", preparationIncluded: false, zoomIncluded: false };
   }
 
+  const preparationUrl = await buildPreparationUrl(supabase, event?.preparation_pdf_url, event?.ends_at);
+  const zoomJoinUrl = event?.zoom_join_url || null;
   const safeName = escapeHtml(firstName);
+  const safeZoomUrl = zoomJoinUrl ? escapeHtml(zoomJoinUrl) : "";
+  const safePreparationUrl = preparationUrl ? escapeHtml(preparationUrl) : "";
   const subject = "Votre place est réservée — Conférence MediumIA";
-  const text = `Bonjour ${firstName},\n\nVotre inscription à la première conférence publique MediumIA est bien enregistrée.\n\n« Et si la médiumnité devenait accessible ? »\nVendredi 23 octobre 2026 à 19 h\nEn direct · durée prévue : 1 h 30\n\nAvant notre rencontre, vous recevrez votre carnet de préparation MediumIA. Le lien d’accès au direct vous sera transmis séparément dès qu’il sera prêt.\n\nGardez cet e-mail : il confirme votre inscription personnelle à la conférence.\n\nÀ très bientôt,\nSébastien · MediumIA`;
-  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>Vendredi 23 octobre 2026 à 19 h</strong><br>En direct · durée prévue : 1 h 30</p><p>Avant notre rencontre, vous recevrez votre carnet de préparation MediumIA. Le lien d’accès au direct vous sera transmis séparément dès qu’il sera prêt.</p><p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il confirme votre inscription personnelle à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
+
+  const zoomText = zoomJoinUrl
+    ? `\nLien Zoom : ${zoomJoinUrl}\n`
+    : `\nLe lien d’accès au direct vous sera transmis dès qu’il sera prêt.\n`;
+  const preparationText = preparationUrl
+    ? `\nCarnet de préparation : ${preparationUrl}\n`
+    : `\nVotre carnet de préparation vous sera transmis dès qu’il sera disponible.\n`;
+  const text = `Bonjour ${firstName},\n\nVotre inscription à la première conférence publique MediumIA est bien enregistrée.\n\n« Et si la médiumnité devenait accessible ? »\nVendredi 23 octobre 2026 à 19 h\nEn direct · durée prévue : 1 h 30\n${zoomText}${preparationText}\nGardez cet e-mail : il contient vos accès personnels à la conférence.\n\nÀ très bientôt,\nSébastien · MediumIA`;
+
+  const zoomBlock = zoomJoinUrl
+    ? `<p style="text-align:center;margin:28px 0"><a href="${safeZoomUrl}" style="display:inline-block;background:#c9a84c;color:#1a1535;text-decoration:none;padding:14px 24px;border-radius:8px;font-weight:bold">Rejoindre la conférence sur Zoom</a></p><p style="font-size:13px;color:#706a80;text-align:center">Accès au direct du 23 octobre à 19 h.</p>`
+    : `<p>Le lien d’accès au direct vous sera transmis dès qu’il sera prêt.</p>`;
+
+  const preparationBlock = preparationUrl
+    ? `<p style="text-align:center;margin:28px 0"><a href="${safePreparationUrl}" style="display:inline-block;background:#1a1535;color:#fffaf0;text-decoration:none;padding:14px 24px;border-radius:8px;font-weight:bold">Télécharger mon carnet de préparation</a></p><p style="font-size:13px;color:#706a80;text-align:center">Gardez-le près de vous pour préparer votre expérience avant le direct.</p>`
+    : `<p>Votre carnet de préparation MediumIA vous sera transmis dès qu’il sera disponible.</p>`;
+
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>Vendredi 23 octobre 2026 à 19 h</strong><br>En direct · durée prévue : 1 h 30</p>${preparationBlock}${zoomBlock}<p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il contient vos accès personnels à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -74,14 +120,28 @@ async function sendConfirmation(firstName: string, email: string, registrationId
       },
       body: JSON.stringify({ from: FROM_EMAIL, to: [email], subject, html, text }),
     });
+
     if (!response.ok) {
       console.error("conference_confirmation_failed", response.status);
-      return "error";
+      return { status: "error", preparationIncluded: !!preparationUrl, zoomIncluded: !!zoomJoinUrl };
     }
-    return "sent";
+
+    return { status: "sent", preparationIncluded: !!preparationUrl, zoomIncluded: !!zoomJoinUrl };
   } catch {
     console.error("conference_confirmation_exception");
-    return "error";
+    return { status: "error", preparationIncluded: !!preparationUrl, zoomIncluded: !!zoomJoinUrl };
+  }
+}
+
+async function markDelivery(supabase: any, registrationId: string, result: any) {
+  if (result?.status !== "sent") return;
+
+  const patch: Record<string, string> = { updated_at: new Date().toISOString() };
+  if (result.preparationIncluded) patch.preparation_sent_at = new Date().toISOString();
+  if (result.zoomIncluded) patch.zoom_sent_at = new Date().toISOString();
+
+  if (Object.keys(patch).length > 1) {
+    await supabase.from("conference_registrations").update(patch).eq("id", registrationId);
   }
 }
 
@@ -106,6 +166,7 @@ Deno.serve(async (req: Request) => {
       .select("slug,title,subtitle,starts_at,ends_at,timezone,status,capacity")
       .eq("slug", slug)
       .maybeSingle();
+
     if (error) return json(req, { error: "Impossible de charger la conférence." }, 500);
     return json(req, { event: publicEvent(data) });
   }
@@ -116,7 +177,10 @@ Deno.serve(async (req: Request) => {
     const email = clean(body?.email, 254).toLowerCase();
     const slug = clean(body?.slug || EVENT_SLUG, 120);
     const source = clean(body?.source || "conferences", 120);
-    if (!firstName || !EMAIL_RE.test(email)) return json(req, { error: "Prénom et e-mail valides requis." }, 400);
+
+    if (!firstName || !EMAIL_RE.test(email)) {
+      return json(req, { error: "Prénom et e-mail valides requis." }, 400);
+    }
 
     const ip = clean(req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("cf-connecting-ip") || "unknown", 120);
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`conference-public:${ip}`));
@@ -127,15 +191,21 @@ Deno.serve(async (req: Request) => {
       p_hourly_limit: 20,
       p_daily_limit: 60,
     });
-    if (rate && rate.allowed === false) return json(req, { error: "Trop de tentatives. Réessayez plus tard." }, 429);
+
+    if (rate && rate.allowed === false) {
+      return json(req, { error: "Trop de tentatives. Réessayez plus tard." }, 429);
+    }
 
     const { data: event, error: eventError } = await supabase
       .from("conference_events")
-      .select("id,status,capacity")
+      .select("id,status,capacity,zoom_join_url,preparation_pdf_url,ends_at")
       .eq("slug", slug)
       .maybeSingle();
+
     if (eventError) return json(req, { error: "Impossible de vérifier la conférence." }, 500);
-    if (!event || event.status !== "registration_open") return json(req, { error: "Les inscriptions ne sont pas ouvertes." }, 409);
+    if (!event || event.status !== "registration_open") {
+      return json(req, { error: "Les inscriptions ne sont pas ouvertes." }, 409);
+    }
 
     if (event.capacity) {
       const { count, error: countError } = await supabase
@@ -143,8 +213,11 @@ Deno.serve(async (req: Request) => {
         .select("id", { count: "exact", head: true })
         .eq("event_id", event.id)
         .neq("status", "cancelled");
+
       if (countError) return json(req, { error: "Impossible de vérifier les places." }, 500);
-      if ((count || 0) >= event.capacity) return json(req, { error: "La conférence est complète." }, 409);
+      if ((count || 0) >= event.capacity) {
+        return json(req, { error: "La conférence est complète." }, 409);
+      }
     }
 
     const { data: existing } = await supabase
@@ -153,16 +226,22 @@ Deno.serve(async (req: Request) => {
       .eq("event_id", event.id)
       .eq("email_normalized", email)
       .maybeSingle();
-    if (existing && existing.status !== "cancelled") return json(req, { ok: true, alreadyRegistered: true });
+
+    if (existing && existing.status !== "cancelled") {
+      return json(req, { ok: true, alreadyRegistered: true });
+    }
 
     if (existing?.status === "cancelled") {
       const { error } = await supabase
         .from("conference_registrations")
         .update({ first_name: firstName, status: "registered", source, updated_at: new Date().toISOString() })
         .eq("id", existing.id);
+
       if (error) return json(req, { error: "Inscription impossible." }, 500);
-      const emailStatus = await sendConfirmation(firstName, email, existing.id);
-      return json(req, { ok: true, restored: true, emailStatus });
+
+      const delivery = await sendConfirmation(supabase, firstName, email, existing.id, event);
+      await markDelivery(supabase, existing.id, delivery);
+      return json(req, { ok: true, restored: true, emailStatus: delivery.status });
     }
 
     const { data: inserted, error } = await supabase
@@ -170,13 +249,16 @@ Deno.serve(async (req: Request) => {
       .insert({ event_id: event.id, first_name: firstName, email, source })
       .select("id")
       .single();
+
     if (error) {
       if (error.code === "23505") return json(req, { ok: true, alreadyRegistered: true });
       console.error("conference_registration_failed");
       return json(req, { error: "Inscription impossible pour le moment." }, 500);
     }
-    const emailStatus = await sendConfirmation(firstName, email, inserted.id);
-    return json(req, { ok: true, emailStatus }, 201);
+
+    const delivery = await sendConfirmation(supabase, firstName, email, inserted.id, event);
+    await markDelivery(supabase, inserted.id, delivery);
+    return json(req, { ok: true, emailStatus: delivery.status }, 201);
   }
 
   return json(req, { error: "Méthode non autorisée." }, 405);

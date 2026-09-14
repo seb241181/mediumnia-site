@@ -5,12 +5,14 @@ import App from './App.jsx'
 import ConferencesPage from './components/ConferencesPage.jsx'
 import ConferenceLivePage from './components/ConferenceLivePage.jsx'
 import ConferenceCockpitPage from './components/ConferenceCockpitPage.jsx'
+import ConferenceRehearsalPage from './components/ConferenceRehearsalPage.jsx'
 import GlobalAccount from './components/GlobalAccount.jsx'
 
 const pathname = window.location.pathname
 const isConferenceRoute = pathname === '/conferences' || pathname.startsWith('/conferences/')
 const isConferenceLiveRoute = pathname.startsWith('/live/')
 const isConferenceCockpitRoute = pathname.startsWith('/pro/conference/')
+const isConferenceRehearsalRoute = pathname.startsWith('/pro/conference-rehearsal/')
 
 const navigateDocument = (path) => {
   window.location.assign(path)
@@ -20,6 +22,7 @@ let page = <App />
 if (isConferenceRoute) page = <ConferencesPage onBack={() => navigateDocument('/')} onNavigate={navigateDocument} />
 if (isConferenceLiveRoute) page = <ConferenceLivePage />
 if (isConferenceCockpitRoute) page = <ConferenceCockpitPage />
+if (isConferenceRehearsalRoute) page = <ConferenceRehearsalPage />
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -19,14 +19,16 @@ async function readSources() {
   return { page, app, footer, pilotage, vercel }
 }
 
-test('conferences page is a truthful public foundation without invented event details', async () => {
+test('conferences page prepares the public launch without inventing event details or collecting registrations early', async () => {
   const { page } = await readSources()
-  assert.match(page, /Première rencontre en préparation/)
-  assert.match(page, /La prochaine conférence sera annoncée ici/)
-  assert.match(page, /Aucune inscription n’est demandée tant que ces informations ne sont pas publiées/)
-  assert.match(page, />Programmation<\/button>/)
-  assert.doesNotMatch(page, /Être prévenu/)
-  assert.doesNotMatch(page, /réservation, le paiement et l’envoi automatique du lien de direct viendront s’y brancher ensuite/)
+  assert.match(page, /Première conférence publique MediumIA/)
+  assert.match(page, /Le thème, la date et l’horaire définitifs seront publiés ici très prochainement/)
+  assert.match(page, /Ouverture prochaine/)
+  assert.match(page, /Aucun paiement ne sera demandé pour participer à cette première conférence/)
+  assert.match(page, /PDF offert/)
+  assert.match(page, /Questions en direct/)
+  assert.match(page, /Pass MediumIA personnel/)
+  assert.doesNotMatch(page, /<form/)
   assert.doesNotMatch(page, /2026-\d{2}-\d{2}|\b\d{1,3}\s?€\b/)
 })
 

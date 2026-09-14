@@ -20,7 +20,7 @@ function buildCopilotPrompt(questions = []) {
     .slice(0, 45)
 
   const lines = active.map((q, index) => (
-    `${index + 1}. id=${q.id} | prénom=${q.firstName || 'Participant'} | question=${String(q.question || '').replace(/\s+/g, ' ').trim()}`
+    `${index + 1}. heure=${formatClock(q.created_at)} | id=${q.id} | prénom=${q.firstName || 'Participant'} | question=${String(q.question || '').replace(/\s+/g, ' ').trim()}`
   ))
 
   const questionBlock = lines.join('\n').slice(0, 3150)
@@ -28,7 +28,8 @@ function buildCopilotPrompt(questions = []) {
 
 OBJECTIF
 - regrouper les questions réellement similaires ;
-- identifier le thème qui monte le plus ;
+- identifier le thème dominant ;
+- tenir compte de l'heure des questions pour repérer ce qui monte récemment ;
 - recommander jusqu'à 3 questions à traiter maintenant ;
 - privilégier les questions utiles à plusieurs personnes, humaines, claires et complémentaires ;
 - ne réponds jamais aux questions : aide seulement Sébastien à choisir ;
@@ -40,7 +41,7 @@ RÉPONDS UNIQUEMENT avec un objet JSON valide, sans markdown, sans commentaire a
   "recommendations": [
     { "id": "uuid exact de la question", "similarCount": 0, "reason": "raison très courte" }
   ],
-  "watch": "autre thème émergent en une ligne ou Rien pour l'instant"
+  "watch": "thème ou angle qui monte dans les questions les plus récentes, ou Rien pour l'instant"
 }
 
 RÈGLES DE SORTIE
@@ -48,6 +49,7 @@ RÈGLES DE SORTIE
 - si moins de 3 questions actives existent, n'en invente aucune ;
 - similarCount = nombre de questions réellement proches, question retenue comprise ;
 - theme.count = nombre réel de questions appartenant au thème majeur ;
+- watch doit s'appuyer sur la récence des heures fournies, pas sur une supposition ;
 - reason = 8 mots maximum.
 
 QUESTIONS RÉELLES DU PUBLIC
@@ -262,6 +264,10 @@ export default function ConferenceCockpitPage() {
       question: questions.find((q) => q.id === recommendation.id) || null,
     }))
     .filter((item) => item.question && !['answered', 'dismissed'].includes(item.question.status))
+  const repeatedSignal = [...aiRecommendations]
+    .filter((item) => item.similarCount > 1)
+    .sort((a, b) => b.similarCount - a.similarCount)[0] || null
+  const originalSignal = aiRecommendations.find((item) => item.similarCount === 1) || null
 
   return (
     <div className="min-h-screen bg-[#0f0d21] text-cream">
@@ -365,9 +371,19 @@ export default function ConferenceCockpitPage() {
                     ))}
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                    <p className="font-georgia text-[10px] uppercase tracking-[.18em] text-gold">👀 À SURVEILLER</p>
-                    <p className="mt-2 font-georgia text-sm text-cream/65">{aiPlan.watch}</p>
+                  <div className="rounded-2xl border border-cyan-200/20 bg-cyan-200/5 p-4">
+                    <p className="font-georgia text-[10px] uppercase tracking-[.18em] text-cyan-100">📡 RADAR DE SALLE</p>
+                    <div className="mt-3 space-y-3 font-georgia text-sm text-cream/70">
+                      <div><span className="text-cyan-100">📈 Ça monte :</span> {aiPlan.watch}</div>
+                      <div>
+                        <span className="text-cyan-100">🔁 Répétée :</span>{' '}
+                        {repeatedSignal ? `${repeatedSignal.question.firstName} · ${repeatedSignal.similarCount} questions proches` : 'Pas de répétition forte pour l’instant.'}
+                      </div>
+                      <div>
+                        <span className="text-cyan-100">💎 Originale :</span>{' '}
+                        {originalSignal ? `${originalSignal.question.firstName} · ${originalSignal.question.question}` : 'Aucune question isolée parmi les priorités actuelles.'}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : aiAnalysis ? (

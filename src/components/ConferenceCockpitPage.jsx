@@ -20,7 +20,7 @@ function buildCopilotPrompt(questions = []) {
     .slice(0, 45)
 
   const lines = active.map((q, index) => (
-    `${index + 1}. [${q.firstName || 'Participant'}] ${String(q.question || '').replace(/\s+/g, ' ').trim()}`
+    `${index + 1}. id=${q.id} | prénom=${q.firstName || 'Participant'} | question=${String(q.question || '').replace(/\s+/g, ' ').trim()}`
   ))
 
   const questionBlock = lines.join('\n').slice(0, 3150)
@@ -29,25 +29,64 @@ function buildCopilotPrompt(questions = []) {
 OBJECTIF
 - regrouper les questions réellement similaires ;
 - identifier le thème qui monte le plus ;
-- recommander exactement 3 questions à traiter maintenant ;
+- recommander jusqu'à 3 questions à traiter maintenant ;
 - privilégier les questions utiles à plusieurs personnes, humaines, claires et complémentaires ;
-- ne réponds pas aux questions : aide seulement Sébastien à choisir.
+- ne réponds jamais aux questions : aide seulement Sébastien à choisir ;
+- pour chaque recommandation, réutilise STRICTEMENT l'id exact d'une question fournie.
 
-FORMAT ATTENDU, très court et lisible en direct :
-🔥 THÈME MAJEUR — [nombre] questions
-[thème en une ligne]
+RÉPONDS UNIQUEMENT avec un objet JSON valide, sans markdown, sans commentaire avant ou après :
+{
+  "theme": { "label": "thème majeur en une ligne", "count": 0 },
+  "recommendations": [
+    { "id": "uuid exact de la question", "similarCount": 0, "reason": "raison très courte" }
+  ],
+  "watch": "autre thème émergent en une ligne ou Rien pour l'instant"
+}
 
-✨ 3 QUESTIONS À PRENDRE MAINTENANT
-1. [Prénom] — [question, éventuellement reformulée sans changer le sens]
-   ↳ [nombre] question(s) similaire(s) si pertinent
-2. ...
-3. ...
-
-👀 À SURVEILLER
-[un autre thème émergent en une ligne, ou « Rien pour l’instant »]
+RÈGLES DE SORTIE
+- maximum 3 recommandations ;
+- si moins de 3 questions actives existent, n'en invente aucune ;
+- similarCount = nombre de questions réellement proches, question retenue comprise ;
+- theme.count = nombre réel de questions appartenant au thème majeur ;
+- reason = 8 mots maximum.
 
 QUESTIONS RÉELLES DU PUBLIC
 ${questionBlock || 'Aucune question active.'}`
+}
+
+function parseCopilotPlan(reply, questions = []) {
+  const raw = String(reply || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim()
+  const start = raw.indexOf('{')
+  const end = raw.lastIndexOf('}')
+  if (start < 0 || end <= start) throw new Error('Réponse IA non structurée.')
+
+  const parsed = JSON.parse(raw.slice(start, end + 1))
+  const activeIds = new Set(
+    questions
+      .filter((q) => !['answered', 'dismissed'].includes(q.status))
+      .map((q) => q.id),
+  )
+
+  const seen = new Set()
+  const recommendations = (Array.isArray(parsed?.recommendations) ? parsed.recommendations : [])
+    .filter((item) => item && activeIds.has(item.id) && !seen.has(item.id) && seen.add(item.id))
+    .slice(0, 3)
+    .map((item) => ({
+      id: item.id,
+      similarCount: Math.max(1, Number(item.similarCount) || 1),
+      reason: String(item.reason || '').trim().slice(0, 120),
+    }))
+
+  if (recommendations.length === 0) throw new Error('Aucune recommandation exploitable reçue.')
+
+  return {
+    theme: {
+      label: String(parsed?.theme?.label || 'Thème en cours').trim().slice(0, 180),
+      count: Math.max(1, Number(parsed?.theme?.count) || recommendations[0].similarCount || 1),
+    },
+    recommendations,
+    watch: String(parsed?.watch || "Rien pour l'instant").trim().slice(0, 220),
+  }
 }
 
 export default function ConferenceCockpitPage() {
@@ -63,6 +102,7 @@ export default function ConferenceCockpitPage() {
   const [winner, setWinner] = useState('')
   const [aiState, setAiState] = useState('idle')
   const [aiAnalysis, setAiAnalysis] = useState('')
+  const [aiPlan, setAiPlan] = useState(null)
 
   const call = useCallback(async (method = 'GET', body) => {
     const token = session?.access_token
@@ -78,14 +118,16 @@ export default function ConferenceCockpitPage() {
   }, [session?.access_token, slug])
 
   const refresh = useCallback(async () => {
-    if (!session?.access_token) return
+    if (!session?.access_token) return null
     try {
       const payload = await call('GET')
       setData(payload)
       setWinner(payload?.raffle?.winnerName || '')
       setError('')
+      return payload
     } catch (err) {
       setError(err.message)
+      return null
     }
   }, [call, session?.access_token])
 
@@ -103,37 +145,12 @@ export default function ConferenceCockpitPage() {
     if (error) setAuthError('Connexion impossible. Vérifie tes identifiants MediumIA.')
   }
 
-  const setQuestionStatus = async (questionId, status) => {
-    setBusyId(questionId)
-    try {
-      await call('POST', { action: 'question_status', questionId, status })
-      await refresh()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setBusyId('')
-    }
-  }
-
-  const drawWinner = async () => {
-    setDrawState('loading')
-    setError('')
-    try {
-      const payload = await call('POST', { action: 'draw_raffle' })
-      setWinner(payload.winnerName || 'Gagnant')
-      setDrawState('success')
-      await refresh()
-    } catch (err) {
-      setDrawState('error')
-      setError(err.message)
-    }
-  }
-
-  const runCopilot = async () => {
-    const questions = data?.questions || []
+  const runCopilot = async (questionsOverride = null) => {
+    const questions = questionsOverride || data?.questions || []
     const activeQuestions = questions.filter((q) => !['answered', 'dismissed'].includes(q.status))
     if (activeQuestions.length === 0) {
       setAiState('empty')
+      setAiPlan(null)
       setAiAnalysis('Pas encore assez de matière : aucune question active à analyser.')
       return
     }
@@ -155,10 +172,64 @@ export default function ConferenceCockpitPage() {
       })
       const payload = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(payload.error || 'Analyse IA indisponible.')
-      setAiAnalysis(payload.reply || 'Analyse reçue sans contenu.')
+      const reply = payload.reply || ''
+      setAiAnalysis(reply || 'Analyse reçue sans contenu.')
+      try {
+        setAiPlan(parseCopilotPlan(reply, activeQuestions))
+      } catch {
+        setAiPlan(null)
+      }
       setAiState('success')
     } catch (err) {
       setAiState('error')
+      setError(err.message)
+    }
+  }
+
+  const takeQuestion = async (questionId) => {
+    const questions = data?.questions || []
+    setBusyId(questionId)
+    setError('')
+    try {
+      const selectedOthers = questions.filter((q) => q.status === 'selected' && q.id !== questionId)
+      for (const question of selectedOthers) {
+        await call('POST', { action: 'question_status', questionId: question.id, status: 'pending' })
+      }
+      await call('POST', { action: 'question_status', questionId, status: 'selected' })
+      await refresh()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusyId('')
+    }
+  }
+
+  const setQuestionStatus = async (questionId, status) => {
+    setBusyId(questionId)
+    setError('')
+    try {
+      await call('POST', { action: 'question_status', questionId, status })
+      const fresh = await refresh()
+      if (status === 'answered' && aiPlan && fresh?.questions) {
+        await runCopilot(fresh.questions)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusyId('')
+    }
+  }
+
+  const drawWinner = async () => {
+    setDrawState('loading')
+    setError('')
+    try {
+      const payload = await call('POST', { action: 'draw_raffle' })
+      setWinner(payload.winnerName || 'Gagnant')
+      setDrawState('success')
+      await refresh()
+    } catch (err) {
+      setDrawState('error')
       setError(err.message)
     }
   }
@@ -184,6 +255,13 @@ export default function ConferenceCockpitPage() {
   const counts = data?.counts || {}
   const questions = data?.questions || []
   const raffle = data?.raffle
+  const selectedQuestion = questions.find((q) => q.status === 'selected') || null
+  const aiRecommendations = (aiPlan?.recommendations || [])
+    .map((recommendation) => ({
+      ...recommendation,
+      question: questions.find((q) => q.id === recommendation.id) || null,
+    }))
+    .filter((item) => item.question && !['answered', 'dismissed'].includes(item.question.status))
 
   return (
     <div className="min-h-screen bg-[#0f0d21] text-cream">
@@ -221,6 +299,16 @@ export default function ConferenceCockpitPage() {
               </div>
               <span className="rounded-full border border-gold/25 px-3 py-1 font-georgia text-xs text-gold">mise à jour 10 s</span>
             </div>
+
+            {selectedQuestion && (
+              <div className="mt-5 rounded-3xl border-2 border-gold/70 bg-gold/10 p-6 shadow-[0_0_40px_rgba(201,168,76,.08)]">
+                <p className="font-georgia text-[10px] font-bold uppercase tracking-[.24em] text-gold">🔥 QUESTION ACTIVE</p>
+                <p className="mt-2 font-georgia text-sm text-gold/80">{selectedQuestion.firstName}</p>
+                <p className="mt-4 font-georgia text-2xl leading-relaxed text-cream">{selectedQuestion.question}</p>
+                <button disabled={busyId === selectedQuestion.id} onClick={() => setQuestionStatus(selectedQuestion.id, 'answered')} className="mt-5 rounded-xl bg-emerald-200 px-5 py-3 font-georgia text-sm font-bold text-[#0f0d21] disabled:opacity-50">✓ Répondue · suivante</button>
+              </div>
+            )}
+
             <div className="mt-5 space-y-3">
               {questions.length === 0 ? (
                 <div className="rounded-2xl border border-white/10 p-6 text-center font-georgia text-sm text-cream/45">Aucune question pour le moment.</div>
@@ -234,9 +322,9 @@ export default function ConferenceCockpitPage() {
                     <span className="rounded-full border border-white/10 px-2 py-1 font-georgia text-[10px] uppercase text-cream/45">{q.status}</span>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <button disabled={busyId === q.id} onClick={() => setQuestionStatus(q.id, 'selected')} className="rounded-lg bg-gold px-3 py-2 font-georgia text-xs font-bold text-deep disabled:opacity-50">À prendre</button>
-                    <button disabled={busyId === q.id} onClick={() => setQuestionStatus(q.id, 'answered')} className="rounded-lg border border-emerald-300/25 px-3 py-2 font-georgia text-xs text-emerald-200 disabled:opacity-50">Répondue</button>
-                    <button disabled={busyId === q.id} onClick={() => setQuestionStatus(q.id, 'dismissed')} className="rounded-lg border border-white/10 px-3 py-2 font-georgia text-xs text-cream/50 disabled:opacity-50">Écarter</button>
+                    <button disabled={busyId === q.id || q.status === 'answered'} onClick={() => takeQuestion(q.id)} className="rounded-lg bg-gold px-3 py-2 font-georgia text-xs font-bold text-deep disabled:opacity-50">À prendre</button>
+                    <button disabled={busyId === q.id || q.status === 'answered'} onClick={() => setQuestionStatus(q.id, 'answered')} className="rounded-lg border border-emerald-300/25 px-3 py-2 font-georgia text-xs text-emerald-200 disabled:opacity-50">Répondue</button>
+                    <button disabled={busyId === q.id || q.status === 'answered'} onClick={() => setQuestionStatus(q.id, 'dismissed')} className="rounded-lg border border-white/10 px-3 py-2 font-georgia text-xs text-cream/50 disabled:opacity-50">Écarter</button>
                   </div>
                 </article>
               ))}
@@ -248,13 +336,45 @@ export default function ConferenceCockpitPage() {
               <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">✨ COPILOTE IA MEDIUMIA</p>
               <h2 className="mt-3 font-georgia text-2xl">Lis la salle pour moi</h2>
               <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/55">Regroupe les doublons, repère le thème majeur et propose les trois questions à prendre maintenant. Tu gardes toujours la décision finale.</p>
-              <button onClick={runCopilot} disabled={aiState === 'loading'} className="mt-5 w-full rounded-xl bg-gold px-4 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">
+              <button onClick={() => runCopilot()} disabled={aiState === 'loading'} className="mt-5 w-full rounded-xl bg-gold px-4 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">
                 {aiState === 'loading' ? '✨ Analyse en cours…' : aiAnalysis ? '✨ Ré-analyser les questions' : '✨ Donne-moi les 3 questions à prendre'}
               </button>
-              {aiAnalysis && (
+
+              {aiPlan ? (
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-2xl border border-gold/30 bg-black/15 p-4">
+                    <p className="font-georgia text-[10px] font-bold uppercase tracking-[.18em] text-gold">🔥 THÈME MAJEUR · {aiPlan.theme.count} question{aiPlan.theme.count > 1 ? 's' : ''}</p>
+                    <p className="mt-2 font-georgia text-base text-cream">{aiPlan.theme.label}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {aiRecommendations.map((item, index) => (
+                      <article key={item.id} className={`rounded-2xl border p-4 ${item.question.status === 'selected' ? 'border-gold/70 bg-gold/10' : 'border-white/10 bg-black/10'}`}>
+                        <div className="flex items-start gap-3">
+                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gold font-georgia text-xs font-bold text-deep">{index + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-georgia text-xs text-gold">{item.question.firstName}</p>
+                            <p className="mt-1 font-georgia text-sm leading-relaxed text-cream">{item.question.question}</p>
+                            <p className="mt-2 font-georgia text-[11px] text-cream/45">↳ {item.similarCount} question{item.similarCount > 1 ? 's' : ''} proche{item.similarCount > 1 ? 's' : ''}{item.reason ? ` · ${item.reason}` : ''}</p>
+                            <button disabled={busyId === item.id || item.question.status === 'selected'} onClick={() => takeQuestion(item.id)} className="mt-3 rounded-lg bg-gold px-3 py-2 font-georgia text-xs font-bold text-deep disabled:opacity-40">
+                              {item.question.status === 'selected' ? '✓ Question active' : '🔥 Prendre celle-ci'}
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
+                    <p className="font-georgia text-[10px] uppercase tracking-[.18em] text-gold">👀 À SURVEILLER</p>
+                    <p className="mt-2 font-georgia text-sm text-cream/65">{aiPlan.watch}</p>
+                  </div>
+                </div>
+              ) : aiAnalysis ? (
                 <div className="mt-5 whitespace-pre-wrap rounded-2xl border border-gold/25 bg-black/15 p-5 font-georgia text-sm leading-relaxed text-cream/85">{aiAnalysis}</div>
-              )}
-              <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/35">Analyse déclenchée uniquement quand tu appuies sur le bouton. Les questions répondues ou écartées sont exclues.</p>
+              ) : null}
+
+              <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/35">Après une question marquée « Répondue », le copilote recalcule automatiquement la meilleure suite. Les questions répondues ou écartées sont exclues.</p>
             </section>
 
             <section className="rounded-3xl border border-gold/35 bg-[#1b1738] p-6">

@@ -2,13 +2,21 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ALLOWED_ORIGINS = new Set([
-  "https://mediumia.fr",
-  "https://www.mediumia.fr",
-]);
+const ALLOWED_ORIGINS = new Set(["https://mediumia.fr", "https://www.mediumia.fr"]);
+const EVENT_SLUG = "premiere-conference-mediumia";
+const FROM_EMAIL = "MediumIA <conference@mail.mediumia.fr>";
 
 function clean(value: unknown, max = 200) {
   return String(value ?? "").trim().slice(0, max);
+}
+
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function corsHeaders(req: Request) {
@@ -44,6 +52,39 @@ function publicEvent(event: any) {
   };
 }
 
+async function sendConfirmation(firstName: string, email: string, registrationId: string) {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) {
+    console.warn("conference_confirmation_not_configured");
+    return "not_configured";
+  }
+
+  const safeName = escapeHtml(firstName);
+  const subject = "Votre place est réservée — Conférence MediumIA";
+  const text = `Bonjour ${firstName},\n\nVotre inscription à la première conférence publique MediumIA est bien enregistrée.\n\n« Et si la médiumnité devenait accessible ? »\nVendredi 23 octobre 2026 à 19 h\nEn direct · durée prévue : 1 h 30\n\nAvant notre rencontre, vous recevrez votre carnet de préparation MediumIA. Le lien d’accès au direct vous sera transmis séparément dès qu’il sera prêt.\n\nGardez cet e-mail : il confirme votre inscription personnelle à la conférence.\n\nÀ très bientôt,\nSébastien · MediumIA`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>Vendredi 23 octobre 2026 à 19 h</strong><br>En direct · durée prévue : 1 h 30</p><p>Avant notre rencontre, vous recevrez votre carnet de préparation MediumIA. Le lien d’accès au direct vous sera transmis séparément dès qu’il sera prêt.</p><p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il confirme votre inscription personnelle à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `conference-confirmation-${registrationId}`,
+      },
+      body: JSON.stringify({ from: FROM_EMAIL, to: [email], subject, html, text }),
+    });
+    if (!response.ok) {
+      console.error("conference_confirmation_failed", response.status);
+      return "error";
+    }
+    return "sent";
+  } catch {
+    console.error("conference_confirmation_exception");
+    return "error";
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
 
@@ -59,7 +100,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const url = new URL(req.url);
-    const slug = clean(url.searchParams.get("slug") || "premiere-conference-mediumia", 120);
+    const slug = clean(url.searchParams.get("slug") || EVENT_SLUG, 120);
     const { data, error } = await supabase
       .from("conference_events")
       .select("slug,title,subtitle,starts_at,ends_at,timezone,status,capacity")
@@ -73,13 +114,12 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const firstName = clean(body?.firstName, 80);
     const email = clean(body?.email, 254).toLowerCase();
-    const slug = clean(body?.slug || "premiere-conference-mediumia", 120);
+    const slug = clean(body?.slug || EVENT_SLUG, 120);
     const source = clean(body?.source || "conferences", 120);
     if (!firstName || !EMAIL_RE.test(email)) return json(req, { error: "Prénom et e-mail valides requis." }, 400);
 
     const ip = clean(req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("cf-connecting-ip") || "unknown", 120);
-    const bytes = new TextEncoder().encode(`conference-public:${ip}`);
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`conference-public:${ip}`));
     const ipHash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
     const { data: rate } = await supabase.rpc("consume_api_rate_limit", {
       p_ip_hash: ipHash,
@@ -121,18 +161,22 @@ Deno.serve(async (req: Request) => {
         .update({ first_name: firstName, status: "registered", source, updated_at: new Date().toISOString() })
         .eq("id", existing.id);
       if (error) return json(req, { error: "Inscription impossible." }, 500);
-      return json(req, { ok: true, restored: true });
+      const emailStatus = await sendConfirmation(firstName, email, existing.id);
+      return json(req, { ok: true, restored: true, emailStatus });
     }
 
-    const { error } = await supabase
+    const { data: inserted, error } = await supabase
       .from("conference_registrations")
-      .insert({ event_id: event.id, first_name: firstName, email, source });
+      .insert({ event_id: event.id, first_name: firstName, email, source })
+      .select("id")
+      .single();
     if (error) {
       if (error.code === "23505") return json(req, { ok: true, alreadyRegistered: true });
       console.error("conference_registration_failed");
       return json(req, { error: "Inscription impossible pour le moment." }, 500);
     }
-    return json(req, { ok: true }, 201);
+    const emailStatus = await sendConfirmation(firstName, email, inserted.id);
+    return json(req, { ok: true, emailStatus }, 201);
   }
 
   return json(req, { error: "Méthode non autorisée." }, 405);

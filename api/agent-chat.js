@@ -195,7 +195,7 @@ export default async function handler(req, res) {
 
   const { data: agent } = await db
     .from('agents')
-    .select('id, owner_id, membership_id, name, status, mission, audience, tone, knowledge_summary')
+    .select('id, owner_id, membership_id, name, status, provider, model, mission, audience, tone, knowledge_summary')
     .eq('id', agentId)
     .eq('owner_id', auth.userId)
     .eq('membership_id', membership.id)
@@ -209,6 +209,13 @@ export default async function handler(req, res) {
     technicalLog(requestId, 'chat', 'rejected', startedAt, 'copilot_unavailable')
     return res.status(403).json({ error: 'Copilot indisponible', requestId })
   }
+
+  const requestedProvider = String(agent.provider || '').trim().toLowerCase()
+  const provider = ['anthropic', 'openai'].includes(requestedProvider) ? requestedProvider : runtime.provider
+  const defaultModel = provider === 'openai'
+    ? (process.env.OPENAI_AGENT_MODEL || 'gpt-5.6-luna').trim()
+    : (process.env.ANTHROPIC_AGENT_MODEL || 'claude-sonnet-5').trim()
+  const model = String(agent.model || '').trim() || (provider === runtime.provider ? runtime.model : defaultModel)
 
   const { data: quota, error: quotaError } = await db.rpc('consume_pro_usage_quota', {
     p_membership_id: membership.id,
@@ -306,12 +313,12 @@ export default async function handler(req, res) {
 
   let result
   try {
-    if (runtime.provider === 'anthropic') {
+    if (provider === 'anthropic') {
       const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.CLE_API_ANTHROPIC
       if (!apiKey) throw new Error('provider_not_configured')
       result = await callAnthropic({
         apiKey,
-        model: runtime.model,
+        model,
         instructions,
         history: providerHistory,
         maxOutputTokens: runtime.limits.maxOutputTokens,
@@ -321,7 +328,7 @@ export default async function handler(req, res) {
       if (!apiKey) throw new Error('provider_not_configured')
       result = await callOpenAI({
         apiKey,
-        model: runtime.model,
+        model,
         instructions,
         history: providerHistory,
         maxOutputTokens: runtime.limits.maxOutputTokens,
@@ -337,8 +344,8 @@ export default async function handler(req, res) {
       eventType: 'agent_response_failed',
       conversationId,
       requestId,
-      provider: runtime.provider,
-      model: runtime.model,
+      provider,
+      model,
       sourceCount: knowledge.sources.length,
       durationMs: Date.now() - startedAt,
       result: errorCode,
@@ -354,8 +361,8 @@ export default async function handler(req, res) {
       eventType: 'agent_response_failed',
       conversationId,
       requestId,
-      provider: runtime.provider,
-      model: runtime.model,
+      provider,
+      model,
       sourceCount: knowledge.sources.length,
       durationMs: Date.now() - startedAt,
       result: result.error,
@@ -370,8 +377,8 @@ export default async function handler(req, res) {
     owner_id: auth.userId,
     role: 'assistant',
     content: result.reply,
-    provider: runtime.provider,
-    model: runtime.model,
+    provider,
+    model,
     sources: knowledge.sources,
   })
   if (assistantMessageError) {
@@ -385,8 +392,8 @@ export default async function handler(req, res) {
     eventType: 'agent_response_generated',
     conversationId,
     requestId,
-    provider: runtime.provider,
-    model: runtime.model,
+    provider,
+    model,
     sourceCount: knowledge.sources.length,
     durationMs: Date.now() - startedAt,
     result: 'success',

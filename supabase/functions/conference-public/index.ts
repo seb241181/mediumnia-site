@@ -53,6 +53,27 @@ function publicEvent(event: any) {
   };
 }
 
+function publicRaffle(raffle: any) {
+  if (!raffle || raffle.status === "cancelled") return null;
+  return {
+    prizeTitle: raffle.prize_title,
+    prizeValueCents: raffle.prize_value_cents,
+    currency: raffle.currency,
+  };
+}
+
+function durationLabel(event: any) {
+  const start = event?.starts_at ? new Date(event.starts_at).getTime() : NaN;
+  const end = event?.ends_at ? new Date(event.ends_at).getTime() : NaN;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return "1 h";
+  const minutes = Math.round((end - start) / 60000);
+  if (minutes === 60) return "1 h";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return remaining ? `${hours} h ${remaining}` : `${hours} h`;
+}
+
 async function buildPreparationUrl(supabase: any, path?: string | null, endsAt?: string | null) {
   if (!path) return null;
 
@@ -90,6 +111,7 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
   const safeName = escapeHtml(firstName);
   const safeZoomUrl = zoomJoinUrl ? escapeHtml(zoomJoinUrl) : "";
   const safePreparationUrl = preparationUrl ? escapeHtml(preparationUrl) : "";
+  const duration = durationLabel(event);
   const subject = "Votre place est réservée — Conférence MediumIA";
 
   const zoomText = zoomJoinUrl
@@ -98,7 +120,8 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
   const preparationText = preparationUrl
     ? `\nCarnet de préparation : ${preparationUrl}\n`
     : `\nVotre carnet de préparation vous sera transmis dès qu’il sera disponible.\n`;
-  const text = `Bonjour ${firstName},\n\nVotre inscription à la première conférence publique MediumIA est bien enregistrée.\n\n« Et si la médiumnité devenait accessible ? »\nVendredi 23 octobre 2026 à 19 h\nEn direct · durée prévue : 1 h 30\n${zoomText}${preparationText}\nGardez cet e-mail : il contient vos accès personnels à la conférence.\n\nÀ très bientôt,\nSébastien · MediumIA`;
+  const raffleText = `\n🎁 Pendant le direct, 1 accès complet à la formation MediumIA (valeur 597 €) sera offert par tirage au sort parmi les participants présents ayant validé leur participation au tirage. Participation gratuite, sans obligation d’achat.\n`;
+  const text = `Bonjour ${firstName},\n\nVotre inscription à la première conférence publique MediumIA est bien enregistrée.\n\n« Et si la médiumnité devenait accessible ? »\nVendredi 23 octobre 2026 à 19 h\nEn direct · durée prévue : ${duration}\n${raffleText}${zoomText}${preparationText}\nGardez cet e-mail : il contient vos accès à la conférence.\n\nÀ très bientôt,\nSébastien · MediumIA`;
 
   const zoomBlock = zoomJoinUrl
     ? `<p style="text-align:center;margin:28px 0"><a href="${safeZoomUrl}" style="display:inline-block;background:#c9a84c;color:#1a1535;text-decoration:none;padding:14px 24px;border-radius:8px;font-weight:bold">Rejoindre la conférence sur Zoom</a></p><p style="font-size:13px;color:#706a80;text-align:center">Accès au direct du 23 octobre à 19 h.</p>`
@@ -108,7 +131,9 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
     ? `<p style="text-align:center;margin:28px 0"><a href="${safePreparationUrl}" style="display:inline-block;background:#1a1535;color:#fffaf0;text-decoration:none;padding:14px 24px;border-radius:8px;font-weight:bold">Télécharger mon carnet de préparation</a></p><p style="font-size:13px;color:#706a80;text-align:center">Gardez-le près de vous pour préparer votre expérience avant le direct.</p>`
     : `<p>Votre carnet de préparation MediumIA vous sera transmis dès qu’il sera disponible.</p>`;
 
-  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>Vendredi 23 octobre 2026 à 19 h</strong><br>En direct · durée prévue : 1 h 30</p>${preparationBlock}${zoomBlock}<p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il contient vos accès personnels à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
+  const raffleBlock = `<div style="margin:26px 0;padding:20px;border:1px solid #c9a84c;background:#fbf7ea;border-radius:10px;color:#1a1535"><p style="margin:0 0 7px;font-size:12px;letter-spacing:1.2px;color:#9a7b2f"><strong>TIRAGE AU SORT EN DIRECT</strong></p><p style="margin:0"><strong>1 formation MediumIA complète offerte — valeur 597 €.</strong></p><p style="margin:8px 0 0;font-size:13px;color:#706a80">Participation gratuite, sans obligation d’achat, réservée aux participants présents en direct ayant validé leur participation au tirage.</p></div>`;
+
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>Vendredi 23 octobre 2026 à 19 h</strong><br>En direct · durée prévue : ${duration}</p>${raffleBlock}${preparationBlock}${zoomBlock}<p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il contient vos accès à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
 
   try {
     const response = await fetch("https://api.resend.com/emails", {
@@ -136,9 +161,10 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
 async function markDelivery(supabase: any, registrationId: string, result: any) {
   if (result?.status !== "sent") return;
 
-  const patch: Record<string, string> = { updated_at: new Date().toISOString() };
-  if (result.preparationIncluded) patch.preparation_sent_at = new Date().toISOString();
-  if (result.zoomIncluded) patch.zoom_sent_at = new Date().toISOString();
+  const now = new Date().toISOString();
+  const patch: Record<string, string> = { updated_at: now };
+  if (result.preparationIncluded) patch.preparation_sent_at = now;
+  if (result.zoomIncluded) patch.zoom_sent_at = now;
 
   if (Object.keys(patch).length > 1) {
     await supabase.from("conference_registrations").update(patch).eq("id", registrationId);
@@ -161,14 +187,22 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") {
     const url = new URL(req.url);
     const slug = clean(url.searchParams.get("slug") || EVENT_SLUG, 120);
-    const { data, error } = await supabase
+    const { data: event, error } = await supabase
       .from("conference_events")
-      .select("slug,title,subtitle,starts_at,ends_at,timezone,status,capacity")
+      .select("id,slug,title,subtitle,starts_at,ends_at,timezone,status,capacity")
       .eq("slug", slug)
       .maybeSingle();
 
     if (error) return json(req, { error: "Impossible de charger la conférence." }, 500);
-    return json(req, { event: publicEvent(data) });
+    if (!event) return json(req, { event: null, raffle: null });
+
+    const { data: raffle } = await supabase
+      .from("conference_raffles")
+      .select("prize_title,prize_value_cents,currency,status")
+      .eq("event_id", event.id)
+      .maybeSingle();
+
+    return json(req, { event: publicEvent(event), raffle: publicRaffle(raffle) });
   }
 
   if (req.method === "POST") {
@@ -198,7 +232,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: event, error: eventError } = await supabase
       .from("conference_events")
-      .select("id,status,capacity,zoom_join_url,preparation_pdf_url,ends_at")
+      .select("id,status,capacity,zoom_join_url,preparation_pdf_url,starts_at,ends_at")
       .eq("slug", slug)
       .maybeSingle();
 

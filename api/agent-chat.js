@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import process from 'node:process'
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin, requireAuth } from '../lib/supabaseAdmin.js'
@@ -137,6 +137,24 @@ async function writeAudit(db, event) {
   return !error
 }
 
+async function resolveRehearsalAuth(db, token) {
+  const cleanToken = typeof token === 'string' ? token.trim() : ''
+  if (!/^[A-Za-z0-9_-]{32,160}$/.test(cleanToken)) return null
+  const tokenHash = createHash('sha256').update(cleanToken).digest('hex')
+  const { data, error } = await db
+    .from('conference_rehearsal_tokens')
+    .select('id, owner_id, expires_at')
+    .eq('token_hash', tokenHash)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle()
+  if (error || !data) return null
+  await db
+    .from('conference_rehearsal_tokens')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', data.id)
+  return { userId: data.owner_id, rehearsal: true }
+}
+
 export default async function handler(req, res) {
   const requestId = randomUUID()
   const startedAt = Date.now()
@@ -152,12 +170,6 @@ export default async function handler(req, res) {
   } catch {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'runtime_configuration')
     return res.status(503).json({ error: 'AI server configuration missing', requestId })
-  }
-
-  const auth = await requireAuth(req)
-  if (auth.error) {
-    technicalLog(requestId, 'chat', 'rejected', startedAt, auth.error)
-    return res.status(auth.status).json({ error: auth.error, requestId })
   }
 
   const {
@@ -183,6 +195,23 @@ export default async function handler(req, res) {
   }
 
   const db = getSupabaseAdmin()
+  const rehearsalToken = req.headers['x-mediumia-rehearsal']
+  let auth = null
+
+  if (agentId === CONFERENCE_COPILOT_AGENT_ID && rehearsalToken) {
+    auth = await resolveRehearsalAuth(db, rehearsalToken)
+    if (!auth) {
+      technicalLog(requestId, 'chat', 'rejected', startedAt, 'invalid_rehearsal_token')
+      return res.status(401).json({ error: 'invalid_rehearsal_token', requestId })
+    }
+  } else {
+    auth = await requireAuth(req)
+    if (auth.error) {
+      technicalLog(requestId, 'chat', 'rejected', startedAt, auth.error)
+      return res.status(auth.status).json({ error: auth.error, requestId })
+    }
+  }
+
   const { data: membership } = await db
     .from('pro_memberships')
     .select('id, status, expires_at')
@@ -300,7 +329,7 @@ export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
   let knowledgeMatches = []
-  if (supabaseUrl && publishableKey) {
+  if (supabaseUrl && publishableKey && !auth.rehearsal) {
     const token = (req.headers.authorization || '').slice(7)
     const userDb = createClient(supabaseUrl, publishableKey, {
       auth: { persistSession: false, autoRefreshToken: false },

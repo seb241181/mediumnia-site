@@ -7,6 +7,8 @@ import {
   resolveAgentRuntimePolicy,
 } from '../lib/agentRuntimePolicy.js'
 
+const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
+
 function textFromOpenAIResponse(data) {
   const parts = []
   for (const item of data?.output || []) {
@@ -217,12 +219,17 @@ export default async function handler(req, res) {
     : (process.env.ANTHROPIC_AGENT_MODEL || 'claude-sonnet-5').trim()
   const model = String(agent.model || '').trim() || (provider === runtime.provider ? runtime.model : defaultModel)
 
+  const isConferenceCopilot = agent.id === CONFERENCE_COPILOT_AGENT_ID
+  const quotaAction = isConferenceCopilot ? 'conference_copilot_message' : 'agent_chat_message'
+  const hourlyLimit = isConferenceCopilot ? 60 : runtime.limits.hourlyMessages
+  const dailyLimit = isConferenceCopilot ? 120 : runtime.limits.dailyMessages
+
   const { data: quota, error: quotaError } = await db.rpc('consume_pro_usage_quota', {
     p_membership_id: membership.id,
-    p_action: 'agent_chat_message',
+    p_action: quotaAction,
     p_units: 1,
-    p_hourly_limit: runtime.limits.hourlyMessages,
-    p_daily_limit: runtime.limits.dailyMessages,
+    p_hourly_limit: hourlyLimit,
+    p_daily_limit: dailyLimit,
   })
   if (quotaError) {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'quota_unavailable')

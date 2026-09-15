@@ -5,6 +5,18 @@
       "destination": "/index.html"
     },
     {
+      "source": "/pro/conference-rehearsal/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/conference/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/live/:slug",
+      "destination": "/index.html"
+    },
+    {
       "source": "/pro",
       "destination": "/index.html"
     },

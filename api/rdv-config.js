@@ -3,29 +3,13 @@
  *
  * Configuration publique pour la page de réservation.
  * Retourne les données dont RdvPublic.jsx a besoin sans auth.
- *
- * Réponse :
- *   {
- *     mode: 'live' | 'configuration_required',
- *     availableWeekdays: number[] | null,   // JS getDay() (0=Dim..6=Sam)
- *     horizonDays: number | null,
- *     notice: string | null,
- *     practitioner: { name, role, photo_url, tagline } | null,
- *     services: Service[] | []              // actifs uniquement, triés par sort_order
- *   }
- *
- * mode 'configuration_required' → Supabase absent, praticien inconnu, Google non connecté,
- *                                  booking_horizon_days absent, ou aucune règle.
- *                                  Aucun créneau fictif n'est jamais retourné.
- * mode 'live'  → tout configuré, créneaux calculables côté serveur.
- *
- * Endpoint public — aucune donnée sensible (tokens, emails pro, etc.) n'est exposée.
  */
 import { isSupabaseConfigured, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { handlePayPalSandbox, handlePayPalCheckout } from '../lib/paypalSandbox.js'
 import { handleReseauApply } from '../lib/reseauApply.js'
 import { handleChronospherePayPal } from '../lib/chronospherePayPal.js'
 import { handleMediumiaAnalytics } from '../lib/mediumiaAnalytics.js'
+import { handleRdvDepositApi } from '../lib/rdvDepositApiHandler.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -40,6 +24,11 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
+
+  const rdvDepositAction = req.query?.rdvDepositAction
+  if (rdvDepositAction) {
+    return handleRdvDepositApi(req, res, rdvDepositAction)
+  }
 
   const analyticsAction = req.query?.analyticsAction
   if (analyticsAction) {
@@ -80,8 +69,6 @@ export default async function handler(req, res) {
 
   const supabase = getSupabaseAdmin()
 
-  // ── Praticien ─────────────────────────────────────────────────────────────
-
   const { data: practitioner } = await supabase
     .from('booking_practitioners')
     .select('id, name, role, photo_url, tagline, booking_horizon_days, is_active, booking_enabled')
@@ -92,26 +79,21 @@ export default async function handler(req, res) {
     return res.status(200).json(CONFIG_REQUIRED('Réservations temporairement indisponibles — configuration en cours.'))
   }
 
-  // Données publiques du praticien (jamais de données sensibles ici)
   const practitionerPublic = {
-    name:      practitioner.name,
-    role:      practitioner.role,
+    name: practitioner.name,
+    role: practitioner.role,
     photo_url: practitioner.photo_url,
-    tagline:   practitioner.tagline,
+    tagline: practitioner.tagline,
   }
-
-  // ── Services actifs ───────────────────────────────────────────────────────
 
   const { data: services } = await supabase
     .from('booking_services')
-    .select('id, slug, title, description, duration_min, price_cents, currency, modality, is_active, sort_order, booking_mode')
+    .select('id, slug, title, description, duration_min, price_cents, currency, modality, is_active, sort_order, booking_mode, reservation_payment_kind, reservation_payment_cents, vat_rate_bps')
     .eq('practitioner_id', practitioner.id)
     .eq('is_active', true)
     .order('sort_order')
 
   const activeServices = services || []
-
-  // ── booking_enabled ───────────────────────────────────────────────────────
 
   if (!practitioner.booking_enabled) {
     return res.status(200).json(CONFIG_REQUIRED(
@@ -120,8 +102,6 @@ export default async function handler(req, res) {
       activeServices,
     ))
   }
-
-  // ── Connexion Google ──────────────────────────────────────────────────────
 
   const { data: conn } = await supabase
     .from('booking_calendar_connections')
@@ -138,8 +118,6 @@ export default async function handler(req, res) {
     ))
   }
 
-  // ── Horizon de réservation ────────────────────────────────────────────────
-
   if (!practitioner.booking_horizon_days) {
     return res.status(200).json(CONFIG_REQUIRED(
       'Réservations temporairement indisponibles — configuration en cours.',
@@ -147,8 +125,6 @@ export default async function handler(req, res) {
       activeServices,
     ))
   }
-
-  // ── Règles de disponibilité ───────────────────────────────────────────────
 
   const { data: rules, error: rulesErr } = await supabase
     .from('booking_availability_rules')
@@ -163,7 +139,6 @@ export default async function handler(req, res) {
     ))
   }
 
-  // Conversion DB 0=Lun → JS getDay() 0=Dim : (dbDay + 1) % 7
   const availableWeekdays = [...new Set(rules.map(r => (r.day_of_week + 1) % 7))].sort()
 
   return res.status(200).json({

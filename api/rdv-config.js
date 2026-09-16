@@ -26,6 +26,7 @@ import { handlePayPalSandbox, handlePayPalCheckout } from '../lib/paypalSandbox.
 import { handleReseauApply } from '../lib/reseauApply.js'
 import { handleChronospherePayPal } from '../lib/chronospherePayPal.js'
 import { handleMediumiaAnalytics } from '../lib/mediumiaAnalytics.js'
+import { handleConferencePassPayPal } from '../lib/conferencePassPayPal.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -53,6 +54,11 @@ export default async function handler(req, res) {
   const chronospherePayPalAction = req.query?.chronospherePayPalAction
   if (chronospherePayPalAction) {
     return handleChronospherePayPal(req, res, chronospherePayPalAction)
+  }
+
+  const conferencePassAction = req.query?.conferencePassAction
+  if (conferencePassAction) {
+    return handleConferencePassPayPal(req, res, conferencePassAction)
   }
 
   const paypalSandboxAction = req.query?.paypalSandboxAction

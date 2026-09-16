@@ -22,11 +22,11 @@ test('refuse les tokens manifestement invalides', () => {
   assert.equal(hashCancellationToken(null), null)
 })
 
-test('autorise jusqu’à H-24 inclus et bloque ensuite', () => {
+test('autorise jusqu’à H-48 inclus et bloque ensuite', () => {
   const start = '2026-09-15T06:00:00.000Z'
-  assert.equal(cancellationCutoff(start).toISOString(), '2026-09-14T06:00:00.000Z')
-  assert.equal(canSelfCancel(start, '2026-09-14T06:00:00.000Z'), true)
-  assert.equal(canSelfCancel(start, '2026-09-14T06:00:00.001Z'), false)
+  assert.equal(cancellationCutoff(start).toISOString(), '2026-09-13T06:00:00.000Z')
+  assert.equal(canSelfCancel(start, '2026-09-13T06:00:00.000Z'), true)
+  assert.equal(canSelfCancel(start, '2026-09-13T06:00:00.001Z'), false)
 })
 
 test('utilise l’URL Preview Vercel hors Production', () => {

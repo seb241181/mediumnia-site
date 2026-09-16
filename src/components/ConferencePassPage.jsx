@@ -133,7 +133,6 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
           style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' },
           createOrder: async () => {
             setError('')
-            setState('payment')
             const res = await fetch(`${API}create`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

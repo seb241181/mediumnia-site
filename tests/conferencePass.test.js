@@ -9,6 +9,7 @@ import { buildConferencePassEmail } from '../lib/conferencePassEmail.js'
 
 const files = {
   migration: '../supabase/migrations/20260915103000_conference_pass_checkout.sql',
+  concurrencyMigration: '../supabase/migrations/20260916111500_conference_pass_checkout_concurrency.sql',
   handler: '../lib/conferencePassPayPal.js',
   api: '../api/rdv-config.js',
   page: '../src/components/ConferencePassPage.jsx',
@@ -190,7 +191,7 @@ test('cancel then retry reuses the existing uncaptured PayPal order', async () =
   const createCheckout = handler.slice(handler.indexOf('async function createCheckout'), handler.indexOf('async function captureCheckout'))
   const lookup = createCheckout.indexOf('const pass = await getPassByHash')
   const fetchExisting = createCheckout.indexOf('const existing = await fetchOrder')
-  const createOrder = createCheckout.indexOf('/v2/checkout/orders')
+  const createOrder = createCheckout.indexOf('await createPaypalOrder')
 
   assert.ok(lookup > -1)
   assert.ok(fetchExisting > lookup)
@@ -203,7 +204,7 @@ test('refresh with completed existing order reconciles instead of creating a new
   const { handler, page } = await sources()
   const createCheckout = handler.slice(handler.indexOf('async function createCheckout'), handler.indexOf('async function captureCheckout'))
   const completedReturn = createCheckout.indexOf('completed: true')
-  const createOrder = createCheckout.indexOf('/v2/checkout/orders')
+  const createOrder = createCheckout.indexOf('await createPaypalOrder')
 
   assert.ok(completedReturn > -1)
   assert.ok(completedReturn < createOrder)
@@ -223,6 +224,20 @@ test('server releases or replaces an old order only after PayPal proves no captu
   assert.ok(reusableGuard > completedGuard)
   assert.ok(release > reusableGuard)
   assert.match(migration, /v_pass\.paypal_capture_id is not null[\s\S]*already_reserved/)
+})
+
+test('concurrent checkout creation is idempotent across PayPal and reservation RPC', async () => {
+  const { handler, concurrencyMigration } = await sources()
+
+  assert.match(handler, /createCheckoutRequestId/)
+  assert.match(handler, /conference-pass-create:/)
+  assert.doesNotMatch(handler, /'PayPal-Request-Id': randomUUID\(\)/)
+  assert.match(handler, /PREVIOUS_REQUEST_IN_PROGRESS/)
+  assert.match(handler, /already_reserved/)
+  assert.match(handler, /reused: true/)
+  assert.match(concurrencyMigration, /alreadyReserved/)
+  assert.match(concurrencyMigration, /v_pass\.paypal_order_id = trim\(p_paypal_order_id\)/)
+  assert.match(concurrencyMigration, /event_name\s*\)\s*values[\s\S]*'checkout_started'/)
 })
 
 test('frontend keeps raw pass token in fragment flow and never hardcodes a promo amount', async () => {

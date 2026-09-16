@@ -234,9 +234,9 @@ function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone,
     <p style="margin:4px 0 0;font-size:14px;color:#4A3F6B;"><strong>Heure :</strong> ${escapeHtml(timeText)}</p>
   </div>
   ${payment ? `<p style="font-size:14px;line-height:1.7;color:#4A3F6B;">${escapeHtml(payment)}</p>` : ''}
-  <p style="font-size:14px;line-height:1.7;color:#4A3F6B;margin-top:24px;">Vous pouvez annuler vous-même jusqu’à 24 heures avant le rendez-vous.</p>
+  <p style="font-size:14px;line-height:1.7;color:#4A3F6B;margin-top:24px;">Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous.</p>
   <p style="margin:22px 0 30px;"><a href="${escapeHtml(cancelUrl)}" style="display:inline-block;background:#1A1535;color:#C9A84C;text-decoration:none;padding:13px 20px;border-radius:9px;font-weight:bold;">Annuler mon rendez-vous</a></p>
-  <p style="font-size:12px;line-height:1.6;color:#756B89;">À moins de 24 heures, l’annulation automatique est bloquée. Contactez directement Sébastien.</p>
+  <p style="font-size:12px;line-height:1.6;color:#756B89;">À moins de 48 heures, l’annulation automatique est bloquée. Contactez directement Sébastien.</p>
   <p style="font-size:15px;line-height:1.7;margin-top:28px;">À bientôt,<br><strong>Sébastien</strong><br>MediumIA</p>
 </div></body></html>`
 }
@@ -248,8 +248,8 @@ function buildInstantConfirmationText({ firstName, svcTitle, startsAt, timezone,
     `Bonjour ${firstName},`, '', 'Votre rendez-vous est confirmé.', '',
     `Prestation : ${svcTitle}`, `Date : ${dateText}`, `Heure : ${timeText}`,
     ...(payment ? ['', payment] : []), '',
-    'Vous pouvez annuler vous-même jusqu’à 24 heures avant le rendez-vous :', cancelUrl, '',
-    'À moins de 24 heures, contactez directement Sébastien.', '',
+    'Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous :', cancelUrl, '',
+    'À moins de 48 heures, contactez directement Sébastien.', '',
     'À bientôt,', 'Sébastien', 'MediumIA',
   ].join('\n')
 }
@@ -370,7 +370,7 @@ async function handleCancellation(req, res, supabase) {
   }
   if (!canSelfCancel(booking.starts_at)) {
     return res.status(409).json({
-      error: 'L’annulation automatique est fermée à moins de 24 heures du rendez-vous. Contactez directement Sébastien.',
+      error: 'L’annulation automatique est fermée à moins de 48 heures du rendez-vous. Contactez directement Sébastien.',
       code: 'cancellation_too_late',
     })
   }

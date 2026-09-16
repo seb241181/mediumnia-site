@@ -112,7 +112,7 @@ export default function RdvCancellation({ onBack }) {
 
               {!booking?.can_cancel ? (
                 <div className="rounded-xl border border-gold/25 bg-gold/5 px-5 py-4">
-                  <p className="font-georgia text-sm text-mist leading-relaxed">Le délai d’annulation automatique de 24 heures est dépassé. Contactez directement Sébastien.</p>
+                  <p className="font-georgia text-sm text-mist leading-relaxed">Le délai d’annulation automatique de 48 heures est dépassé. Contactez directement Sébastien.</p>
                 </div>
               ) : confirming ? (
                 <div>

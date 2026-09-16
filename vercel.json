@@ -17,6 +17,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/pass/mediumia/:eventSlug",
+      "destination": "/index.html"
+    },
+    {
       "source": "/pro",
       "destination": "/index.html"
     },

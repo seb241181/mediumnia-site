@@ -18,6 +18,7 @@ import ChronospherePage from './components/ChronospherePage'
 import ChronosphereExamplePage from './components/ChronosphereExamplePage'
 import SiteGuardian from './components/SiteGuardian'
 import CosmicLibraryHero from './components/CosmicLibraryHero'
+import ConferencePassPage from './components/ConferencePassPage'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -259,6 +260,7 @@ function pathToView(p) {
     : p.startsWith('/chronosphere/exemple') ? 'chronosphere-example'
     : p.startsWith('/chronosphere') ? 'chronosphere'
     : p.startsWith('/oracle') ? 'oracle'
+    : p.startsWith('/pass/mediumia/') ? 'conference-pass'
     : p.startsWith('/reseau/rejoindre') ? 'reseau-form'
     : p.startsWith('/reseau') ? 'reseau-dir'
     : p === '/mentions' ? 'mentions'
@@ -306,6 +308,7 @@ export default function App() {
   if (view === 'pro')           return <><ProWaitlistPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'conference-pass') return <><ConferencePassPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-example') return <><ChronosphereExamplePage onBack={backHome} onOpenChronosphere={openChronosphere} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>

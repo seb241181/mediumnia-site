@@ -240,6 +240,14 @@ test('concurrent checkout creation is idempotent across PayPal and reservation R
   assert.match(concurrencyMigration, /event_name\s*\)\s*values[\s\S]*'checkout_started'/)
 })
 
+test('conference pass handler awaits async branches so errors stay inside its catch', async () => {
+  const { handler } = await sources()
+
+  assert.match(handler, /return await configResponse\(req, res, pass\)/)
+  assert.match(handler, /return await createCheckout\(req, res, cfg, tokenHash\)/)
+  assert.match(handler, /return await captureCheckout\(req, res, normalizeOrderId\(req\.body\?\.orderId\)\)/)
+})
+
 test('frontend keeps raw pass token in fragment flow and never hardcodes a promo amount', async () => {
   const { page } = await sources()
 

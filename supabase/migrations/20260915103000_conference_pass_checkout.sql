@@ -211,7 +211,11 @@ begin
   end if;
 
   if v_pass.paypal_order_id is not null and v_pass.paypal_order_id <> trim(p_paypal_order_id) then
-    return jsonb_build_object('ok', false, 'reason', 'already_reserved', 'orderId', v_pass.paypal_order_id);
+    if v_pass.paypal_capture_id is not null
+       or v_pass.redeemed_at is not null
+       or v_pass.status not in ('released', 'failed') then
+      return jsonb_build_object('ok', false, 'reason', 'already_reserved', 'orderId', v_pass.paypal_order_id);
+    end if;
   end if;
 
   update public.conference_passes

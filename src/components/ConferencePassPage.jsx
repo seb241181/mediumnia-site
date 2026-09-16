@@ -65,6 +65,18 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   const paypalRef = useRef(null)
   const renderedRef = useRef(null)
 
+  async function captureExistingOrder(orderId) {
+    const res = await fetch(`${API}capture`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId }),
+    })
+    const result = await res.json().catch(() => ({}))
+    if (!res.ok || result.access?.status !== 'provisioned') throw new Error(result.error || 'access_provision_failed')
+    setState(result.alreadyProvisioned ? 'already_provisioned' : 'success')
+    return result
+  }
+
   useEffect(() => {
     let cancelled = false
     Promise.resolve().then(() => {
@@ -129,21 +141,19 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
             })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || !data.id) throw new Error(data.error || 'paypal_create_order_failed')
+            if (data.completed) {
+              await captureExistingOrder(data.id)
+              throw new Error('conference_pass_reconciled')
+            }
             return data.id
           },
           onApprove: async (data) => {
             setState('payment')
-            const res = await fetch(`${API}capture`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: data.orderID }),
-            })
-            const result = await res.json().catch(() => ({}))
-            if (!res.ok || result.access?.status !== 'provisioned') throw new Error(result.error || 'access_provision_failed')
-            setState(result.alreadyProvisioned ? 'already_provisioned' : 'success')
+            await captureExistingOrder(data.orderID)
           },
           onCancel: () => setState('valid'),
           onError: (err) => {
+            if (err?.message === 'conference_pass_reconciled') return
             setError(err?.message || 'paypal_error')
             setState('valid')
           },
@@ -216,7 +226,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
               {['success', 'already_provisioned'].includes(visibleState) && (
                 <div className="font-georgia text-mist">
                   <p className="text-xl text-deep">{visibleState === 'already_provisioned' ? 'Votre accès est déjà activé.' : 'Paiement confirmé, accès MediumIA activé.'}</p>
-                  <p className="mt-3 text-sm leading-relaxed">Connectez-vous à l’Espace élèves avec l’adresse e-mail utilisée lors du paiement PayPal.</p>
+                  <p className="mt-3 text-sm leading-relaxed">Connectez-vous à l’Espace élèves avec l’adresse e-mail utilisée lors de votre inscription à la conférence.</p>
                   <a href="https://espace.mediumia.fr" className="mt-5 inline-flex rounded-lg bg-gold px-6 py-3 font-bold text-deep">Accéder à mon espace élève →</a>
                 </div>
               )}

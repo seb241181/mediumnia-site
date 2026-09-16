@@ -140,7 +140,8 @@ test('capture trusts only the server-bound order id, never a frontend pass or re
   assert.match(handler, /async function getReservedPass\(supabase, orderId\)/)
   assert.match(handler, /\.from\('conference_passes'\)[\s\S]*\.eq\('paypal_order_id', orderId\)/)
   assert.match(handler, /if \(!data\) throw new Error\('pass_not_found'\)/)
-  assert.match(page, /body: JSON\.stringify\(\{ orderId: data\.orderID \}\)/)
+  assert.match(page, /body: JSON\.stringify\(\{ orderId \}\)/)
+  assert.match(page, /await captureExistingOrder\(data\.orderID\)/)
   assert.doesNotMatch(page, /registration_id|registrationId|email|entitlement|amountCents|product/)
 })
 
@@ -184,6 +185,46 @@ test('capture failures keep the pass reserved for retry or reconciliation', asyn
   assert.doesNotMatch(handler, /action === 'capture'[\s\S]{0,240}release_conference_pass_checkout/)
 })
 
+test('cancel then retry reuses the existing uncaptured PayPal order', async () => {
+  const { handler, migration } = await sources()
+  const createCheckout = handler.slice(handler.indexOf('async function createCheckout'), handler.indexOf('async function captureCheckout'))
+  const lookup = createCheckout.indexOf('const pass = await getPassByHash')
+  const fetchExisting = createCheckout.indexOf('const existing = await fetchOrder')
+  const createOrder = createCheckout.indexOf('/v2/checkout/orders')
+
+  assert.ok(lookup > -1)
+  assert.ok(fetchExisting > lookup)
+  assert.ok(createOrder > fetchExisting)
+  assert.match(createCheckout, /if \(isReusablePaypalOrder\(existing\.data\)\) \{\s*return res\.status\(200\)\.json\(\{ id: pass\.paypal_order_id, env: cfg\.env, reused: true \}\)/)
+  assert.match(migration, /status not in \('released', 'failed'\)/)
+})
+
+test('refresh with completed existing order reconciles instead of creating a new checkout', async () => {
+  const { handler, page } = await sources()
+  const createCheckout = handler.slice(handler.indexOf('async function createCheckout'), handler.indexOf('async function captureCheckout'))
+  const completedReturn = createCheckout.indexOf('completed: true')
+  const createOrder = createCheckout.indexOf('/v2/checkout/orders')
+
+  assert.ok(completedReturn > -1)
+  assert.ok(completedReturn < createOrder)
+  assert.match(page, /if \(data\.completed\) \{\s*await captureExistingOrder\(data\.id\)/)
+  assert.match(page, /conference_pass_reconciled/)
+  assert.match(page, /err\?\.message === 'conference_pass_reconciled'/)
+})
+
+test('server releases or replaces an old order only after PayPal proves no capture exists', async () => {
+  const { handler, migration } = await sources()
+  const createCheckout = handler.slice(handler.indexOf('async function createCheckout'), handler.indexOf('async function captureCheckout'))
+  const completedGuard = createCheckout.indexOf('hasCompletedCapture(existing.data, cfg)')
+  const reusableGuard = createCheckout.indexOf('isReusablePaypalOrder(existing.data)')
+  const release = createCheckout.indexOf('release_conference_pass_checkout')
+
+  assert.ok(completedGuard > -1)
+  assert.ok(reusableGuard > completedGuard)
+  assert.ok(release > reusableGuard)
+  assert.match(migration, /v_pass\.paypal_capture_id is not null[\s\S]*already_reserved/)
+})
+
 test('frontend keeps raw pass token in fragment flow and never hardcodes a promo amount', async () => {
   const { page } = await sources()
 
@@ -197,6 +238,8 @@ test('frontend keeps raw pass token in fragment flow and never hardcodes a promo
   assert.doesNotMatch(page, /399\s?€|497\s?€|297\s?€|promo/i)
   assert.match(page, /Prix normal/)
   assert.match(page, /Offre spéciale conférence/)
+  assert.match(page, /adresse e-mail utilisée lors de votre inscription à la conférence/)
+  assert.doesNotMatch(page, /adresse e-mail utilisée lors du paiement PayPal/)
 })
 
 test('pass email uses a fragment link and does not expose token in query params', () => {

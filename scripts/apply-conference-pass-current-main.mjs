@@ -23,4 +23,16 @@ if (source.includes(legacyRoute)) {
 }
 
 if (changed) fs.writeFileSync(apiPath, source)
+
+// Temporary Preview diagnostic: log only non-secret Supabase error metadata so
+// TEST environment wiring can be verified without ever exposing credentials.
+const passPath = 'lib/conferencePassPayPal.js'
+let passSource = fs.readFileSync(passPath, 'utf8')
+const validateMarker = "  if (error) throw new Error('pass_validate_failed')"
+const validateDiagnostic = "  if (error) {\n    console.error('[conference-pass-paypal] validate_supabase_error', { code: error.code, message: error.message, details: error.details, hint: error.hint })\n    throw new Error('pass_validate_failed')\n  }"
+if (passSource.includes(validateMarker)) {
+  passSource = passSource.replace(validateMarker, validateDiagnostic)
+  fs.writeFileSync(passPath, passSource)
+}
+
 console.log('MediumIA conferences: conference Pass API route applied safely on current main')

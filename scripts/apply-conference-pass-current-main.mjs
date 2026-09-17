@@ -9,10 +9,16 @@ if (!source.includes("from '../lib/conferencePassPayPal.js'")) {
   changed = true
 }
 
-if (!source.includes('if (req.query.conferencePassAction)')) {
+const correctRoute = 'if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res, req.query.conferencePassAction)'
+const legacyRoute = 'if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res)'
+
+if (source.includes(legacyRoute)) {
+  source = source.replace(legacyRoute, correctRoute)
+  changed = true
+} else if (!source.includes(correctRoute)) {
   const marker = 'export default async function handler(req, res) {\n'
   if (!source.includes(marker)) throw new Error('conference_pass_api_handler_marker_missing')
-  source = source.replace(marker, marker + '  if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res)\n')
+  source = source.replace(marker, marker + `  ${correctRoute}\n`)
   changed = true
 }
 

@@ -100,7 +100,11 @@ function ServiceCard({ service, selected, onSelect }) {
           <span className="text-gold/70 italic">→ Réservation sur demande</span>
         )}
         {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
-          <span className="text-gold font-semibold">→ {service.reservationPaymentLabel} d’arrhes à la réservation</span>
+          <span className="text-gold font-semibold">
+            → {service.modality?.includes('video')
+              ? `${service.reservationPaymentLabel} d’arrhes ou paiement intégral en ligne`
+              : `${service.reservationPaymentLabel} d’arrhes à la réservation`}
+          </span>
         )}
       </div>
     </button>
@@ -613,7 +617,11 @@ function Summary({ practitioner, service, date, time }) {
           <p className="font-georgia text-xs text-mist mt-0.5">{service.durationLabel} · {service.priceLabel}</p>
           <p className="font-georgia text-xs text-mist">{service.modalityLabel}</p>
           {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
-            <p className="font-georgia text-xs text-gold mt-1">{service.reservationPaymentLabel} d’arrhes à la réservation</p>
+            <p className="font-georgia text-xs text-gold mt-1">
+              {service.modality?.includes('video')
+                ? `Paiement en ligne : ${service.reservationPaymentLabel} d’arrhes ou totalité`
+                : `${service.reservationPaymentLabel} d’arrhes à la réservation`}
+            </p>
           )}
         </div>
       )}
@@ -688,6 +696,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
     && service?.reservationPaymentKind === 'arrhes'
     && service?.reservationPaymentCents > 0
   const selectedModality = service?.modality?.includes('video') ? 'video' : 'in-person'
+  const videoOffersFullPayment = requiresDeposit && service?.modality?.includes('video')
   const checkoutStorageKey = service && date && time
     ? `mediumia:rdv-arrhes:${slug}:${service.id}:${toDateStr(date)}:${time}`
     : null
@@ -838,6 +847,17 @@ export default function RdvPublic({ onBack, onNavigate }) {
   // ── Confirmation (step 4) — UNIQUEMENT après paiement/INSERT réussi ─────────
 
   if (step === 4 && bookingResult) {
+    const hasOnlinePayment = bookingResult.amountCents != null
+    const servicePriceCents = Number(bookingResult.servicePriceCents ?? service?.price_cents ?? 0)
+    const paidInFull = hasOnlinePayment
+      && Number(bookingResult.balanceCents) === 0
+      && Number(bookingResult.amountCents) >= servicePriceCents
+    const confirmationCopy = hasOnlinePayment
+      ? (paidInFull
+        ? 'Votre prestation a été réglée intégralement et un e-mail de confirmation vous est envoyé.'
+        : 'Vos arrhes ont été réglées et un e-mail de confirmation vous est envoyé.')
+      : 'Votre réservation est confirmée et un e-mail de confirmation vous est envoyé.'
+
     return (
       <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream flex flex-col">
         <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
@@ -850,14 +870,19 @@ export default function RdvPublic({ onBack, onNavigate }) {
             <p className="text-gold text-5xl mb-6">✦</p>
             <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-4">Réservation confirmée</p>
             <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-2">Votre rendez-vous est confirmé.</h1>
-            <p className="font-georgia text-mist text-base mb-8">Vos arrhes ont été réglées et un e-mail de confirmation vous est envoyé.</p>
+            <p className="font-georgia text-mist text-base mb-8">{confirmationCopy}</p>
             <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
               {practitioner && <p className="font-georgia text-sm"><span className="text-mist">Praticien :</span> <strong>{practitioner.name}</strong></p>}
               <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.title}</strong></p>
               <p className="font-georgia text-sm capitalize"><span className="text-mist">Date :</span> <strong>{fmt(date)}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Heure :</span> <strong>{time}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Modalité :</span> <strong>{service.modalityLabel}</strong></p>
-              {bookingResult.amountCents != null && <p className="font-georgia text-sm"><span className="text-mist">Arrhes réglées :</span> <strong>{(bookingResult.amountCents / 100).toFixed(2).replace('.', ',')} €</strong></p>}
+              {bookingResult.amountCents != null && (
+                <p className="font-georgia text-sm">
+                  <span className="text-mist">{paidInFull ? 'Montant réglé :' : 'Arrhes réglées :'}</span>{' '}
+                  <strong>{(bookingResult.amountCents / 100).toFixed(2).replace('.', ',')} €</strong>
+                </p>
+              )}
               {bookingResult.balanceCents != null && <p className="font-georgia text-sm"><span className="text-mist">Solde restant :</span> <strong>{(bookingResult.balanceCents / 100).toFixed(2).replace('.', ',')} €</strong></p>}
             </div>
             <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
@@ -975,17 +1000,21 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   onSubmit={handleConfirm}
                   loading={bookingLoading}
                   error={bookingError}
-                  submitLabel={requiresDeposit ? `Continuer vers le paiement des ${service.reservationPaymentLabel} d’arrhes →` : 'Confirmer la réservation →'}
+                  submitLabel={requiresDeposit
+                    ? (videoOffersFullPayment
+                      ? 'Continuer vers le paiement →'
+                      : `Continuer vers le paiement des ${service.reservationPaymentLabel} d’arrhes →`)
+                    : 'Confirmer la réservation →'}
                 />
               </div>
             )}
 
-            {/* Step 3 — Paiement des arrhes */}
+            {/* Step 3 — Paiement */}
             {step === 3 && requiresDeposit && paymentCustomer && checkoutId && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
                   <button onClick={() => setStep(2)} className="font-georgia text-xs text-mist hover:text-deep">← Coordonnées</button>
-                  <h2 className="font-georgia font-medium text-xl">Paiement des arrhes</h2>
+                  <h2 className="font-georgia font-medium text-xl">Paiement</h2>
                 </div>
                 <RdvDepositCheckout
                   practitionerSlug={slug}

@@ -10,6 +10,7 @@ import { handleReseauApply } from '../lib/reseauApply.js'
 import { handleChronospherePayPal } from '../lib/chronospherePayPal.js'
 import { handleMediumiaAnalytics } from '../lib/mediumiaAnalytics.js'
 import { handleRdvDepositApi } from '../lib/rdvDepositApiHandler.js'
+import { handleRdvFullPaymentCreate } from '../lib/rdvFullPaymentApiHandler.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -26,6 +27,9 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
 
   const rdvDepositAction = req.query?.rdvDepositAction
+  if (rdvDepositAction === 'createFull') {
+    return handleRdvFullPaymentCreate(req, res)
+  }
   if (rdvDepositAction) {
     return handleRdvDepositApi(req, res, rdvDepositAction)
   }

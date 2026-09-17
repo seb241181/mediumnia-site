@@ -57,15 +57,14 @@ test('balance API exposes status create capture and authenticated sweep through 
 
 test('public balance page keeps its token in the URL fragment and posts it to the API', () => {
   const page = read('public/rdv-solde.html')
-  const vercel = read('vercel.json')
+  const rewrites = JSON.parse(read('vercel.json')).rewrites || []
   assert.match(page, /window\.location\.hash/)
   assert.match(page, /history\.replaceState/)
   assert.match(page, /rdvBalanceAction=/)
   assert.match(page, /method:'POST'/)
   assert.match(page, /Régler mon solde/)
   assert.match(page, /automatiquement annulé/)
-  assert.match(vercel, /"source": "\/rdv\/solde"/)
-  assert.match(vercel, /"destination": "\/rdv-solde\.html"/)
+  assert.ok(rewrites.some(item => item.source === '/rdv/solde' && item.destination === '/rdv-solde.html'))
 })
 
 test('video deposits inside 48 hours are forced to full payment and confirmations explain the deadline', () => {

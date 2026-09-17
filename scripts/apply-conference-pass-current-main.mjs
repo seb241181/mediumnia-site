@@ -24,12 +24,12 @@ if (source.includes(legacyRoute)) {
 
 if (changed) fs.writeFileSync(apiPath, source)
 
-// Temporary Preview diagnostic: log only non-secret Supabase error metadata so
-// TEST environment wiring can be verified without ever exposing credentials.
+// Temporary Preview diagnostic: expose only a sanitized Supabase error code,
+// never credentials or token values.
 const passPath = 'lib/conferencePassPayPal.js'
 let passSource = fs.readFileSync(passPath, 'utf8')
 const validateMarker = "  if (error) throw new Error('pass_validate_failed')"
-const validateDiagnostic = "  if (error) {\n    console.error('[conference-pass-paypal] validate_supabase_error', { code: error.code, message: error.message, details: error.details, hint: error.hint })\n    throw new Error('pass_validate_failed')\n  }"
+const validateDiagnostic = "  if (error) {\n    const safeCode = String(error.code || error.status || 'unknown').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80)\n    console.error('[conference-pass-paypal] validate_supabase_error', { code: safeCode, message: error.message })\n    throw new Error('pass_validate_failed_' + safeCode)\n  }"
 if (passSource.includes(validateMarker)) {
   passSource = passSource.replace(validateMarker, validateDiagnostic)
   fs.writeFileSync(passPath, passSource)

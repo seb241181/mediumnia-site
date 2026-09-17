@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import process from 'node:process'
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin, requireAuth } from '../lib/supabaseAdmin.js'
@@ -6,6 +6,8 @@ import {
   buildAgentInstructions,
   resolveAgentRuntimePolicy,
 } from '../lib/agentRuntimePolicy.js'
+
+const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
 
 function textFromOpenAIResponse(data) {
   const parts = []
@@ -135,6 +137,24 @@ async function writeAudit(db, event) {
   return !error
 }
 
+async function resolveRehearsalAuth(db, token) {
+  const cleanToken = typeof token === 'string' ? token.trim() : ''
+  if (!/^[A-Za-z0-9_-]{32,160}$/.test(cleanToken)) return null
+  const tokenHash = createHash('sha256').update(cleanToken).digest('hex')
+  const { data, error } = await db
+    .from('conference_rehearsal_tokens')
+    .select('id, owner_id, expires_at')
+    .eq('token_hash', tokenHash)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle()
+  if (error || !data) return null
+  await db
+    .from('conference_rehearsal_tokens')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('id', data.id)
+  return { userId: data.owner_id, rehearsal: true }
+}
+
 export default async function handler(req, res) {
   const requestId = randomUUID()
   const startedAt = Date.now()
@@ -150,12 +170,6 @@ export default async function handler(req, res) {
   } catch {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'runtime_configuration')
     return res.status(503).json({ error: 'AI server configuration missing', requestId })
-  }
-
-  const auth = await requireAuth(req)
-  if (auth.error) {
-    technicalLog(requestId, 'chat', 'rejected', startedAt, auth.error)
-    return res.status(auth.status).json({ error: auth.error, requestId })
   }
 
   const {
@@ -181,6 +195,23 @@ export default async function handler(req, res) {
   }
 
   const db = getSupabaseAdmin()
+  const rehearsalToken = req.headers['x-mediumia-rehearsal']
+  let auth = null
+
+  if (agentId === CONFERENCE_COPILOT_AGENT_ID && rehearsalToken) {
+    auth = await resolveRehearsalAuth(db, rehearsalToken)
+    if (!auth) {
+      technicalLog(requestId, 'chat', 'rejected', startedAt, 'invalid_rehearsal_token')
+      return res.status(401).json({ error: 'invalid_rehearsal_token', requestId })
+    }
+  } else {
+    auth = await requireAuth(req)
+    if (auth.error) {
+      technicalLog(requestId, 'chat', 'rejected', startedAt, auth.error)
+      return res.status(auth.status).json({ error: auth.error, requestId })
+    }
+  }
+
   const { data: membership } = await db
     .from('pro_memberships')
     .select('id, status, expires_at')
@@ -195,7 +226,7 @@ export default async function handler(req, res) {
 
   const { data: agent } = await db
     .from('agents')
-    .select('id, owner_id, membership_id, name, status, mission, audience, tone, knowledge_summary')
+    .select('id, owner_id, membership_id, name, status, provider, model, mission, audience, tone, knowledge_summary')
     .eq('id', agentId)
     .eq('owner_id', auth.userId)
     .eq('membership_id', membership.id)
@@ -210,12 +241,24 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Copilot indisponible', requestId })
   }
 
+  const requestedProvider = String(agent.provider || '').trim().toLowerCase()
+  const provider = ['anthropic', 'openai'].includes(requestedProvider) ? requestedProvider : runtime.provider
+  const defaultModel = provider === 'openai'
+    ? (process.env.OPENAI_AGENT_MODEL || 'gpt-5.6-luna').trim()
+    : (process.env.ANTHROPIC_AGENT_MODEL || 'claude-sonnet-5').trim()
+  const model = String(agent.model || '').trim() || (provider === runtime.provider ? runtime.model : defaultModel)
+
+  const isConferenceCopilot = agent.id === CONFERENCE_COPILOT_AGENT_ID
+  const quotaAction = isConferenceCopilot ? 'conference_copilot_message' : 'agent_chat_message'
+  const hourlyLimit = isConferenceCopilot ? 60 : runtime.limits.hourlyMessages
+  const dailyLimit = isConferenceCopilot ? 120 : runtime.limits.dailyMessages
+
   const { data: quota, error: quotaError } = await db.rpc('consume_pro_usage_quota', {
     p_membership_id: membership.id,
-    p_action: 'agent_chat_message',
+    p_action: quotaAction,
     p_units: 1,
-    p_hourly_limit: runtime.limits.hourlyMessages,
-    p_daily_limit: runtime.limits.dailyMessages,
+    p_hourly_limit: hourlyLimit,
+    p_daily_limit: dailyLimit,
   })
   if (quotaError) {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'quota_unavailable')
@@ -286,7 +329,7 @@ export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
   let knowledgeMatches = []
-  if (supabaseUrl && publishableKey) {
+  if (supabaseUrl && publishableKey && !auth.rehearsal) {
     const token = (req.headers.authorization || '').slice(7)
     const userDb = createClient(supabaseUrl, publishableKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -306,12 +349,12 @@ export default async function handler(req, res) {
 
   let result
   try {
-    if (runtime.provider === 'anthropic') {
+    if (provider === 'anthropic') {
       const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.CLE_API_ANTHROPIC
       if (!apiKey) throw new Error('provider_not_configured')
       result = await callAnthropic({
         apiKey,
-        model: runtime.model,
+        model,
         instructions,
         history: providerHistory,
         maxOutputTokens: runtime.limits.maxOutputTokens,
@@ -321,7 +364,7 @@ export default async function handler(req, res) {
       if (!apiKey) throw new Error('provider_not_configured')
       result = await callOpenAI({
         apiKey,
-        model: runtime.model,
+        model,
         instructions,
         history: providerHistory,
         maxOutputTokens: runtime.limits.maxOutputTokens,
@@ -337,8 +380,8 @@ export default async function handler(req, res) {
       eventType: 'agent_response_failed',
       conversationId,
       requestId,
-      provider: runtime.provider,
-      model: runtime.model,
+      provider,
+      model,
       sourceCount: knowledge.sources.length,
       durationMs: Date.now() - startedAt,
       result: errorCode,
@@ -354,8 +397,8 @@ export default async function handler(req, res) {
       eventType: 'agent_response_failed',
       conversationId,
       requestId,
-      provider: runtime.provider,
-      model: runtime.model,
+      provider,
+      model,
       sourceCount: knowledge.sources.length,
       durationMs: Date.now() - startedAt,
       result: result.error,
@@ -370,8 +413,8 @@ export default async function handler(req, res) {
     owner_id: auth.userId,
     role: 'assistant',
     content: result.reply,
-    provider: runtime.provider,
-    model: runtime.model,
+    provider,
+    model,
     sources: knowledge.sources,
   })
   if (assistantMessageError) {
@@ -385,8 +428,8 @@ export default async function handler(req, res) {
     eventType: 'agent_response_generated',
     conversationId,
     requestId,
-    provider: runtime.provider,
-    model: runtime.model,
+    provider,
+    model,
     sourceCount: knowledge.sources.length,
     durationMs: Date.now() - startedAt,
     result: 'success',

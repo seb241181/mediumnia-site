@@ -9,6 +9,22 @@
       "destination": "/index.html"
     },
     {
+      "source": "/pro/conference-rehearsal/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pro/conference/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/live/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pass/mediumia/:eventSlug",
+      "destination": "/index.html"
+    },
+    {
       "source": "/pro",
       "destination": "/index.html"
     },

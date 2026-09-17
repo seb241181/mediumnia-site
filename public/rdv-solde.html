@@ -11,7 +11,7 @@
   <style>
     :root { --deep:#1A1535; --gold:#C9A84C; --cream:#FAFAF7; --mist:#665d7d; --line:rgba(201,168,76,.28); }
     *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at 80% 6%,rgba(201,168,76,.12),transparent 25%),linear-gradient(180deg,#fff 0%,var(--cream) 70%);color:var(--deep);font-family:Georgia,serif}
-    main{width:min(760px,calc(100% - 32px));margin:0 auto;padding:52px 0 72px}.brand{text-align:center;margin-bottom:34px}.brand img{width:180px;max-width:55vw}.eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}.card{background:rgba(255,255,255,.78);border:1px solid var(--line);border-radius:24px;padding:28px;box-shadow:0 18px 46px rgba(26,21,53,.07)}h1{font-family:"Bodoni Moda",Georgia,serif;font-size:clamp(32px,6vw,52px);font-weight:500;line-height:1.08;margin:0 0 14px}.intro{color:var(--mist);font-size:16px;line-height:1.7;margin:0}.summary{margin:26px 0 20px;padding:20px;border-radius:16px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22)}.row{display:flex;justify-content:space-between;gap:24px;padding:8px 0;color:var(--mist);font-size:14px}.row strong{color:var(--deep);text-align:right}.row.total{border-top:1px solid var(--line);margin-top:7px;padding-top:15px;font-size:16px}.deadline{margin:18px 0;padding:14px 16px;border-radius:14px;background:#fff8e8;border:1px solid rgba(201,168,76,.35);font-size:13px;line-height:1.6;color:#574a25}.paypal-box{margin-top:22px;min-height:52px}.notice{margin-top:16px;padding:13px 15px;border-radius:13px;font-size:13px;line-height:1.55}.notice.error{background:#fff0f0;color:#7b2929;border:1px solid #f0caca}.notice.ok{background:#eef8f1;color:#245d36;border:1px solid #c8e7d1}.spinner{width:30px;height:30px;border:3px solid rgba(201,168,76,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:26px auto}@keyframes spin{to{transform:rotate(360deg)}}.state{text-align:center;padding:26px 8px}.state .symbol{font-size:38px;color:var(--gold);margin-bottom:12px}.state h2{font-family:"Bodoni Moda",Georgia,serif;font-size:30px;margin:0 0 12px}.state p{color:var(--mist);line-height:1.65;margin:0 auto;max-width:540px}.back{display:block;text-align:center;margin-top:28px;color:var(--deep);text-decoration:none;font-size:14px}.back:hover{text-decoration:underline}.hidden{display:none!important}@media(max-width:560px){main{padding-top:32px}.card{padding:22px 18px;border-radius:20px}.row{gap:14px}.row span{max-width:48%}}
+    main{width:min(760px,calc(100% - 32px));margin:0 auto;padding:52px 0 72px}.brand{text-align:center;margin-bottom:34px}.brand img{width:180px;max-width:55vw}.eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}.card{background:rgba(255,255,255,.78);border:1px solid var(--line);border-radius:24px;padding:28px;box-shadow:0 18px 46px rgba(26,21,53,.07)}h1{font-family:"Bodoni Moda",Georgia,serif;font-size:clamp(32px,6vw,52px);font-weight:500;line-height:1.08;margin:0 0 14px}.intro{color:var(--mist);font-size:16px;line-height:1.7;margin:0}.summary{margin:26px 0 20px;padding:20px;border-radius:16px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22)}.row{display:flex;justify-content:space-between;gap:24px;padding:8px 0;color:var(--mist);font-size:14px}.row strong{color:var(--deep);text-align:right}.row.total{border-top:1px solid var(--line);margin-top:7px;padding-top:15px;font-size:16px}.deadline{margin:18px 0;padding:14px 16px;border-radius:14px;background:#fff8e8;border:1px solid rgba(201,168,76,.35);font-size:13px;line-height:1.6;color:#574a25}.paypal-box{margin-top:22px;min-height:52px}.paypal-box paypal-button{display:block;width:100%;min-height:48px}.notice{margin-top:16px;padding:13px 15px;border-radius:13px;font-size:13px;line-height:1.55}.notice.error{background:#fff0f0;color:#7b2929;border:1px solid #f0caca}.notice.ok{background:#eef8f1;color:#245d36;border:1px solid #c8e7d1}.spinner{width:30px;height:30px;border:3px solid rgba(201,168,76,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:26px auto}@keyframes spin{to{transform:rotate(360deg)}}.state{text-align:center;padding:26px 8px}.state .symbol{font-size:38px;color:var(--gold);margin-bottom:12px}.state h2{font-family:"Bodoni Moda",Georgia,serif;font-size:30px;margin:0 0 12px}.state p{color:var(--mist);line-height:1.65;margin:0 auto;max-width:540px}.back{display:block;text-align:center;margin-top:28px;color:var(--deep);text-decoration:none;font-size:14px}.back:hover{text-decoration:underline}.hidden{display:none!important}@media(max-width:560px){main{padding-top:32px}.card{padding:22px 18px;border-radius:20px}.row{gap:14px}.row span{max-width:48%}}
   </style>
 </head>
 <body>
@@ -73,47 +73,75 @@
       paypal_create_order_failed:'PayPal n’a pas pu préparer le paiement. Réessayez dans quelques instants.',
       paypal_capture_failed:'La confirmation PayPal n’a pas pu être finalisée. Ne repayez pas : rechargez d’abord cette page.',
       balance_capture_in_progress:'Le paiement est déjà en cours de confirmation. Patientez quelques instants.',
+      paypal_not_eligible:'PayPal n’est pas disponible sur ce navigateur pour le moment.',
     }
     return map[code] || 'Le paiement ne peut pas être finalisé pour le moment. Réessayez dans quelques instants.'
   }
 
-  async function loadPaypal(clientId) {
-    if (window.paypal) return
+  async function loadPaypal(env) {
+    if (window.paypal?.createInstance) return
     await new Promise((resolve, reject) => {
       const script = document.createElement('script')
-      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons`
+      script.src = env === 'sandbox'
+        ? 'https://www.sandbox.paypal.com/web-sdk/v6/core'
+        : 'https://www.paypal.com/web-sdk/v6/core'
       script.async = true
-      script.onload = () => window.paypal ? resolve() : reject(new Error('paypal_sdk_unavailable'))
+      script.dataset.mediumiaPaypalV6 = '1'
+      script.onload = () => window.paypal?.createInstance ? resolve() : reject(new Error('paypal_sdk_unavailable'))
       script.onerror = () => reject(new Error('paypal_sdk_unavailable'))
       document.head.appendChild(script)
     })
   }
 
   async function mountPayPal() {
-    await loadPaypal(current.clientId)
+    await loadPaypal(current.env)
+    const sdk = await window.paypal.createInstance({
+      clientId: current.clientId,
+      components: ['paypal-payments'],
+      pageType: 'checkout',
+      locale: 'fr-FR',
+      clientMetadataId: crypto.randomUUID(),
+    })
+    const methods = await sdk.findEligibleMethods({ currencyCode: 'EUR' })
+    if (!methods?.isEligible?.('paypal')) throw new Error('paypal_not_eligible')
+
     const storageKey = `mediumia:rdv-solde:${current.bookingId}`
     let checkoutId = sessionStorage.getItem(storageKey)
     if (!checkoutId) { checkoutId = crypto.randomUUID(); sessionStorage.setItem(storageKey, checkoutId) }
     $('paypal').innerHTML = ''
-    await window.paypal.Buttons({
-      style:{layout:'vertical',shape:'rect',label:'paypal'},
-      createOrder: async () => {
-        $('paymentNotice').classList.add('hidden')
-        const data = await api('create', { token, client_checkout_id: checkoutId })
-        if (data.status === 'PAID') { show('paidState'); throw new Error('already_paid') }
-        return data.id
-      },
-      onApprove: async data => {
+
+    const session = sdk.createPayPalOneTimePaymentSession({
+      onApprove: async ({ orderId }) => {
         $('paymentNotice').classList.add('hidden')
         try {
-          const result = await api('capture', { orderId:data.orderID })
+          const result = await api('capture', { orderId })
           if (result.status === 'COMPLETED') show('paidState')
           else showError(message(result.error))
         } catch (error) { showError(message(error.message)) }
       },
       onCancel: () => showError('Paiement annulé. Votre solde reste à régler avant l’échéance indiquée.'),
-      onError: error => { if (error?.message !== 'already_paid') showError(message(error?.message)) },
-    }).render('#paypal')
+      onError: error => showError(message(error?.message)),
+    })
+
+    const button = document.createElement('paypal-button')
+    button.setAttribute('type', 'pay')
+    button.addEventListener('click', async () => {
+      $('paymentNotice').classList.add('hidden')
+      try {
+        const orderPromise = api('create', { token, client_checkout_id: checkoutId }).then(data => {
+          if (data.status === 'PAID') {
+            show('paidState')
+            throw new Error('already_paid')
+          }
+          if (!data.id) throw new Error('paypal_create_order_failed')
+          return { orderId: data.id }
+        })
+        await session.start({ presentationMode: 'auto' }, orderPromise)
+      } catch (error) {
+        if (error?.message !== 'already_paid') showError(message(error?.message))
+      }
+    })
+    $('paypal').appendChild(button)
   }
 
   async function init() {
@@ -134,8 +162,8 @@
       try {
         await mountPayPal()
       } catch (error) {
-        console.error('[rdv-solde] PayPal SDK indisponible:', error?.message || error)
-        showError('Votre lien est valide, mais le bouton PayPal n’a pas pu se charger. Rechargez cette page dans quelques instants.')
+        console.error('[rdv-solde] PayPal Web SDK indisponible:', error?.message || error)
+        showError('Votre lien est valide, mais le paiement PayPal n’a pas pu être chargé. Rechargez cette page dans quelques instants.')
       }
     } catch (error) {
       if (error.message === 'balance_payment_expired') show('expiredState')

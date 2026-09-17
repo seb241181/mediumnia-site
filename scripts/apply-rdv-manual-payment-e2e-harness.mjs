@@ -4,7 +4,7 @@ const apiPath = 'api/rdv-admin.js'
 let source = fs.readFileSync(apiPath, 'utf8')
 let changed = false
 
-if (!source.includes("import { createManualPayment } from '../lib/rdvManualPaymentsAdmin.js'")) {
+if (!source.includes("from '../lib/rdvManualPaymentsAdmin.js'")) {
   const marker = "import { requireAuth, getSupabaseAdmin } from '../lib/supabaseAdmin.js'\n"
   if (!source.includes(marker)) throw new Error('manual_payment_e2e_import_marker_missing')
   source = source.replace(marker, marker + "import { createManualPayment } from '../lib/rdvManualPaymentsAdmin.js'\n")

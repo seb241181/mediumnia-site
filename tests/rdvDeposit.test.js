@@ -76,5 +76,5 @@ test('public confirmation copy distinguishes full payment from arrhes', () => {
   const page = fs.readFileSync(new URL('../src/components/rdv/RdvPublic.jsx', import.meta.url), 'utf8')
   assert.match(page, /Votre prestation a été réglée intégralement/)
   assert.match(page, /paidInFull \? 'Montant réglé :' : 'Arrhes réglées :'/)
-  assert.match(page, /Paiement en ligne:/)
+  assert.match(page, /Paiement en ligne\s*:/)
 })

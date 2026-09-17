@@ -1,6 +1,10 @@
--- MediumIA RDV — correction de l'option de paiement intégral.
--- Le hold intégral doit aussi marquer la ligne PayPal comme "full" afin que
--- la conversion post-capture applique le bon invariant (prix total, vidéo).
+-- MediumIA RDV — correction et durcissement de l'option de paiement intégral.
+-- Cette migration est volontairement additive : elle fonctionne après le socle arrhes
+-- et reste compatible avec une base où payment_option aurait déjà été créé en test.
+
+ALTER TABLE public.rdv_paypal_payments
+  ADD COLUMN IF NOT EXISTS payment_option TEXT NOT NULL DEFAULT 'deposit'
+    CHECK (payment_option IN ('deposit', 'full'));
 
 CREATE OR REPLACE FUNCTION public.create_rdv_full_payment_hold(
   p_practitioner_id UUID,
@@ -27,6 +31,8 @@ DECLARE
   v_result JSONB;
   v_service public.booking_services;
   v_hold_id UUID;
+  v_existing_hold public.rdv_booking_holds;
+  v_existing_payment public.rdv_paypal_payments;
 BEGIN
   IF p_selected_modality <> 'video' THEN
     RETURN jsonb_build_object('ok', false, 'error', 'full_payment_video_only');
@@ -49,6 +55,53 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'service_not_payable_online');
   END IF;
 
+  -- Sérialise création et retries pour un même praticien, comme le socle arrhes.
+  PERFORM pg_advisory_xact_lock(hashtext(p_practitioner_id::text));
+
+  -- Idempotence : si ce checkout existe déjà pour un paiement intégral identique,
+  -- on renvoie simplement la même intention au lieu de tenter de changer son montant.
+  SELECT p.* INTO v_existing_payment
+  FROM public.rdv_paypal_payments p
+  WHERE p.client_checkout_id = p_client_checkout_id
+  FOR UPDATE;
+
+  IF FOUND THEN
+    SELECT * INTO v_existing_hold
+    FROM public.rdv_booking_holds
+    WHERE id = v_existing_payment.hold_id
+    FOR UPDATE;
+
+    IF v_existing_hold.id IS NULL
+      OR v_existing_hold.practitioner_id <> p_practitioner_id
+      OR v_existing_hold.service_id <> p_service_id
+      OR v_existing_hold.starts_at <> p_starts_at
+      OR v_existing_hold.ends_at <> p_ends_at
+      OR v_existing_hold.selected_modality <> 'video'
+      OR v_existing_payment.payment_option <> 'full'
+      OR v_existing_hold.payment_choice <> 'full_payment'
+      OR v_existing_payment.amount_cents <> v_service.price_cents
+      OR v_existing_hold.reservation_payment_cents <> v_service.price_cents
+      OR v_existing_hold.service_price_cents <> v_service.price_cents
+    THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'payment_choice_locked');
+    END IF;
+
+    RETURN jsonb_build_object(
+      'ok', true,
+      'existing', true,
+      'hold_id', v_existing_hold.id,
+      'status', v_existing_hold.status,
+      'expires_at', v_existing_hold.expires_at,
+      'amount_cents', v_existing_payment.amount_cents,
+      'service_price_cents', v_existing_hold.service_price_cents,
+      'currency', v_existing_hold.currency,
+      'payment_choice', 'full_payment',
+      'payment_option', 'full'
+    );
+  END IF;
+
+  -- Nouveau checkout : réutilise les protections éprouvées du parcours arrhes,
+  -- puis transforme l'intention en paiement intégral avant toute création PayPal.
   v_result := public.create_rdv_deposit_hold(
     p_practitioner_id,
     p_service_id,
@@ -86,7 +139,7 @@ BEGIN
   WHERE hold_id = v_hold_id
     AND paypal_order_id IS NULL;
 
-  IF NOT FOUND AND COALESCE((v_result->>'existing')::BOOLEAN, false) THEN
+  IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'payment_choice_locked');
   END IF;
 

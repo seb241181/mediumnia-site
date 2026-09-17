@@ -83,8 +83,8 @@
       const script = document.createElement('script')
       script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons`
       script.async = true
-      script.onload = resolve
-      script.onerror = reject
+      script.onload = () => window.paypal ? resolve() : reject(new Error('paypal_sdk_unavailable'))
+      script.onerror = () => reject(new Error('paypal_sdk_unavailable'))
       document.head.appendChild(script)
     })
   }
@@ -131,7 +131,12 @@
       $('balance').textContent = money(current.balanceCents)
       $('deadline').textContent = fmt(current.deadlineAt)
       show('payable')
-      await mountPayPal()
+      try {
+        await mountPayPal()
+      } catch (error) {
+        console.error('[rdv-solde] PayPal SDK indisponible:', error?.message || error)
+        showError('Votre lien est valide, mais le bouton PayPal n’a pas pu se charger. Rechargez cette page dans quelques instants.')
+      }
     } catch (error) {
       if (error.message === 'balance_payment_expired') show('expiredState')
       else show('invalidState')

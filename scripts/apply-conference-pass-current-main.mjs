@@ -9,8 +9,14 @@ if (!source.includes("from '../lib/conferencePassPayPal.js'")) {
   changed = true
 }
 
+if (!source.includes("from '../lib/conferencePreviewEnvDebug.js'")) {
+  source = "import { handleConferencePreviewEnvDebug } from '../lib/conferencePreviewEnvDebug.js'\n" + source
+  changed = true
+}
+
 const correctRoute = 'if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res, req.query.conferencePassAction)'
 const legacyRoute = 'if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res)'
+const debugRoute = 'if (req.query.conferencePreviewEnvDebug) return handleConferencePreviewEnvDebug(req, res)'
 
 if (source.includes(legacyRoute)) {
   source = source.replace(legacyRoute, correctRoute)
@@ -22,17 +28,13 @@ if (source.includes(legacyRoute)) {
   changed = true
 }
 
-if (changed) fs.writeFileSync(apiPath, source)
-
-// Temporary Preview diagnostic: expose only a sanitized Supabase error code,
-// never credentials or token values.
-const passPath = 'lib/conferencePassPayPal.js'
-let passSource = fs.readFileSync(passPath, 'utf8')
-const validateMarker = "  if (error) throw new Error('pass_validate_failed')"
-const validateDiagnostic = "  if (error) {\n    const safeCode = String(error.code || error.status || 'unknown').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80)\n    console.error('[conference-pass-paypal] validate_supabase_error', { code: safeCode, message: error.message })\n    throw new Error('pass_validate_failed_' + safeCode)\n  }"
-if (passSource.includes(validateMarker)) {
-  passSource = passSource.replace(validateMarker, validateDiagnostic)
-  fs.writeFileSync(passPath, passSource)
+if (!source.includes(debugRoute)) {
+  const marker = 'export default async function handler(req, res) {\n'
+  if (!source.includes(marker)) throw new Error('conference_preview_env_debug_marker_missing')
+  source = source.replace(marker, marker + `  ${debugRoute}\n`)
+  changed = true
 }
+
+if (changed) fs.writeFileSync(apiPath, source)
 
 console.log('MediumIA conferences: conference Pass API route applied safely on current main')

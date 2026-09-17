@@ -49,6 +49,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/rdv/solde",
+      "destination": "/rdv-solde.html"
+    },
+    {
       "source": "/rdv/:slug",
       "destination": "/index.html"
     },

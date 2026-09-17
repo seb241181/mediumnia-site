@@ -6,6 +6,7 @@ const read = path => fs.readFileSync(path, 'utf8')
 
 test('balance schema is server-only and records a dedicated balance accounting entry', () => {
   const migration = read('supabase/migrations/20260917114500_rdv_balance_reminders_and_payment.sql')
+  const schedulerSwitch = read('supabase/migrations/20260917173000_rdv_balance_use_vercel_daily_cron.sql')
   assert.match(migration, /CREATE EXTENSION IF NOT EXISTS pg_cron/)
   assert.match(migration, /CREATE EXTENSION IF NOT EXISTS pg_net/)
   assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.rdv_balance_payments/)
@@ -13,6 +14,8 @@ test('balance schema is server-only and records a dedicated balance accounting e
   assert.match(migration, /'mediumia', 'balance', 'income', 'paypal'/)
   assert.match(migration, /starts_at - INTERVAL '48 hours'/)
   assert.match(migration, /mediumia-rdv-balance-hourly/)
+  assert.match(schedulerSwitch, /cron\.unschedule/)
+  assert.match(schedulerSwitch, /sweep_url = NULL/)
 })
 
 test('balance capture and auto-cancel use database claims to avoid races', () => {
@@ -75,4 +78,26 @@ test('video deposits inside 48 hours are forced to full payment and confirmation
   assert.match(patch, /fullPaymentRequired/)
   assert.match(email, /enverra un rappel avec un lien de paiement sécurisé environ 72 heures/)
   assert.match(email, /au plus tard 48 heures avant la séance/)
+})
+
+test('Hobby plan uses one secure Vercel balance sweep per day without adding a function', () => {
+  const config = JSON.parse(read('vercel.json'))
+  const route = read('api/rdv-config.js')
+  const cronHandler = read('lib/rdvBalanceCronHandler.js')
+
+  assert.ok((config.rewrites || []).some(item =>
+    item.source === '/api/rdv-balance-cron'
+    && item.destination === '/api/rdv-config?rdvBalanceAction=cron'
+  ))
+  assert.ok((config.crons || []).some(item =>
+    item.path === '/api/rdv-balance-cron'
+    && item.schedule === '0 7 * * *'
+  ))
+  assert.match(route, /handleRdvBalanceDailyCron/)
+  assert.match(route, /rdvBalanceAction === 'cron'/)
+  assert.match(cronHandler, /CRON_SECRET/)
+  assert.match(cronHandler, /headers\?\.authorization/)
+  assert.match(cronHandler, /claim_rdv_balance_reminder/)
+  assert.match(cronHandler, /claim_rdv_balance_auto_cancel/)
+  assert.match(cronHandler, /deleteBookingFromGoogleCalendar/)
 })

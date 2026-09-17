@@ -51,3 +51,30 @@ test('checkout migration blocks unpaid MediumIA bypass and records one financial
   assert.match(sql, /external_payment_ref/)
   assert.match(sql, /p_paypal_capture_id/)
 })
+
+test('full-payment migration is self-contained, video-only and retry-safe', () => {
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20260917051500_rdv_full_payment_option_fix.sql', import.meta.url), 'utf8')
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS payment_option/)
+  assert.match(sql, /payment_option IN \('deposit', 'full'\)/)
+  assert.match(sql, /p_selected_modality <> 'video'/)
+  assert.match(sql, /client_checkout_id = p_client_checkout_id/)
+  assert.match(sql, /v_existing_payment\.payment_option <> 'full'/)
+  assert.match(sql, /payment_choice <> 'full_payment'/)
+  assert.match(sql, /'existing', true/)
+  assert.match(sql, /payment_option = 'full'/)
+})
+
+test('full-payment API creates a full PayPal order while deposit remains the default', () => {
+  const fullHandler = fs.readFileSync(new URL('../lib/rdvFullPaymentApiHandler.js', import.meta.url), 'utf8')
+  const paypalHelper = fs.readFileSync(new URL('../lib/rdvDepositPayPal.js', import.meta.url), 'utf8')
+  assert.match(fullHandler, /paymentOption: 'full'/)
+  assert.match(paypalHelper, /paymentOption = 'deposit'/)
+  assert.match(paypalHelper, /paymentOption === 'full' \? 'Paiement intégral' : 'Arrhes de réservation'/)
+})
+
+test('public confirmation copy distinguishes full payment from arrhes', () => {
+  const page = fs.readFileSync(new URL('../src/components/rdv/RdvPublic.jsx', import.meta.url), 'utf8')
+  assert.match(page, /Votre prestation a été réglée intégralement/)
+  assert.match(page, /paidInFull \? 'Montant réglé :' : 'Arrhes réglées :'/)
+  assert.match(page, /Paiement en ligne:/)
+})

@@ -32,6 +32,13 @@ test('manual payment is retry-safe and Preview cannot write to production accoun
   assert.match(adminService, /wnbwhnqiulsdjcvkuwos/)
 })
 
+test('manual payment replay is resolved before a fully-paid booking can reject it', () => {
+  const replayIndex = adminService.indexOf('const earlyReplay = await findExistingManualPayment')
+  const paidIndex = adminService.indexOf('booking.remaining_cents <= 0')
+  assert.ok(replayIndex >= 0 && paidIndex >= 0 && replayIndex < paidIndex)
+  assert.match(adminService, /insertError\?\.code === '23505'/)
+})
+
 test('Reservio and other manual sources are explicit', () => {
   assert.match(adminService, /EXTERNAL_SOURCES = new Set\(\['reservio', 'manual'\]\)/)
   assert.match(modal, /\['reservio', 'Reservio'\]/)

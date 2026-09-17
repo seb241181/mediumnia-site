@@ -5,9 +5,7 @@ let source = fs.readFileSync(apiPath, 'utf8')
 let changed = false
 
 if (!source.includes("from '../lib/conferencePassPayPal.js'")) {
-  const marker = "import { handleRdvFullPaymentApi } from '../lib/rdvFullPaymentApiHandler.js'\n"
-  if (!source.includes(marker)) throw new Error('conference_pass_api_import_marker_missing')
-  source = source.replace(marker, marker + "import { handleConferencePassPayPal } from '../lib/conferencePassPayPal.js'\n")
+  source = "import { handleConferencePassPayPal } from '../lib/conferencePassPayPal.js'\n" + source
   changed = true
 }
 

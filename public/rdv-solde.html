@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Régler mon solde — MediumIA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --deep:#1A1535; --gold:#C9A84C; --cream:#FAFAF7; --mist:#665d7d; --line:rgba(201,168,76,.28); }
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at 80% 6%,rgba(201,168,76,.12),transparent 25%),linear-gradient(180deg,#fff 0%,var(--cream) 70%);color:var(--deep);font-family:Georgia,serif}
+    main{width:min(760px,calc(100% - 32px));margin:0 auto;padding:52px 0 72px}.brand{text-align:center;margin-bottom:34px}.brand img{width:180px;max-width:55vw}.eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}.card{background:rgba(255,255,255,.78);border:1px solid var(--line);border-radius:24px;padding:28px;box-shadow:0 18px 46px rgba(26,21,53,.07)}h1{font-family:"Bodoni Moda",Georgia,serif;font-size:clamp(32px,6vw,52px);font-weight:500;line-height:1.08;margin:0 0 14px}.intro{color:var(--mist);font-size:16px;line-height:1.7;margin:0}.summary{margin:26px 0 20px;padding:20px;border-radius:16px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.22)}.row{display:flex;justify-content:space-between;gap:24px;padding:8px 0;color:var(--mist);font-size:14px}.row strong{color:var(--deep);text-align:right}.row.total{border-top:1px solid var(--line);margin-top:7px;padding-top:15px;font-size:16px}.deadline{margin:18px 0;padding:14px 16px;border-radius:14px;background:#fff8e8;border:1px solid rgba(201,168,76,.35);font-size:13px;line-height:1.6;color:#574a25}.paypal-box{margin-top:22px}.paypal-btn{width:100%;border:0;border-radius:12px;background:#ffc439;color:#111;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:17px;line-height:1;padding:16px 18px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.08)}.paypal-btn:hover{filter:brightness(.98)}.paypal-btn:disabled{opacity:.6;cursor:wait}.notice{margin-top:16px;padding:13px 15px;border-radius:13px;font-size:13px;line-height:1.55}.notice.error{background:#fff0f0;color:#7b2929;border:1px solid #f0caca}.notice.ok{background:#eef8f1;color:#245d36;border:1px solid #c8e7d1}.spinner{width:30px;height:30px;border:3px solid rgba(201,168,76,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:26px auto}@keyframes spin{to{transform:rotate(360deg)}}.state{text-align:center;padding:26px 8px}.state .symbol{font-size:38px;color:var(--gold);margin-bottom:12px}.state h2{font-family:"Bodoni Moda",Georgia,serif;font-size:30px;margin:0 0 12px}.state p{color:var(--mist);line-height:1.65;margin:0 auto;max-width:540px}.back{display:block;text-align:center;margin-top:28px;color:var(--deep);text-decoration:none;font-size:14px}.back:hover{text-decoration:underline}.hidden{display:none!important}@media(max-width:560px){main{padding-top:32px}.card{padding:22px 18px;border-radius:20px}.row{gap:14px}.row span{max-width:48%}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand"><img src="/images/brand/MEDIUMIA_logo_officiel_transparent_2026-09-12.png" alt="MediumIA" /></div>
+  <section class="card">
+    <div id="loading"><div class="spinner"></div><p id="loadingText" class="intro" style="text-align:center">Vérification de votre rendez-vous…</p></div>
+
+    <div id="payable" class="hidden">
+      <p class="eyebrow">Règlement sécurisé</p>
+      <h1>Régler mon solde</h1>
+      <p class="intro">Finalisez le règlement de votre rendez-vous directement en ligne.</p>
+      <div class="summary">
+        <div class="row"><span>Prestation</span><strong id="service"></strong></div>
+        <div class="row"><span>Rendez-vous</span><strong id="appointment"></strong></div>
+        <div class="row"><span>Prix total</span><strong id="price"></strong></div>
+        <div class="row"><span>Déjà réglé</span><strong id="paid"></strong></div>
+        <div class="row total"><span>Solde à régler</span><strong id="balance"></strong></div>
+      </div>
+      <div class="deadline">À régler au plus tard <strong id="deadline"></strong>. Passé ce délai, le rendez-vous sera automatiquement annulé et le créneau libéré.</div>
+      <div id="paypal" class="paypal-box"><button id="paypalButton" class="paypal-btn" type="button">Payer avec PayPal</button></div>
+      <div id="paymentNotice" class="notice error hidden"></div>
+    </div>
+
+    <div id="paidState" class="state hidden"><div class="symbol">✦</div><h2>Rendez-vous entièrement réglé</h2><p>Votre paiement est bien enregistré. Il ne reste plus aucun solde à régler.</p></div>
+    <div id="expiredState" class="state hidden"><div class="symbol">◌</div><h2>Délai de règlement dépassé</h2><p>Le lien de paiement n’est plus actif, car l’échéance de 48 heures avant le rendez-vous est atteinte.</p></div>
+    <div id="cancelledState" class="state hidden"><div class="symbol">◌</div><h2>Rendez-vous annulé</h2><p>Ce rendez-vous n’est plus actif et ne peut plus être réglé depuis ce lien.</p></div>
+    <div id="invalidState" class="state hidden"><div class="symbol">◌</div><h2>Lien invalide ou expiré</h2><p>Ce lien de règlement ne peut pas être utilisé. Vérifiez que vous avez ouvert le lien reçu par e-mail.</p></div>
+  </section>
+  <a class="back" href="https://mediumia.fr">← Retour à MediumIA</a>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id)
+  const query = new URLSearchParams(window.location.search)
+  const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
+  const token = new URLSearchParams(rawHash).get('token') || ''
+  const isPayPalReturn = query.get('balance_return') === '1'
+  const isPayPalCancel = query.get('balance_cancel') === '1'
+  let current = null
+
+  const money = cents => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
+  const fmt = value => new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }).format(new Date(value))
+  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','invalidState'].forEach(id => $(id).classList.add('hidden'))
+  const show = id => { hideAll(); $(id).classList.remove('hidden') }
+  const showError = text => { $('paymentNotice').textContent = text; $('paymentNotice').classList.remove('hidden') }
+
+  async function api(action, body) {
+    const response = await fetch(`/api/rdv-config?rdvBalanceAction=${encodeURIComponent(action)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body || {})
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data.error || 'balance_payment_unavailable')
+    return data
+  }
+
+  function message(code) {
+    const map = {
+      balance_payment_expired:'Le délai de règlement est dépassé.',
+      balance_token_not_found:'Ce lien de paiement est invalide ou expiré.',
+      paypal_create_order_failed:'PayPal n’a pas pu préparer le paiement. Réessayez dans quelques instants.',
+      paypal_capture_failed:'La confirmation PayPal n’a pas pu être finalisée. Ne repayez pas : rechargez d’abord cette page.',
+      balance_capture_in_progress:'Le paiement est déjà en cours de confirmation. Patientez quelques instants.',
+    }
+    return map[code] || 'Le paiement ne peut pas être finalisé pour le moment. Réessayez dans quelques instants.'
+  }
+
+  function notifyOpener(type) {
+    try {
+      if (window.opener && !window.opener.closed) window.opener.postMessage({ type }, window.location.origin)
+    } catch (_) {}
+  }
+
+  async function handlePayPalCallback() {
+    if (isPayPalCancel) {
+      notifyOpener('mediumia-rdv-balance-cancelled')
+      $('loadingText').textContent = 'Paiement annulé. Vous pouvez fermer cette fenêtre.'
+      setTimeout(() => { try { window.close() } catch (_) {} }, 600)
+      return true
+    }
+    if (!isPayPalReturn) return false
+
+    const orderId = String(query.get('token') || '').trim()
+    if (!orderId) { show('invalidState'); return true }
+    $('loadingText').textContent = 'Confirmation de votre paiement PayPal…'
+    try {
+      const result = await api('capture', { orderId })
+      if (result.status !== 'COMPLETED') throw new Error(result.error || 'paypal_capture_failed')
+      notifyOpener('mediumia-rdv-balance-paid')
+      show('paidState')
+      setTimeout(() => { try { window.close() } catch (_) {} }, 900)
+    } catch (error) {
+      $('loadingText').textContent = message(error.message)
+      show('loading')
+    }
+    return true
+  }
+
+  async function startHostedCheckout() {
+    const button = $('paypalButton')
+    button.disabled = true
+    $('paymentNotice').classList.add('hidden')
+    let popup = null
+    try {
+      popup = window.open('about:blank', 'mediumia-paypal-balance', 'width=520,height=760')
+      const storageKey = `mediumia:rdv-solde:${current.bookingId}`
+      let checkoutId = sessionStorage.getItem(storageKey)
+      if (!checkoutId) { checkoutId = crypto.randomUUID(); sessionStorage.setItem(storageKey, checkoutId) }
+      const data = await api('create', { token, client_checkout_id: checkoutId })
+      if (data.status === 'PAID') {
+        if (popup && !popup.closed) popup.close()
+        show('paidState')
+        return
+      }
+      if (!data.id) throw new Error('paypal_create_order_failed')
+      const host = current.env === 'sandbox' ? 'https://www.sandbox.paypal.com' : 'https://www.paypal.com'
+      const checkoutUrl = `${host}/checkoutnow?token=${encodeURIComponent(data.id)}`
+      if (popup && !popup.closed) popup.location.href = checkoutUrl
+      else window.location.href = checkoutUrl
+    } catch (error) {
+      if (popup && !popup.closed) popup.close()
+      showError(message(error.message))
+      button.disabled = false
+    }
+  }
+
+  async function init() {
+    if (await handlePayPalCallback()) return
+    if (!token || token.length < 32) { show('invalidState'); return }
+    history.replaceState(null, '', window.location.pathname + window.location.search)
+    try {
+      current = await api('status', { token })
+      if (current.status === 'PAID') { show('paidState'); return }
+      if (current.status === 'CANCELLED') { show('cancelledState'); return }
+      if (current.status === 'EXPIRED') { show('expiredState'); return }
+      if (current.status !== 'PAYABLE') { show('invalidState'); return }
+      $('service').textContent = current.serviceTitle
+      $('appointment').textContent = fmt(current.startsAt)
+      $('price').textContent = money(current.priceCents)
+      $('paid').textContent = money(current.paidCents)
+      $('balance').textContent = money(current.balanceCents)
+      $('deadline').textContent = fmt(current.deadlineAt)
+      $('paypalButton').textContent = `Payer ${money(current.balanceCents)} avec PayPal`
+      $('paypalButton').addEventListener('click', startHostedCheckout)
+      window.addEventListener('message', event => {
+        if (event.origin !== window.location.origin) return
+        if (event.data?.type === 'mediumia-rdv-balance-paid') show('paidState')
+        if (event.data?.type === 'mediumia-rdv-balance-cancelled') showError('Paiement annulé. Votre solde reste à régler avant l’échéance indiquée.')
+      })
+      show('payable')
+    } catch (error) {
+      if (error.message === 'balance_payment_expired') show('expiredState')
+      else show('invalidState')
+    }
+  }
+  init()
+})()
+</script>
+</body>
+</html>

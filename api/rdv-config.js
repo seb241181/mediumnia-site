@@ -11,6 +11,8 @@ import { handleChronospherePayPal } from '../lib/chronospherePayPal.js'
 import { handleMediumiaAnalytics } from '../lib/mediumiaAnalytics.js'
 import { handleRdvDepositApi } from '../lib/rdvDepositApiHandler.js'
 import { handleRdvFullPaymentCreate } from '../lib/rdvFullPaymentApiHandler.js'
+import { handleRdvBalanceApi } from '../lib/rdvBalanceApiHandler.js'
+import { handleRdvBalanceDailyCron } from '../lib/rdvBalanceCronHandler.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -25,6 +27,14 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
+
+  const rdvBalanceAction = req.query?.rdvBalanceAction
+  if (rdvBalanceAction === 'cron') {
+    return handleRdvBalanceDailyCron(req, res)
+  }
+  if (rdvBalanceAction) {
+    return handleRdvBalanceApi(req, res, rdvBalanceAction)
+  }
 
   const rdvDepositAction = req.query?.rdvDepositAction
   if (rdvDepositAction === 'createFull') {

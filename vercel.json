@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/rdv-balance-cron",
+      "destination": "/api/rdv-config?rdvBalanceAction=cron"
+    },
+    {
       "source": "/test-paypal-mediumia-live-1eur-9f3b2c",
       "destination": "/index.html"
     },
@@ -49,6 +53,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/rdv/solde",
+      "destination": "/rdv-solde.html"
+    },
+    {
       "source": "/rdv/:slug",
       "destination": "/index.html"
     },
@@ -71,6 +79,12 @@
     {
       "source": "/retractation",
       "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/rdv-balance-cron",
+      "schedule": "0 7 * * *"
     }
   ]
 }

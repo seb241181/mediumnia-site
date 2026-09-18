@@ -31,7 +31,6 @@ export default function ConferencesPage({ onBack, onNavigate }) {
   const [form, setForm] = useState({ firstName: '', email: '' })
   const [submitState, setSubmitState] = useState('idle')
   const [message, setMessage] = useState('')
-  const [testLiveUrl, setTestLiveUrl] = useState('')
 
   useEffect(() => {
     trackMediumiaMetric('conference_page_view', 'conferences')
@@ -59,9 +58,6 @@ export default function ConferencesPage({ onBack, onNavigate }) {
       if (!response.ok) throw new Error(data.error || 'Inscription impossible pour le moment.')
       setSubmitState('success')
       setMessage(data.alreadyRegistered ? 'Vous êtes déjà inscrit avec cette adresse. Votre place est bien conservée.' : 'Votre place est enregistrée. Votre carnet et votre accès Zoom arrivent par e-mail.')
-      if (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app') && data.testLiveUrl) {
-        setTestLiveUrl(data.testLiveUrl)
-      }
       trackMediumiaMetric('conference_registration_success', 'conferences')
     } catch (error) {
       setSubmitState('error')
@@ -165,11 +161,6 @@ export default function ConferencesPage({ onBack, onNavigate }) {
                     <button disabled={submitState === 'loading' || submitState === 'success'} className="w-full rounded-xl bg-gold px-5 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-60">{submitState === 'loading' ? 'Inscription…' : submitState === 'success' ? 'Place enregistrée' : 'Je réserve ma place gratuitement'}</button>
                   </form>
                   {message && <p className="mt-4 font-georgia text-xs leading-relaxed text-cream/70" role="status">{message}</p>}
-                  {testLiveUrl && (
-                    <a href={testLiveUrl} className="mt-4 inline-flex rounded-full border border-gold/45 bg-gold/15 px-4 py-2 font-georgia text-xs font-semibold text-gold">
-                      Ouvrir le LIVE TEST →
-                    </a>
-                  )}
                   <p className="mt-4 font-georgia text-[11px] leading-relaxed text-cream/45">Votre e-mail est utilisé pour gérer cette inscription et vous transmettre les informations liées à la conférence. L’inscription à la conférence n’inscrit pas automatiquement à une prospection commerciale.</p>
                 </> : <>
                   <p className="mt-3 font-georgia text-2xl font-medium">Ouverture prochaine</p>

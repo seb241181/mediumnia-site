@@ -111,7 +111,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
             </div>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button onClick={viewRegistration} className="rounded-lg bg-gold px-7 py-4 font-georgia text-sm font-bold text-deep">Réserver ma place gratuitement</button>
-              <a href="#experience" className="rounded-lg border border-gold/55 bg-[#101938]/70 px-7 py-4 font-georgia text-sm font-bold text-cream backdrop-blur-md">Voir l’expérience</a>
+              <a href="#experience" className="rounded-full border border-[#d9ac56]/60 bg-[#101938]/75 px-7 py-4 font-georgia text-sm font-bold text-cream shadow-[0_12px_30px_rgba(0,0,0,.22)] backdrop-blur-md">Voir l’expérience</a>
             </div>
           </div>
         </section>

@@ -15,6 +15,7 @@ Validation contrôlée sur la base TEST et la Preview Vercel avant toute mise en
 - Provisioning automatique Espace élève : accès complet, 25 modules, 365 jours : OK.
 - Idempotence : rejeu de la finalisation avec le même paiement renvoie un accès déjà provisionné, sans nouvelle capture ni nouvel entitlement : OK.
 - Routage `conferencePassAction` via `rdv-config` : OK.
+- Contrôle administrateur d’émission des Pass après-conférence : ajouté ensuite, couvert par tests statiques/prebuild ; le paiement/provisioning qu’il alimente a déjà été validé E2E séparément.
 - Schéma Pass TEST et garde concurrence/idempotence : OK.
 
 Nettoyage final effectué :

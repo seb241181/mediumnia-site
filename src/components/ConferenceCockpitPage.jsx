@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CONFERENCE_LIVE_API } from '../lib/conferenceApi.js'
 import { useAuth } from '../lib/useAuth.js'
 
-const LIVE_API = 'https://uotkpygeqqnekpolezts.supabase.co/functions/v1/conference-live'
+const LIVE_API = CONFERENCE_LIVE_API
 const COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
 
 function getSlug() {

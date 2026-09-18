@@ -43,11 +43,6 @@ export default function ConferencesPage({ onBack, onNavigate }) {
       .catch(() => {})
   }, [])
 
-  const viewRegistration = () => {
-    trackMediumiaMetric('conference_interest_click', 'conferences:registration')
-    document.getElementById('inscription')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
-
   const submitRegistration = async (e) => {
     e.preventDefault()
     setSubmitState('loading')
@@ -82,10 +77,10 @@ export default function ConferencesPage({ onBack, onNavigate }) {
   return (
     <div className="cosmic-page cosmic-page--conferences min-h-screen bg-cream text-deep">
       <header className="cosmic-page__header sticky top-0 z-40 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-6">
-          <button onClick={onBack} className="font-georgia text-xs text-mist transition-colors hover:text-deep">← MediumIA</button>
+        <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 md:px-6">
+          <button onClick={onBack} className="justify-self-start font-georgia text-xs text-mist transition-colors hover:text-deep">← MediumIA</button>
           <div className="flex items-center gap-2.5"><img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" className="h-8 w-auto" /><span className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">CONFÉRENCES</span></div>
-          <button onClick={viewRegistration} className="rounded-lg border border-gold/45 px-3 py-2 font-georgia text-xs font-semibold text-deep transition-colors hover:bg-gold/10">Première conférence</button>
+          <span aria-hidden="true" />
         </div>
       </header>
 
@@ -102,16 +97,21 @@ export default function ConferencesPage({ onBack, onNavigate }) {
           <div className="pointer-events-none absolute left-[12%] top-[18%] h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_30px_rgba(201,168,76,.8)]" />
           <div className="relative mx-auto max-w-5xl text-center">
             <p className="font-georgia text-[11px] uppercase tracking-[0.28em] text-gold">MEDIUMIA · EN DIRECT · CONFÉRENCE OFFERTE</p>
-            <h1 className="mx-auto mt-5 max-w-4xl font-georgia text-4xl font-medium leading-tight md:text-6xl">{title}</h1>
+            <h1 className="mx-auto mt-5 max-w-5xl font-georgia text-5xl font-medium leading-[1.05] md:text-7xl">{title}</h1>
             <p className="mx-auto mt-6 max-w-2xl font-georgia text-base leading-relaxed text-cream/70 md:text-lg">Une heure avec Sébastien Seguin pour comprendre l’approche MediumIA, expérimenter les premières bases de la pratique et poser vos questions en direct.</p>
-            <p className="mt-4 font-georgia text-sm font-semibold text-gold">{eventDate} · {duration}</p>
+            <p className="mt-5 font-georgia text-lg font-semibold tracking-wide text-gold md:text-2xl">{eventDate} · {duration}</p>
             <div className="mx-auto mt-7 max-w-2xl rounded-2xl border border-gold/35 bg-gold/10 px-5 py-4">
               <p className="font-georgia text-sm font-semibold text-gold">🎁 1 formation MediumIA complète offerte en direct — valeur {prizeValue}</p>
               <p className="mt-1 font-georgia text-xs leading-relaxed text-cream/55">Tirage au sort parmi les participants présents ayant validé leur participation pendant le direct. Sans obligation d’achat.</p>
             </div>
-            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <button onClick={viewRegistration} className="rounded-lg bg-gold px-7 py-4 font-georgia text-sm font-bold text-deep">Réserver ma place gratuitement</button>
-              <a href="#experience" className="rounded-full border border-[#d9ac56]/60 bg-[#101938]/75 px-7 py-4 font-georgia text-sm font-bold text-cream shadow-[0_12px_30px_rgba(0,0,0,.22)] backdrop-blur-md">Voir l’expérience</a>
+            <div className="mt-9 flex items-center justify-center">
+              <a
+                href="#experience"
+                onClick={() => trackMediumiaMetric('conference_interest_click', 'conferences:experience')}
+                className="rounded-full border border-[#d9ac56]/60 bg-[#101938]/75 px-8 py-4 font-georgia text-sm font-bold text-cream shadow-[0_12px_30px_rgba(0,0,0,.22)] backdrop-blur-md"
+              >
+                Voir l’expérience
+              </a>
             </div>
           </div>
         </section>

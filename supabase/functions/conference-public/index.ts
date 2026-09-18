@@ -44,15 +44,6 @@ function conferenceAppBaseUrl(req: Request) {
   return "https://mediumia.fr";
 }
 
-function isTestProject() {
-  return (Deno.env.get("SUPABASE_URL") || "").includes("wnbwhnqiulsdjcvkuwos");
-}
-
-function testLiveUrl(req: Request, rawToken?: string | null) {
-  if (!isTestProject() || !rawToken) return undefined;
-  return `${conferenceAppBaseUrl(req)}/live/${EVENT_SLUG}#access=${encodeURIComponent(rawToken)}`;
-}
-
 function publicEvent(event: any) {
   if (!event) return null;
   return {
@@ -286,10 +277,6 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (existing && existing.status !== "cancelled") {
-      if (isTestProject()) {
-        const liveToken = await issueLiveAccess(supabase, existing.id);
-        return json(req, { ok: true, alreadyRegistered: true, testLiveUrl: testLiveUrl(req, liveToken) });
-      }
       return json(req, { ok: true, alreadyRegistered: true });
     }
 
@@ -302,7 +289,7 @@ Deno.serve(async (req: Request) => {
       const liveToken = await issueLiveAccess(supabase, existing.id);
       const delivery = await sendConfirmation(supabase, firstName, email, existing.id, event, liveToken, conferenceAppBaseUrl(req));
       await markDelivery(supabase, existing.id, delivery);
-      return json(req, { ok: true, restored: true, emailStatus: delivery.status, testLiveUrl: testLiveUrl(req, liveToken) });
+      return json(req, { ok: true, restored: true, emailStatus: delivery.status });
     }
 
     const { data: inserted, error } = await supabase

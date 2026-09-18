@@ -51,7 +51,7 @@ function loadPayPalSdk(clientId) {
 }
 
 function messageForState(state, error) {
-  if (state === 'expired') return 'Ce Pass a expiré. Il était valable 7 jours après émission.'
+  if (state === 'expired') return 'Ce Pass a expiré. Il était valable 1 mois après émission.'
   if (state === 'already_redeemed') return 'Ce Pass a déjà été utilisé pour activer un accès MediumIA.'
   if (state === 'invalid') return 'Ce Pass est introuvable ou invalide.'
   if (state === 'offer_disabled') return 'L’offre spéciale conférence n’est pas encore configurée.'
@@ -200,7 +200,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                 <p className="font-georgia text-[11px] uppercase tracking-[0.24em] text-gold">Après-conférence · personnel</p>
                 <h1 className="mt-4 font-georgia text-4xl font-medium leading-tight text-deep md:text-6xl">Votre Pass Conférence MediumIA</h1>
                 <p className="mt-5 font-georgia text-base leading-relaxed text-mist md:text-lg">
-                  Ce Pass est personnel, lié à l’adresse e-mail de votre inscription et valable 7 jours. Il vous permet d’accéder à l’offre spéciale conférence si elle est active.
+                  Ce Pass est personnel, lié à l’adresse e-mail de votre inscription et valable 1 mois. Il vous permet d’accéder à l’offre spéciale conférence si elle est active.
                 </p>
                 {config?.pass?.firstName && (
                   <p className="mt-6 font-georgia text-lg text-deep">Bonjour {config.pass.firstName}, votre Pass est prêt.</p>

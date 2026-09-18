@@ -306,7 +306,7 @@ Deno.serve(async (req: Request) => {
     const liveToken = await issueLiveAccess(supabase, inserted.id);
     const delivery = await sendConfirmation(supabase, firstName, email, inserted.id, event, liveToken, conferenceAppBaseUrl(req));
     await markDelivery(supabase, inserted.id, delivery);
-    return json(req, { ok: true, emailStatus: delivery.status, testLiveUrl: testLiveUrl(req, liveToken) }, 201);
+    return json(req, { ok: true, emailStatus: delivery.status }, 201);
   }
 
   return json(req, { error: "Méthode non autorisée." }, 405);

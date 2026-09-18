@@ -9,10 +9,10 @@ alter table public.conference_events
   add column if not exists pass_normal_amount_cents integer not null default 59700 check (pass_normal_amount_cents = 59700);
 
 update public.conference_events
-set pass_duration_hours = 168,
+set pass_duration_hours = 720,
     updated_at = now()
 where slug = 'premiere-conference-mediumia'
-  and pass_duration_hours <> 168;
+  and pass_duration_hours <> 720;
 
 alter table public.conference_passes
   add column if not exists status text not null default 'issued',

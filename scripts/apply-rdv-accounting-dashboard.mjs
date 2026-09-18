@@ -67,6 +67,40 @@ async function handleFinance(req, res, supabase, userId) {
 
   if (error) return res.status(500).json({ error: 'db_error', code: error.code })
 
+  const fromDate = from.toISOString().slice(0, 10)
+  const toDate = to.toISOString().slice(0, 10)
+  const { data: kdpReports, error: kdpError } = await supabase
+    .from('kdp_income_reports')
+    .select('period_month, snapshot_date, title, paperback_units, ebook_units, hardcover_units, free_ebook_units, paperback_royalty_cents, ebook_royalty_cents, hardcover_royalty_cents, royalty_cents, currency, payout_status, paid_at')
+    .eq('practitioner_id', pid)
+    .gte('period_month', fromDate)
+    .lt('period_month', toDate)
+    .order('period_month', { ascending: false })
+
+  if (kdpError) return res.status(500).json({ error: 'kdp_lookup_error', code: kdpError.code })
+
+  const kdp = (kdpReports || []).reduce((acc, report) => {
+    acc.paperback_units += Number(report.paperback_units || 0)
+    acc.ebook_units += Number(report.ebook_units || 0)
+    acc.hardcover_units += Number(report.hardcover_units || 0)
+    acc.free_ebook_units += Number(report.free_ebook_units || 0)
+    acc.royalty_cents += Number(report.royalty_cents || 0)
+    acc.paid_royalty_cents += report.payout_status === 'paid' ? Number(report.royalty_cents || 0) : 0
+    acc.pending_royalty_cents += report.payout_status === 'paid' ? 0 : Number(report.royalty_cents || 0)
+    acc.reports.push(report)
+    return acc
+  }, {
+    paperback_units: 0,
+    ebook_units: 0,
+    hardcover_units: 0,
+    free_ebook_units: 0,
+    royalty_cents: 0,
+    paid_royalty_cents: 0,
+    pending_royalty_cents: 0,
+    reports: [],
+  })
+  kdp.total_units = kdp.paperback_units + kdp.ebook_units + kdp.hardcover_units
+
   const serviceIds = [...new Set((entries || []).map(entry => entry.service_id).filter(Boolean))]
   let serviceMap = {}
   if (serviceIds.length) {
@@ -97,6 +131,8 @@ async function handleFinance(req, res, supabase, userId) {
   return res.status(200).json({
     period: { from: from.toISOString(), to: to.toISOString() },
     totals,
+    kdp,
+    activity_generated_cents: Number(totals.gross_cents || 0) + Number(kdp.royalty_cents || 0),
     entries: normalized,
   })
 }

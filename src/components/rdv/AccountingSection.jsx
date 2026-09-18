@@ -118,6 +118,8 @@ export default function AccountingSection({ practitionerId, session }) {
 
   const entries = data?.entries || []
   const totals = data?.totals || {}
+  const kdp = data?.kdp || {}
+  const activityGeneratedCents = Number(data?.activity_generated_cents || 0)
 
   const monthLabel = useMemo(() => {
     const [year, m] = month.split('-').map(Number)
@@ -198,12 +200,40 @@ export default function AccountingSection({ practitionerId, session }) {
 
       {!loading && !error && (
         <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <SummaryCard label="TTC encaissé" value={money(totals.gross_cents)} note={`${totals.income_count || 0} encaissement(s)`} />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <SummaryCard label="TTC encaissé" value={money(totals.gross_cents)} note={`${totals.income_count || 0} encaissement(s) RDV`} />
             <SummaryCard label="HT" value={money(totals.net_cents)} />
-            <SummaryCard label="TVA" value={money(totals.vat_cents)} note="TVA calculée par écriture" />
-            <SummaryCard label="Écritures" value={String(totals.entry_count || 0)} note={totals.refund_count ? `${totals.refund_count} remboursement(s)` : 'Aucun remboursement'} />
+            <SummaryCard label="TVA" value={money(totals.vat_cents)} note="TVA calculée sur les écritures RDV" />
+            <SummaryCard label="KDP généré" value={money(kdp.royalty_cents)} note={`${kdp.total_units || 0} livre(s) / ebook(s)`} />
+            <SummaryCard label="Activité générée" value={money(activityGeneratedCents)} note="RDV encaissés + redevances KDP du mois" />
           </div>
+
+          {(kdp.total_units || kdp.royalty_cents) ? (
+            <div className="mt-5 rounded-2xl border border-gold/25 bg-gold/[.06] p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Livres · Amazon KDP</p>
+                  <h3 className="mt-1 font-georgia text-lg font-medium text-deep">CODEX — {kdp.total_units || 0} exemplaire(s) vendu(s)</h3>
+                  <p className="mt-2 font-georgia text-xs text-mist">
+                    {kdp.paperback_units || 0} broché(s) · {kdp.ebook_units || 0} ebook(s){kdp.hardcover_units ? ` · ${kdp.hardcover_units} relié(s)` : ''}
+                  </p>
+                </div>
+                <div className="grid min-w-[260px] grid-cols-2 gap-2">
+                  <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
+                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Redevances générées</p>
+                    <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdp.royalty_cents)}</p>
+                  </div>
+                  <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
+                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">À recevoir</p>
+                    <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdp.pending_royalty_cents)}</p>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-4 font-georgia text-[10px] leading-relaxed text-mist/75">
+                Les redevances KDP sont comptées dans « activité générée », mais ne sont pas ajoutées au « TTC encaissé » tant qu’Amazon ne les a pas effectivement versées.
+              </p>
+            </div>
+          ) : null}
 
           {entries.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-gold/25 px-6 py-8 text-center">

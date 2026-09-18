@@ -27,17 +27,12 @@ function json(req: Request, body: unknown, status = 200) {
   });
 }
 
-function isTestProject() {
-  return (Deno.env.get("SUPABASE_URL") || "").includes("wnbwhnqiulsdjcvkuwos");
-}
-
 async function sha256Hex(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function liveWindow(event: any) {
-  if (isTestProject()) return true;
   const now = Date.now();
   const start = event?.starts_at ? new Date(event.starts_at).getTime() : NaN;
   const end = event?.ends_at ? new Date(event.ends_at).getTime() : NaN;
@@ -231,8 +226,7 @@ Deno.serve(async (req: Request) => {
   if (!event) return json(req, { error: "Conférence introuvable." }, 404);
 
   if (mode === "admin") {
-    const previewTestAdmin = isTestProject() && /^https:\/\/[^/]+\.vercel\.app$/.test(origin);
-    const admin = previewTestAdmin ? { id: "test-preview-admin" } : await requireAdmin(supabase, req);
+    const admin = await requireAdmin(supabase, req);
     if (!admin) return json(req, { error: "Accès administrateur requis." }, 401);
 
     if (req.method === "GET") return json(req, await adminState(supabase, event));

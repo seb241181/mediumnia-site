@@ -4,7 +4,6 @@ import { useAuth } from '../lib/useAuth.js'
 
 const LIVE_API = CONFERENCE_LIVE_API
 const COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
-const IS_PREVIEW = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
 
 function getSlug() {
   const parts = window.location.pathname.split('/').filter(Boolean)
@@ -56,50 +55,6 @@ RÈGLES DE SORTIE
 
 QUESTIONS RÉELLES DU PUBLIC
 ${questionBlock || 'Aucune question active.'}`
-}
-
-function buildPreviewCopilotPlan(questions = []) {
-  const active = questions
-    .filter((q) => !['answered', 'dismissed'].includes(q.status))
-    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
-
-  const buckets = [
-    { label: 'Rêves et perceptions', test: /r[eê]v|sommeil|nuit/i },
-    { label: 'Intuition et discernement', test: /intu|mental|ressenti|perception|imagin/i },
-    { label: 'Signes et interprétation', test: /signe|co[iï]ncid|interpr/i },
-    { label: 'Médiumnité et développement', test: /m[eé]dium|m[eé]diumn|don|canal/i },
-  ]
-
-  const classify = (question) => (
-    buckets.find((bucket) => bucket.test.test(String(question?.question || '')))
-    || { label: 'Perceptions et pratique' }
-  )
-
-  const counts = new Map()
-  for (const question of active) {
-    const label = classify(question).label
-    counts.set(label, (counts.get(label) || 0) + 1)
-  }
-
-  const strongest = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
-  const theme = strongest && strongest[1] > 1
-    ? { label: strongest[0], count: strongest[1] }
-    : { label: 'Perceptions, médiumnité et discernement', count: active.length }
-
-  const recommendations = active.slice(0, 3).map((question) => {
-    const label = classify(question).label
-    return {
-      id: question.id,
-      similarCount: counts.get(label) || 1,
-      reason: label,
-    }
-  })
-
-  return {
-    theme,
-    recommendations,
-    watch: active[0] ? classify(active[0]).label : "Rien pour l'instant",
-  }
 }
 
 function parseCopilotPlan(reply, questions = []) {
@@ -154,7 +109,7 @@ export default function ConferenceCockpitPage() {
 
   const call = useCallback(async (method = 'GET', body) => {
     const token = session?.access_token
-    if (!token && !IS_PREVIEW) throw new Error('Connexion requise.')
+    if (!token) throw new Error('Connexion requise.')
     const headers = { 'Content-Type': 'application/json' }
     if (token) headers.Authorization = `Bearer ${token}`
     const response = await fetch(`${LIVE_API}?slug=${encodeURIComponent(slug)}&mode=admin`, {
@@ -168,7 +123,7 @@ export default function ConferenceCockpitPage() {
   }, [session?.access_token, slug])
 
   const refresh = useCallback(async () => {
-    if (!session?.access_token && !IS_PREVIEW) return null
+    if (!session?.access_token) return null
     try {
       const payload = await call('GET')
       setData(payload)
@@ -182,7 +137,7 @@ export default function ConferenceCockpitPage() {
   }, [call, session?.access_token])
 
   useEffect(() => {
-    if (!session?.access_token && !IS_PREVIEW) return
+    if (!session?.access_token) return
     refresh()
     const timer = window.setInterval(refresh, 10_000)
     return () => window.clearInterval(timer)
@@ -207,14 +162,6 @@ export default function ConferenceCockpitPage() {
 
     setAiState('loading')
     setError('')
-
-    if (IS_PREVIEW && !session?.access_token) {
-      const plan = buildPreviewCopilotPlan(activeQuestions)
-      setAiPlan(plan)
-      setAiAnalysis('Mode TEST Preview : tri local sécurisé, sans authentification ni appel au copilote Production.')
-      setAiState('success')
-      return
-    }
 
     try {
       const response = await fetch('/api/agent-chat', {
@@ -293,9 +240,9 @@ export default function ConferenceCockpitPage() {
     }
   }
 
-  if (authLoading && !IS_PREVIEW) return <div className="min-h-screen bg-deep text-cream grid place-items-center font-georgia">Ouverture du cockpit…</div>
+  if (authLoading) return <div className="min-h-screen bg-deep text-cream grid place-items-center font-georgia">Ouverture du cockpit…</div>
 
-  if (!session && !IS_PREVIEW) {
+  if (!session) {
     return (
       <div className="min-h-screen bg-deep px-6 text-cream grid place-items-center">
         <form onSubmit={handleLogin} className="w-full max-w-md rounded-3xl border border-gold/30 bg-white/5 p-8">
@@ -337,7 +284,6 @@ export default function ConferenceCockpitPage() {
           <div className="flex items-center gap-3">
             <button onClick={refresh} className="rounded-lg border border-gold/30 px-3 py-2 font-georgia text-xs text-gold">Actualiser</button>
             {session && <button onClick={signOut} className="rounded-lg border border-white/10 px-3 py-2 font-georgia text-xs text-cream/60">Déconnexion</button>}
-            {IS_PREVIEW && <span className="rounded-lg border border-purple-300/25 px-3 py-2 font-georgia text-xs text-purple-200">TEST Preview</span>}
           </div>
         </div>
       </header>
@@ -397,7 +343,7 @@ export default function ConferenceCockpitPage() {
 
           <aside className="space-y-6">
             <section className="rounded-3xl border border-gold/35 bg-[#1b1738] p-6">
-              <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">{IS_PREVIEW && !session ? '✨ COPILOTE TEST MEDIUMIA' : '✨ COPILOTE IA MEDIUMIA'}</p>
+              <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">✨ COPILOTE IA MEDIUMIA</p>
               <h2 className="mt-3 font-georgia text-2xl">Lis la salle pour moi</h2>
               <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/55">Regroupe les doublons, repère le thème majeur et propose les trois questions à prendre maintenant. Tu gardes toujours la décision finale.</p>
               <button onClick={() => runCopilot()} disabled={aiState === 'loading'} className="mt-5 w-full rounded-xl bg-gold px-4 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">
@@ -448,7 +394,6 @@ export default function ConferenceCockpitPage() {
                 <div className="mt-5 whitespace-pre-wrap rounded-2xl border border-gold/25 bg-black/15 p-5 font-georgia text-sm leading-relaxed text-cream/85">{aiAnalysis}</div>
               ) : null}
 
-              {IS_PREVIEW && !session && <p className="mt-3 rounded-xl border border-purple-300/20 bg-purple-300/5 p-3 font-georgia text-[11px] leading-relaxed text-purple-100">Mode Preview : le tri est simulé localement pour tester toute la régie sans ouvrir l’authentification du copilote Production.</p>}
               <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/35">Après une question marquée « Répondue », le copilote recalcule automatiquement la meilleure suite. Les questions répondues ou écartées sont exclues.</p>
             </section>
 

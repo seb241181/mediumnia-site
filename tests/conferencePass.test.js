@@ -106,24 +106,31 @@ test('server decides conference pass amount and refuses missing promotion config
 })
 
 test('capture validation enforces reference, amount, payer email and optional custom id', () => {
-  const cfg = __conferencePassPayPalTest.runtimeConfig(39900)
-  const order = {
-    id: 'ORDER-PASS-123',
-    status: 'COMPLETED',
-    payer: { email_address: 'participant@example.test', name: { given_name: 'Ada', surname: 'Lovelace' } },
-    purchase_units: [{
-      reference_id: cfg.referenceId,
-      payments: { captures: [{ id: 'CAP-PASS-123', status: 'COMPLETED', amount: { currency_code: 'EUR', value: cfg.amount } }] },
-    }],
-  }
+  const previousVercelEnv = process.env.VERCEL_ENV
+  try {
+    process.env.VERCEL_ENV = 'preview'
+    const cfg = __conferencePassPayPalTest.runtimeConfig(39900)
+    const order = {
+      id: 'ORDER-PASS-123',
+      status: 'COMPLETED',
+      payer: { email_address: 'participant@example.test', name: { given_name: 'Ada', surname: 'Lovelace' } },
+      purchase_units: [{
+        reference_id: cfg.referenceId,
+        payments: { captures: [{ id: 'CAP-PASS-123', status: 'COMPLETED', amount: { currency_code: 'EUR', value: cfg.amount } }] },
+      }],
+    }
 
-  assert.equal(__conferencePassPayPalTest.validateCompletedOrder(cfg, order, order.id).payerEmail, 'participant@example.test')
-  const wrongAmount = structuredClone(order)
-  wrongAmount.purchase_units[0].payments.captures[0].amount.value = '597.00'
-  assert.throws(() => __conferencePassPayPalTest.validateCompletedOrder(cfg, wrongAmount, order.id), /paypal_amount_mismatch/)
-  const wrongCustomId = structuredClone(order)
-  wrongCustomId.purchase_units[0].custom_id = 'WRONG'
-  assert.throws(() => __conferencePassPayPalTest.validateCompletedOrder(cfg, wrongCustomId, order.id), /paypal_consent_mismatch/)
+    assert.equal(__conferencePassPayPalTest.validateCompletedOrder(cfg, order, order.id).payerEmail, 'participant@example.test')
+    const wrongAmount = structuredClone(order)
+    wrongAmount.purchase_units[0].payments.captures[0].amount.value = '597.00'
+    assert.throws(() => __conferencePassPayPalTest.validateCompletedOrder(cfg, wrongAmount, order.id), /paypal_amount_mismatch/)
+    const wrongCustomId = structuredClone(order)
+    wrongCustomId.purchase_units[0].custom_id = 'WRONG'
+    assert.throws(() => __conferencePassPayPalTest.validateCompletedOrder(cfg, wrongCustomId, order.id), /paypal_consent_mismatch/)
+  } finally {
+    if (previousVercelEnv === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = previousVercelEnv
+  }
 })
 
 test('capture authorizes a different PayPal payer email but provisions the registration email', async () => {

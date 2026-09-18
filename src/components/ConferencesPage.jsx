@@ -90,7 +90,14 @@ export default function ConferencesPage({ onBack, onNavigate }) {
       </header>
 
       <main>
-        <section className="relative isolate overflow-hidden bg-deep px-6 py-20 text-cream md:py-28">
+        <section
+          className="relative isolate overflow-hidden px-6 py-24 text-cream md:py-32"
+          style={{
+            backgroundImage: "linear-gradient(90deg, rgba(9,15,40,.92), rgba(17,22,56,.76) 50%, rgba(9,15,40,.9)), url('/images/home/mediumia-cosmic-library-hero.webp')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 42%',
+          }}
+        >
           <div className="pointer-events-none absolute -right-24 top-10 h-80 w-80 rounded-full border border-gold/10" />
           <div className="pointer-events-none absolute left-[12%] top-[18%] h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_30px_rgba(201,168,76,.8)]" />
           <div className="relative mx-auto max-w-5xl text-center">
@@ -104,13 +111,13 @@ export default function ConferencesPage({ onBack, onNavigate }) {
             </div>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button onClick={viewRegistration} className="rounded-lg bg-gold px-7 py-4 font-georgia text-sm font-bold text-deep">Réserver ma place gratuitement</button>
-              <a href="#experience" className="rounded-lg border border-gold/45 px-7 py-4 font-georgia text-sm font-bold text-gold">Voir l’expérience</a>
+              <a href="#experience" className="rounded-lg border border-gold/55 bg-[#101938]/70 px-7 py-4 font-georgia text-sm font-bold text-cream backdrop-blur-md">Voir l’expérience</a>
             </div>
           </div>
         </section>
 
         <section id="inscription" className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-          <div className="overflow-hidden rounded-3xl border border-gold/30 bg-white/80 shadow-[0_18px_48px_rgba(26,21,53,.07)]">
+          <div className="overflow-hidden rounded-[2rem] border border-gold/35 bg-[#fffefa]/90 shadow-[0_24px_70px_rgba(16,25,56,.13)] backdrop-blur-xl">
             <div className="grid md:grid-cols-[1.45fr_.75fr]">
               <div className="p-7 md:p-10">
                 <span className="inline-flex rounded-full border border-gold/30 bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Première conférence publique MediumIA</span>
@@ -125,13 +132,20 @@ export default function ConferencesPage({ onBack, onNavigate }) {
                 </div>
               </div>
 
-              <div className="flex flex-col justify-center bg-deep p-7 text-cream md:p-8">
+              <div
+                className="relative flex flex-col justify-center overflow-hidden p-7 text-cream md:p-8"
+                style={{
+                  backgroundImage: "linear-gradient(145deg, rgba(16,25,56,.94), rgba(28,43,85,.88)), url('/images/home/mediumia-cosmic-library-hero.webp')",
+                  backgroundSize: 'cover',
+                  backgroundPosition: '70% center',
+                }}
+              >
                 <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">INSCRIPTIONS</p>
                 {registrationOpen ? <>
                   <p className="mt-3 font-georgia text-2xl font-medium">Réserver ma place</p>
                   <form onSubmit={submitRegistration} className="mt-5 space-y-3">
-                    <input required maxLength={80} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="Votre prénom" className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 font-georgia text-sm text-cream outline-none placeholder:text-cream/35" />
-                    <input required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Votre e-mail" className="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 font-georgia text-sm text-cream outline-none placeholder:text-cream/35" />
+                    <input required maxLength={80} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="Votre prénom" className="w-full rounded-xl border border-gold/25 bg-cream/95 px-4 py-3 font-georgia text-sm text-deep outline-none placeholder:text-mist/70" />
+                    <input required type="email" maxLength={254} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Votre e-mail" className="w-full rounded-xl border border-gold/25 bg-cream/95 px-4 py-3 font-georgia text-sm text-deep outline-none placeholder:text-mist/70" />
                     <button disabled={submitState === 'loading' || submitState === 'success'} className="w-full rounded-xl bg-gold px-5 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-60">{submitState === 'loading' ? 'Inscription…' : submitState === 'success' ? 'Place enregistrée' : 'Je réserve ma place gratuitement'}</button>
                   </form>
                   {message && <p className="mt-4 font-georgia text-xs leading-relaxed text-cream/70" role="status">{message}</p>}
@@ -139,14 +153,22 @@ export default function ConferencesPage({ onBack, onNavigate }) {
                 </> : <>
                   <p className="mt-3 font-georgia text-2xl font-medium">Ouverture prochaine</p>
                   <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/60">La conférence du 23 octobre est enregistrée. Le formulaire s’ouvrira ici dès que le parcours live et le tirage auront passé leurs derniers tests.</p>
-                  <div className="mt-6 rounded-2xl border border-gold/25 bg-white/5 p-4 font-georgia text-xs leading-relaxed text-cream/70">Aucun paiement ne sera demandé pour participer à cette première conférence ni au tirage au sort.</div>
+                  <div className="mt-6 rounded-2xl border border-gold/30 bg-cream/95 p-4 font-georgia text-xs leading-relaxed text-deep">Aucun paiement ne sera demandé pour participer à cette première conférence ni au tirage au sort.</div>
                 </>}
               </div>
             </div>
           </div>
         </section>
 
-        <section id="experience" className="border-y border-gold/15 bg-white/35 px-6 py-16 md:py-20">
+        <section
+          id="experience"
+          className="border-y border-gold/15 px-6 py-20 md:py-24"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,254,250,.93), rgba(245,241,232,.94)), url('/images/home/mediumia-cosmic-library-hero.webp')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 58%',
+          }}
+        >
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto mb-10 max-w-3xl text-center"><p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">AVANT · PENDANT · APRÈS</p><h2 className="mt-3 font-georgia text-3xl font-medium md:text-4xl">Une conférence pensée comme une expérience complète.</h2></div>
             <div className="grid gap-4 md:grid-cols-4">
@@ -159,7 +181,14 @@ export default function ConferencesPage({ onBack, onNavigate }) {
         </section>
 
         <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-          <div className="rounded-3xl border border-gold/35 bg-deep px-7 py-10 text-cream md:px-10 md:py-12">
+          <div
+            className="relative overflow-hidden rounded-[2rem] border border-gold/40 px-7 py-10 text-cream shadow-[0_24px_70px_rgba(16,25,56,.16)] md:px-10 md:py-12"
+            style={{
+              backgroundImage: "linear-gradient(115deg, rgba(8,14,38,.94), rgba(27,40,79,.84)), url('/images/home/mediumia-cosmic-library-hero.webp')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center 46%',
+            }}
+          >
             <div className="grid gap-8 md:grid-cols-[1fr_.8fr] md:items-center">
               <div>
                 <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">LE TIRAGE DU 23 OCTOBRE</p>
@@ -167,18 +196,23 @@ export default function ConferencesPage({ onBack, onNavigate }) {
                 <p className="mt-4 max-w-2xl font-georgia leading-relaxed text-cream/65">Vers la fin du direct, une fenêtre de participation s’ouvrira dans l’espace MediumIA. Vous confirmez votre participation en un clic. Le gagnant est ensuite choisi aléatoirement parmi les participants présents et éligibles.</p>
                 <p className="mt-5 font-georgia text-sm text-gold"><strong>Lot :</strong> 1 accès complet à la formation MediumIA · valeur {prizeValue}</p>
               </div>
-              <div className="rounded-2xl border border-gold/25 bg-white/5 p-6 font-georgia text-sm leading-relaxed text-cream/70">
-                <p><strong className="text-cream">Gratuit.</strong> Aucun achat nécessaire.</p>
-                <p className="mt-3"><strong className="text-cream">Présence requise.</strong> Il faut être présent au direct et valider sa participation dans la fenêtre prévue.</p>
-                <p className="mt-3"><strong className="text-cream">Une participation.</strong> Une seule entrée par inscription.</p>
-                <p className="mt-3"><strong className="text-cream">Pas de cash.</strong> Le lot n’est pas échangeable contre sa valeur en argent.</p>
+              <div className="rounded-2xl border border-gold/30 bg-cream/95 p-6 font-georgia text-sm leading-relaxed text-mist shadow-[0_14px_36px_rgba(0,0,0,.12)]">
+                <p><strong className="text-deep">Gratuit.</strong> Aucun achat nécessaire.</p>
+                <p className="mt-3"><strong className="text-deep">Présence requise.</strong> Il faut être présent au direct et valider sa participation dans la fenêtre prévue.</p>
+                <p className="mt-3"><strong className="text-deep">Une participation.</strong> Une seule entrée par inscription.</p>
+                <p className="mt-3"><strong className="text-deep">Pas de cash.</strong> Le lot n’est pas échangeable contre sa valeur en argent.</p>
                 <a href={RAFFLE_RULES_URL} target="_blank" rel="noreferrer" className="mt-5 inline-flex text-xs font-semibold text-gold underline decoration-gold/40 underline-offset-4">Consulter les modalités du tirage</a>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 pb-16 md:pb-20">
+        <section
+          className="mx-auto max-w-6xl rounded-[2.5rem] px-6 pb-20 pt-10 md:pb-24 md:pt-14"
+          style={{
+            backgroundImage: "radial-gradient(circle at 18% 18%, rgba(227,195,124,.18), transparent 28rem), linear-gradient(rgba(255,254,250,.9), rgba(251,250,245,.94))",
+          }}
+        >
           <div className="mb-10 max-w-3xl"><p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">LE CARNET DE PRÉPARATION</p><h2 className="mt-3 font-georgia text-3xl font-medium md:text-4xl">Vous ne viendrez pas à la conférence les mains vides.</h2><p className="mt-4 font-georgia leading-relaxed text-mist">Chaque inscrit recevra avant la rencontre une première porte du parcours MediumIA afin d’arriver avec ses propres ressentis, observations et questions.</p></div>
           <div className="grid gap-5 md:grid-cols-3">
             <FeatureCard eyebrow="Exercice 1" title="L’intention quotidienne">Une pratique courte sur plusieurs jours pour observer ce qui change lorsque vous orientez consciemment votre disponibilité intérieure.</FeatureCard>
@@ -187,7 +221,14 @@ export default function ConferencesPage({ onBack, onNavigate }) {
           </div>
         </section>
 
-        <section className="relative isolate overflow-hidden bg-deep px-6 py-16 text-cream md:py-20">
+        <section
+          className="relative isolate overflow-hidden px-6 py-20 text-cream md:py-28"
+          style={{
+            backgroundImage: "linear-gradient(100deg, rgba(8,14,38,.95), rgba(18,29,67,.8)), url('/images/home/mediumia-cosmic-library-hero.webp')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 60%',
+          }}
+        >
           <div className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full border border-gold/10" />
           <div className="pointer-events-none absolute right-[8%] top-[12%] h-56 w-56 rounded-full bg-gold/10 blur-3xl" />
           <div className="pointer-events-none absolute left-[14%] top-[24%] h-2 w-2 rounded-full bg-gold/80 shadow-[0_0_26px_rgba(201,168,76,.9)]" />
@@ -198,7 +239,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
               <p className="mt-4 font-georgia leading-relaxed text-cream/70">Pendant la conférence, un espace MediumIA recueillera les questions du public. Le système pourra regrouper les sujets proches afin de faire émerger les thèmes les plus demandés.</p>
             </div>
 
-            <div className="relative overflow-hidden rounded-3xl border border-gold/30 bg-gradient-to-br from-[#22305c]/75 to-[#0f1730]/70 p-6 shadow-[0_18px_48px_rgba(0,0,0,.18)] md:p-8">
+            <div className="relative overflow-hidden rounded-[2rem] border border-gold/35 bg-[#101938]/55 p-6 shadow-[0_24px_70px_rgba(0,0,0,.24)] backdrop-blur-xl md:p-8">
               <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-gold/15 blur-3xl" />
               <div className="relative">
                 <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold">Cockpit conférence</p>
@@ -226,7 +267,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
         </section>
 
         <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-          <div className="rounded-3xl border border-gold/25 bg-white/75 px-7 py-10 text-center"><p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">APRÈS LA CONFÉRENCE</p><h2 className="mt-3 font-georgia text-3xl font-medium">Un Pass MediumIA personnel, jamais un code public.</h2><p className="mx-auto mt-4 max-w-2xl font-georgia text-sm leading-relaxed text-mist">Si une offre spéciale est ouverte aux participants, chaque Pass sera généré individuellement, lié à l’e-mail d’inscription, utilisable une seule fois et valable 7 jours.</p></div>
+          <div className="rounded-[2rem] border border-gold/30 bg-[#fffefa]/90 px-7 py-10 text-center shadow-[0_20px_60px_rgba(16,25,56,.1)] backdrop-blur-xl"><p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">APRÈS LA CONFÉRENCE</p><h2 className="mt-3 font-georgia text-3xl font-medium">Un Pass MediumIA personnel, jamais un code public.</h2><p className="mx-auto mt-4 max-w-2xl font-georgia text-sm leading-relaxed text-mist">Si une offre spéciale est ouverte aux participants, chaque Pass sera généré individuellement, lié à l’e-mail d’inscription, utilisable une seule fois et valable 7 jours.</p></div>
         </section>
       </main>
 

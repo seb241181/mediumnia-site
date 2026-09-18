@@ -58,6 +58,50 @@ QUESTIONS RÉELLES DU PUBLIC
 ${questionBlock || 'Aucune question active.'}`
 }
 
+function buildPreviewCopilotPlan(questions = []) {
+  const active = questions
+    .filter((q) => !['answered', 'dismissed'].includes(q.status))
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+
+  const buckets = [
+    { label: 'Rêves et perceptions', test: /r[eê]v|sommeil|nuit/i },
+    { label: 'Intuition et discernement', test: /intu|mental|ressenti|perception|imagin/i },
+    { label: 'Signes et interprétation', test: /signe|co[iï]ncid|interpr/i },
+    { label: 'Médiumnité et développement', test: /m[eé]dium|m[eé]diumn|don|canal/i },
+  ]
+
+  const classify = (question) => (
+    buckets.find((bucket) => bucket.test.test(String(question?.question || '')))
+    || { label: 'Perceptions et pratique' }
+  )
+
+  const counts = new Map()
+  for (const question of active) {
+    const label = classify(question).label
+    counts.set(label, (counts.get(label) || 0) + 1)
+  }
+
+  const strongest = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
+  const theme = strongest && strongest[1] > 1
+    ? { label: strongest[0], count: strongest[1] }
+    : { label: 'Perceptions, médiumnité et discernement', count: active.length }
+
+  const recommendations = active.slice(0, 3).map((question) => {
+    const label = classify(question).label
+    return {
+      id: question.id,
+      similarCount: counts.get(label) || 1,
+      reason: label,
+    }
+  })
+
+  return {
+    theme,
+    recommendations,
+    watch: active[0] ? classify(active[0]).label : "Rien pour l'instant",
+  }
+}
+
 function parseCopilotPlan(reply, questions = []) {
   const raw = String(reply || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim()
   const start = raw.indexOf('{')
@@ -163,6 +207,15 @@ export default function ConferenceCockpitPage() {
 
     setAiState('loading')
     setError('')
+
+    if (IS_PREVIEW && !session?.access_token) {
+      const plan = buildPreviewCopilotPlan(activeQuestions)
+      setAiPlan(plan)
+      setAiAnalysis('Mode TEST Preview : tri local sécurisé, sans authentification ni appel au copilote Production.')
+      setAiState('success')
+      return
+    }
+
     try {
       const response = await fetch('/api/agent-chat', {
         method: 'POST',
@@ -344,7 +397,7 @@ export default function ConferenceCockpitPage() {
 
           <aside className="space-y-6">
             <section className="rounded-3xl border border-gold/35 bg-[#1b1738] p-6">
-              <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">✨ COPILOTE IA MEDIUMIA</p>
+              <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">{IS_PREVIEW && !session ? '✨ COPILOTE TEST MEDIUMIA' : '✨ COPILOTE IA MEDIUMIA'}</p>
               <h2 className="mt-3 font-georgia text-2xl">Lis la salle pour moi</h2>
               <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/55">Regroupe les doublons, repère le thème majeur et propose les trois questions à prendre maintenant. Tu gardes toujours la décision finale.</p>
               <button onClick={() => runCopilot()} disabled={aiState === 'loading'} className="mt-5 w-full rounded-xl bg-gold px-4 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">
@@ -395,6 +448,7 @@ export default function ConferenceCockpitPage() {
                 <div className="mt-5 whitespace-pre-wrap rounded-2xl border border-gold/25 bg-black/15 p-5 font-georgia text-sm leading-relaxed text-cream/85">{aiAnalysis}</div>
               ) : null}
 
+              {IS_PREVIEW && !session && <p className="mt-3 rounded-xl border border-purple-300/20 bg-purple-300/5 p-3 font-georgia text-[11px] leading-relaxed text-purple-100">Mode Preview : le tri est simulé localement pour tester toute la régie sans ouvrir l’authentification du copilote Production.</p>}
               <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/35">Après une question marquée « Répondue », le copilote recalcule automatiquement la meilleure suite. Les questions répondues ou écartées sont exclues.</p>
             </section>
 

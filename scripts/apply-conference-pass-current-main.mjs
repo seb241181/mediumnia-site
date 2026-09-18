@@ -9,14 +9,8 @@ if (!source.includes("from '../lib/conferencePassPayPal.js'")) {
   changed = true
 }
 
-if (!source.includes("from '../lib/conferencePreviewEnvDebug.js'")) {
-  source = "import { handleConferencePreviewEnvDebug } from '../lib/conferencePreviewEnvDebug.js'\n" + source
-  changed = true
-}
-
 const correctRoute = 'if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res, req.query.conferencePassAction)'
 const legacyRoute = 'if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res)'
-const debugRoute = 'if (req.query.conferencePreviewEnvDebug) return handleConferencePreviewEnvDebug(req, res)'
 
 if (source.includes(legacyRoute)) {
   source = source.replace(legacyRoute, correctRoute)
@@ -25,13 +19,6 @@ if (source.includes(legacyRoute)) {
   const marker = 'export default async function handler(req, res) {\n'
   if (!source.includes(marker)) throw new Error('conference_pass_api_handler_marker_missing')
   source = source.replace(marker, marker + `  ${correctRoute}\n`)
-  changed = true
-}
-
-if (!source.includes(debugRoute)) {
-  const marker = 'export default async function handler(req, res) {\n'
-  if (!source.includes(marker)) throw new Error('conference_preview_env_debug_marker_missing')
-  source = source.replace(marker, marker + `  ${debugRoute}\n`)
   changed = true
 }
 

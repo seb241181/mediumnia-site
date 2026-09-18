@@ -41,7 +41,6 @@ function liveWindow(event: any) {
 }
 
 function questionsWindow(event: any) {
-  if (isTestProject()) return true;
   const now = Date.now();
   const start = event?.starts_at ? new Date(event.starts_at).getTime() : NaN;
   const end = event?.ends_at ? new Date(event.ends_at).getTime() : NaN;

@@ -1,0 +1,35 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+
+const read = path => fs.readFileSync(path, 'utf8')
+
+test('KDP monthly income schema separates generated royalties from payouts', () => {
+  const migration = read('supabase/migrations/20260918212000_kdp_income_reports.sql')
+  assert.match(migration, /create table if not exists public\.kdp_income_reports/i)
+  assert.match(migration, /paperback_units/)
+  assert.match(migration, /ebook_units/)
+  assert.match(migration, /royalty_cents/)
+  assert.match(migration, /payout_status/)
+  assert.match(migration, /estimated/)
+  assert.match(migration, /paid/)
+  assert.match(migration, /service_role/)
+})
+
+test('finance summary reads KDP without mixing pending royalties into RDV TTC', () => {
+  const script = read('scripts/apply-rdv-accounting-dashboard.mjs')
+  assert.match(script, /\.from\('kdp_income_reports'\)/)
+  assert.match(script, /pending_royalty_cents/)
+  assert.match(script, /activity_generated_cents/)
+  assert.match(script, /Number\(totals\.gross_cents \|\| 0\) \+ Number\(kdp\.royalty_cents \|\| 0\)/)
+})
+
+test('accounting UI exposes KDP units, royalties and activity generated separately', () => {
+  const component = read('src/components/rdv/AccountingSection.jsx')
+  assert.match(component, /KDP généré/)
+  assert.match(component, /Activité générée/)
+  assert.match(component, /Livres · Amazon KDP/)
+  assert.match(component, /Redevances générées/)
+  assert.match(component, /À recevoir/)
+  assert.match(component, /ne sont pas ajoutées au « TTC encaissé »/)
+})

@@ -187,10 +187,41 @@ export default function ConferencesPage({ onBack, onNavigate }) {
           </div>
         </section>
 
-        <section className="bg-deep px-6 py-16 text-cream md:py-20">
-          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[.9fr_1.1fr] md:items-center">
-            <div><p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">QUESTIONS EN DIRECT</p><h2 className="mt-3 font-georgia text-3xl font-medium md:text-4xl">Vos questions ne se perdront pas dans un chat qui défile.</h2><p className="mt-4 font-georgia leading-relaxed text-cream/65">Pendant la conférence, un espace MediumIA recueillera les questions du public. Le système pourra regrouper les sujets proches afin de faire émerger les thèmes les plus demandés.</p></div>
-            <div className="rounded-3xl border border-gold/25 bg-white/5 p-6 md:p-8"><p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold">Cockpit conférence</p><div className="mt-5 space-y-3"><div className="rounded-2xl border border-white/10 bg-white/5 p-4">Thèmes proches regroupés automatiquement.</div><div className="rounded-2xl border border-white/10 bg-white/5 p-4">Questions prioritaires remontées à Sébastien.</div><div className="rounded-2xl border border-gold/25 bg-gold/10 p-4 text-gold">Copilote MediumIA : aide au tri, réponse humaine.</div></div></div>
+        <section className="relative isolate overflow-hidden bg-deep px-6 py-16 text-cream md:py-20">
+          <div className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full border border-gold/10" />
+          <div className="pointer-events-none absolute right-[8%] top-[12%] h-56 w-56 rounded-full bg-gold/10 blur-3xl" />
+          <div className="pointer-events-none absolute left-[14%] top-[24%] h-2 w-2 rounded-full bg-gold/80 shadow-[0_0_26px_rgba(201,168,76,.9)]" />
+          <div className="relative mx-auto grid max-w-6xl gap-10 md:grid-cols-[.9fr_1.1fr] md:items-center">
+            <div>
+              <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">QUESTIONS EN DIRECT</p>
+              <h2 className="mt-3 font-georgia text-3xl font-medium md:text-4xl">Vos questions ne se perdront pas dans un chat qui défile.</h2>
+              <p className="mt-4 font-georgia leading-relaxed text-cream/70">Pendant la conférence, un espace MediumIA recueillera les questions du public. Le système pourra regrouper les sujets proches afin de faire émerger les thèmes les plus demandés.</p>
+            </div>
+
+            <div className="relative overflow-hidden rounded-3xl border border-gold/30 bg-gradient-to-br from-[#22305c]/75 to-[#0f1730]/70 p-6 shadow-[0_18px_48px_rgba(0,0,0,.18)] md:p-8">
+              <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-gold/15 blur-3xl" />
+              <div className="relative">
+                <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold">Cockpit conférence</p>
+                <p className="mt-2 font-georgia text-sm leading-relaxed text-cream/65">Une vue claire des sujets qui émergent pendant le direct.</p>
+
+                <div className="mt-5 space-y-3">
+                  <div className="rounded-2xl border border-gold/20 bg-cream/95 p-4 text-deep shadow-sm">
+                    <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Questions les plus demandées</p>
+                    <p className="mt-2 font-georgia text-sm leading-relaxed">« Comment reconnaître une vraie perception ? »</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gold/45 bg-cream/95 p-4 text-deep shadow-sm">
+                    <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Question sélectionnée pour le direct</p>
+                    <p className="mt-2 font-georgia text-sm leading-relaxed">« Quelle différence entre intuition, mental et médiumnité ? »</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-gold/30 bg-gold/10 p-4 text-cream">
+                    <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Copilote MediumIA</p>
+                    <p className="mt-2 font-georgia text-sm leading-relaxed text-cream/80">Regroupe les thèmes proches et aide à faire émerger les priorités. La réponse reste humaine.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

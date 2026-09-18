@@ -3,7 +3,8 @@ import LegalFooter from './LegalFooter'
 
 const API = '/api/rdv-config?conferencePassAction='
 const PAYPAL_SCRIPT_ID = 'mediumia-paypal-sdk'
-const STUDENT_SPACE_URL = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
+const IS_PREVIEW = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
+const STUDENT_SPACE_URL = IS_PREVIEW
   ? 'https://mediumnia-app-git-test-confere-90e299-seguins-projects-a1d4673f.vercel.app'
   : 'https://espace.mediumia.fr'
 
@@ -84,18 +85,39 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
     let cancelled = false
     Promise.resolve().then(() => {
       if (cancelled) return
-      const token = readPassToken()
-      setPassToken(token)
-      if (!token) {
-        setState('invalid')
-        return
-      }
+      let token = readPassToken()
 
-      fetch(`${API}config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passToken: token }),
-      })
+      const prepareToken = token
+        ? Promise.resolve(token)
+        : IS_PREVIEW
+          ? fetch(`${API}test-issue`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({}),
+            }).then(async (res) => {
+              const data = await res.json().catch(() => ({}))
+              if (!res.ok || !data.passToken) throw new Error(data.error || 'test_pass_prepare_failed')
+              return data.passToken
+            })
+          : Promise.resolve('')
+
+      prepareToken.then((resolvedToken) => {
+        if (cancelled) return null
+        token = resolvedToken
+        setPassToken(token)
+        if (!token) {
+          setState('invalid')
+          return null
+        }
+
+        return fetch(`${API}config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passToken: token }),
+        })
+      }).then((res) => {
+        if (!res) return null
+        return res
         .then(async (res) => {
           const data = await res.json().catch(() => ({}))
           if (!res.ok) throw new Error(data.error || 'invalid_pass')

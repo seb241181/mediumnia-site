@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
+import { CONFERENCE_PUBLIC_API } from '../lib/conferenceApi.js'
 
 const EVENT_SLUG = 'premiere-conference-mediumia'
-const CONFERENCE_API = 'https://uotkpygeqqnekpolezts.supabase.co/functions/v1/conference-public'
+const CONFERENCE_API = CONFERENCE_PUBLIC_API
 const RAFFLE_RULES_URL = '/reglement-tirage-conference-mediumia-23-10-2026.html'
 
 function Step({ number, title, children }) {

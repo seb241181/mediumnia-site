@@ -17,7 +17,19 @@ export default function ProductDetail({ product, onClose, onPurchaseRequest }) {
     <div className="boutique-detail" role="dialog" aria-modal="true" aria-labelledby="boutique-product-title" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="boutique-detail__panel">
         <button type="button" className="boutique-detail__close" onClick={onClose} aria-label="Fermer la fiche produit"><CloseIcon /></button>
-        <div className="boutique-detail__visual"><BoutiqueProductArt variant={product.artwork} large /></div>
+        <div className="boutique-detail__visual">
+          {product.coverImage ? (
+            <div className="flex h-full min-h-[570px] items-center justify-center bg-[#0a0910] p-8 max-[700px]:min-h-[310px] max-[700px]:p-5">
+              <img
+                src={product.coverImage}
+                alt={product.name}
+                className="max-h-[520px] w-auto max-w-full object-contain shadow-2xl max-[700px]:max-h-[275px]"
+              />
+            </div>
+          ) : (
+            <BoutiqueProductArt variant={product.artwork} large />
+          )}
+        </div>
         <div className="boutique-detail__content">
           <p className="boutique-eyebrow">{product.categoryLabel} · {product.eyebrow}</p>
           <h2 id="boutique-product-title">{product.name}</h2>
@@ -25,9 +37,13 @@ export default function ProductDetail({ product, onClose, onPurchaseRequest }) {
           <ul>{product.highlights.map((highlight) => <li key={highlight}><CheckIcon />{highlight}</li>)}</ul>
           <div className="boutique-detail__action">
             <strong>{product.priceLabel}</strong>
-            <button type="button" disabled={isComingSoon} onClick={() => onPurchaseRequest(product)}>{isComingSoon ? 'Prochainement' : 'Acheter — bientôt disponible'}</button>
+            <button type="button" disabled={isComingSoon} onClick={() => onPurchaseRequest(product)}>
+              {isComingSoon ? 'Prochainement' : (product.purchaseLabel || 'Acheter — bientôt disponible')}
+            </button>
           </div>
-          <p className="boutique-detail__notice">Maquette uniquement · Paiement désactivé · Aucun débit possible</p>
+          <p className="boutique-detail__notice">
+            {product.externalPurchase ? 'Achat, paiement et livraison gérés sur le site du vendeur.' : 'Maquette uniquement · Paiement désactivé · Aucun débit possible'}
+          </p>
         </div>
       </section>
     </div>

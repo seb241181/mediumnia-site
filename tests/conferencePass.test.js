@@ -297,3 +297,20 @@ test('vercel function count remains within Hobby limit', async () => {
   ]
   assert.equal(apiFiles.length, 12)
 })
+
+
+test('admin batch issuance creates hashed personal Passes and sends the dedicated email only after the conference', async () => {
+  const { handler } = await sources()
+
+  assert.match(handler, /action === 'issue-batch'/)
+  assert.match(handler, /requireConferenceAdmin/)
+  assert.match(handler, /conference_admins/)
+  assert.match(handler, /randomBytes\(32\)\.toString\('base64url'\)/)
+  assert.match(handler, /const tokenHash = sha256Hex\(rawToken\)/)
+  assert.match(handler, /sendConferencePassEmail/)
+  assert.match(handler, /pass_issue_too_early/)
+  assert.match(handler, /process\.env\.VERCEL_ENV === 'production'/)
+  assert.match(handler, /\.from\('conference_passes'\)[\s\S]*\.insert\(/)
+  assert.match(handler, /event_name: 'pass_issued'/)
+  assert.match(handler, /delivery\.status !== 'sent'[\s\S]*conference_passes'\)\.delete\(\)/)
+})

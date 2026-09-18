@@ -267,7 +267,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
         </section>
 
         <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-          <div className="rounded-[2rem] border border-gold/30 bg-[#fffefa]/90 px-7 py-10 text-center shadow-[0_20px_60px_rgba(16,25,56,.1)] backdrop-blur-xl"><p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">APRÈS LA CONFÉRENCE</p><h2 className="mt-3 font-georgia text-3xl font-medium">Un Pass MediumIA personnel, jamais un code public.</h2><p className="mx-auto mt-4 max-w-2xl font-georgia text-sm leading-relaxed text-mist">Si une offre spéciale est ouverte aux participants, chaque Pass sera généré individuellement, lié à l’e-mail d’inscription, utilisable une seule fois et valable 7 jours.</p></div>
+          <div className="rounded-[2rem] border border-gold/30 bg-[#fffefa]/90 px-7 py-10 text-center shadow-[0_20px_60px_rgba(16,25,56,.1)] backdrop-blur-xl"><p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">APRÈS LA CONFÉRENCE</p><h2 className="mt-3 font-georgia text-3xl font-medium">Un Pass MediumIA personnel, jamais un code public.</h2><p className="mx-auto mt-4 max-w-2xl font-georgia text-sm leading-relaxed text-mist">Si une offre spéciale est ouverte aux participants, chaque Pass sera généré individuellement, lié à l’e-mail d’inscription, utilisable une seule fois et valable 1 mois.</p></div>
         </section>
       </main>
 

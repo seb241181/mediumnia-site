@@ -3,6 +3,9 @@ import LegalFooter from './LegalFooter'
 
 const API = '/api/rdv-config?conferencePassAction='
 const PAYPAL_SCRIPT_ID = 'mediumia-paypal-sdk'
+const STUDENT_SPACE_URL = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
+  ? 'https://mediumnia-app-git-test-confere-90e299-seguins-projects-a1d4673f.vercel.app'
+  : 'https://espace.mediumia.fr'
 
 function formatPrice(cents, currency = 'EUR') {
   if (!Number.isInteger(cents)) return '—'
@@ -226,7 +229,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                 <div className="font-georgia text-mist">
                   <p className="text-xl text-deep">{visibleState === 'already_provisioned' ? 'Votre accès est déjà activé.' : 'Paiement confirmé, accès MediumIA activé.'}</p>
                   <p className="mt-3 text-sm leading-relaxed">Connectez-vous à l’Espace élèves avec l’adresse e-mail utilisée lors de votre inscription à la conférence.</p>
-                  <a href="https://espace.mediumia.fr" className="mt-5 inline-flex rounded-lg bg-gold px-6 py-3 font-bold text-deep">Accéder à mon espace élève →</a>
+                  <a href={STUDENT_SPACE_URL} className="mt-5 inline-flex rounded-lg bg-gold px-6 py-3 font-bold text-deep">Accéder à mon espace élève →</a>
                 </div>
               )}
               {visibleState === 'valid' && (

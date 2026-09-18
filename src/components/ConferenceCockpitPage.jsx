@@ -106,6 +106,8 @@ export default function ConferenceCockpitPage() {
   const [aiState, setAiState] = useState('idle')
   const [aiAnalysis, setAiAnalysis] = useState('')
   const [aiPlan, setAiPlan] = useState(null)
+  const [passIssueState, setPassIssueState] = useState('idle')
+  const [passIssueMessage, setPassIssueMessage] = useState('')
 
   const call = useCallback(async (method = 'GET', body) => {
     const token = session?.access_token
@@ -223,6 +225,52 @@ export default function ConferenceCockpitPage() {
       setError(err.message)
     } finally {
       setBusyId('')
+    }
+  }
+
+  const issueConferencePasses = async () => {
+    setPassIssueState('loading')
+    setPassIssueMessage('')
+    setError('')
+
+    let issuedTotal = 0
+    let failedTotal = 0
+    let remaining = 1
+    let rounds = 0
+
+    try {
+      while (remaining > 0 && rounds < 50) {
+        const response = await fetch('/api/rdv-config?conferencePassAction=issue-batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token || ''}`,
+          },
+          body: JSON.stringify({ slug, limit: 5 }),
+        })
+
+        const payload = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(payload.error || 'Envoi des Pass impossible.')
+
+        issuedTotal += Number(payload.issued) || 0
+        failedTotal += Number(payload.failed) || 0
+        remaining = Number(payload.remaining) || 0
+        rounds += 1
+
+        if (remaining > 0) await new Promise((resolve) => window.setTimeout(resolve, 500))
+      }
+
+      if (remaining > 0) throw new Error('Envoi incomplet : relance le bouton pour continuer.')
+
+      setPassIssueState(failedTotal > 0 ? 'partial' : 'success')
+      setPassIssueMessage(
+        failedTotal > 0
+          ? `${issuedTotal} Pass envoyé(s), ${failedTotal} envoi(s) à relancer.`
+          : `${issuedTotal} Pass envoyé(s). Tous les participants éligibles sont traités.`,
+      )
+    } catch (err) {
+      setPassIssueState('error')
+      setError(err.message)
     }
   }
 
@@ -413,6 +461,17 @@ export default function ConferenceCockpitPage() {
                 <button onClick={drawWinner} disabled={drawState === 'loading'} className="mt-5 w-full rounded-xl bg-gold px-5 py-4 font-georgia text-sm font-bold text-deep disabled:opacity-50">{drawState === 'loading' ? 'Tirage…' : '🎁 Tirer le gagnant'}</button>
               )}
               <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/40">Le serveur refuse le tirage avant la fermeture prévue et conserve le même gagnant en cas de double clic.</p>
+            </section>
+
+            <section className="rounded-3xl border border-gold/35 bg-[#1b1738] p-6">
+              <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">🎟️ APRÈS-CONFÉRENCE</p>
+              <h2 className="mt-3 font-georgia text-2xl">Envoyer les Pass MediumIA</h2>
+              <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/55">Après la fin du direct, ce bouton génère un Pass personnel par inscription et l’envoie par e-mail. Les doublons sont ignorés.</p>
+              <button onClick={issueConferencePasses} disabled={passIssueState === 'loading'} className="mt-5 w-full rounded-xl bg-gold px-5 py-4 font-georgia text-sm font-bold text-deep disabled:opacity-50">
+                {passIssueState === 'loading' ? 'Envoi des Pass…' : '🎟️ Envoyer les Pass aux participants'}
+              </button>
+              {passIssueMessage && <p className="mt-4 rounded-xl border border-gold/20 bg-black/10 p-3 font-georgia text-xs leading-relaxed text-cream/70">{passIssueMessage}</p>}
+              <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/40">En Production, l’envoi est refusé avant la fin de la conférence et tant que l’offre Pass n’est pas configurée.</p>
             </section>
           </aside>
         </div>

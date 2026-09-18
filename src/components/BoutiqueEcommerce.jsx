@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { boutiqueCategories, boutiqueProducts } from '../data/boutiqueProducts'
 import ProductDetail from './ProductDetail'
 import BoutiqueProductArt from './BoutiqueProductArt'
+import '../styles/boutique.css'
 
 function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   const isOracle = product.id === 'oracle-au-dela-ame'
@@ -27,7 +28,12 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
       {/* Image / artwork */}
       <div className="relative overflow-hidden bg-stone-100" style={{ height: 220 }}>
         {product.coverImage
-          ? <img src={product.coverImage} alt={product.name} className="w-full h-full object-cover" />
+          ? <img
+              src={product.coverImage}
+              alt={product.name}
+              className={`w-full h-full ${product.imageFit === 'contain' ? 'object-contain p-3' : 'object-cover'}`}
+              style={product.imageFit === 'contain' ? { background: '#0a0910' } : undefined}
+            />
           : <BoutiqueProductArt type={product.artwork} />
         }
         {product.availability === 'coming-soon' && (
@@ -101,6 +107,10 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpe
   )
 
   const handlePurchaseRequest = (product) => {
+    if (product.purchaseUrl) {
+      window.open(product.purchaseUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
     setSelectedProduct(null)
     setNotice(`« ${product.name} » — paiement bientôt disponible.`)
     window.setTimeout(() => setNotice(''), 4000)

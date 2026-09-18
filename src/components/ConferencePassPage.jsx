@@ -83,54 +83,46 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
 
   useEffect(() => {
     let cancelled = false
-    Promise.resolve().then(() => {
-      if (cancelled) return
-      let token = readPassToken()
 
-      const prepareToken = token
-        ? Promise.resolve(token)
-        : IS_PREVIEW
-          ? fetch(`${API}test-issue`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({}),
-            }).then(async (res) => {
-              const data = await res.json().catch(() => ({}))
-              if (!res.ok || !data.passToken) throw new Error(data.error || 'test_pass_prepare_failed')
-              return data.passToken
-            })
-          : Promise.resolve('')
+    ;(async () => {
+      try {
+        let token = readPassToken()
 
-      prepareToken.then((resolvedToken) => {
-        if (cancelled) return null
-        token = resolvedToken
-        setPassToken(token)
-        if (!token) {
-          setState('invalid')
-          return null
+        if (!token && IS_PREVIEW) {
+          const issueRes = await fetch(`${API}test-issue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+          })
+          const issue = await issueRes.json().catch(() => ({}))
+          if (!issueRes.ok || !issue.passToken) throw new Error(issue.error || 'test_pass_prepare_failed')
+          token = issue.passToken
         }
 
-        return fetch(`${API}config`, {
+        if (cancelled) return
+        setPassToken(token)
+
+        if (!token) {
+          setState('invalid')
+          return
+        }
+
+        const res = await fetch(`${API}config`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ passToken: token }),
         })
-      }).then((res) => {
-        if (!res) return null
-        return res
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({}))
-          if (!res.ok) throw new Error(data.error || 'invalid_pass')
-          if (cancelled) return
-          setConfig(data)
-          setState(data.offer?.enabled ? 'valid' : 'offer_disabled')
-        })
-        .catch((err) => {
-          if (cancelled) return
-          const code = err.message || 'invalid_pass'
-          setState(code === 'expired' || code === 'already_redeemed' || code === 'offer_disabled' ? code : 'invalid')
-        })
-    })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || 'invalid_pass')
+        if (cancelled) return
+        setConfig(data)
+        setState(data.offer?.enabled ? 'valid' : 'offer_disabled')
+      } catch (err) {
+        if (cancelled) return
+        const code = err.message || 'invalid_pass'
+        setState(code === 'expired' || code === 'already_redeemed' || code === 'offer_disabled' ? code : 'invalid')
+      }
+    })()
 
     return () => { cancelled = true }
   }, [])

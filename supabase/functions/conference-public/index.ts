@@ -38,6 +38,12 @@ function json(req: Request, body: unknown, status = 200) {
   });
 }
 
+function conferenceAppBaseUrl(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  if (/^https:\/\/[^/]+\.vercel\.app$/.test(origin)) return origin;
+  return "https://mediumia.fr";
+}
+
 function publicEvent(event: any) {
   if (!event) return null;
   return {
@@ -123,7 +129,7 @@ async function buildPreparationUrl(supabase: any, path?: string | null, endsAt?:
   return data.signedUrl;
 }
 
-async function sendConfirmation(supabase: any, firstName: string, email: string, registrationId: string, event: any, liveAccessToken?: string | null) {
+async function sendConfirmation(supabase: any, firstName: string, email: string, registrationId: string, event: any, liveAccessToken?: string | null, appBaseUrl = "https://mediumia.fr") {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     console.warn("conference_confirmation_not_configured");
@@ -132,7 +138,7 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
 
   const preparationUrl = await buildPreparationUrl(supabase, event?.preparation_pdf_url, event?.ends_at);
   const zoomJoinUrl = event?.zoom_join_url || null;
-  const liveUrl = liveAccessToken ? `https://mediumia.fr/live/${EVENT_SLUG}#access=${encodeURIComponent(liveAccessToken)}` : null;
+  const liveUrl = liveAccessToken ? `${appBaseUrl}/live/${EVENT_SLUG}#access=${encodeURIComponent(liveAccessToken)}` : null;
   const safeName = escapeHtml(firstName);
   const safeZoomUrl = zoomJoinUrl ? escapeHtml(zoomJoinUrl) : "";
   const safePreparationUrl = preparationUrl ? escapeHtml(preparationUrl) : "";
@@ -279,7 +285,7 @@ Deno.serve(async (req: Request) => {
         .eq("id", existing.id);
       if (error) return json(req, { error: "Inscription impossible." }, 500);
       const liveToken = await issueLiveAccess(supabase, existing.id);
-      const delivery = await sendConfirmation(supabase, firstName, email, existing.id, event, liveToken);
+      const delivery = await sendConfirmation(supabase, firstName, email, existing.id, event, liveToken, conferenceAppBaseUrl(req));
       await markDelivery(supabase, existing.id, delivery);
       return json(req, { ok: true, restored: true, emailStatus: delivery.status });
     }
@@ -296,7 +302,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const liveToken = await issueLiveAccess(supabase, inserted.id);
-    const delivery = await sendConfirmation(supabase, firstName, email, inserted.id, event, liveToken);
+    const delivery = await sendConfirmation(supabase, firstName, email, inserted.id, event, liveToken, conferenceAppBaseUrl(req));
     await markDelivery(supabase, inserted.id, delivery);
     return json(req, { ok: true, emailStatus: delivery.status }, 201);
   }

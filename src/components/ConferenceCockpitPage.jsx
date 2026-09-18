@@ -4,6 +4,7 @@ import { useAuth } from '../lib/useAuth.js'
 
 const LIVE_API = CONFERENCE_LIVE_API
 const COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
+const IS_PREVIEW = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
 
 function getSlug() {
   const parts = window.location.pathname.split('/').filter(Boolean)
@@ -109,10 +110,12 @@ export default function ConferenceCockpitPage() {
 
   const call = useCallback(async (method = 'GET', body) => {
     const token = session?.access_token
-    if (!token) throw new Error('Connexion requise.')
+    if (!token && !IS_PREVIEW) throw new Error('Connexion requise.')
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers.Authorization = `Bearer ${token}`
     const response = await fetch(`${LIVE_API}?slug=${encodeURIComponent(slug)}&mode=admin`, {
       method,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     })
     const payload = await response.json().catch(() => ({}))
@@ -121,7 +124,7 @@ export default function ConferenceCockpitPage() {
   }, [session?.access_token, slug])
 
   const refresh = useCallback(async () => {
-    if (!session?.access_token) return null
+    if (!session?.access_token && !IS_PREVIEW) return null
     try {
       const payload = await call('GET')
       setData(payload)
@@ -135,7 +138,7 @@ export default function ConferenceCockpitPage() {
   }, [call, session?.access_token])
 
   useEffect(() => {
-    if (!session?.access_token) return
+    if (!session?.access_token && !IS_PREVIEW) return
     refresh()
     const timer = window.setInterval(refresh, 10_000)
     return () => window.clearInterval(timer)
@@ -237,9 +240,9 @@ export default function ConferenceCockpitPage() {
     }
   }
 
-  if (authLoading) return <div className="min-h-screen bg-deep text-cream grid place-items-center font-georgia">Ouverture du cockpit…</div>
+  if (authLoading && !IS_PREVIEW) return <div className="min-h-screen bg-deep text-cream grid place-items-center font-georgia">Ouverture du cockpit…</div>
 
-  if (!session) {
+  if (!session && !IS_PREVIEW) {
     return (
       <div className="min-h-screen bg-deep px-6 text-cream grid place-items-center">
         <form onSubmit={handleLogin} className="w-full max-w-md rounded-3xl border border-gold/30 bg-white/5 p-8">
@@ -280,7 +283,8 @@ export default function ConferenceCockpitPage() {
           </div>
           <div className="flex items-center gap-3">
             <button onClick={refresh} className="rounded-lg border border-gold/30 px-3 py-2 font-georgia text-xs text-gold">Actualiser</button>
-            <button onClick={signOut} className="rounded-lg border border-white/10 px-3 py-2 font-georgia text-xs text-cream/60">Déconnexion</button>
+            {session && <button onClick={signOut} className="rounded-lg border border-white/10 px-3 py-2 font-georgia text-xs text-cream/60">Déconnexion</button>}
+            {IS_PREVIEW && <span className="rounded-lg border border-purple-300/25 px-3 py-2 font-georgia text-xs text-purple-200">TEST Preview</span>}
           </div>
         </div>
       </header>

@@ -27,14 +27,14 @@ async function sources() {
   return Object.fromEntries(entries)
 }
 
-test('conference pass schema is additive, token-hashed, server-only and 168h', async () => {
+test('conference pass schema is additive, token-hashed, server-only and 720h', async () => {
   const { migration } = await sources()
 
   assert.match(migration, /alter table public\.conference_passes/)
   assert.match(migration, /token_hash/)
   assert.match(migration, /paypal_order_id text/)
   assert.match(migration, /paypal_capture_id text/)
-  assert.match(migration, /pass_duration_hours = 168/)
+  assert.match(migration, /pass_duration_hours = 720/)
   assert.match(migration, /create table if not exists public\.conference_pass_events/)
   assert.match(migration, /pass_issued/)
   assert.match(migration, /checkout_started/)

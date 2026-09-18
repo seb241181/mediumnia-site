@@ -88,17 +88,6 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
       try {
         let token = readPassToken()
 
-        if (!token && IS_PREVIEW) {
-          const issueRes = await fetch(`${API}test-issue`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-          })
-          const issue = await issueRes.json().catch(() => ({}))
-          if (!issueRes.ok || !issue.passToken) throw new Error(issue.error || 'test_pass_prepare_failed')
-          token = issue.passToken
-        }
-
         if (cancelled) return
         setPassToken(token)
 

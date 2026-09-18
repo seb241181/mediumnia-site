@@ -30,10 +30,12 @@ Nettoyage final effectué :
 - tirage TEST remis au statut `scheduled` avec sa fenêtre officielle ;
 - offre Pass TEST remise désactivée.
 
-Garde-fous Production :
+État Production après GO explicite du 18/09/2026 :
 
-- la conférence Production reste en `draft` ;
-- les inscriptions Production restent fermées ;
-- les migrations Pass Production ne sont pas encore appliquées ;
-- aucun paiement PayPal Live n’a été effectué ;
-- aucune fusion de la PR n’a été faite sans GO explicite.
+- PR #29 fusionnée sur `main` ;
+- déploiement Vercel Production validé `READY` après correction du test dépendant de `VERCEL_ENV` ;
+- migrations Pass checkout + concurrence/idempotence appliquées sur Supabase Production ;
+- Edge Functions `conference-public` et `conference-live` redéployées avec les règles normales ;
+- offre conférence configurée à 399 € TTC, prix normal 597 €, Pass valable 30 jours ;
+- la conférence Production reste en `draft` et les inscriptions restent fermées ;
+- aucun paiement PayPal Live n’a été effectué.

@@ -1,20 +1,38 @@
-# Conférence MediumIA — contrôle E2E du 17/09/2026
+# Conférence MediumIA — contrôle E2E final du 18/09/2026
 
-Test contrôlé autorisé avant mise en Production.
+Validation contrôlée sur la base TEST et la Preview Vercel avant toute mise en Production.
 
-- Inscription réelle sur un événement de test isolé : OK.
-- E-mail transactionnel reçu : OK.
-- Lien LIVE personnel généré : OK.
-- Lien Zoom présent : OK.
-- Carnet PDF signé généré ; objet Storage PDF présent : OK.
+- Inscription participant : OK.
+- E-mail transactionnel et lien LIVE personnel : OK.
 - Heartbeat LIVE / présence : OK.
-- Envoi d'une question : OK.
-- Entrée au tirage : OK.
-- Tirage et rejeu idempotent : OK.
-- Copilote de répétition en Preview : fallback local sécurisé exercé (aucun secret fournisseur IA attaché à Preview).
-- Pass : le test E2E a découvert puis corrigé le routage `conferencePassAction` dans `rdv-config` ; test de non-régression ajouté.
-- PayPal Sandbox : bloqué par la configuration d'environnement actuelle. Preview expose le même client PayPal que Production, puis l'authentification contre l'API Sandbox échoue (`paypal_auth_failed`). Aucun paiement n'a été créé ou capturé.
+- Envoi des questions : OK.
+- Cockpit administrateur : OK.
+- Sélection « À prendre » puis « Répondue · suivante » : OK.
+- Recalcul de la shortlist : OK.
+- Tirage au sort et persistance du gagnant : OK.
+- Pass post-conférence personnel, valable 30 jours : OK.
+- PayPal Sandbox : authentification, création de commande, paiement TEST à 1 €, capture et validation : OK.
+- Provisioning automatique Espace élève : accès complet, 25 modules, 365 jours : OK.
+- Idempotence : rejeu de la finalisation avec le même paiement renvoie un accès déjà provisionné, sans nouvelle capture ni nouvel entitlement : OK.
+- Routage `conferencePassAction` via `rdv-config` : OK.
+- Schéma Pass TEST et garde concurrence/idempotence : OK.
 
-Nettoyage effectué après test : événement/inscription/question/tirage temporaires supprimés, jeton de répétition supprimé, fonction smoke Production remise en mode 410 disabled, bridges smoke retirés de la branche.
+Nettoyage final effectué :
 
-La vraie conférence reste en `draft`; aucune inscription publique ni aucun paiement Live n'a été déclenché.
+- bypass cockpit Preview supprimé ;
+- fenêtres LIVE/questions forcées en TEST supprimées ;
+- raccourcis LIVE TEST supprimés ;
+- endpoints et bootstrap Pass réservés aux essais supprimés ;
+- endpoint de diagnostic Preview supprimé ;
+- fonctions Edge TEST redéployées avec les règles normales ;
+- inscription E2E courante, Pass, questions, participation au tirage et entitlement Sandbox du test final supprimés ;
+- tirage TEST remis au statut `scheduled` avec sa fenêtre officielle ;
+- offre Pass TEST remise désactivée.
+
+Garde-fous Production :
+
+- la conférence Production reste en `draft` ;
+- les inscriptions Production restent fermées ;
+- les migrations Pass Production ne sont pas encore appliquées ;
+- aucun paiement PayPal Live n’a été effectué ;
+- aucune fusion de la PR n’a été faite sans GO explicite.

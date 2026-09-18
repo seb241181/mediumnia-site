@@ -44,6 +44,15 @@ function conferenceAppBaseUrl(req: Request) {
   return "https://mediumia.fr";
 }
 
+function isTestProject() {
+  return (Deno.env.get("SUPABASE_URL") || "").includes("wnbwhnqiulsdjcvkuwos");
+}
+
+function testLiveUrl(req: Request, rawToken?: string | null) {
+  if (!isTestProject() || !rawToken) return undefined;
+  return `${conferenceAppBaseUrl(req)}/live/${EVENT_SLUG}#access=${encodeURIComponent(rawToken)}`;
+}
+
 function publicEvent(event: any) {
   if (!event) return null;
   return {
@@ -276,7 +285,13 @@ Deno.serve(async (req: Request) => {
       .eq("email_normalized", email)
       .maybeSingle();
 
-    if (existing && existing.status !== "cancelled") return json(req, { ok: true, alreadyRegistered: true });
+    if (existing && existing.status !== "cancelled") {
+      if (isTestProject()) {
+        const liveToken = await issueLiveAccess(supabase, existing.id);
+        return json(req, { ok: true, alreadyRegistered: true, testLiveUrl: testLiveUrl(req, liveToken) });
+      }
+      return json(req, { ok: true, alreadyRegistered: true });
+    }
 
     if (existing?.status === "cancelled") {
       const { error } = await supabase
@@ -287,7 +302,7 @@ Deno.serve(async (req: Request) => {
       const liveToken = await issueLiveAccess(supabase, existing.id);
       const delivery = await sendConfirmation(supabase, firstName, email, existing.id, event, liveToken, conferenceAppBaseUrl(req));
       await markDelivery(supabase, existing.id, delivery);
-      return json(req, { ok: true, restored: true, emailStatus: delivery.status });
+      return json(req, { ok: true, restored: true, emailStatus: delivery.status, testLiveUrl: testLiveUrl(req, liveToken) });
     }
 
     const { data: inserted, error } = await supabase
@@ -304,7 +319,7 @@ Deno.serve(async (req: Request) => {
     const liveToken = await issueLiveAccess(supabase, inserted.id);
     const delivery = await sendConfirmation(supabase, firstName, email, inserted.id, event, liveToken, conferenceAppBaseUrl(req));
     await markDelivery(supabase, inserted.id, delivery);
-    return json(req, { ok: true, emailStatus: delivery.status }, 201);
+    return json(req, { ok: true, emailStatus: delivery.status, testLiveUrl: testLiveUrl(req, liveToken) }, 201);
   }
 
   return json(req, { error: "Méthode non autorisée." }, 405);

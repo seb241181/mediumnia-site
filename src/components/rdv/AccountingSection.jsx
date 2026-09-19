@@ -64,6 +64,14 @@ function decimalCsv(cents) {
   return (Number(cents || 0) / 100).toFixed(2).replace('.', ',')
 }
 
+const ARTIST_AUTHOR_MICRO_BNC_ABATEMENT = 0.34
+const ARTIST_AUTHOR_SOCIAL_BASE_MULTIPLIER = 1.15
+const ARTIST_AUTHOR_URSSAF_RATE = 0.162
+const ARTIST_AUTHOR_EFFECTIVE_RATE =
+  (1 - ARTIST_AUTHOR_MICRO_BNC_ABATEMENT) *
+  ARTIST_AUTHOR_SOCIAL_BASE_MULTIPLIER *
+  ARTIST_AUTHOR_URSSAF_RATE
+
 function SummaryCard({ label, value, note }) {
   return (
     <div className="rounded-xl border border-gold/20 bg-white/55 px-4 py-4">
@@ -120,6 +128,9 @@ export default function AccountingSection({ practitionerId, session }) {
   const totals = data?.totals || {}
   const kdp = data?.kdp || {}
   const activityGeneratedCents = Number(data?.activity_generated_cents || 0)
+  const kdpRoyaltyCents = Number(kdp.royalty_cents || 0)
+  const kdpEstimatedSocialCents = Math.round(kdpRoyaltyCents * ARTIST_AUTHOR_EFFECTIVE_RATE)
+  const kdpEstimatedAfterSocialCents = Math.max(0, kdpRoyaltyCents - kdpEstimatedSocialCents)
 
   const monthLabel = useMemo(() => {
     const [year, m] = month.split('-').map(Number)
@@ -218,19 +229,28 @@ export default function AccountingSection({ practitionerId, session }) {
                     {kdp.paperback_units || 0} broché(s) · {kdp.ebook_units || 0} ebook(s){kdp.hardcover_units ? ` · ${kdp.hardcover_units} relié(s)` : ''}
                   </p>
                 </div>
-                <div className="grid min-w-[260px] grid-cols-2 gap-2">
+                <div className="grid min-w-[300px] grid-cols-2 gap-2">
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
                     <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Redevances générées</p>
-                    <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdp.royalty_cents)}</p>
+                    <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdpRoyaltyCents)}</p>
                   </div>
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">À recevoir</p>
+                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Cotisations Urssaf AA</p>
+                    <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdpEstimatedSocialCents)}</p>
+                    <p className="mt-1 font-georgia text-[9px] text-mist">estimation ≈ 12,30 %</p>
+                  </div>
+                  <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
+                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Net après cotisations</p>
+                    <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdpEstimatedAfterSocialCents)}</p>
+                  </div>
+                  <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
+                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">À recevoir Amazon</p>
                     <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdp.pending_royalty_cents)}</p>
                   </div>
                 </div>
               </div>
               <p className="mt-4 font-georgia text-[10px] leading-relaxed text-mist/75">
-                Les redevances KDP sont comptées dans « activité générée », mais ne sont pas ajoutées au « TTC encaissé » tant qu’Amazon ne les a pas effectivement versées.
+                Estimation 2026 si CODEX est déclaré en micro-BNC artiste-auteur : abattement de 34 %, assiette sociale majorée de 15 %, puis taux Urssaf artistes-auteurs de 16,20 %, soit environ 12,30 % des redevances. Hors retraite complémentaire IRCEC-RAAP et impôt sur le revenu. Les redevances KDP sont comptées dans « activité générée », mais ne sont pas ajoutées au « TTC encaissé » tant qu’Amazon ne les a pas effectivement versées.
               </p>
             </div>
           ) : null}

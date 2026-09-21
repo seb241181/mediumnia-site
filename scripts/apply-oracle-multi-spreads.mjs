@@ -17,7 +17,7 @@ oracleTest = replaceRequired(
 import {
   DEFAULT_ORACLE_SPREAD_ID,
   getOracleSpread,
-  ORACLE_SPREADS,
+  ORACLE_GUIDED_SPREADS,
 } from '../data/oracleSpreads.js'`,
   'OracleTest spread imports',
 )
@@ -27,7 +27,8 @@ oracleTest = replaceRequired(
   `  const [unsubscribeError, setUnsubscribeError] = useState(false)`,
   `  const [unsubscribeError, setUnsubscribeError] = useState(false)
   const [spreadId, setSpreadId] = useState(DEFAULT_ORACLE_SPREAD_ID)
-  const spread = getOracleSpread(spreadId)`,
+  const spread = getOracleSpread(spreadId)
+  const freeSpread = getOracleSpread(DEFAULT_ORACLE_SPREAD_ID)`,
   'OracleTest spread state',
 )
 
@@ -45,39 +46,69 @@ oracleTest = replaceRequired(
   'OracleTest dynamic position labels',
 )
 
-const formLine = `      <form onSubmit={handleSubmit} className="space-y-5">`
-const spreadPicker = `${formLine}
+const formLine = \`      <form onSubmit={handleSubmit} className="space-y-5">\`
+const spreadPicker = \`${formLine}
         <div className="rounded-2xl border border-gold/25 bg-cream/60 p-4 md:p-5">
-          <p className="font-georgia text-xs text-mist tracking-[0.15em] uppercase mb-3">Choisir la structure du tirage</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            {ORACLE_SPREADS.map((option) => {
-              const active = option.id === spreadId
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setSpreadId(option.id)}
-                  aria-pressed={active}
-                  className={\`rounded-xl border-2 px-4 py-3 text-left transition-all \${active
-                    ? 'border-gold bg-gold/10 shadow-sm'
-                    : 'border-gold/20 bg-white/70 hover:border-gold/45'
-                  }\`}
-                >
-                  <span className="block font-georgia text-sm font-semibold text-deep">{option.name}</span>
-                  <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">{option.shortDescription}</span>
-                </button>
-              )
-            })}
+          <p className="font-georgia text-xs text-mist tracking-[0.15em] uppercase mb-3">Comment souhaitez-vous utiliser votre oracle ?</p>
+
+          <button
+            type="button"
+            onClick={() => setSpreadId(DEFAULT_ORACLE_SPREAD_ID)}
+            aria-pressed={spread.kind === 'free'}
+            className={\\\`w-full rounded-xl border-2 px-4 py-4 text-left transition-all \\\${D}{spread.kind === 'free'
+              ? 'border-gold bg-gold/10 shadow-sm'
+              : 'border-gold/25 bg-white/75 hover:border-gold/50'
+            }\\\`}
+          >
+            <span className="block font-georgia text-base font-semibold text-deep">{freeSpread.name}</span>
+            <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">{freeSpread.shortDescription}</span>
+            <span className="mt-2 block font-georgia text-[11px] leading-relaxed text-gold">
+              Mode fidèle à l'oracle physique : Lumïa respecte les trois cartes telles qu'elles ont été tirées.
+            </span>
+          </button>
+
+          <div className="mt-5 border-t border-gold/20 pt-5">
+            <p className="font-georgia text-xs font-semibold uppercase tracking-[0.15em] text-gold">Tirages guidés par Lumïa</p>
+            <p className="mt-1 font-georgia text-[11px] leading-relaxed text-mist">
+              Des propositions numériques supplémentaires pour explorer votre jeu. Elles ne modifient pas les règles de l'oracle imprimé.
+            </p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {ORACLE_GUIDED_SPREADS.map((option) => {
+                const active = option.id === spreadId
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setSpreadId(option.id)}
+                    aria-pressed={active}
+                    className={\\\`rounded-xl border-2 px-4 py-3 text-left transition-all \\\${D}{active
+                      ? 'border-gold bg-gold/10 shadow-sm'
+                      : 'border-gold/20 bg-white/70 hover:border-gold/45'
+                    }\\\`}
+                  >
+                    <span className="block font-georgia text-sm font-semibold text-deep">{option.name}</span>
+                    <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">{option.shortDescription}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            {spread.positions.map((position, index) => (
-              <div key={position.label} className="rounded-lg bg-white/60 px-3 py-2">
-                <p className="font-georgia text-xs font-semibold text-gold">{index + 1}. {position.label}</p>
-                <p className="mt-1 font-georgia text-[11px] leading-relaxed text-mist">{position.meaning}</p>
-              </div>
-            ))}
-          </div>
-        </div>`
+
+          {spread.kind === 'free' ? (
+            <p className="mt-4 rounded-lg bg-white/60 px-3 py-3 font-georgia text-xs leading-relaxed text-mist">
+              Posez vos trois cartes comme vous le feriez avec le jeu physique. Lumïa commence par le sens propre de chacune, puis observe leur résonance, leurs tensions et leur mouvement d'ensemble.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {spread.positions.map((position, index) => (
+                <div key={position.label} className="rounded-lg bg-white/60 px-3 py-2">
+                  <p className="font-georgia text-xs font-semibold text-gold">{index + 1}. {position.label}</p>
+                  <p className="mt-1 font-georgia text-[11px] leading-relaxed text-mist">{position.meaning}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>\`
 
 oracleTest = replaceRequired(
   oracleTest,
@@ -161,9 +192,11 @@ const oldCardLines = [
 ].join('\n')
 
 const newCardLines = [
+  "  const isFreeSpread = spread.kind === 'free'",
   '  const cardLines = cards.map((c, i) => {',
-  '    const position = spread.positions[i]',
   "    const kw = c.keywords ? \` — mots-clés : ${c.keywords}\` : ''",
+  '    if (isFreeSpread) return \`Carte ${i + 1} : n°${c.id} « ${c.name} »${kw}\`',
+  '    const position = spread.positions[i]',
   '    return \`Carte ${i + 1} (${position.label}) : n°${c.id} « ${c.name} »${kw}\\nSens de la position : ${position.meaning}\`',
   "  }).join('\\n\\n')",
 ].join('\n')
@@ -178,14 +211,14 @@ oracleApi = replaceRequired(
 oracleApi = replaceRequired(
   oracleApi,
   "Voici un tirage de 3 cartes de l'Oracle Au-delà de l'Âme (structure : Ombre / Passage / Guérison) :\n${cardLines}",
-  "Voici un tirage de 3 cartes de l'Oracle Au-delà de l'Âme.\nStructure choisie : ${spread.name}\n${spread.shortDescription}\n\n${cardLines}\n\nInterprète chaque carte selon le sens précis de sa position, puis relie les trois cartes dans une lecture cohérente.",
+  "Voici un tirage de 3 cartes de l'Oracle Au-delà de l'Âme.\nMode choisi : ${spread.name}\n${spread.shortDescription}\n\n${cardLines}\n\n${isFreeSpread ? \"Il s'agit d'un tirage libre fidèle au jeu physique. N'attribue aucun rôle prédéfini aux cartes. Commence par le sens propre de chacune, puis observe leur résonance, leurs tensions et leur mouvement d'ensemble.\" : \"Il s'agit d'un tirage guidé numérique proposé par Lumïa. Interprète chaque carte selon le sens précis de sa position, puis relie les trois cartes dans une lecture cohérente.\"}",
   'Oracle API spread prompt header',
 )
 
 oracleApi = replaceRequired(
   oracleApi,
   "• Le passage / la bascule : la transformation proposée",
-  "• La bascule : la transformation ou la compréhension proposée par cette position",
+  "• Le mouvement intérieur : ce que cette carte met en circulation et comment elle dialogue avec les autres",
   'Oracle API spread interpretation axis',
 )
 
@@ -205,4 +238,4 @@ oracleApi = replaceRequired(
 
 await writeFile(new URL('../api/oracle-interpret.js', import.meta.url), oracleApi)
 
-console.log('MediumIA Oracle multi-spreads: selector UI and spread-aware interpretation applied')
+console.log('MediumIA Oracle: physical free draw plus optional Lumia guided spreads applied')

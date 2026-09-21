@@ -60,7 +60,7 @@ const spreadPicker = `${formLine}
                   onClick={() => setSpreadId(option.id)}
                   aria-pressed={active}
                   className={\`rounded-xl border-2 px-4 py-4 text-left transition-all \${active
-                    ? 'border-[#B87811] bg-[#C88616] shadow-sm'
+                    ? 'border-gold/60 bg-gold/20 shadow-sm'
                     : 'border-gold/20 bg-white/70 hover:border-gold/45'
                   }\`}
                 >

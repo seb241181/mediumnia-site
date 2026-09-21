@@ -109,4 +109,100 @@ oracleTest = replaceRequired(
 
 await writeFile(oracleTestPath, oracleTest)
 
-console.log('MediumIA Oracle multi-spreads: selector UI applied')
+let oracleApi = await readFile(new URL('../api/oracle-interpret.js', import.meta.url), 'utf8')
+
+oracleApi = replaceRequired(
+  oracleApi,
+  "import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }",
+  "import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }\nimport { getOracleSpread } from '../src/data/oracleSpreads.js'",
+  'Oracle API spread import',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  'function buildOracleEmail(cards, interpretation) {',
+  'function buildOracleEmail(cards, interpretation, spread) {',
+  'Oracle email spread signature',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  '    const label = cardLabels[index]',
+  '    const label = spread.positions[index].label',
+  'Oracle email HTML position label',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  "    \`${cardLabels[index]} — n°${card.id} « ${card.name} »\`",
+  "    \`${spread.positions[index].label} — n°${card.id} « ${card.name} »\`",
+  'Oracle email text position label',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  "      <p style=\"margin:0 0 24px;color:#786f84;\">Oracle Au-delà de l'Âme — guidance par Lumïa</p>",
+  "      <p style=\"margin:0 0 8px;color:#786f84;\">Oracle Au-delà de l'Âme — guidance par Lumïa</p>\n      <p style=\"margin:0 0 24px;color:#c9a84c;font-size:14px;\">${escapeHtml(spread.name)}</p>",
+  'Oracle email spread name',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  '  const { cardIds, email } = req.body || {}',
+  '  const { cardIds, email, spreadId } = req.body || {}\n  const spread = getOracleSpread(spreadId)',
+  'Oracle API spread selection',
+)
+
+const oldCardLines = [
+  '  const cardLines = cards.map((c, i) => {',
+  "    const kw = c.keywords ? \` — mots-clés : ${c.keywords}\` : ''",
+  '    return \`Carte ${i + 1} (${cardLabels[i]}) : n°${c.id} « ${c.name} »${kw}\`',
+  "  }).join('\\n')",
+].join('\n')
+
+const newCardLines = [
+  '  const cardLines = cards.map((c, i) => {',
+  '    const position = spread.positions[i]',
+  "    const kw = c.keywords ? \` — mots-clés : ${c.keywords}\` : ''",
+  '    return \`Carte ${i + 1} (${position.label}) : n°${c.id} « ${c.name} »${kw}\\nSens de la position : ${position.meaning}\`',
+  "  }).join('\\n\\n')",
+].join('\n')
+
+oracleApi = replaceRequired(
+  oracleApi,
+  oldCardLines,
+  newCardLines,
+  'Oracle API dynamic position lines',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  "Voici un tirage de 3 cartes de l'Oracle Au-delà de l'Âme (structure : Ombre / Passage / Guérison) :\n${cardLines}",
+  "Voici un tirage de 3 cartes de l'Oracle Au-delà de l'Âme.\nStructure choisie : ${spread.name}\n${spread.shortDescription}\n\n${cardLines}\n\nInterprète chaque carte selon le sens précis de sa position, puis relie les trois cartes dans une lecture cohérente.",
+  'Oracle API spread prompt header',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  "• Le passage / la bascule : la transformation proposée",
+  "• La bascule : la transformation ou la compréhension proposée par cette position",
+  'Oracle API spread interpretation axis',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  "Ajoute des transitions douces entre les cartes.",
+  "N'affirme jamais connaître les pensées d'une autre personne et ne présente pas le tirage comme une prédiction certaine.\nAjoute des transitions douces entre les cartes.",
+  'Oracle API reflective guardrail',
+)
+
+oracleApi = replaceRequired(
+  oracleApi,
+  '    const emailContent = buildOracleEmail(cards, interpretation)',
+  '    const emailContent = buildOracleEmail(cards, interpretation, spread)',
+  'Oracle email selected spread',
+)
+
+await writeFile(new URL('../api/oracle-interpret.js', import.meta.url), oracleApi)
+
+console.log('MediumIA Oracle multi-spreads: selector UI and spread-aware interpretation applied')

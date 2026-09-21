@@ -136,9 +136,10 @@ test('pack_not_found clears an obsolete pending payment', async () => {
   assert.match(recovery, /drawTokenRef\.current = null[\s\S]*setShowPayment\(false\)/)
 })
 
-test('home presents both public offers and the discovery CTA', async () => {
+test('home presents Chronosphere as a bridge to the future astral theme', async () => {
   const { home } = await readSources()
-  assert.match(home, /À partir de 5 € TTC/)
-  assert.match(home, /1 tirage : 5 € · Pack 3 tirages : 9,90 €/)
-  assert.match(home, /Découvrir Chronosphère/)
+  assert.match(home, /Pack conseillé : 9,90 € TTC pour 3 tirages/)
+  assert.match(home, /Le tirage éclaire le moment ; le futur thème astral posera le socle natal/)
+  assert.match(home, /Entrer dans ChronoSphère/)
+  assert.match(home, /Deux portes, un même chemin/)
 })

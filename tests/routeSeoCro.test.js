@@ -7,7 +7,7 @@ const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 test('public routes receive dedicated client-side metadata and canonical URLs', () => {
   const app = read('src/App.jsx')
   assert.match(app, /Formation à la médiumnité consciente — MediumIA/)
-  assert.match(app, /Chronosphère 999 — Oracle des Lignes de Temps \| MediumIA/)
+  assert.match(app, /ChronoSphère 999 — Cycles, lignes de temps & thème astral \| MediumIA/)
   assert.match(app, /Réseau MediumIA — Trouver un praticien/)
   assert.match(app, /Conférences MediumIA — Rencontres et directs/)
   assert.match(app, /reseauPractitioners\.find/)

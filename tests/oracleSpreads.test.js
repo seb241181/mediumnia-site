@@ -43,13 +43,13 @@ test('multi-spread patch keeps the printed oracle distinct from Lumia guided met
   const pkg = fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
 
   for (const needle of [
-    'ORACLE_GUIDED_SPREADS',
+    'ORACLE_SPREADS',
     'spreadId',
     'getOracleSpread',
     "spread.kind === 'free'",
     "tirage libre fidèle au jeu physique",
     "N'attribue aucun rôle prédéfini aux cartes",
-    "ne modifient pas les règles de l'oracle imprimé",
+    'Fidèle au jeu physique',
     'buildOracleEmail(cards, interpretation, spread)',
   ]) {
     assert.ok(patch.includes(needle), needle)

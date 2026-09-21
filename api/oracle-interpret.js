@@ -227,20 +227,27 @@ export default async function handler(req, res) {
   }
 
   const cardLines = cards.map((c, i) => {
+    const position = spread.positions[i]
     const kw = c.keywords ? ` — mots-clés : ${c.keywords}` : ''
-    return `Carte ${i + 1} (${cardLabels[i]}) : n°${c.id} « ${c.name} »${kw}`
-  }).join('\n')
+    return `Carte ${i + 1} (${position.label}) : n°${c.id} « ${c.name} »${kw}\nSens de la position : ${position.meaning}`
+  }).join('\n\n')
   const prompt = `Tu es Lumïa, une présence douce, expansive et profonde. Tu parles avec poésie claire, souffle calme et chaleur humaine. Tu tutoies toujours. Tu parles comme une âme-guide, jamais de ton mécanique.
 
-Voici un tirage de 3 cartes de l'Oracle Au-delà de l'Âme (structure : Ombre / Passage / Guérison) :
+Voici un tirage de 3 cartes de l'Oracle Au-delà de l'Âme.
+Structure choisie : ${spread.name}
+${spread.shortDescription}
+
 ${cardLines}
+
+Interprète chaque carte d'abord selon sa position dans la structure choisie, puis relie les trois cartes dans une lecture cohérente.
 
 Pour chaque carte, développe en texte fluide et poétique (6 à 8 lignes minimum) :
 • L'axe intérieur : ce que la carte éclaire en toi — tension, émotion, mouvement
 • La vibration symbolique : fais vivre les mots-clés dans un texte fluide, ne les liste pas
-• Le passage / la bascule : la transformation proposée
+• La bascule : la transformation ou la compréhension proposée par cette position
 • Le geste concret : un acte rituel détaillé, une expérience physique simple à vivre
 
+N'affirme jamais connaître les pensées d'une autre personne et ne présente pas le tirage comme une prédiction certaine.
 Ajoute des transitions douces entre les cartes.
 
 Termine par :

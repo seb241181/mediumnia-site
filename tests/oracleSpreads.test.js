@@ -41,6 +41,12 @@ test('oracle selector is generated after the existing email sequence patch chain
   assert.match(ui, /body: JSON\.stringify\(\{ email: trimmedEmail, cardIds: ids, spreadId \}\)/)
   assert.match(ui, /spread\.positions\[idx\]\.label/)
 
+  const api = fs.readFileSync(new URL('../api/oracle-interpret.js', import.meta.url), 'utf8')
+  assert.match(api, /getOracleSpread\(spreadId\)/)
+  assert.match(api, /Structure choisie:/)
+  assert.match(api, /position\.meaning/)
+  assert.match(api, /buildOracleEmail\(cards, interpretation, spread\)/)
+
   const pilotage = pkg.indexOf('apply-oracle-email-sequence-pilotage.mjs')
   const spreads = pkg.indexOf('apply-oracle-multi-spreads.mjs')
   const formationLead = pkg.indexOf('apply-formation-email-lead.mjs')

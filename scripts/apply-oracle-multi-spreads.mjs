@@ -46,8 +46,8 @@ oracleTest = replaceRequired(
   'OracleTest dynamic position labels',
 )
 
-const formLine = \`      <form onSubmit={handleSubmit} className="space-y-5">\`
-const spreadPicker = \`${formLine}
+const formLine = `      <form onSubmit={handleSubmit} className="space-y-5">`
+const spreadPicker = `${formLine}
         <div className="rounded-2xl border border-gold/25 bg-cream/60 p-4 md:p-5">
           <p className="font-georgia text-xs text-mist tracking-[0.15em] uppercase mb-3">Comment souhaitez-vous utiliser votre oracle ?</p>
 
@@ -55,10 +55,10 @@ const spreadPicker = \`${formLine}
             type="button"
             onClick={() => setSpreadId(DEFAULT_ORACLE_SPREAD_ID)}
             aria-pressed={spread.kind === 'free'}
-            className={\\\`w-full rounded-xl border-2 px-4 py-4 text-left transition-all \\\${D}{spread.kind === 'free'
+            className={\`w-full rounded-xl border-2 px-4 py-4 text-left transition-all \${spread.kind === 'free'
               ? 'border-gold bg-gold/10 shadow-sm'
               : 'border-gold/25 bg-white/75 hover:border-gold/50'
-            }\\\`}
+            }\`}
           >
             <span className="block font-georgia text-base font-semibold text-deep">{freeSpread.name}</span>
             <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">{freeSpread.shortDescription}</span>
@@ -81,10 +81,10 @@ const spreadPicker = \`${formLine}
                     type="button"
                     onClick={() => setSpreadId(option.id)}
                     aria-pressed={active}
-                    className={\\\`rounded-xl border-2 px-4 py-3 text-left transition-all \\\${D}{active
+                    className={\`rounded-xl border-2 px-4 py-3 text-left transition-all \${active
                       ? 'border-gold bg-gold/10 shadow-sm'
                       : 'border-gold/20 bg-white/70 hover:border-gold/45'
-                    }\\\`}
+                    }\`}
                   >
                     <span className="block font-georgia text-sm font-semibold text-deep">{option.name}</span>
                     <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">{option.shortDescription}</span>
@@ -108,7 +108,7 @@ const spreadPicker = \`${formLine}
               ))}
             </div>
           )}
-        </div>\`
+        </div>`
 
 oracleTest = replaceRequired(
   oracleTest,

@@ -156,7 +156,7 @@ let chronosphere = await readFile(chronospherePath, 'utf8')
 chronosphere = replaceRequired(
   chronosphere,
   `              Ces informations servent aux calculs astrologiques du tirage : ciel natal, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles.`,
-  `              Ces informations servent aux calculs astrologiques du tirage : ciel natal, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles. L’heure de naissance est nécessaire pour conserver des calculs cohérents : aucune heure approximative n’est inventée.`,
+  `              Ces informations servent au tirage actuel — ciel, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles — et préparent le futur thème astral complet. Le rapport natal premium sera activé seulement après branchement d’un moteur astrologique fiable : aucune heure approximative n’est inventée.`,
   'Chronosphere birth-data explanation',
 )
 

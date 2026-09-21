@@ -135,8 +135,8 @@ oracleApi = replaceRequired(
 
 oracleApi = replaceRequired(
   oracleApi,
-  `    \`${cardLabels[index]} — n°${card.id} « ${card.name} »\``,
-  `    \`${spread.positions[index].label} — n°${card.id} « ${card.name} »\``,
+  `    \`\${cardLabels[index]} — n°\${card.id} « \${card.name} »\``,
+  `    \`\${spread.positions[index].label} — n°\${card.id} « \${card.name} »\``,
   'Oracle email text position label',
 )
 
@@ -144,7 +144,7 @@ oracleApi = replaceRequired(
   oracleApi,
   `      <p style="margin:0 0 24px;color:#786f84;">Oracle Au-delà de l'Âme — guidance par Lumïa</p>`,
   `      <p style="margin:0 0 8px;color:#786f84;">Oracle Au-delà de l'Âme — guidance par Lumïa</p>
-      <p style="margin:0 0 24px;color:#c9a84c;font-size:14px;">${escapeHtml(spread.name)}</p>`,
+      <p style="margin:0 0 24px;color:#c9a84c;font-size:14px;">\${escapeHtml(spread.name)}</p>`,
   'Oracle email spread name',
 )
 

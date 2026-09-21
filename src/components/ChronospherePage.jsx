@@ -731,7 +731,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               Empreinte de naissance
             </p>
             <p className="mb-5 font-georgia text-xs leading-relaxed text-mist">
-              Ces informations servent au tirage actuel — ciel, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles — et préparent le futur thème astral complet. Le rapport natal premium sera activé seulement après branchement d’un moteur astrologique fiable.
+              Ces informations servent au tirage actuel — ciel, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles — et préparent le futur thème astral complet. Le rapport natal premium sera activé seulement après branchement d’un moteur astrologique fiable : aucune heure approximative n’est inventée.
             </p>
 
             <label className="mb-5 block">

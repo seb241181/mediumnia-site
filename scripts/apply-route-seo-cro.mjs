@@ -33,8 +33,8 @@ const routeSeoHelpers = `const ROUTE_META = {
     description: 'Découvrez l’Oracle Au-delà de l’Âme et réalisez un tirage test offert avec interprétation personnalisée par Lumïa.',
   },
   chronosphere: {
-    title: 'Chronosphère 999 — Oracle des Lignes de Temps | MediumIA',
-    description: 'Explorez une ligne de temps personnalisée à partir de votre thème, de trois fréquences de l’Oracle et d’un contexte astrologique calculé.',
+    title: 'ChronoSphère 999 — Cycles, lignes de temps & thème astral | MediumIA',
+    description: 'Explorez vos cycles, vos lignes de temps et le futur thème astral MediumIA à partir de votre naissance, de vos nombres et du moment présent.',
   },
   'chronosphere-example': {
     title: 'Exemple de tirage Chronosphère 999 | MediumIA',

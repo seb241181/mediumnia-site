@@ -4,9 +4,9 @@ import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import { getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { handleOracleTimeline } from '../lib/oracleTimeline.js'
 import oracleCards from '../src/data/oracleCards.json' with { type: 'json' }
+import { getOracleSpread } from '../src/data/oracleSpreads.js'
 
 const cardsById = new Map(oracleCards.map((card) => [card.id, card]))
-const cardLabels = ['Ombre', 'Passage', 'Guérison']
 const pendingReservationTtlMs = 15 * 60 * 1000
 const HOURLY_LIMIT = 10
 const DAILY_LIMIT = 30
@@ -118,13 +118,13 @@ async function completeOracleFreeDraw(supabase, reservationId) {
   if (error || !data) throw new Error('Oracle reservation completion failed')
 }
 
-function buildOracleEmail(cards, interpretation) {
+function buildOracleEmail(cards, interpretation, spread) {
   const cardRows = cards.map((card, index) => {
-    const label = cardLabels[index]
+    const label = spread.positions[index].label
     return `<li style="margin:0 0 12px;"><strong>${escapeHtml(label)}</strong> — n°${card.id} « ${escapeHtml(card.name)} »</li>`
   }).join('')
   const textCards = cards.map((card, index) => (
-    `${cardLabels[index]} — n°${card.id} « ${card.name} »`
+    `${spread.positions[index].label} — n°${card.id} « ${card.name} »`
   )).join('\n')
   const htmlInterpretation = escapeHtml(interpretation).replace(/\n/g, '<br>')
 
@@ -135,7 +135,8 @@ function buildOracleEmail(cards, interpretation) {
   <body style="margin:0;background:#f8f5ee;color:#1a1535;font-family:Georgia,serif;">
     <div style="max-width:640px;margin:0 auto;padding:32px 24px;">
       <h1 style="margin:0 0 8px;font-size:26px;color:#1a1535;">Votre tirage Oracle ✦</h1>
-      <p style="margin:0 0 24px;color:#786f84;">Oracle Au-delà de l'Âme — guidance par Lumïa</p>
+      <p style="margin:0 0 8px;color:#786f84;">Oracle Au-delà de l'Âme — guidance par Lumïa</p>
+      <p style="margin:0 0 24px;color:#c9a84c;font-size:14px;">${escapeHtml(spread.name)}</p>
       <h2 style="margin:0 0 12px;font-size:18px;color:#1a1535;">Vos trois cartes</h2>
       <ul style="margin:0 0 28px;padding-left:20px;">${cardRows}</ul>
       <h2 style="margin:0 0 12px;font-size:18px;color:#1a1535;">L'interprétation de Lumïa</h2>
@@ -161,7 +162,8 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-  const { cardIds, email } = req.body || {}
+  const { cardIds, email, spreadId } = req.body || {}
+  const spread = getOracleSpread(spreadId)
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
   if (!normalizedEmail || normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
     return res.status(400).json({ error: 'Invalid email' })
@@ -259,7 +261,7 @@ Puis conclus par :
     }
     const data = await response.json()
     const interpretation = data.choices[0].message.content
-    const emailContent = buildOracleEmail(cards, interpretation)
+    const emailContent = buildOracleEmail(cards, interpretation, spread)
     const emailResult = await sendEmail({
       to: normalizedEmail,
       subject: emailContent.subject,
@@ -268,7 +270,15 @@ Puis conclus par :
     })
 
     if (emailResult.status !== 'sent') {
-      return res.status(200).json({ interpretation, emailStatus: 'failed' })
+      return res.status(200).json({
+        interpretation,
+        emailStatus: 'failed',
+        spread: {
+          id: spread.id,
+          name: spread.name,
+          positions: spread.positions.map(({ label }) => ({ label })),
+        },
+      })
     }
 
     await completeOracleFreeDraw(supabase, reservation.id)
@@ -277,6 +287,11 @@ Puis conclus par :
     return res.status(200).json({
       interpretation,
       emailStatus: 'sent',
+      spread: {
+        id: spread.id,
+        name: spread.name,
+        positions: spread.positions.map(({ label }) => ({ label })),
+      },
     })
   } catch (error) {
     console.error('[oracle] Handler error:', error?.name || 'Error')

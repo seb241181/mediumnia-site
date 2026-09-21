@@ -1,8 +1,20 @@
 export const ORACLE_SPREADS = [
   {
+    id: 'tirage-libre',
+    kind: 'free',
+    name: 'Tirage libre — fidèle au jeu',
+    shortDescription: 'Posez vos trois cartes comme avec l’oracle imprimé. Lumïa les lit ensemble sans leur imposer de rôle prédéfini.',
+    positions: [
+      { label: 'Carte 1', meaning: 'Première carte réellement choisie dans votre tirage.' },
+      { label: 'Carte 2', meaning: 'Deuxième carte réellement choisie dans votre tirage.' },
+      { label: 'Carte 3', meaning: 'Troisième carte réellement choisie dans votre tirage.' },
+    ],
+  },
+  {
     id: 'ombre-passage-guerison',
+    kind: 'guided',
     name: 'Ombre · Passage · Guérison',
-    shortDescription: 'Le tirage signature de l’Oracle Au-delà de l’Âme.',
+    shortDescription: 'Une proposition numérique de Lumïa pour explorer ce qui se montre, se transforme et s’intègre.',
     positions: [
       { label: 'Ombre', meaning: 'Ce qui demande à être vu, reconnu ou éclairé en toi.' },
       { label: 'Passage', meaning: 'Le mouvement intérieur, la bascule ou la transformation en cours.' },
@@ -11,6 +23,7 @@ export const ORACLE_SPREADS = [
   },
   {
     id: 'situation-blocage-cle',
+    kind: 'guided',
     name: 'Situation · Blocage · Clé',
     shortDescription: 'Pour éclairer une situation concrète sans prédire à ta place.',
     positions: [
@@ -21,6 +34,7 @@ export const ORACLE_SPREADS = [
   },
   {
     id: 'passe-present-ouverture',
+    kind: 'guided',
     name: 'Passé · Présent · Ouverture',
     shortDescription: 'Pour observer un cheminement et ce qu’il rend possible maintenant.',
     positions: [
@@ -31,6 +45,7 @@ export const ORACLE_SPREADS = [
   },
   {
     id: 'moi-autre-lien',
+    kind: 'guided',
     name: 'Moi · L’autre · Le lien',
     shortDescription: 'Pour regarder une relation comme un miroir à trois voix.',
     positions: [
@@ -41,6 +56,7 @@ export const ORACLE_SPREADS = [
   },
   {
     id: 'elan-defi-alignement',
+    kind: 'guided',
     name: 'Élan · Défi · Alignement',
     shortDescription: 'Pour un projet, une décision ou une période de transition.',
     positions: [
@@ -51,8 +67,10 @@ export const ORACLE_SPREADS = [
   },
 ]
 
-export const DEFAULT_ORACLE_SPREAD_ID = ORACLE_SPREADS[0].id
+export const DEFAULT_ORACLE_SPREAD_ID = 'tirage-libre'
+export const ORACLE_GUIDED_SPREADS = ORACLE_SPREADS.filter((spread) => spread.kind === 'guided')
 
 export function getOracleSpread(spreadId) {
-  return ORACLE_SPREADS.find((spread) => spread.id === spreadId) || ORACLE_SPREADS[0]
+  return ORACLE_SPREADS.find((spread) => spread.id === spreadId)
+    || ORACLE_SPREADS.find((spread) => spread.id === DEFAULT_ORACLE_SPREAD_ID)
 }

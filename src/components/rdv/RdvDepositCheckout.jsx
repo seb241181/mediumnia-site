@@ -223,17 +223,17 @@ export default function RdvDepositCheckout({
       </div>
 
       <div className="rounded-2xl border border-gold/20 bg-white/70 p-5 space-y-4">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} className="mt-1 h-4 w-4" />
-          <span className="font-georgia text-xs leading-relaxed text-mist">
+        <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/20 bg-gold/5 p-3">
+          <input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} className="mt-0.5 h-6 w-6 min-h-6 min-w-6 shrink-0 cursor-pointer accent-gold" />
+          <span className="font-georgia text-sm leading-relaxed text-mist">
             {paymentChoice === 'full_payment'
               ? `J’accepte les conditions de réservation et règle maintenant la totalité de la prestation, soit ${money(priceCents)}. Les conditions d’annulation et mes droits légaux restent applicables.`
               : `J’accepte les conditions de réservation : les ${money(depositCents)} versés constituent des arrhes. En cas d’annulation à moins de 48 heures, leur traitement suit les conditions acceptées et les droits légaux applicables.`}
           </span>
         </label>
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={earlyPerformance} onChange={event => setEarlyPerformance(event.target.checked)} className="mt-1 h-4 w-4" />
-          <span className="font-georgia text-xs leading-relaxed text-mist">
+        <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/20 bg-gold/5 p-3">
+          <input type="checkbox" checked={earlyPerformance} onChange={event => setEarlyPerformance(event.target.checked)} className="mt-0.5 h-6 w-6 min-h-6 min-w-6 shrink-0 cursor-pointer accent-gold" />
+          <span className="font-georgia text-sm leading-relaxed text-mist">
             Je demande expressément que le service de réservation puisse commencer immédiatement, y compris lorsque le rendez-vous est fixé avant la fin du délai légal de rétractation. Mes droits légaux restent applicables dans les conditions prévues par la loi.
           </span>
         </label>

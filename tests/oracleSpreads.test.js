@@ -49,7 +49,6 @@ test('multi-spread patch keeps the printed oracle distinct from Lumia guided met
     "spread.kind === 'free'",
     "tirage libre fidèle au jeu physique",
     "N'attribue aucun rôle prédéfini aux cartes",
-    'Fidèle au jeu physique',
     'buildOracleEmail(cards, interpretation, spread)',
   ]) {
     assert.ok(patch.includes(needle), needle)

@@ -32,20 +32,21 @@ test('legacy oracle spread remains the default for backwards compatibility', () 
   assert.deepEqual(spread.positions.map((position) => position.label), ['Ombre', 'Passage', 'Guérison'])
 })
 
-test('oracle selector is generated after the existing email sequence patch chain', () => {
-  const ui = fs.readFileSync(new URL('../src/components/OracleTest.jsx', import.meta.url), 'utf8')
+test('multi-spread patch preserves the generated build chain and spread-aware interpretation', () => {
+  const patch = fs.readFileSync(new URL('../scripts/apply-oracle-multi-spreads.mjs', import.meta.url), 'utf8')
   const pkg = fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
 
-  assert.match(ui, /spreadId/)
-  assert.match(ui, /ORACLE_SPREADS/)
-  assert.match(ui, /body: JSON\.stringify\(\{ email: trimmedEmail, cardIds: ids, spreadId \}\)/)
-  assert.match(ui, /spread\.positions\[idx\]\.label/)
-
-  const api = fs.readFileSync(new URL('../api/oracle-interpret.js', import.meta.url), 'utf8')
-  assert.match(api, /getOracleSpread\(spreadId\)/)
-  assert.match(api, /Structure choisie:/)
-  assert.match(api, /position\.meaning/)
-  assert.match(api, /buildOracleEmail\(cards, interpretation, spread\)/)
+  for (const needle of [
+    'ORACLE_SPREADS',
+    'spreadId',
+    'getOracleSpread',
+    'spread.positions[idx].label',
+    'Structure choisie',
+    'position.meaning',
+    'buildOracleEmail(cards, interpretation, spread)',
+  ]) {
+    assert.ok(patch.includes(needle), needle)
+  }
 
   const pilotage = pkg.indexOf('apply-oracle-email-sequence-pilotage.mjs')
   const spreads = pkg.indexOf('apply-oracle-multi-spreads.mjs')

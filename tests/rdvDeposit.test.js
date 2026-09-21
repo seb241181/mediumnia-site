@@ -78,3 +78,11 @@ test('public confirmation copy distinguishes full payment from arrhes', () => {
   assert.match(page, /paidInFull \? 'Montant réglé :' : 'Arrhes réglées :'/)
   assert.match(page, /Paiement en ligne\s*:/)
 })
+
+
+test('mobile checkout uses touch-friendly consent controls', () => {
+  const page = fs.readFileSync(new URL('../src/components/rdv/RdvDepositCheckout.jsx', import.meta.url), 'utf8')
+  assert.match(page, /h-6 w-6 min-h-6 min-w-6/)
+  assert.match(page, /rounded-xl border border-gold\/20 bg-gold\/5 p-3/)
+  assert.match(page, /font-georgia text-sm leading-relaxed text-mist/)
+})

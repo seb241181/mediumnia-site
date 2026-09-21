@@ -59,22 +59,17 @@ const spreadPicker = `${formLine}
                   type="button"
                   onClick={() => setSpreadId(option.id)}
                   aria-pressed={active}
-                  className={\`rounded-xl border-2 px-4 py-4 text-left transition-all \${active
-                    ? 'border-gold/60 bg-gold/20 shadow-sm'
-                    : 'border-gold/20 bg-white/70 hover:border-gold/45'
+                  className={\`rounded-xl border-2 bg-white/75 px-4 py-4 text-left transition-all \${active
+                    ? 'border-gold/60 shadow-sm ring-1 ring-gold/15'
+                    : 'border-gold/20 hover:border-gold/45'
                   }\`}
                 >
-                  <span className={\`block font-georgia text-sm md:text-base font-semibold \${active ? 'text-deep' : 'text-deep'}\`}>
+                  <span className="block font-georgia text-sm md:text-base font-semibold text-deep">
                     {option.name}
                   </span>
-                  <span className={\`mt-1 block font-georgia text-xs leading-relaxed \${active ? 'text-deep/80' : 'text-mist'}\`}>
+                  <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">
                     {option.shortDescription}
                   </span>
-                  {option.kind === 'free' && (
-                    <span className={\`mt-2 inline-block rounded-full px-2 py-1 font-georgia text-[10px] uppercase tracking-[0.12em] \${active ? 'bg-white/35 text-deep' : 'bg-gold/10 text-gold'}\`}>
-                      Fidèle au jeu physique
-                    </span>
-                  )}
                 </button>
               )
             })}

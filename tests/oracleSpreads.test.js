@@ -43,5 +43,5 @@ test('oracle client sends spreadId and API interprets server-side spread definit
   assert.match(api, /getOracleSpread\(spreadId\)/)
   assert.match(api, /position\.meaning/)
   assert.match(api, /Structure choisie:/)
-  assert.doesNotMatch(api, /cardLabels/)
+  assert.match(api, /buildOracleEmail\(cards, interpretation, spread\)/)
 })

@@ -137,21 +137,21 @@ function FeaturedChronosphere({ onOpen, onOpenExample }) {
       <div className="relative grid gap-10 md:grid-cols-[1.2fr_.8fr] md:items-center md:gap-14">
         <div className="max-w-2xl">
           <span className="inline-flex rounded-full border border-gold/45 bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">
-            Nouveau · CHRONOSPHERE 999
+            CHRONOSPHÈRE
           </span>
-          <p className="mt-7 font-georgia text-xs uppercase tracking-[0.24em] text-gold/65">Oracle des Lignes de Temps</p>
-          <h2 className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-5xl">Explorez votre ligne de temps</h2>
+          <p className="mt-7 font-georgia text-xs uppercase tracking-[0.24em] text-gold/65">Cycles · lignes de temps · thème astral</p>
+          <h2 className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-5xl">La passerelle entre votre ciel et vos lignes de temps</h2>
           <p className="mt-5 font-georgia text-base leading-relaxed text-cream/75 md:text-lg">
-            Votre ciel natal, trois fréquences de l’Oracle et une lecture personnalisée pour éclairer les dynamiques présentes et les fenêtres qui s’ouvrent devant vous.
+            ChronoSphère part de votre date, de votre heure et de votre lieu de naissance pour éclairer l’énergie actuelle, puis ouvrir un tirage temporel guidé. Le thème astral complet arrive comme prochaine marche, avec un moteur de calcul précis.
           </p>
-          <p className="mt-6 font-georgia text-sm font-medium text-gold">À partir de 5 € TTC</p>
-          <p className="mt-2 font-georgia text-xs text-cream/65">1 tirage : 5 € · Pack 3 tirages : 9,90 €</p>
+          <p className="mt-6 font-georgia text-sm font-medium text-gold">Pack conseillé : 9,90 € TTC pour 3 tirages</p>
+          <p className="mt-2 font-georgia text-xs text-cream/65">Le tirage éclaire le moment ; le futur thème astral posera le socle natal.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <button onClick={onOpen} className="rounded-lg bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90">
-              Découvrir Chronosphère
+              Entrer dans ChronoSphère
             </button>
             <button onClick={onOpenExample} className="rounded-lg border border-gold/55 px-7 py-4 font-georgia text-base font-bold text-gold transition-colors hover:bg-gold/10">
-              Voir un exemple de tirage
+              Voir un exemple
             </button>
           </div>
         </div>
@@ -177,6 +177,55 @@ function FeaturedChronosphere({ onOpen, onOpenExample }) {
         </div>
       </div>
     </article>
+  )
+}
+
+
+function OracleChronosphereBridge({ onOpenOracle, onOpenChronosphere }) {
+  return (
+    <section className="rounded-3xl border border-gold/25 bg-white/70 px-7 py-8 shadow-[0_10px_28px_rgba(26,21,53,.05)] md:px-10 md:py-10">
+      <div className="mx-auto max-w-3xl text-center">
+        <p className="font-georgia text-[11px] uppercase tracking-[0.24em] text-gold">Deux portes, un même chemin</p>
+        <h2 className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">
+          L’Oracle révèle le symbole. ChronoSphère éclaire le temps.
+        </h2>
+        <p className="mt-4 font-georgia text-base leading-relaxed text-mist">
+          Pour éviter toute confusion, MediumIA garde deux expériences complémentaires : l’Oracle Au-delà de l’Âme reste le dialogue avec vos cartes physiques et Lumïa ; ChronoSphère devient la porte des cycles, des lignes de temps et du futur thème astral.
+        </p>
+      </div>
+
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <article className="rounded-2xl border border-gold/25 bg-cream/70 p-5">
+          <span className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">01 · Oracle</span>
+          <h3 className="mt-2 font-georgia text-xl font-medium text-deep">La carte parle</h3>
+          <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
+            Vous tirez avec le jeu physique, puis Lumïa vous aide à entendre le symbole, sans remplacer votre geste.
+          </p>
+          <button onClick={onOpenOracle} className="mt-4 font-georgia text-sm font-bold text-deep hover:text-gold">
+            Découvrir l’Oracle →
+          </button>
+        </article>
+
+        <article className="rounded-2xl border border-gold/35 bg-deep p-5 text-cream">
+          <span className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">02 · ChronoSphère</span>
+          <h3 className="mt-2 font-georgia text-xl font-medium">Le temps répond</h3>
+          <p className="mt-2 font-georgia text-sm leading-relaxed text-cream/72">
+            Vous indiquez naissance, sujet et nombres : ChronoSphère croise ciel, fenêtres temporelles et résonances.
+          </p>
+          <button onClick={onOpenChronosphere} className="mt-4 font-georgia text-sm font-bold text-gold hover:text-gold/80">
+            Entrer dans ChronoSphère →
+          </button>
+        </article>
+
+        <article className="rounded-2xl border border-gold/25 bg-cream/70 p-5">
+          <span className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">03 · Thème astral</span>
+          <h3 className="mt-2 font-georgia text-xl font-medium text-deep">Le socle arrive</h3>
+          <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
+            Le thème natal premium sera branché seulement après moteur astrologique fiable : pas d’ascendant ou de Lune approximatifs.
+          </p>
+        </article>
+      </div>
+    </section>
   )
 }
 
@@ -211,6 +260,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
             <div id="formation">
               <FeaturedAccompagnement onOpen={onOpenFormation} />
             </div>
+            <OracleChronosphereBridge onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
             <FeaturedChronosphere onOpen={onOpenChronosphere} onOpenExample={onOpenChronosphereExample} />
             <div className="grid md:grid-cols-2 gap-5">
               <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>

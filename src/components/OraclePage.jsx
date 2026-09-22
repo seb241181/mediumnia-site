@@ -131,6 +131,18 @@ export default function OraclePage({ onBack, onNavigate }) {
               Lumïa n'est pas une aide technique. C'est une présence, un miroir, une guidance douce et claire.
             </p>
           </div>
+
+          {/* Transition ChronoSphère */}
+          <div className="mt-6 border-2 border-gold/25 rounded-2xl p-7 bg-white/70">
+            <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold mb-2">Après la carte, le temps</p>
+            <h2 className="font-georgia font-medium text-2xl text-deep leading-tight mb-3">Envie d’explorer le moment autour de votre naissance ?</h2>
+            <p className="font-georgia text-sm text-mist leading-relaxed mb-5">
+              L’Oracle Au-delà de l’Âme reste le dialogue avec vos cartes physiques. ChronoSphère ouvre une autre porte : date, heure, lieu de naissance, énergie actuelle et lignes de temps. Deux expériences distinctes, reliées par le même langage symbolique.
+            </p>
+            <a href="/chronosphere" className="font-georgia text-sm font-bold text-deep hover:text-gold">
+              Entrer dans ChronoSphère →
+            </a>
+          </div>
         </section>
 
         {/* ── Tirage test ── */}

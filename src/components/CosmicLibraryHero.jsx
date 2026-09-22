@@ -177,8 +177,8 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
 
   const categories = [
     { label: 'Formation', detail: 'Apprendre et pratiquer', icon: 'formation', href: '/formation', onSelect: onOpenFormation },
-    { label: 'Oracle', detail: 'Éclairer une question', icon: 'oracle', href: '/oracle', onSelect: onOpenOracle },
-    { label: 'Chronosphère', detail: 'Explorer le temps', icon: 'chronosphere', href: '/chronosphere', onSelect: onOpenChronosphere },
+    { label: 'Oracle', detail: 'Cartes & Lumïa', icon: 'oracle', href: '/oracle', onSelect: onOpenOracle },
+    { label: 'Chronosphère', detail: 'Temps & thème astral', icon: 'chronosphere', href: '/chronosphere', onSelect: onOpenChronosphere },
     { label: 'Agents', detail: 'Amplifier sa pratique', icon: 'agents', href: '/agents', onSelect: onOpenPro },
     { label: 'Conférences', detail: 'Partager les savoirs', icon: 'conferences', href: '/conferences' },
     { label: 'Réseau', detail: 'Rencontrer un praticien', icon: 'reseau', href: '/reseau', onSelect: onOpenReseauDir },

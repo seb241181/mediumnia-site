@@ -672,21 +672,39 @@ export default function ChronospherePage({ onBack, onNavigate }) {
             className="mx-auto mb-6 h-10 w-auto opacity-50"
           />
           <p className="mb-4 font-georgia text-xs uppercase tracking-[0.28em] text-gold">
-            Oracle des Lignes de Temps
+            Cycles · lignes de temps · thème astral
           </p>
           <h1 className="mb-5 font-georgia text-4xl font-medium leading-tight md:text-6xl">
             CHRONOSPHERE 999
           </h1>
           <p className="mx-auto max-w-2xl font-bodoni text-lg italic leading-relaxed text-deep/80 md:text-xl">
-            « Éclairez la dynamique présente et les fenêtres qui s'ouvrent devant vous. »
+            « Votre naissance pose le socle ; le moment présent ouvre la fenêtre. »
           </p>
           <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gold/40 bg-white/70 px-5 py-4 shadow-[0_10px_30px_rgba(26,21,53,.06)]">
             <p className="font-georgia text-lg font-medium text-deep">
-              À partir de {singlePrice || '5,00 € TTC'}
+              Pack conseillé : {packPrice || '9,90 € TTC'}
             </p>
             <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
-              1 tirage : {singlePrice || '5,00 € TTC'} · Pack 3 tirages : {packPrice || '9,90 € TTC'}
+              3 tirages ChronoSphère pour explorer plusieurs passages. Le thème astral complet arrive dans une prochaine étape.
             </p>
+          </div>
+
+          <div className="mx-auto mt-8 grid max-w-3xl gap-3 text-left md:grid-cols-3">
+            <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
+              <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">1 · Socle</p>
+              <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Empreinte de naissance</h2>
+              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Date, heure et lieu posent la base astrologique utilisée par le tirage.</p>
+            </article>
+            <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
+              <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">2 · Passage</p>
+              <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Énergie actuelle</h2>
+              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">ChronoSphère éclaire les fenêtres temporelles et la dynamique du moment.</p>
+            </article>
+            <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
+              <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">3 · Oracle</p>
+              <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Résonances chiffrées</h2>
+              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Les trois nombres ouvrent une lecture symbolique sans remplacer le thème natal complet.</p>
+            </article>
           </div>
         </section>
 
@@ -713,7 +731,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               Empreinte de naissance
             </p>
             <p className="mb-5 font-georgia text-xs leading-relaxed text-mist">
-              Ces informations servent aux calculs astrologiques du tirage : ciel natal, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles.
+              Ces informations servent au tirage actuel — ciel, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles — et préparent le futur thème astral complet. Le rapport natal premium sera activé seulement après branchement d’un moteur astrologique fiable : aucune heure approximative n’est inventée.
             </p>
 
             <label className="mb-5 block">

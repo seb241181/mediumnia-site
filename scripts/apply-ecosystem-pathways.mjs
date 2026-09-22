@@ -73,10 +73,10 @@ const chronosphereAct = `              {/* Act */}
                   Acte de réalignement
                 </p>
                 <p className="font-georgia text-sm leading-relaxed text-cream/80">
-                  <strong className="text-cream">Geste :</strong> {esc(result.cards[0].gesture)}
+                  <strong className="text-cream">Geste :</strong> {esc(parts.realignmentAct?.gesture || result.cards[0].gesture)}
                 </p>
                 <p className="mt-3 font-bodoni text-lg italic leading-relaxed text-gold">
-                  {esc(result.cards[0].decree)}
+                  {esc(parts.realignmentAct?.decree || result.cards[0].decree)}
                 </p>
               </article>`
 
@@ -90,12 +90,14 @@ const chronosphereActWithPathways = `${chronosphereAct}
                 className="mt-8"
               />`
 
-chronosphere = replaceRequired(
-  chronosphere,
-  chronosphereAct,
-  chronosphereActWithPathways,
-  'Chronosphere post-result pathways',
-)
+if (!chronosphere.includes('context="chronosphere"')) {
+  chronosphere = replaceRequired(
+    chronosphere,
+    chronosphereAct,
+    chronosphereActWithPathways,
+    'Chronosphere post-result pathways',
+  )
+}
 await writeFile(chronospherePath, chronosphere)
 
 let oracle = await readFile(oraclePath, 'utf8')

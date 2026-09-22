@@ -5,6 +5,7 @@ import {
   parseChronosphereResumeHash,
   resolveChronosphereResumeStatus,
 } from '../../lib/chronosphereResume.js'
+import { getChronosphereReading } from '../../lib/chronosphereReading.js'
 
 const THEMES = [
   { value: 'amour', label: 'Amour' },
@@ -639,7 +640,9 @@ export default function ChronospherePage({ onBack, onNavigate }) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const parts = result ? splitTendency(result.interpretation) : null
+  const parts = result ? getChronosphereReading(result) : null
+  const readingSections = parts?.sections || []
+  const fallbackReading = !readingSections.length ? esc(result?.interpretation) : ''
   const hasToken = !!(drawToken || legacyDrawToken)
   const selectedOffer = selectedProduct ? paypalConfig?.products?.[selectedProduct] : null
   const formattedPrice = formatChronospherePrice(selectedOffer?.displayAmount || selectedOffer?.amount)
@@ -1108,23 +1111,25 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                 </button>
               )}
 
-              {/* Tendency */}
-              {parts.direction && (
+              {/* Summary */}
+              {(parts.summary30s || parts.direction) && (
                 <div className="rounded-[22px] border-2 border-gold bg-gradient-to-br from-gold/[.14] to-white/90 p-6 shadow-md md:p-7">
                   <span className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold">
-                    Tendance du tirage
+                    Votre tirage en 30 secondes
                   </span>
-                  <strong className="mt-2 block font-georgia text-2xl font-normal leading-snug md:text-[26px]">
-                    {parts.direction}
-                  </strong>
-                  {parts.summary && (
-                    <p className="mt-2.5 font-georgia text-base leading-relaxed text-deep/75">{parts.summary}</p>
+                  {parts.direction?.label && (
+                    <strong className="mt-2 block font-georgia text-2xl font-normal leading-snug md:text-[26px]">
+                      {parts.direction.label}
+                    </strong>
+                  )}
+                  {parts.summary30s && (
+                    <p className="mt-2.5 font-georgia text-base leading-relaxed text-deep/75">{parts.summary30s}</p>
+                  )}
+                  {parts.direction?.content && (
+                    <p className="mt-2.5 font-georgia text-sm leading-relaxed text-deep/65">{parts.direction.content}</p>
                   )}
                 </div>
               )}
-
-              {/* Timeline */}
-              <TimelineFrise timing={result.sky?.timing} />
 
               {/* Astro context */}
               <div className="rounded-r-xl border-l-[3px] border-gold bg-white/60 px-4 py-3.5 font-georgia text-[13px] leading-relaxed text-mist">
@@ -1160,11 +1165,44 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               </div>
 
               {/* Reading */}
-              <article className="rounded-3xl border-2 border-gold/25 bg-white p-7 md:p-9">
-                <div className="whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/90 md:text-base">
-                  {parts.reading}
+              {readingSections.length > 0 ? (
+                <div className="space-y-5">
+                  {readingSections.map((section) => (
+                    <div key={section.id || section.number}>
+                      <article
+                        className={section.number === 4
+                          ? "rounded-3xl border-2 border-gold bg-gold/[.08] p-6 shadow-sm md:p-8"
+                          : "rounded-3xl border border-gold/25 bg-white/80 p-6 shadow-sm md:p-8"}
+                      >
+                        <div className="flex items-start gap-4">
+                          <span className="mt-0.5 shrink-0 font-georgia text-[11px] font-semibold tracking-[0.14em] text-gold">
+                            {String(section.number).padStart(2, '0')}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h2 className="font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">
+                              {section.title}
+                            </h2>
+                            <div className="mt-4 whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/80 md:text-base">
+                              {section.content}
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                      {section.number === 6 && (
+                        <div className="mt-5">
+                          <TimelineFrise timing={result.sky?.timing} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </article>
+              ) : (
+                <article className="rounded-3xl border-2 border-gold/25 bg-white p-7 md:p-9">
+                  <div className="whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/90 md:text-base">
+                    {fallbackReading}
+                  </div>
+                </article>
+              )}
 
               {/* Act */}
               <article className="rounded-2xl bg-deep p-6 text-cream">
@@ -1172,10 +1210,10 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                   Acte de réalignement
                 </p>
                 <p className="font-georgia text-sm leading-relaxed text-cream/80">
-                  <strong className="text-cream">Geste :</strong> {esc(result.cards[0].gesture)}
+                  <strong className="text-cream">Geste :</strong> {esc(parts.realignmentAct?.gesture || result.cards[0].gesture)}
                 </p>
                 <p className="mt-3 font-bodoni text-lg italic leading-relaxed text-gold">
-                  {esc(result.cards[0].decree)}
+                  {esc(parts.realignmentAct?.decree || result.cards[0].decree)}
                 </p>
               </article>
 

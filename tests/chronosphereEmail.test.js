@@ -24,6 +24,39 @@ test('échappe les données utilisateur dans l’email Chronosphere', () => {
   assert.doesNotMatch(email.html, /<script>theme<\/script>/)
 })
 
+test('email Chronosphere utilise la lecture structurée V2 quand elle existe', () => {
+  const sections = [
+    "La photographie de l'instant",
+    'La fréquence principale',
+    'Les deux résonances',
+    'Ce que racontent les trois fréquences ensemble',
+    'Le ciel de naissance et le contexte astrologique',
+    'La ligne de temps',
+    'Les deux chemins possibles',
+    'Vos leviers concrets',
+    'La question que Chronosphère vous renvoie',
+  ].map((title) => ({ title, content: `Contenu ${title}` }))
+  const email = buildChronosphereEmail({
+    theme: 'projet',
+    profile: { fullName: 'Camille' },
+    cards: [{ number: 9, name: 'Le Passage', block: 'Expansion', density: 'fluide', gesture: 'Respirer', decree: 'Je choisis.' }],
+    sky: { timing: { primary: { start: '2026-09-10', end: '2026-09-12', peak: '2026-09-11' }, alternatives: [] } },
+    reading: {
+      summary30s: 'Résumé utile.',
+      direction: null,
+      sections,
+      realignmentAct: { gesture: 'Respirer', decree: 'Je choisis.' },
+    },
+    interpretation: 'Ancienne lecture fallback.',
+  })
+
+  assert.match(email.html, /Votre tirage en 30 secondes/)
+  assert.match(email.html, /La fréquence principale/)
+  assert.match(email.html, /Vos leviers concrets/)
+  assert.match(email.text, /Résumé en 30 secondes/)
+  assert.doesNotMatch(email.html, /Ancienne lecture fallback/)
+})
+
 const emailResult = {
   theme: 'projet',
   profile: { fullName: 'Camille' },

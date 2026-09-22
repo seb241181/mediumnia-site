@@ -3,16 +3,20 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 const timelinePath = new URL('../lib/oracleTimeline.js', import.meta.url)
+const readingPath = new URL('../lib/chronosphereReading.js', import.meta.url)
 const pagePath = new URL('../src/components/ChronospherePage.jsx', import.meta.url)
 const examplePath = new URL('../src/components/ChronosphereExamplePage.jsx', import.meta.url)
+const packagePath = new URL('../package.json', import.meta.url)
 
 async function readSources() {
-  const [timeline, page, example] = await Promise.all([
+  const [timeline, reading, page, example, pkg] = await Promise.all([
     readFile(timelinePath, 'utf8'),
+    readFile(readingPath, 'utf8'),
     readFile(pagePath, 'utf8'),
     readFile(examplePath, 'utf8'),
+    readFile(packagePath, 'utf8'),
   ])
-  return { timeline, page, example }
+  return { timeline, reading, page, example, pkg }
 }
 
 test('paid Chronosphere uses the public-example V2 reading structure', async () => {
@@ -28,20 +32,36 @@ test('paid Chronosphere uses the public-example V2 reading structure', async () 
   assert.match(timeline, /8\. « Vos leviers concrets »/)
   assert.match(timeline, /9\. « La question que Chronosphère vous renvoie »/)
   assert.match(timeline, /ne crée donc PAS de dixième partie/)
+  assert.match(timeline, /STRUCTURE V2 OBLIGATOIRE/)
+  assert.match(timeline, /JSON valide demandé/)
 })
 
-test('paid result exposes a 30-second summary even without a closed question', async () => {
+test('V2 reading is native and no longer depends on the build patch', async () => {
+  const { timeline, reading, pkg } = await readSources()
+  const parsed = JSON.parse(pkg)
+  for (const name of ['predev', 'pretest', 'prebuild']) {
+    assert.doesNotMatch(parsed.scripts[name], /apply-chronosphere-v2-reading\.mjs/)
+  }
+  assert.match(timeline, /schemaVersion: CHRONOSPHERE_SCHEMA_VERSION/)
+  assert.match(timeline, /engineVersion: CHRONOSPHERE_ENGINE_VERSION/)
+  assert.match(timeline, /validateChronosphereReading/)
+  assert.match(reading, /CHRONOSPHERE_SCHEMA_VERSION = 'chronosphere-max-v1'/)
+  assert.match(reading, /validateChronosphereReading/)
+  assert.match(reading, /parseLegacyChronosphereReading/)
+})
+
+test('paid result exposes a 30-second summary from structured reading', async () => {
   const { page } = await readSources()
-  assert.match(page, /\(parts\.direction \|\| parts\.summary\)/)
+  assert.match(page, /getChronosphereReading\(result\)/)
   assert.match(page, /Votre tirage en 30 secondes/)
-  assert.match(page, /Résumé en 30 secondes\|Votre tirage en 30 secondes/)
-  assert.match(page, /directionMatch \? directionMatch\[1\]/)
+  assert.match(page, /parts\.summary30s/)
+  assert.match(page, /parts\.direction\?\.label/)
+  assert.match(page, /fallbackReading/)
 })
 
 test('paid result renders V2 reading as separate premium sections', async () => {
   const { page } = await readSources()
-  assert.match(page, /READING_SECTION_TITLES/)
-  assert.match(page, /splitReadingSections/)
+  assert.match(page, /readingSections/)
   assert.match(page, /readingSections\.map/)
   assert.match(page, /section\.title/)
   assert.match(page, /section\.content/)

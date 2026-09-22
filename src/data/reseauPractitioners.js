@@ -315,7 +315,7 @@ export const reseauPractitioners = [
     ],
     portrait: '/images/reseau/ophelie-knockaert-hero.webp',
     portraitAlt: 'Portrait d’Ophélie Knockaert, fondatrice du Souffle d’Aeliyana à Saint-Omer',
-    portraitPosition: '76% center',
+    portraitPosition: 'center',
     locationImage: '/images/reseau/ophelie-knockaert-cabinet.webp',
     locationImageAlt: 'Espace d’accompagnement du Souffle d’Aeliyana à Saint-Omer',
     locationTitle: 'Un espace d’écoute et d’accompagnement à Saint-Omer',

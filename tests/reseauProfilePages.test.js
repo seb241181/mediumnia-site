@@ -107,7 +107,7 @@ test('Clara Sidler is founder 004 with her validated services and Calendly booki
   assert.match(clara, /Voir ses consultations/)
   assert.match(directory, /'Soin énergétique'/)
   assert.match(directory, /'Tarot évolutif'/)
-  assert.match(directory, /Amandine, Lydie, Willy, Clara, Stéphanie, Gilda et Blandine/)
+  assert.match(directory, /Amandine, Lydie, Willy, Clara, Stéphanie, Gilda, Blandine et Ophélie/)
 })
 
 test('Gilda is founder 006 with current cartomancie profile, image and contact', async () => {

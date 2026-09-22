@@ -157,3 +157,24 @@ test('Stephanie Madhyama is founder 002 with portrait, cadrage and booking URL',
   assert.match(data, /Réserver avec Stéphanie/)
   assert.match(directory, /Stéphanie/)
 })
+
+
+test('Ophélie Knockaert profile keeps founder number pending and exposes rich profile content', async () => {
+  const { data, profile } = await readSources()
+  const start = data.indexOf("id: 'ophelie-knockaert'")
+  const ophelie = data.slice(start)
+
+  assert.notEqual(start, -1)
+  assert.match(ophelie, /name: 'Ophélie Knockaert'/)
+  assert.match(ophelie, /brandName: 'Le Souffle d’Aeliyana'/)
+  assert.match(ophelie, /founder: true/)
+  assert.match(ophelie, /founderNumber: null/)
+  assert.match(ophelie, /Libération émotionnelle/)
+  assert.match(ophelie, /Médiumnité, ressentis & intuition/)
+  assert.match(ophelie, /ophelie-knockaert-hero\.webp/)
+  assert.match(ophelie, /ophelie-knockaert-cabinet\.webp/)
+  assert.match(profile, /practitioner\.founderNumber != null/)
+  assert.match(profile, /Array\.isArray\(practitioner\.trainings\)/)
+  assert.match(profile, /practitioner\.locationImage/)
+  assert.match(profile, /practitioner\.forWhom/)
+})

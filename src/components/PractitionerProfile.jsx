@@ -121,7 +121,7 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
             <div>
               <p className="font-georgia text-[10px] uppercase tracking-[0.22em] text-gold">
                 {practitioner.founder
-                  ? `Membre Fondateur MediumIA — N°${String(practitioner.founderNumber).padStart(3, '0')}`
+                  ? `Membre Fondateur MediumIA${practitioner.founderNumber != null ? ` — N°${String(practitioner.founderNumber).padStart(3, '0')}` : ''}`
                   : 'Membre du Réseau MediumIA'}
               </p>
               {practitioner.founder && (
@@ -130,6 +130,9 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                 </p>
               )}
               <h1 className="mt-4 font-georgia text-4xl font-medium leading-tight md:text-6xl">{practitioner.name}</h1>
+              {practitioner.brandName && (
+                <p className="mt-2 font-georgia text-xl font-medium text-gold">{practitioner.brandName}</p>
+              )}
               <p className="mt-3 font-georgia text-lg text-mist">
                 {practitioner.role}{practitioner.city ? ` · ${practitioner.city}` : ''}
               </p>
@@ -165,14 +168,16 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                 </div>
               )}
 
-              <a
-                href={practitioner.bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-8 inline-flex min-h-11 items-center rounded-xl bg-deep px-7 py-4 font-georgia text-sm font-bold text-gold transition-opacity hover:opacity-90"
-              >
-                {practitioner.externalLabel || 'Voir ses disponibilités'} →
-              </a>
+              {practitioner.bookingUrl && (
+                <a
+                  href={practitioner.bookingUrl}
+                  target={practitioner.bookingUrl.startsWith('http') ? '_blank' : undefined}
+                  rel={practitioner.bookingUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className="mt-8 inline-flex min-h-11 items-center rounded-xl bg-deep px-7 py-4 font-georgia text-sm font-bold text-gold transition-opacity hover:opacity-90"
+                >
+                  {practitioner.externalLabel || 'Voir ses disponibilités'} →
+                </a>
+              )}
             </div>
           </div>
         </section>
@@ -190,13 +195,31 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
           </article>
         </section>
 
+        {practitioner.quote && (
+          <section className="mx-auto max-w-4xl px-6 pb-14 md:pb-20">
+            <blockquote className="rounded-3xl border border-gold/30 bg-deep px-7 py-9 text-center font-georgia text-xl leading-relaxed text-cream md:px-12 md:py-12 md:text-2xl">
+              “{practitioner.quote}”
+            </blockquote>
+          </section>
+        )}
+
+        {practitioner.forWhom && (
+          <section className="mx-auto max-w-5xl px-6 pb-14 md:pb-20">
+            <div className="rounded-3xl border border-gold/20 bg-white/65 p-7 md:p-9">
+              <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Pour qui ?</p>
+              <h2 className="mt-3 font-georgia text-2xl font-medium md:text-3xl">Un accompagnement qui part de ce qui est présent</h2>
+              <p className="mt-4 max-w-3xl font-georgia text-sm leading-relaxed text-mist md:text-base">{practitioner.forWhom}</p>
+            </div>
+          </section>
+        )}
+
         {Array.isArray(practitioner.services) && practitioner.services.length > 0 && (
           <section className="mx-auto max-w-5xl px-6 pb-14 md:pb-20">
             <div className="rounded-3xl border border-gold/25 bg-white/70 p-7 md:p-9">
               <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Prestations publiées</p>
-                  <h2 className="mt-2 font-georgia text-2xl font-medium md:text-3xl">Quelques repères avant de réserver</h2>
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">{practitioner.servicesEyebrow || 'Prestations publiées'}</p>
+                  <h2 className="mt-2 font-georgia text-2xl font-medium md:text-3xl">{practitioner.servicesTitle || 'Quelques repères avant de réserver'}</h2>
                 </div>
                 <p className="max-w-md font-georgia text-xs leading-relaxed text-mist">
                   Les tarifs ci-dessous ont été communiqués ou publiés par le praticien et peuvent évoluer. Vérifiez-les au moment de réserver.
@@ -212,6 +235,57 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
                     {service.price && <p className="shrink-0 font-georgia text-sm font-semibold text-gold">{service.price}</p>}
                   </div>
                 ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {Array.isArray(practitioner.trainings) && practitioner.trainings.length > 0 && (
+          <section className="mx-auto max-w-5xl px-6 pb-14 md:pb-20">
+            <div className="rounded-3xl border border-gold/25 bg-white/70 p-7 md:p-9">
+              <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Formations</p>
+              <h2 className="mt-2 font-georgia text-2xl font-medium md:text-3xl">Apprendre · explorer · se révéler</h2>
+              <p className="mt-3 max-w-2xl font-georgia text-sm leading-relaxed text-mist">Des formats en petits groupes autour du bien-être, de l’énergétique et de la médiumnité.</p>
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {practitioner.trainings.map((training) => (
+                  <div key={training.name} className="rounded-2xl border border-gold/20 bg-cream/55 px-5 py-4">
+                    <p className="font-georgia text-sm font-semibold text-deep">{training.name}</p>
+                    <div className="mt-2 flex items-center justify-between gap-4 font-georgia text-xs text-mist">
+                      <span>{training.duration}</span>
+                      <span className="font-semibold text-gold">{training.price}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {Array.isArray(practitioner.workshops) && practitioner.workshops.length > 0 && (
+                <div className="mt-7 border-t border-gold/20 pt-6">
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Ateliers</p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    {practitioner.workshops.map((workshop) => (
+                      <div key={workshop.name} className="rounded-2xl border border-gold/20 bg-white/70 px-5 py-4">
+                        <p className="font-georgia text-sm font-semibold text-deep">{workshop.name}</p>
+                        <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">{workshop.detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {practitioner.locationImage && (
+          <section className="mx-auto max-w-5xl px-6 pb-14 md:pb-20">
+            <div className="grid overflow-hidden rounded-3xl border border-gold/25 bg-white/70 md:grid-cols-[1.05fr_.95fr]">
+              <img
+                src={withPreviewShareToken(practitioner.locationImage)}
+                alt={practitioner.locationImageAlt || ''}
+                className="h-full min-h-[320px] w-full object-cover"
+              />
+              <div className="flex flex-col justify-center p-7 md:p-10">
+                <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Le lieu</p>
+                <h2 className="mt-3 font-georgia text-2xl font-medium md:text-3xl">{practitioner.locationTitle || 'Un espace pour vous accueillir'}</h2>
+                <p className="mt-4 font-georgia text-sm leading-relaxed text-mist md:text-base">{practitioner.locationText}</p>
               </div>
             </div>
           </section>

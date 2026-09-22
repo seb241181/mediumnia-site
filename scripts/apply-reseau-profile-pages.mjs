@@ -11,6 +11,15 @@ const willyPortraitPayloadPaths = [
   new URL('../public/images/reseau/willy-ryckebusch.webp.b64.005', import.meta.url),
 ]
 
+const ophelieHeroPath = new URL('../public/images/reseau/ophelie-knockaert-hero.webp', import.meta.url)
+const ophelieHeroPayloadPaths = [
+  new URL('../public/images/reseau/ophelie-knockaert-hero.webp.b64.001', import.meta.url),
+]
+const ophelieCabinetPath = new URL('../public/images/reseau/ophelie-knockaert-cabinet.webp', import.meta.url)
+const ophelieCabinetPayloadPaths = [
+  new URL('../public/images/reseau/ophelie-knockaert-cabinet.webp.b64.001', import.meta.url),
+]
+
 function replaceRequired(source, before, after, label) {
   if (source.includes(after)) return source
   if (!source.includes(before)) throw new Error(`MediumIA reseau profiles patch drift: ${label}`)
@@ -75,15 +84,21 @@ directory = replacePatternRequired(
 
 await writeFile(directoryPath, directory)
 
-const willyPortraitBase64 = (await Promise.all(
-  willyPortraitPayloadPaths.map((path) => readFile(path, 'utf8')),
-)).map((part) => part.trim()).join('')
-const willyPortrait = Buffer.from(willyPortraitBase64, 'base64')
-const isWebp = willyPortrait.length >= 10000
-  && willyPortrait.subarray(0, 4).toString('ascii') === 'RIFF'
-  && willyPortrait.subarray(8, 12).toString('ascii') === 'WEBP'
+async function writeWebpFromPayload(targetPath, payloadPaths, label, minimumBytes = 4000) {
+  const base64 = (await Promise.all(
+    payloadPaths.map((path) => readFile(path, 'utf8')),
+  )).map((part) => part.trim()).join('')
+  const image = Buffer.from(base64, 'base64')
+  const isWebp = image.length >= minimumBytes
+    && image.subarray(0, 4).toString('ascii') === 'RIFF'
+    && image.subarray(8, 12).toString('ascii') === 'WEBP'
 
-if (!isWebp) throw new Error('MediumIA reseau profiles: invalid Willy portrait payload')
-await writeFile(willyPortraitPath, willyPortrait)
+  if (!isWebp) throw new Error(`MediumIA reseau profiles: invalid ${label} payload`)
+  await writeFile(targetPath, image)
+}
+
+await writeWebpFromPayload(willyPortraitPath, willyPortraitPayloadPaths, 'Willy portrait', 10000)
+await writeWebpFromPayload(ophelieHeroPath, ophelieHeroPayloadPaths, 'Ophélie hero')
+await writeWebpFromPayload(ophelieCabinetPath, ophelieCabinetPayloadPaths, 'Ophélie cabinet')
 
 console.log('MediumIA reseau: individual practitioner pages applied')

@@ -34,6 +34,7 @@ test('checkout offers PayPal 4X with the mandatory credit notice, and keeps the 
   assert.match(checkout, /const PAY_LATER_MIN_CENTS = 3000/)
   assert.match(checkout, /Un crédit vous engage et doit être remboursé\. Vérifiez vos capacités de remboursement avant de vous engager\./)
   assert.match(checkout, /sans compte PayPal/)
+  assert.match(checkout, /sur place, par carte bancaire, espèces ou chèque/)
   assert.match(checkout, /const canPayInFull = selectedModality === 'video'/)
   assert.match(read('scripts/apply-rdv-balance-system.mjs'), /const fullPaymentRequired = canPayInFull/)
   assert.match(checkout, /const fullOnlineAllowed = Array\.isArray\(service\?\.modality\) && service\.modality\.includes\(selectedModality\)/)

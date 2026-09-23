@@ -226,7 +226,7 @@ export default function RdvDepositCheckout({
           )}
           <label className={`flex items-start gap-3 rounded-xl border border-gold/15 p-3 ${fullPaymentRequired ? 'opacity-45 cursor-not-allowed' : 'cursor-pointer'}`}>
             <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'arrhes'} disabled={fullPaymentRequired} onChange={() => choosePayment('arrhes')} className="mt-1 h-4 w-4" />
-            <span className="font-georgia text-sm leading-relaxed"><strong>Réserver avec {money(depositCents)} d’arrhes</strong><br /><span className="text-mist">Il restera {money(Math.max(0, priceCents - depositCents))} à régler.</span></span>
+            <span className="font-georgia text-sm leading-relaxed"><strong>Réserver avec {money(depositCents)} d’arrhes</strong><br /><span className="text-mist">Il restera {money(Math.max(0, priceCents - depositCents))} à régler{selectedModality === 'in-person' ? ' sur place, par carte bancaire, espèces ou chèque' : ''}.</span></span>
           </label>
           <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/15 p-3">
             <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'full_payment'} onChange={() => choosePayment('full_payment')} className="mt-1 h-4 w-4" />

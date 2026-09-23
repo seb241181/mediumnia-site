@@ -34,15 +34,16 @@ const ROUTE_PATHS = {
 }
 
 // Routes with their own share visual (default: the site image).
+// Width/height let Facebook show the image on the very first share of a link.
 const ROUTE_IMAGES = {
-  conferences: '/images/conference/conference-23-octobre-partage.jpg',
+  conferences: { src: '/images/conference/conference-23-octobre-partage.jpg', width: 1200, height: 630, alt: 'Conférence offerte MediumIA le vendredi 23 octobre à 19 h avec Sébastien Seguin' },
 }
 
 const escapeAttr = (value) => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 const escapeText = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const absolute = (url) => (/^https?:\/\//.test(url) ? url : `${SITE}${url.startsWith('/') ? '' : '/'}${url}`)
 
-export function withMeta(html, { title, description, url, image = DEFAULT_IMAGE }) {
+export function withMeta(html, { title, description, url, image = DEFAULT_IMAGE, imageWidth, imageHeight, imageAlt }) {
   const setMeta = (source, attr, key, content) => {
     const re = new RegExp(`<meta ${attr}="${key}" content="[^"]*"\\s*/?>`)
     const tag = `<meta ${attr}="${key}" content="${escapeAttr(content)}" />`
@@ -57,6 +58,11 @@ export function withMeta(html, { title, description, url, image = DEFAULT_IMAGE 
   out = setMeta(out, 'name', 'twitter:title', title)
   out = setMeta(out, 'name', 'twitter:description', description)
   out = setMeta(out, 'name', 'twitter:image', image)
+  if (imageWidth && imageHeight) {
+    out = setMeta(out, 'property', 'og:image:width', imageWidth)
+    out = setMeta(out, 'property', 'og:image:height', imageHeight)
+  }
+  if (imageAlt) out = setMeta(out, 'property', 'og:image:alt', imageAlt)
   const canonical = `<link rel="canonical" href="${escapeAttr(url)}" />`
   out = /<link rel="canonical"[^>]*>/.test(out)
     ? out.replace(/<link rel="canonical"[^>]*>/, canonical)
@@ -68,8 +74,9 @@ export function buildPages(shell, routeMeta, practitioners) {
   const pages = [{ file: 'index.html', meta: { ...routeMeta.home, url: `${SITE}/` } }]
   for (const [view, routePath] of Object.entries(ROUTE_PATHS)) {
     if (!routeMeta[view]) continue
-    const image = ROUTE_IMAGES[view] ? absolute(ROUTE_IMAGES[view]) : DEFAULT_IMAGE
-    pages.push({ file: `${routePath.slice(1)}/index.html`, meta: { ...routeMeta[view], url: SITE + routePath, image } })
+    const visual = ROUTE_IMAGES[view]
+    const image = visual ? absolute(visual.src) : DEFAULT_IMAGE
+    pages.push({ file: `${routePath.slice(1)}/index.html`, meta: { ...routeMeta[view], url: SITE + routePath, image, imageWidth: visual?.width, imageHeight: visual?.height, imageAlt: visual?.alt } })
   }
   for (const p of practitioners) {
     pages.push({

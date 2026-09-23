@@ -379,6 +379,10 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
       return null
     }
 
+    if (data.packToken && user?.id) {
+      try { localStorage.setItem(maxTokenKey(user.id), data.packToken) } catch {}
+      setPackToken(data.packToken)
+    }
     setCreditState({
       product: 'max3',
       creditsRemaining: data.creditsRemaining,
@@ -514,7 +518,7 @@ async function captureMaxOrder(orderId, token) {
 
   async function submitMaxReading(event) {
     event.preventDefault()
-    if (!hasMaxAccess || !session?.access_token || !user) return
+    if (!packToken || !session?.access_token || !user) return
     setDrawError('')
     const numbers = [form.number1, form.number2, form.number3].map((value) => Number(value))
     if (numbers.some((value) => !Number.isInteger(value) || value < 1 || value > 58) || new Set(numbers).size !== 3) {
@@ -547,7 +551,7 @@ async function captureMaxOrder(orderId, token) {
             birthPlace: form.birthPlace.trim(),
           },
           deliveryEmail: form.deliveryEmail.trim(),
-          ...(packToken ? { packToken } : { maxAccount: true }),
+          packToken,
           maxTimelineId: liveTimeline?.id || '',
           maxTimelineTitle: liveTimeline?.title || form.timelineTitle.trim(),
           maxReadNonce: nonce,
@@ -674,7 +678,7 @@ async function captureMaxOrder(orderId, token) {
           </div>
         </section>
 
-        {user && hasMaxAccess && (creditState?.creditsRemaining ?? 0) > 0 && (
+        {user && packToken && (creditState?.creditsRemaining ?? 0) > 0 && (
           <section className="mt-7 rounded-3xl border border-gold/30 bg-white/80 p-5 shadow-sm md:p-8">
             <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Lecture {liveTimeline?.entries?.length ? liveTimeline.entries.length + 1 : 1} / 3</p>
             <h2 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{liveTimeline ? 'Continuer cette Ligne de Temps' : 'Créer votre Ligne de Temps'}</h2>

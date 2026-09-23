@@ -49,6 +49,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/chronosphere-max",
+      "destination": "/index.html"
+    },
+    {
       "source": "/chronosphere",
       "destination": "/index.html"
     },

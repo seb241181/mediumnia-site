@@ -16,6 +16,7 @@ import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
 import ChronospherePage from './components/ChronospherePage'
 import ChronosphereExamplePage from './components/ChronosphereExamplePage'
+import ChronosphereMaxPage from './components/ChronosphereMaxPage'
 import SiteGuardian from './components/SiteGuardian'
 import CosmicLibraryHero from './components/CosmicLibraryHero'
 import ConferencePassPage from './components/ConferencePassPage'
@@ -153,6 +154,23 @@ function FeaturedChronosphere({ onOpen, onOpenExample }) {
             <button onClick={onOpenExample} className="rounded-lg border border-gold/55 px-7 py-4 font-georgia text-base font-bold text-gold transition-colors hover:bg-gold/10">
               Voir un exemple
             </button>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/[.08] p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">ChronoSphère MAX</span>
+                  <span className="font-georgia text-sm font-semibold text-cream">19,90 € TTC</span>
+                </div>
+                <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/72">
+                  ChronoSphère vous montre votre ligne de temps. MAX la suit avec vous : 3 lectures reliées, mémoire, comparaison, évolution des fenêtres et synthèse finale.
+                </p>
+              </div>
+              <a href="/chronosphere-max" className="shrink-0 rounded-lg border border-gold/65 bg-deep/40 px-6 py-3 text-center font-georgia text-sm font-bold text-gold transition-colors hover:bg-gold/10">
+                Découvrir MAX →
+              </a>
+            </div>
           </div>
         </div>
         <div className="relative mx-auto w-full max-w-[265px] md:max-w-[310px]">
@@ -307,6 +325,7 @@ function pathToView(p) {
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
     : p.startsWith('/formation') ? 'formation'
+    : p.startsWith('/chronosphere-max') ? 'chronosphere-max'
     : p.startsWith('/chronosphere/exemple') ? 'chronosphere-example'
     : p.startsWith('/chronosphere') ? 'chronosphere'
     : p.startsWith('/oracle') ? 'oracle'
@@ -361,6 +380,7 @@ export default function App() {
   if (view === 'conference-pass') return <><ConferencePassPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-example') return <><ChronosphereExamplePage onBack={backHome} onOpenChronosphere={openChronosphere} onNavigate={legalNav} />{guardian}</>
+  if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />

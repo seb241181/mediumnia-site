@@ -31,3 +31,10 @@ test('the conference page shares its own visual and event title', async () => {
   assert.match(conf, /og:image:alt" content="Conférence offerte MediumIA/)
   assert.ok(fs.existsSync(new URL('../public/images/conference/conference-23-octobre-partage.jpg', import.meta.url)))
 })
+
+test('draw rules exclude the organizer household and give a reachable contact', () => {
+  const rules = fs.readFileSync(new URL('../public/reglement-tirage-conference-mediumia-23-10-2026.html', import.meta.url), 'utf8')
+  assert.match(rules, /Ne peuvent pas gagner : l’organisateur, les membres de son foyer/)
+  assert.match(rules, /Contact : contact@mediumia\.fr\./)
+  assert.match(rules, /sans obligation d’achat/)
+})

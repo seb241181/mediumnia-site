@@ -569,37 +569,226 @@ async function captureMaxOrder(orderId, token) {
           </aside>
         </section>
 
-        <div className="mt-7">
-          <SolarTemperamentPanel sign={chronosphereMaxDemoProfile.solarSign} timelineTitle={selected.title} />
-        </div>
+        <section className="mt-8 overflow-hidden rounded-3xl border-2 border-gold bg-deep text-cream shadow-xl">
+          <div className="grid gap-0 md:grid-cols-[.86fr_1.14fr]">
+            <div className="border-b border-gold/20 p-6 md:border-b-0 md:border-r md:p-8">
+              <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Offre de lancement</p>
+              <div className="mt-3 flex items-end gap-3">
+                <span className="font-georgia text-5xl font-medium text-cream">19,90 €</span>
+                <span className="pb-1 font-georgia text-xs text-cream/55">TTC · paiement unique</span>
+              </div>
+              <p className="mt-5 font-georgia text-sm leading-relaxed text-cream/72">
+                Un suivi complet d’une même Ligne de Temps en 3 lectures : point de départ, évolution, puis trajectoire et synthèse finale.
+              </p>
+              <div className="mt-5 grid gap-2 font-georgia text-sm text-cream/78">
+                <p>✦ Mémoire des 3 lectures</p>
+                <p>✦ Comparaison de ce qui persiste, bouge ou disparaît</p>
+                <p>✦ Évolution des fenêtres et du point de bifurcation</p>
+                <p>✦ Tempérament solaire + signature ChronoSphère</p>
+                <p>✦ Synthèse finale de la trajectoire</p>
+              </div>
+            </div>
 
-        <section className="mt-9 grid gap-4 md:grid-cols-2">
-          {chronosphereMaxDemoTimelines.map((timeline) => (
-            <TimelineCard key={timeline.id} timeline={timeline} selected={timeline.id === selected.id} onSelect={setSelectedId} />
-          ))}
-          <article className="rounded-2xl border border-dashed border-gold/45 bg-white/45 p-5">
-            <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Nouvelle trajectoire</p>
-            <h2 className="mt-1 font-georgia text-2xl font-medium text-deep">Créer une nouvelle Ligne de Temps</h2>
-            <p className="mt-3 font-georgia text-sm leading-relaxed text-mist">Une nouvelle situation démarre sa propre mémoire, sans comparaison avec les autres utilisateurs ni mélange entre thèmes.</p>
-            <button className="mt-5 w-full rounded-xl border border-gold/45 px-5 py-3 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/[.08]">
-              Créer une nouvelle Ligne de Temps
-            </button>
-          </article>
+            <div className="bg-cream p-6 text-deep md:p-8">
+              {authLoading ? (
+                <p className="font-georgia text-sm text-mist">Lecture de votre compte MediumIA…</p>
+              ) : !user ? (
+                <>
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Votre mémoire reste avec vous</p>
+                  <h2 className="mt-2 font-georgia text-2xl font-medium">Connectez-vous ou créez votre compte</h2>
+                  <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">Le compte est nécessaire pour rattacher les trois lectures à la même Ligne de Temps.</p>
+                  <div className="mt-5 grid gap-3">
+                    <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} type="email" autoComplete="email" placeholder="Votre e-mail" className="rounded-xl border border-gold/30 bg-white px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                    <input value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} type="password" autoComplete="current-password" placeholder="Mot de passe · 6 caractères minimum" className="rounded-xl border border-gold/30 bg-white px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button type="button" onClick={() => handleAuth('signin')} className="rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-bold text-gold">Se connecter</button>
+                      <button type="button" onClick={() => handleAuth('signup')} className="rounded-xl border border-gold/45 px-5 py-3 font-georgia text-sm font-bold text-deep">Créer mon compte</button>
+                    </div>
+                    {authMessage && <p className="font-georgia text-xs leading-relaxed text-mist">{authMessage}</p>}
+                  </div>
+                </>
+              ) : !packToken ? (
+                <>
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Compte connecté</p>
+                  <h2 className="mt-2 font-georgia text-2xl font-medium">Ouvrir votre suivi MAX</h2>
+                  <p className="mt-2 font-georgia text-sm text-mist">{user.email}</p>
+                  <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-gold/25 bg-white/70 p-4">
+                    <input type="checkbox" checked={consentAccepted} onChange={(e) => setConsentAccepted(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-gold" />
+                    <span className="font-georgia text-xs leading-relaxed text-deep/78">
+                      Je demande l’exécution immédiate du service numérique ChronoSphère MAX. Je comprends que les lectures personnalisées sont générées à ma demande et que la mémoire du suivi est rattachée à mon compte MediumIA.
+                    </span>
+                  </label>
+                  {consentAccepted ? <div ref={paypalContainerRef} className="mt-5 min-h-[50px]" /> : <p className="mt-4 text-center font-georgia text-xs text-mist">Cochez la case pour afficher le paiement PayPal.</p>}
+                  {pendingPayment && (
+                    <button type="button" disabled={paymentBusy} onClick={verifyPendingMaxPayment} className="mt-3 w-full rounded-xl border border-gold/45 px-5 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">
+                      {paymentBusy ? 'Vérification…' : 'Vérifier un paiement en cours'}
+                    </button>
+                  )}
+                  {paymentError && <p className="mt-3 font-georgia text-xs leading-relaxed text-red-700">{paymentError}</p>}
+                  {paypalConfig?.env === 'sandbox' && <p className="mt-3 font-georgia text-[11px] text-mist">Preview : PayPal Sandbox facture 1,00 € de test. La production est configurée à 19,90 €.</p>}
+                </>
+              ) : (
+                <>
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">ChronoSphère MAX activé</p>
+                  <h2 className="mt-2 font-georgia text-2xl font-medium">{liveTimeline?.title || 'Votre Ligne de Temps est prête'}</h2>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-gold/25 bg-white p-4 text-center">
+                      <p className="font-georgia text-3xl text-deep">{creditState?.creditsRemaining ?? 3}</p>
+                      <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-mist">lectures restantes</p>
+                    </div>
+                    <div className="rounded-2xl border border-gold/25 bg-white p-4 text-center">
+                      <p className="font-georgia text-3xl text-deep">{liveTimeline?.entries?.length || 0}/3</p>
+                      <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-mist">trajectoire suivie</p>
+                    </div>
+                  </div>
+                  <p className="mt-4 font-georgia text-xs leading-relaxed text-mist">Votre achat, vos lectures et votre mémoire MAX sont liés à ce compte MediumIA.</p>
+                </>
+              )}
+            </div>
+          </div>
         </section>
 
-        <div className="mt-7 space-y-5">
-          <SequenceRail entries={selected.entries} />
-          <ComparisonPanel comparison={selected.comparison} />
-          <FinalSynthesis timeline={selected} />
-        </div>
+        {user && packToken && (creditState?.creditsRemaining ?? 0) > 0 && (
+          <section className="mt-7 rounded-3xl border border-gold/30 bg-white/80 p-5 shadow-sm md:p-8">
+            <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Lecture {liveTimeline?.entries?.length ? liveTimeline.entries.length + 1 : 1} / 3</p>
+            <h2 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{liveTimeline ? 'Continuer cette Ligne de Temps' : 'Créer votre Ligne de Temps'}</h2>
+            <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">Chaque nouvelle lecture repart du ciel du moment et compare ensuite sa structure aux lectures précédentes.</p>
 
-        <section className="mt-6 rounded-3xl border border-gold/25 bg-white/75 p-5 md:p-7">
-          <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Fondation Sprint 1</p>
-          <div className="mt-3 grid gap-4 md:grid-cols-3">
-            <p className="font-georgia text-sm leading-relaxed text-deep/75">Modèle prévu : `chronosphere_timelines` pour la Ligne de Temps et `chronosphere_timeline_entries` pour chaque snapshot.</p>
-            <p className="font-georgia text-sm leading-relaxed text-deep/75">Comparaison serveur déterministe avant toute prose : cartes, contributeurs, domaines, fenêtres et bifurcation.</p>
-            <p className="font-georgia text-sm leading-relaxed text-deep/75">Conservation minimale : pas de profil natal dupliqué dans la mémoire MAX, seulement l’essentiel pour rouvrir et comparer.</p>
-          </div>
+            <form onSubmit={submitMaxReading} className="mt-6 grid gap-4">
+              {!liveTimeline && (
+                <label className="grid gap-1.5">
+                  <span className="font-georgia text-xs font-semibold text-deep">Nom de la Ligne de Temps</span>
+                  <input value={form.timelineTitle} onChange={(e) => setForm({ ...form, timelineTitle: e.target.value })} placeholder="Ex. Relation / séparation" className="rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                </label>
+              )}
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-1.5">
+                  <span className="font-georgia text-xs font-semibold text-deep">Nom complet</span>
+                  <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="font-georgia text-xs font-semibold text-deep">E-mail du compte rendu</span>
+                  <input value={form.deliveryEmail} onChange={(e) => setForm({ ...form, deliveryEmail: e.target.value })} type="email" className="rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                </label>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <label className="grid gap-1.5">
+                  <span className="font-georgia text-xs font-semibold text-deep">Date de naissance</span>
+                  <input value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} type="date" className="rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="font-georgia text-xs font-semibold text-deep">Heure exacte</span>
+                  <input value={form.birthTime} onChange={(e) => setForm({ ...form, birthTime: e.target.value })} type="time" className="rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="font-georgia text-xs font-semibold text-deep">Lieu de naissance</span>
+                  <input value={form.birthPlace} onChange={(e) => setForm({ ...form, birthPlace: e.target.value })} placeholder="Ville, pays" className="rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm outline-none focus:border-gold" />
+                </label>
+              </div>
+
+              <label className="grid gap-1.5">
+                <span className="font-georgia text-xs font-semibold text-deep">Thème de la lecture</span>
+                <select value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })} className="rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm outline-none focus:border-gold">
+                  <option value="amour">Amour</option>
+                  <option value="relation">Relation</option>
+                  <option value="travail">Travail</option>
+                  <option value="finances">Finances</option>
+                  <option value="projet">Projet</option>
+                  <option value="energie">Énergie</option>
+                  <option value="direction de vie">Direction de vie</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </label>
+
+              <div>
+                <p className="font-georgia text-xs font-semibold text-deep">Vos 3 nombres · de 1 à 58</p>
+                <div className="mt-2 grid grid-cols-3 gap-3">
+                  {['number1', 'number2', 'number3'].map((key, index) => (
+                    <input key={key} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} inputMode="numeric" min="1" max="58" type="number" placeholder={String(index + 1)} className="rounded-xl border border-gold/30 bg-cream px-4 py-3 text-center font-georgia text-lg outline-none focus:border-gold" />
+                  ))}
+                </div>
+              </div>
+
+              {drawError && <p className="font-georgia text-sm leading-relaxed text-red-700">{drawError}</p>}
+              <button disabled={drawBusy} className="rounded-xl bg-deep px-6 py-4 font-georgia text-base font-bold text-gold disabled:opacity-50">
+                {drawBusy ? 'ChronoSphère ouvre la Ligne de Temps…' : liveTimeline ? 'Générer la prochaine lecture MAX' : 'Ouvrir ma Ligne de Temps'}
+              </button>
+            </form>
+          </section>
+        )}
+
+        {lastResult && (
+          <section className="mt-7 rounded-3xl border-2 border-gold bg-gold/[.08] p-5 md:p-8">
+            <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Lecture {lastResult.max?.sequenceNumber || ''} générée</p>
+            <h2 className="mt-2 font-georgia text-2xl font-medium text-deep">Votre tirage en 30 secondes</h2>
+            <p className="mt-3 max-w-4xl font-georgia text-base leading-relaxed text-deep/78">{lastResult.reading?.summary30s}</p>
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {(lastResult.cards || []).map((card, index) => (
+                <article key={`${card.number}-${index}`} className="rounded-2xl border border-gold/25 bg-white/80 p-4">
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">{index === 0 ? 'Fréquence principale' : `Résonance ${index}`}</p>
+                  <h3 className="mt-2 font-georgia text-lg font-medium text-deep">N°{card.number} · {card.name}</h3>
+                  <p className="mt-2 font-georgia text-xs text-mist">{card.block} · {card.astre || 'astre non indiqué'}</p>
+                </article>
+              ))}
+            </div>
+            {lastResult.sky?.timing?.primary && <p className="mt-5 font-georgia text-sm text-deep/75">Fenêtre prioritaire : {shortDate(lastResult.sky.timing.primary.start)} → {shortDate(lastResult.sky.timing.primary.end)} · pic {shortDate(lastResult.sky.timing.primary.peak)}</p>}
+          </section>
+        )}
+
+        {liveTimeline ? (
+          <>
+            {activeSolarSign ? (
+              <div className="mt-7">
+                <SolarTemperamentPanel sign={activeSolarSign} timelineTitle={liveTimeline.title} />
+              </div>
+            ) : (
+              <section className="mt-7 rounded-3xl border border-gold/25 bg-white/70 p-5">
+                <p className="font-georgia text-sm text-mist">Votre signature solaire apparaîtra après la première lecture calculée.</p>
+              </section>
+            )}
+            <div className="mt-7 space-y-5">
+              <SequenceRail entries={liveTimeline.entries} />
+              {liveTimeline.entries.length >= 2 && <ComparisonPanel comparison={liveTimeline.comparison} />}
+              <FinalSynthesis timeline={liveTimeline} />
+            </div>
+            {(creditState?.creditsRemaining ?? 0) === 0 && (
+              <section className="mt-6 rounded-3xl border border-deep bg-deep p-6 text-cream md:p-8">
+                <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Suivi terminé</p>
+                <h2 className="mt-2 font-georgia text-2xl font-medium md:text-3xl">Vos trois lectures sont réunies.</h2>
+                <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/70">La synthèse finale ferme ce premier parcours MAX. Une extension de Ligne de Temps pourra être proposée plus tard sans effacer ce suivi.</p>
+              </section>
+            )}
+          </>
+        ) : !packToken ? (
+          <>
+            <div className="mt-8 flex items-center gap-3">
+              <span className="h-px flex-1 bg-gold/25" />
+              <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Aperçu de l’expérience MAX</p>
+              <span className="h-px flex-1 bg-gold/25" />
+            </div>
+            <div className="mt-7">
+              <SolarTemperamentPanel sign={chronosphereMaxDemoProfile.solarSign} timelineTitle={selected.title} />
+            </div>
+            <section className="mt-9 grid gap-4 md:grid-cols-2">
+              {chronosphereMaxDemoTimelines.map((timeline) => (
+                <TimelineCard key={timeline.id} timeline={timeline} selected={timeline.id === selected.id} onSelect={setSelectedId} />
+              ))}
+            </section>
+            <div className="mt-7 space-y-5">
+              <SequenceRail entries={selected.entries} />
+              <ComparisonPanel comparison={selected.comparison} />
+              <FinalSynthesis timeline={selected} />
+            </div>
+          </>
+        ) : null}
+
+        <section className="mt-7 rounded-3xl border border-gold/25 bg-white/75 p-5 md:p-7">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Cadre ChronoSphère MAX</p>
+          <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/75">
+            Les positions astrologiques et les comparaisons de données sont calculées ; leur lecture reste symbolique. MAX décrit des dynamiques, des fenêtres et des bifurcations possibles sans annoncer avec certitude ce qu’une autre personne fera ni transformer un score en probabilité du futur.
+          </p>
         </section>
       </main>
 

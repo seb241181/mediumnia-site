@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+// PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
+const PAY_LATER_MIN_CENTS = 3000
+
 function money(cents) {
   return `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
 }
@@ -16,8 +19,10 @@ function paymentMessage(code) {
     paypal_create_order_in_progress: 'Le paiement est déjà en cours de préparation. Réessayez dans quelques instants.',
     paypal_capture_failed: 'La confirmation PayPal n’a pas pu être finalisée. Ne repayez pas : réessayez la confirmation.',
     paid_slot_reconciliation_required: 'Le paiement a été reçu mais le créneau nécessite une vérification. Ne repayez pas. Sébastien sera prévenu.',
-    full_payment_video_only: 'Le paiement intégral en ligne est réservé aux rendez-vous en visioconférence.',
+    full_payment_video_only: 'Le règlement de la totalité en ligne n’est pas encore disponible pour ce rendez-vous : vous pouvez réserver avec les arrhes.',
+    invalid_modality: 'Le règlement de la totalité en ligne n’est pas encore disponible pour ce rendez-vous : vous pouvez réserver avec les arrhes.',
     payment_choice_locked: 'Ce paiement a déjà été préparé. Rechargez la page pour changer de mode de règlement.',
+    balance_requires_full_payment: 'À moins de 48 heures du rendez-vous, le règlement intégral est requis pour une visioconférence.',
   }
   return messages[code] || 'Le paiement ne peut pas être préparé pour le moment. Réessayez dans quelques instants.'
 }
@@ -44,17 +49,29 @@ export default function RdvDepositCheckout({
 
   const depositCents = Number(service?.reservationPaymentCents || service?.reservation_payment_cents || 0)
   const priceCents = Number(service?.price_cents || 0)
+  // canPayInFull keeps its historical meaning (video) because it drives the H-48 rule:
+  // a video appointment inside 48 h must be paid in full. Paying the whole price
+  // online is now open to every modality (and makes PayPal 4X possible).
   const canPayInFull = selectedModality === 'video' && Array.isArray(service?.modality) && service.modality.includes('video')
-  const paymentCents = paymentChoice === 'full_payment' && canPayInFull ? priceCents : depositCents
+  const fullOnlineAllowed = Array.isArray(service?.modality) && service.modality.includes(selectedModality) && priceCents > depositCents
+  const appointmentAt = dateStr && time ? new Date(`${dateStr}T${time}:00`) : null
+  const fullPaymentRequired = canPayInFull
+    && appointmentAt
+    && Number.isFinite(appointmentAt.getTime())
+    && appointmentAt.getTime() <= Date.now() + 48 * 3_600_000
+  const paymentCents = (paymentChoice === 'full_payment' && fullOnlineAllowed) || fullPaymentRequired ? priceCents : depositCents
   const balanceCents = Math.max(0, priceCents - paymentCents)
   const consentsReady = termsAccepted && earlyPerformance
 
   useEffect(() => {
-    if (!canPayInFull && paymentChoice !== 'arrhes') setPaymentChoice('arrhes')
-  }, [canPayInFull, paymentChoice])
+    if (fullPaymentRequired && paymentChoice !== 'full_payment') setPaymentChoice('full_payment')
+    else if (!fullOnlineAllowed && paymentChoice !== 'arrhes') setPaymentChoice('arrhes')
+  }, [fullOnlineAllowed, fullPaymentRequired, paymentChoice])
 
   function choosePayment(nextChoice) {
-    const normalized = nextChoice === 'full_payment' && canPayInFull ? 'full_payment' : 'arrhes'
+    const normalized = fullPaymentRequired
+      ? 'full_payment'
+      : nextChoice === 'full_payment' && fullOnlineAllowed ? 'full_payment' : 'arrhes'
     if (normalized === paymentChoice) return
     setPaymentChoice(normalized)
     setEffectiveCheckoutId(globalThis.crypto?.randomUUID?.() || checkoutId)
@@ -179,7 +196,7 @@ export default function RdvDepositCheckout({
 
     const script = existing || document.createElement('script')
     if (!existing) {
-      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(config.clientId)}&currency=EUR&intent=capture&components=buttons`
+      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(config.clientId)}&currency=EUR&intent=capture&components=buttons&enable-funding=paylater`
       script.async = true
       script.dataset.mediumiaPaypalSdk = '1'
       document.head.appendChild(script)
@@ -199,16 +216,21 @@ export default function RdvDepositCheckout({
 
   return (
     <div className="space-y-5">
-      {canPayInFull && (
+      {fullOnlineAllowed && (
         <div className="rounded-2xl border border-gold/30 bg-white/70 p-5 space-y-3">
           <p className="font-georgia text-[11px] tracking-[.18em] uppercase text-gold">Choisissez votre règlement</p>
-          <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/15 p-3">
-            <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'arrhes'} onChange={() => choosePayment('arrhes')} className="mt-1 h-4 w-4" />
+          {fullPaymentRequired && (
+            <p className="rounded-xl border border-gold/30 bg-gold/10 px-3 py-2 font-georgia text-xs leading-relaxed text-deep">
+              Ce rendez-vous est prévu dans moins de 48 heures : le règlement intégral est requis pour confirmer la visioconférence.
+            </p>
+          )}
+          <label className={`flex items-start gap-3 rounded-xl border border-gold/15 p-3 ${fullPaymentRequired ? 'opacity-45 cursor-not-allowed' : 'cursor-pointer'}`}>
+            <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'arrhes'} disabled={fullPaymentRequired} onChange={() => choosePayment('arrhes')} className="mt-1 h-4 w-4" />
             <span className="font-georgia text-sm leading-relaxed"><strong>Réserver avec {money(depositCents)} d’arrhes</strong><br /><span className="text-mist">Il restera {money(Math.max(0, priceCents - depositCents))} à régler.</span></span>
           </label>
           <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/15 p-3">
             <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'full_payment'} onChange={() => choosePayment('full_payment')} className="mt-1 h-4 w-4" />
-            <span className="font-georgia text-sm leading-relaxed"><strong>Régler la totalité maintenant : {money(priceCents)}</strong><br /><span className="text-mist">Votre rendez-vous sera entièrement réglé.</span></span>
+            <span className="font-georgia text-sm leading-relaxed"><strong>Régler la totalité maintenant : {money(priceCents)}</strong><br /><span className="text-mist">Votre rendez-vous sera entièrement réglé. Par carte bancaire ou PayPal, en 1 fois{priceCents >= PAY_LATER_MIN_CENTS ? ` — ou en 4 fois sans frais avec PayPal (4 × ${money(Math.ceil(priceCents / 4))} environ)` : ''}.</span></span>
           </label>
         </div>
       )}
@@ -241,6 +263,19 @@ export default function RdvDepositCheckout({
 
       <div className="rounded-2xl border border-gold/30 bg-white/70 p-5">
         <p className="font-georgia text-sm text-mist leading-relaxed mb-4">Votre créneau est bloqué pendant 15 minutes à partir de la création du paiement.</p>
+        <div className="mb-4 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 font-georgia text-xs leading-relaxed text-deep">
+          <p className="font-semibold">Comment payer ?</p>
+          <ul className="mt-1.5 space-y-1 text-mist">
+            <li>• <strong className="text-deep">Carte bancaire</strong>, sans compte PayPal : bouton « Carte de débit ou de crédit », paiement en 1 fois.</li>
+            <li>• <strong className="text-deep">PayPal</strong> : en 1 fois{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou en 4 fois sans frais avec le bouton « Payer en 4X » (compte PayPal requis, il peut être créé pendant le paiement)' : ''}.</li>
+          </ul>
+          {paymentCents < PAY_LATER_MIN_CENTS && priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
+            <p className="mt-1.5 text-mist">Le paiement en 4 fois est proposé par PayPal à partir de 30 € : choisissez « Régler la totalité » pour en profiter.</p>
+          )}
+          {priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
+            <p className="mt-2 text-[10px] text-mist/80">Paiement en 4X proposé par PayPal, sous réserve d’acceptation par PayPal. Un crédit vous engage et doit être remboursé. Vérifiez vos capacités de remboursement avant de vous engager.</p>
+          )}
+        </div>
         {holdUntil && <p className="font-georgia text-xs text-mist mb-3">Créneau protégé jusqu’à {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(holdUntil))}.</p>}
         {notice && <p className="font-georgia text-sm text-red-800 bg-red-50 rounded-xl px-3 py-2 mb-3">{notice}</p>}
         {!consentsReady ? (

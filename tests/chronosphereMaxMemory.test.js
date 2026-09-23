@@ -11,6 +11,7 @@ const launchMigrationPath = new URL('../supabase/migrations/20260923154500_chron
 const pagePath = new URL('../src/components/ChronosphereMaxPage.jsx', import.meta.url)
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const paypalPath = new URL('../lib/chronospherePayPal.js', import.meta.url)
+const timelinePath = new URL('../lib/oracleTimeline.js', import.meta.url)
 const verifyBundlePath = new URL('../scripts/verify-chronosphere-v2-bundle.mjs', import.meta.url)
 const vercelPath = new URL('../vercel.json', import.meta.url)
 
@@ -186,6 +187,21 @@ test('MAX launch stays distinct from V2 and exposes its own 19.90 checkout', asy
   assert.match(launchSql, /amount_cents in \(100, 990, 1990\)/)
   assert.match(launchSql, /product_type in \('pack3', 'max3'\)/)
   assert.match(launchSql, /max_pack_id/)
+})
+
+test('MAX can resume from the authenticated account without recovering an opaque token', async () => {
+  const [page, paypal, timeline] = await Promise.all([
+    readFile(pagePath, 'utf8'),
+    readFile(paypalPath, 'utf8'),
+    readFile(timelinePath, 'utf8'),
+  ])
+  assert.match(page, /maxAccount: true/)
+  assert.match(page, /product: 'max3'/)
+  assert.match(paypal, /resumeMode = 'account'/)
+  assert.match(paypal, /eq\('user_id', user\.id\)/)
+  assert.match(paypal, /eq\('product_type', 'max3'\)/)
+  assert.match(timeline, /const maxAccount = req\.body\?\.maxAccount === true/)
+  assert.match(timeline, /pack_token_hash/)
 })
 
 test('V2 bundle verifier stays scoped to the V2 offer while MAX becomes a distinct route', async () => {

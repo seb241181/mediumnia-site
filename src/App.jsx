@@ -6,7 +6,7 @@ import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'
 import FormationPage from './components/FormationPage'
 import LegalFooter from './components/LegalFooter'
-import { MentionsLegales, PolitiqueConfidentialite, CgvOracle, Retractation } from './components/LegalPages'
+import { MentionsLegales, PolitiqueConfidentialite, CgvOracle, CgvChronosphere, Retractation } from './components/LegalPages'
 import OraclePage from './components/OraclePage'
 import ProWaitlistPage from './components/ProWaitlistPage'
 import ReseauDirectory from './components/ReseauDirectory'
@@ -340,6 +340,7 @@ function pathToView(p) {
     : p === '/mentions' ? 'mentions'
     : p === '/confidentialite' ? 'confidentialite'
     : p === '/cgv-oracle' ? 'cgv-oracle'
+    : p === '/cgv-chronosphere' ? 'cgv-chronosphere'
     : p === '/retractation' ? 'retractation'
     : 'home'
 }
@@ -367,7 +368,8 @@ export default function App() {
 
   const legalNav = (p) => {
     const viewMap = { '/mentions': 'mentions', '/confidentialite': 'confidentialite', '/cgv-oracle': 'cgv-oracle', '/retractation': 'retractation' }
-    if (viewMap[p]) nav(p, viewMap[p])
+    if (p === '/cgv-chronosphere') nav(p, 'cgv-chronosphere')
+    else if (viewMap[p]) nav(p, viewMap[p])
     else backHome()
   }
 
@@ -378,6 +380,7 @@ export default function App() {
   if (view === 'mentions')       return <><MentionsLegales onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'confidentialite') return <><PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cgv-oracle')     return <><CgvOracle onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'cgv-chronosphere') return <><CgvChronosphere onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'retractation')   return <><Retractation onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'pro')           return <><ProWaitlistPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>

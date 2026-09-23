@@ -126,7 +126,7 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function FeaturedChronosphere({ onOpen, onOpenExample, onOpenMax }) {
+function FeaturedChronosphere({ onOpen, onOpenExample }) {
   return (
     <article
       className="cosmic-card-lift relative isolate overflow-hidden rounded-3xl border border-gold/35 px-7 py-9 shadow-xl md:px-12 md:py-12"
@@ -167,9 +167,9 @@ function FeaturedChronosphere({ onOpen, onOpenExample, onOpenMax }) {
                   ChronoSphère vous montre votre ligne de temps. MAX la suit avec vous : 3 lectures reliées, mémoire, comparaison, évolution des fenêtres et synthèse finale.
                 </p>
               </div>
-              <button onClick={onOpenMax} className="shrink-0 rounded-lg border border-gold/65 bg-deep/40 px-6 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-gold/10">
+              <a href="/chronosphere-max" className="shrink-0 rounded-lg border border-gold/65 bg-deep/40 px-6 py-3 text-center font-georgia text-sm font-bold text-gold transition-colors hover:bg-gold/10">
                 Découvrir MAX →
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -247,7 +247,7 @@ function OracleChronosphereBridge({ onOpenOracle, onOpenChronosphere }) {
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenChronosphereMax, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
     <div id="top" className="cosmic-home bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -279,7 +279,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
               <FeaturedAccompagnement onOpen={onOpenFormation} />
             </div>
             <OracleChronosphereBridge onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
-            <FeaturedChronosphere onOpen={onOpenChronosphere} onOpenExample={onOpenChronosphereExample} onOpenMax={onOpenChronosphereMax} />
+            <FeaturedChronosphere onOpen={onOpenChronosphere} onOpenExample={onOpenChronosphereExample} />
             <div className="grid md:grid-cols-2 gap-5">
               <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>
                 Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
@@ -354,7 +354,6 @@ export default function App() {
   const openOracle     = () => nav('/oracle',           'oracle')
   const openChronosphere = () => nav('/chronosphere',  'chronosphere')
   const openChronosphereExample = () => nav('/chronosphere/exemple', 'chronosphere-example')
-  const openChronosphereMax = () => nav('/chronosphere-max', 'chronosphere-max')
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
@@ -387,5 +386,5 @@ export default function App() {
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenChronosphereMax={openChronosphereMax} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
 }

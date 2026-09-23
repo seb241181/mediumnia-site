@@ -527,7 +527,11 @@ export function CgvChronosphere({ onBack, onNavigate }) {
         <p>
           <strong className="text-deep">ChronoSphère MAX</strong> : le suivi et ses lectures sont rattachés au compte MediumIA du client, qui peut les reprendre depuis n’importe quel appareil en se connectant.
         </p>
-        <ToValidate>durée de validité des tirages non utilisés (pack et MAX). Le site n’applique aujourd’hui aucune date limite ; une durée (par exemple 12 mois) doit être choisie ou l’absence de limite confirmée.</ToValidate>
+        <p>
+          <strong className="text-deep">Durée de validité</strong> : les tirages d’un pack et les lectures d’un suivi ChronoSphère MAX
+          doivent être utilisés dans les <strong className="text-deep">6 mois</strong> suivant l’achat. Passé ce délai, les tirages non utilisés
+          ne sont plus disponibles et ne donnent pas lieu à remboursement.
+        </p>
       </Section>
 
       <Section title="7. Incident technique">

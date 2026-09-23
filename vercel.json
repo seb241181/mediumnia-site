@@ -99,6 +99,18 @@
     {
       "source": "/retractation",
       "destination": "/index.html"
+    },
+    {
+      "source": "/cgv-chronosphere",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/avis/moderation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/avis",
+      "destination": "/index.html"
     }
   ],
   "crons": [

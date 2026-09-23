@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { chronosphereMaxDemoProfile, chronosphereMaxDemoTimeline, chronosphereMaxDemoTimelines } from '../data/chronosphereMaxDemo.js'
 import { getSolarTemperament } from '../../lib/chronosphereSolarTemperament.js'
+import { summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
+import { useAuth } from '../lib/useAuth.js'
 
 function formatDate(value) {
   if (!value) return ''
@@ -15,6 +17,62 @@ function shortDate(value) {
   const date = new Date(`${value}T00:00:00`)
   if (Number.isNaN(date.getTime())) return String(value)
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date)
+}
+
+function loadPayPalSdk(clientId) {
+  if (window.paypal?.Buttons) return Promise.resolve()
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById('mediumia-paypal-sdk')
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true })
+      existing.addEventListener('error', () => reject(new Error('paypal_sdk_load_failed')), { once: true })
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'mediumia-paypal-sdk'
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons&enable-funding=paylater`
+    script.onload = resolve
+    script.onerror = () => reject(new Error('paypal_sdk_load_failed'))
+    document.head.appendChild(script)
+  })
+}
+
+function maxTokenKey(userId) {
+  return userId ? `chronosphere_max_packToken:${userId}` : ''
+}
+
+function maxPendingKey(userId) {
+  return userId ? `chronosphere_max_pending:${userId}` : ''
+}
+
+function followedDays(createdAt) {
+  if (!createdAt) return 0
+  const start = new Date(createdAt)
+  if (Number.isNaN(start.getTime())) return 0
+  return Math.max(1, Math.floor((Date.now() - start.getTime()) / 86400000) + 1)
+}
+
+function normalizeLiveTimeline(value) {
+  if (!value) return null
+  const entries = (value.entries || []).map((entry) => ({
+    id: entry.id,
+    timelineTitle: value.title,
+    sequenceNumber: entry.sequenceNumber,
+    readAt: entry.readAt,
+    snapshot: entry.snapshot,
+  }))
+  const last = value.entries?.at?.(-1) || value.entries?.[value.entries.length - 1]
+  return {
+    id: value.id,
+    title: value.title,
+    theme: value.theme,
+    status: value.status,
+    followedSinceDays: followedDays(value.createdAt),
+    lastReadingLabel: last?.readAt ? formatDate(last.readAt) : 'Pas encore commencée',
+    entries,
+    comparison: last?.comparison || { summary: { persistent: [], moved: [], opened: [], noLongerAppears: [] } },
+    finalSynthesis: entries.length >= 3 ? summarizeChronosphereLine(entries) : null,
+  }
 }
 
 function FactCard({ fact }) {
@@ -225,11 +283,114 @@ function FinalSynthesis({ timeline }) {
 }
 
 export default function ChronosphereMaxPage({ onBack, onNavigate }) {
+  const { session, user, loading: authLoading, signIn, signUp } = useAuth()
   const [selectedId, setSelectedId] = useState(chronosphereMaxDemoTimeline.id)
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authMessage, setAuthMessage] = useState('')
+  const [paypalConfig, setPaypalConfig] = useState(null)
+  const [consentAccepted, setConsentAccepted] = useState(false)
+  const [packToken, setPackToken] = useState('')
+  const [creditState, setCreditState] = useState(null)
+  const [liveTimeline, setLiveTimeline] = useState(null)
+  const [paymentError, setPaymentError] = useState('')
+  const [paymentBusy, setPaymentBusy] = useState(false)
+  const [drawBusy, setDrawBusy] = useState(false)
+  const [drawError, setDrawError] = useState('')
+  const [lastResult, setLastResult] = useState(null)
+  const [pendingReadNonce, setPendingReadNonce] = useState('')
+  const [form, setForm] = useState({
+    timelineTitle: '',
+    fullName: '',
+    birthDate: '',
+    birthTime: '',
+    birthPlace: '',
+    theme: 'amour',
+    number1: '',
+    number2: '',
+    number3: '',
+    deliveryEmail: '',
+  })
+  const paypalContainerRef = useRef(null)
+  const pendingPaymentRef = useRef(null)
+
   const selected = useMemo(
     () => chronosphereMaxDemoTimelines.find((timeline) => timeline.id === selectedId) || chronosphereMaxDemoTimeline,
     [selectedId],
   )
+
+  const activeTimeline = liveTimeline || selected
+  const activeSolarSign = liveTimeline
+    ? (liveTimeline.entries.at(-1)?.snapshot?.solarSign || null)
+    : chronosphereMaxDemoProfile.solarSign
+
+  useEffect(() => {
+    fetch('/api/rdv-config?chronospherePayPalAction=config')
+      .then(async (res) => {
+        if (!res.ok) return null
+        return res.json()
+      })
+      .then((data) => setPaypalConfig(data))
+      .catch(() => setPaypalConfig(null))
+  }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setPackToken('')
+      setCreditState(null)
+      setLiveTimeline(null)
+      return
+    }
+    setForm((current) => ({ ...current, deliveryEmail: current.deliveryEmail || user.email || '' }))
+    const key = maxTokenKey(user.id)
+    const stored = key ? localStorage.getItem(key) || '' : ''
+    setPackToken(stored)
+  }, [user])
+
+  async function refreshMaxStatus(token = packToken) {
+    if (!token || !session?.access_token) return null
+    const res = await fetch('/api/rdv-config?chronospherePayPalAction=status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ packToken: token }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.valid || data.product !== 'max3') {
+      if (res.status === 404 || res.status === 401) {
+        try { localStorage.removeItem(maxTokenKey(user?.id)) } catch {}
+        setPackToken('')
+      }
+      return null
+    }
+    setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: data.status })
+    setLiveTimeline(normalizeLiveTimeline(data.maxTimeline))
+    return data
+  }
+
+  useEffect(() => {
+    if (!packToken || !session?.access_token) return
+    refreshMaxStatus(packToken).catch(() => setPaymentError('Impossible de relire votre suivi MAX pour le moment.'))
+  }, [packToken, session?.access_token])
+
+  async function handleAuth(mode) {
+    setAuthMessage('')
+    const email = authEmail.trim()
+    if (!email || authPassword.length < 6) {
+      setAuthMessage('Indiquez votre e-mail et un mot de passe d’au moins 6 caractères.')
+      return
+    }
+    const action = mode === 'signup' ? signUp : signIn
+    const { data, error } = await action(email, authPassword)
+    if (error) {
+      setAuthMessage(error.message || 'Connexion impossible.')
+      return
+    }
+    if (mode === 'signup' && !data?.session) {
+      setAuthMessage('Compte créé. Vérifiez votre e-mail si MediumIA vous demande de confirmer votre adresse.')
+    } else {
+      setAuthMessage('Connexion réussie.')
+    }
+  }
 
   return (
     <div className="cosmic-page cosmic-page--chronosphere min-h-screen bg-cream text-deep">

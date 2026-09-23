@@ -295,6 +295,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
   const [liveTimeline, setLiveTimeline] = useState(null)
   const [paymentError, setPaymentError] = useState('')
   const [paymentBusy, setPaymentBusy] = useState(false)
+  const [pendingPayment, setPendingPayment] = useState(null)
   const [drawBusy, setDrawBusy] = useState(false)
   const [drawError, setDrawError] = useState('')
   const [lastResult, setLastResult] = useState(null)
@@ -345,6 +346,12 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     const key = maxTokenKey(user.id)
     const stored = key ? localStorage.getItem(key) || '' : ''
     setPackToken(stored)
+    try {
+      const raw = localStorage.getItem(maxPendingKey(user.id))
+      setPendingPayment(raw ? JSON.parse(raw) : null)
+    } catch {
+      setPendingPayment(null)
+    }
   }, [user])
 
   async function refreshMaxStatus(token = packToken) {
@@ -389,6 +396,147 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
       setAuthMessage('Compte créé. Vérifiez votre e-mail si MediumIA vous demande de confirmer votre adresse.')
     } else {
       setAuthMessage('Connexion réussie.')
+    }
+  }
+
+async function captureMaxOrder(orderId, token) {
+    if (!session?.access_token || !user) throw new Error('auth_required')
+    const res = await fetch('/api/rdv-config?chronospherePayPalAction=capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ orderId }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || data.product !== 'max3') throw new Error(data.error || 'capture_failed')
+    try {
+      localStorage.setItem(maxTokenKey(user.id), token)
+      localStorage.removeItem(maxPendingKey(user.id))
+    } catch {}
+    pendingPaymentRef.current = null
+    setPendingPayment(null)
+    setPackToken(token)
+    setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: data.packStatus || 'active' })
+    await refreshMaxStatus(token)
+    return data
+  }
+
+  async function verifyPendingMaxPayment() {
+    const pending = pendingPayment || pendingPaymentRef.current
+    if (!pending?.orderId || !pending?.packToken) return
+    setPaymentBusy(true)
+    setPaymentError('')
+    try {
+      await captureMaxOrder(pending.orderId, pending.packToken)
+    } catch (error) {
+      setPaymentError(error?.message === 'paypal_capture_failed'
+        ? 'Le paiement n’est pas encore confirmé par PayPal.'
+        : 'Impossible de vérifier ce paiement pour le moment.')
+    } finally {
+      setPaymentBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    const offer = paypalConfig?.products?.max3
+    if (!user || !session?.access_token || !paypalConfig?.clientId || !offer || packToken || !consentAccepted) return
+    const node = paypalContainerRef.current
+    if (!node) return
+
+    let cancelled = false
+    node.innerHTML = ''
+    loadPayPalSdk(paypalConfig.clientId)
+      .then(() => {
+        if (cancelled || !window.paypal?.Buttons) return null
+        return window.paypal.Buttons({
+          style: { layout: 'vertical', shape: 'rect', label: 'paypal' },
+          createOrder: async () => {
+            setPaymentError('')
+            const res = await fetch('/api/rdv-config?chronospherePayPalAction=create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              body: JSON.stringify({ product: 'max3', consentAccepted: true }),
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || data.product !== 'max3' || !data.id || !data.packToken) throw new Error(data.error || 'paypal_create_order_failed')
+            const pending = { orderId: data.id, packToken: data.packToken }
+            pendingPaymentRef.current = pending
+            setPendingPayment(pending)
+            try { localStorage.setItem(maxPendingKey(user.id), JSON.stringify(pending)) } catch {}
+            return data.id
+          },
+          onApprove: async (data) => {
+            const pending = pendingPaymentRef.current
+            if (!pending?.packToken) throw new Error('max_payment_token_missing')
+            setPaymentBusy(true)
+            try {
+              await captureMaxOrder(data.orderID, pending.packToken)
+            } finally {
+              setPaymentBusy(false)
+            }
+          },
+          onCancel: () => setPaymentError('Paiement annulé. Aucun crédit MAX n’a été consommé.'),
+          onError: () => setPaymentError('PayPal n’a pas pu finaliser le paiement. Vous pouvez réessayer.'),
+        }).render(node)
+      })
+      .catch(() => setPaymentError('Le paiement PayPal est momentanément indisponible.'))
+
+    return () => {
+      cancelled = true
+      if (node) node.innerHTML = ''
+    }
+  }, [paypalConfig, user, session?.access_token, packToken, consentAccepted])
+
+  async function submitMaxReading(event) {
+    event.preventDefault()
+    if (!packToken || !session?.access_token || !user) return
+    setDrawError('')
+    const numbers = [form.number1, form.number2, form.number3].map((value) => Number(value))
+    if (numbers.some((value) => !Number.isInteger(value) || value < 1 || value > 58) || new Set(numbers).size !== 3) {
+      setDrawError('Choisissez trois nombres différents entre 1 et 58.')
+      return
+    }
+    if (!liveTimeline && form.timelineTitle.trim().length < 2) {
+      setDrawError('Donnez un nom à cette Ligne de Temps.')
+      return
+    }
+    if (!form.fullName.trim() || !form.birthDate || !form.birthTime || form.birthPlace.trim().length < 2 || !form.deliveryEmail.trim()) {
+      setDrawError('Complétez votre identité de lecture, votre naissance et votre e-mail.')
+      return
+    }
+
+    const nonce = pendingReadNonce || (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    setPendingReadNonce(nonce)
+    setDrawBusy(true)
+    try {
+      const res = await fetch('/api/oracle-interpret?mode=chronosphere', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          numbers,
+          theme: form.theme,
+          profile: {
+            fullName: form.fullName.trim(),
+            birthDate: form.birthDate,
+            birthTime: form.birthTime,
+            birthPlace: form.birthPlace.trim(),
+          },
+          deliveryEmail: form.deliveryEmail.trim(),
+          packToken,
+          maxTimelineId: liveTimeline?.id || '',
+          maxTimelineTitle: liveTimeline?.title || form.timelineTitle.trim(),
+          maxReadNonce: nonce,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || data.error || 'max_read_failed')
+      setLastResult(data)
+      setPendingReadNonce('')
+      setForm((current) => ({ ...current, number1: '', number2: '', number3: '' }))
+      await refreshMaxStatus(packToken)
+    } catch (error) {
+      setDrawError(error?.message || 'La lecture MAX n’a pas pu être générée.')
+    } finally {
+      setDrawBusy(false)
     }
   }
 

@@ -13,11 +13,25 @@ function patchDashboard() {
     changed = true
   }
 
-  if (!source.includes("mediumia:manual-payment")) {
+  // Agenda rows: payment status + "Encaisser sur place" reconciled with what is
+  // left to pay (BookingPaymentStatus). Replaces the former plain button.
+  const oldButton = `                              <button\n                                type="button"\n                                onClick={() => {\n                                  window.dispatchEvent(new CustomEvent('mediumia:manual-payment', { detail: { bookingId: b.id } }))\n                                  document.getElementById('mediumia-accounting')?.scrollIntoView({ behavior: 'smooth', block: 'start' })\n                                }}\n                                className="font-georgia text-xs text-deep border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 shrink-0"\n                              >\n                                Encaisser sur place\n                              </button>\n`
+  const statusBlock = `                              <BookingPaymentStatus booking={b} practitionerId={activePractitioner.id} session={session} />\n`
+  if (source.includes(oldButton)) {
+    source = source.replace(oldButton, statusBlock)
+    changed = true
+  } else if (!source.includes('<BookingPaymentStatus')) {
     const marker = `                              <button\n                                onClick={() => handleResendConfirmation(b)}`
     if (!source.includes(marker)) throw new Error('rdv_manual_payment_booking_button_marker_missing')
-    const button = `                              <button\n                                type="button"\n                                onClick={() => {\n                                  window.dispatchEvent(new CustomEvent('mediumia:manual-payment', { detail: { bookingId: b.id } }))\n                                  document.getElementById('mediumia-accounting')?.scrollIntoView({ behavior: 'smooth', block: 'start' })\n                                }}\n                                className="font-georgia text-xs text-deep border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 shrink-0"\n                              >\n                                Encaisser sur place\n                              </button>\n`
-    source = source.replace(marker, `${button}${marker}`)
+    source = source.replace(marker, `${statusBlock}${marker}`)
+    changed = true
+  }
+
+  const statusImport = "import BookingPaymentStatus from './BookingPaymentStatus.jsx'\n"
+  if (!source.includes(statusImport)) {
+    const marker = "import AccountingSection from './AccountingSection.jsx'\n"
+    if (!source.includes(marker)) throw new Error('rdv_manual_payment_status_import_marker_missing')
+    source = source.replace(marker, `${marker}${statusImport}`)
     changed = true
   }
 

@@ -1,4 +1,4 @@
-import { getDayPayments } from '../lib/rdvDayPayments.js'
+import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
 /**
  * /api/rdv-admin?action=<action>
  * En-tête requis : Authorization: Bearer <supabase_access_token>
@@ -801,6 +801,11 @@ export default async function handler(req, res) {
     case 'exceptions':   return handleExceptions(req, res, supabase, userId)
     case 'requests':     return handleRequests(req, res, supabase, userId)
     case 'bookings':     return handleBookings(req, res, supabase, userId)
+    case 'booking-balances': {
+      if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+      const result = await getBookingBalances({ supabase, userId, practitionerId: req.query.practitioner_id, ids: req.query.ids })
+      return res.status(result.status).json(result.body)
+    }
     case 'day-payments': {
       if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
       const result = await getDayPayments({ supabase, userId, practitionerId: req.query.practitioner_id, day: req.query.day })

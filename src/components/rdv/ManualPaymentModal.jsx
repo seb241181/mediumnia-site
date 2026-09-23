@@ -144,6 +144,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
         }
         throw new Error(labels[body.error] || body.error || 'encaissement_impossible')
       }
+      window.dispatchEvent(new CustomEvent('mediumia:finance-saved'))
       onSaved?.(body)
       onClose?.()
     } catch (err) {

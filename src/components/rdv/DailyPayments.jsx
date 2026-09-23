@@ -155,6 +155,12 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
 
   const load = useCallback(() => setNonce(n => n + 1), [])
 
+  // Payments recorded elsewhere (agenda button, "Ajouter un encaissement") refresh the day.
+  useEffect(() => {
+    window.addEventListener('mediumia:finance-saved', load)
+    return () => window.removeEventListener('mediumia:finance-saved', load)
+  }, [load])
+
   useEffect(() => {
     if (!practitionerId || !session) return
     let cancelled = false
@@ -197,7 +203,7 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
             : (
               <ul className="mt-4 space-y-3">
                 {data.bookings.map(b => (
-                  <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { load(); onSaved?.() }} />
+                  <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />
                 ))}
               </ul>
             )}

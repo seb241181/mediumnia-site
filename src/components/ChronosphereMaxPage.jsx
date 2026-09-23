@@ -84,7 +84,20 @@ function SolarTemperamentPanel({ sign, timelineTitle }) {
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-gold/25 bg-white/80 p-5">
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <article className="rounded-2xl border border-gold/25 bg-white/80 p-5">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Votre rythme de bifurcation</p>
+          <h3 className="mt-2 font-georgia text-xl font-medium text-deep">{temperament.bifurcationRhythm?.label}</h3>
+          <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/76">{temperament.bifurcationRhythm?.text}</p>
+        </article>
+        <article className="rounded-2xl border border-deep bg-deep p-5 text-cream">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Votre signature ChronoSphère</p>
+          <p className="mt-3 font-georgia text-lg italic leading-relaxed text-cream/90">« {temperament.signatureQuote} »</p>
+          <p className="mt-4 font-georgia text-xs text-cream/55">{temperament.element} : {temperament.elementPath}.</p>
+        </article>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-gold/25 bg-white/80 p-5">
         <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Comment ce tempérament colore cette Ligne de Temps</p>
         <p className="mt-2 font-georgia text-sm text-mist">{timelineTitle}</p>
         <p className="mt-3 max-w-4xl font-georgia text-base leading-relaxed text-deep/78">{temperament.lineTimeLens}</p>

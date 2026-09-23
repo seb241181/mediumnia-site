@@ -787,7 +787,7 @@ async function captureMaxOrder(orderId, token) {
         <section className="mt-7 rounded-3xl border border-gold/25 bg-white/75 p-5 md:p-7">
           <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Cadre ChronoSphère MAX</p>
           <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/75">
-            Les positions astrologiques et les comparaisons de données sont calculées ; leur lecture reste symbolique. MAX décrit des dynamiques, des fenêtres et des bifurcations possibles sans annoncer avec certitude ce qu’une autre personne fera ni transformer un score en probabilité du futur.
+            Les positions astrologiques et les comparaisons de données sont calculées ; leur lecture reste symbolique. MAX décrit des dynamiques, des fenêtres et des bifurcations possibles sans annoncer avec certitude ce qu’une autre personne fera ni transformer un score en annonce du futur.
           </p>
         </section>
       </main>

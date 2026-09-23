@@ -26,5 +26,8 @@ test('the conference page shares its own visual and event title', async () => {
   const pages = buildPages(shell, { home: { title: 'H', description: 'h' }, conferences: { title: 'Conférence offerte le 23 octobre', description: 'd' } }, [])
   const conf = pages.find((p) => p.file === 'conferences/index.html').html
   assert.match(conf, /og:image" content="https:\/\/mediumia\.fr\/images\/conference\/conference-23-octobre-partage\.jpg"/)
+  assert.match(conf, /og:image:width" content="1200"/)
+  assert.match(conf, /og:image:height" content="630"/)
+  assert.match(conf, /og:image:alt" content="Conférence offerte MediumIA/)
   assert.ok(fs.existsSync(new URL('../public/images/conference/conference-23-octobre-partage.jpg', import.meta.url)))
 })

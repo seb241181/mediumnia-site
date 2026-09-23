@@ -18,9 +18,9 @@ function completeReading() {
   }
 }
 
-test('Chronosphere MAX exposes stable schema and engine versions', () => {
-  assert.equal(CHRONOSPHERE_SCHEMA_VERSION, 'chronosphere-max-v1')
-  assert.equal(CHRONOSPHERE_ENGINE_VERSION, 'chronosphere-999-58-max-v1')
+test('Chronosphere V2 exposes stable schema and engine versions', () => {
+  assert.equal(CHRONOSPHERE_SCHEMA_VERSION, 'chronosphere-v2')
+  assert.equal(CHRONOSPHERE_ENGINE_VERSION, 'chronosphere-999-58-v2')
 })
 
 test('structured V2 reading requires the 30-second summary, 9 sections and realignment act', () => {
@@ -29,6 +29,26 @@ test('structured V2 reading requires the 30-second summary, 9 sections and reali
   assert.equal(validation.reading.sections.length, 9)
   assert.match(readingToInterpretation(validation.reading), /Résumé en 30 secondes/)
   assert.match(readingToInterpretation(validation.reading), /9\. La question que Chronosphère vous renvoie/)
+})
+
+test('structured V2 reading accepts conditional closure and why-now evidence', () => {
+  const reading = completeReading()
+  reading.closure = {
+    stillOpen: 'Une décision reste ouverte.',
+    mainLock: 'Le besoin de certitude.',
+    opensAfterClosure: 'Un test concret.',
+  }
+  reading.whyNow = [
+    {
+      calculated: 'Jupiter trigone Mercure natal — orbe 1.2°.',
+      interpretation: 'La période soutient la clarification symbolique.',
+    },
+  ]
+  const validation = validateChronosphereReading(reading)
+  assert.equal(validation.valid, true)
+  assert.equal(validation.reading.closure.mainLock, 'Le besoin de certitude.')
+  assert.equal(validation.reading.whyNow[0].calculated, 'Jupiter trigone Mercure natal — orbe 1.2°.')
+  assert.match(readingToInterpretation(validation.reading), /Pourquoi maintenant/)
 })
 
 test('structured V2 reading rejects missing sections before storage', () => {

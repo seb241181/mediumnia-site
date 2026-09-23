@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import LegalFooter from './LegalFooter'
+import EcosystemNextSteps from './EcosystemNextSteps'
+import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 import {
   chronosphereUrlWithoutFragment,
   parseChronosphereResumeHash,
@@ -45,28 +47,6 @@ function peakLabel(window) {
   return peak ? `pic ${peak}` : ''
 }
 
-function splitTendency(value) {
-  const text = String(value || '').trim()
-  const photoMatch = text.match(/(?:^|\n)(?:#+\s*)?(?:\*\*)?1\.\s*La photographie de l'instant(?:\*\*)?/i)
-  if (!photoMatch) return { direction: null, summary: null, reading: text }
-  const photoIndex = photoMatch.index + (photoMatch[0].startsWith('\n') ? 1 : 0)
-  const head = text
-    .slice(0, photoIndex)
-    .replace(/^\s*#+\s*La tendance du tirage\s*/i, '')
-    .replace(/^\s*---\s*$/gm, '')
-    .trim()
-  const directionMatch = head.match(
-    /\*{0,2}(Tendance (?:favorable(?: mais en construction)?|mitigée|peu porteuse actuellement))\.?\*{0,2}/i,
-  )
-  if (!directionMatch) return { direction: null, summary: null, reading: text }
-  const summary = head.replace(directionMatch[0], '').replace(/\*\*/g, '').trim()
-  return {
-    direction: directionMatch[1].replace(/\.$/, ''),
-    summary,
-    reading: text.slice(photoIndex).trim(),
-  }
-}
-
 function loadPayPalSdk(clientId) {
   if (window.paypal?.Buttons) return Promise.resolve()
   return new Promise((resolve, reject) => {
@@ -89,6 +69,84 @@ function formatChronospherePrice(amount) {
   const value = Number(amount)
   if (!Number.isFinite(value)) return null
   return `${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} € TTC`
+}
+
+function paragraphs(value) {
+  return String(value || '')
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+}
+
+function stripInlineLabel(value) {
+  return String(value || '')
+    .replace(/^\s*(?:[-•]\s*)?(?:À faire maintenant|A faire maintenant|À préparer|A préparer|À ne pas forcer|A ne pas forcer)\s*[:：\-–—]\s*/i, '')
+    .trim()
+}
+
+function extractLabeledText(content, label) {
+  const labels = [
+    'À faire maintenant',
+    'A faire maintenant',
+    'À préparer',
+    'A préparer',
+    'À ne pas forcer',
+    'A ne pas forcer',
+  ]
+  const escaped = labels.map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const pattern = new RegExp(`(?:^|\\n)\\s*(?:[-•]\\s*)?${label}\\s*[:：\\-–—]?\\s*([\\s\\S]*?)(?=\\n\\s*(?:[-•]\\s*)?(?:${escaped})\\s*[:：\\-–—]?|$)`, 'i')
+  return stripInlineLabel(content.match(pattern)?.[1] || '')
+}
+
+function extractLeverCards(content) {
+  const fallback = paragraphs(content)
+  return [
+    { label: 'Maintenant', text: extractLabeledText(content, '(?:À faire maintenant|A faire maintenant)') || stripInlineLabel(fallback[0]) },
+    { label: 'À préparer', text: extractLabeledText(content, '(?:À préparer|A préparer)') || stripInlineLabel(fallback[1]) },
+    { label: 'À ne pas forcer', text: extractLabeledText(content, '(?:À ne pas forcer|A ne pas forcer)') || stripInlineLabel(fallback[2]) },
+  ].filter((item) => item.text)
+}
+
+function extractPathCards(content) {
+  const current = content.match(/Si (?:vous|tu) maintenez? la dynamique actuelle[\s.:–—-]*([\s\S]*?)(?=Si (?:vous|tu) modifiez?|$)/i)?.[1]
+  const changed = content.match(/Si (?:vous|tu) modifiez? (?:cet élément|l'élément clé|l’élément clé)[\s.:–—-]*([\s\S]*)/i)?.[1]
+  const fallback = paragraphs(content)
+  return [
+    { label: 'Dynamique actuelle', title: 'Si vous maintenez la dynamique actuelle', text: stripInlineLabel(current || fallback[0]) },
+    { label: 'Élément clé modifié', title: 'Si vous modifiez l’élément clé', text: stripInlineLabel(changed || fallback[1]) },
+  ].filter((item) => item.text)
+}
+
+function aspectLine(aspect) {
+  if (!aspect) return ''
+  const orb = Number.isFinite(Number(aspect.orb)) ? ` · orbe ${aspect.orb}°` : ''
+  return `${esc(aspect.transitPlanet)} ${esc(aspect.aspect)} ${esc(aspect.natalPlanet)} natal${orb}`
+}
+
+function fallbackWhyNow(timing) {
+  const items = []
+  const primaryAspect = timing?.primary?.aspects?.[0]
+  if (primaryAspect) {
+    items.push({
+      calculated: `${aspectLine(primaryAspect)} au pic du ${shortDate(timing.primary.peak) || timing.primary.peak}`,
+      interpretation: 'Cette fenêtre ressort comme un moment plus propice pour clarifier, structurer ou poser un acte concret lié au thème.',
+    })
+  }
+  const altAspect = timing?.alternatives?.[0]?.aspects?.[0]
+  if (altAspect) {
+    items.push({
+      calculated: `${aspectLine(altAspect)} autour du ${shortDate(timing.alternatives[0].peak) || timing.alternatives[0].peak}`,
+      interpretation: 'Cette seconde fenêtre peut servir d’appui préparatoire ou de test avant la fenêtre prioritaire.',
+    })
+  }
+  const cautionAspect = timing?.caution?.aspects?.[0]
+  if (cautionAspect) {
+    items.push({
+      calculated: `${aspectLine(cautionAspect)} dans la zone de prudence`,
+      interpretation: 'Cette tension invite à ralentir les décisions prises sous pression et à privilégier le discernement.',
+    })
+  }
+  return items.slice(0, 3)
 }
 
 function TimelineFrise({ timing }) {
@@ -192,11 +250,29 @@ function TimelineFrise({ timing }) {
   )
 }
 
+function ResultSection({ eyebrow, title, children, highlight = false }) {
+  return (
+    <article className={`${highlight ? 'border-2 border-gold bg-gold/[.08]' : 'border border-gold/25 bg-white/80'} rounded-3xl p-5 shadow-sm md:p-8`}>
+      <p className="font-georgia text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">{eyebrow}</p>
+      <h2 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">{title}</h2>
+      <div className="mt-4">{children}</div>
+    </article>
+  )
+}
+
+function TextBlock({ content }) {
+  return (
+    <div className="space-y-4 whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/80 md:text-base">
+      {paragraphs(content).length ? paragraphs(content).map((part, index) => <p key={index}>{part}</p>) : <p>{esc(content)}</p>}
+    </div>
+  )
+}
+
 const PENDING_PAYMENT_KEY = 'chronosphere_packPendingPayment'
 const PACK_TOKEN_KEY = 'chronosphere_packToken'
 const LEGACY_PENDING_PAYMENT_KEY = 'chronosphere_drawToken'
 
-export default function ChronospherePage({ onBack, onNavigate }) {
+export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onOpenFormation, onOpenReseau }) {
   const [fullName, setFullName] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [birthTime, setBirthTime] = useState('')
@@ -252,6 +328,10 @@ export default function ChronospherePage({ onBack, onNavigate }) {
   const paymentProductRef = useRef(pendingPayment?.product || null)
   const resumeValidatedTokenRef = useRef(null)
   const launchRef = useRef(null)
+
+  useEffect(() => {
+    if (showPayment) trackMediumiaMetric('chronosphere_payment_opened', 'chronosphere')
+  }, [showPayment])
 
   useEffect(() => { drawTokenRef.current = drawToken }, [drawToken])
 
@@ -642,6 +722,15 @@ export default function ChronospherePage({ onBack, onNavigate }) {
 
   const parts = result ? getChronosphereReading(result) : null
   const readingSections = parts?.sections || []
+  const sectionsById = Object.fromEntries(readingSections.map((item) => [item.id, item]))
+  const frequencySections = [
+    sectionsById.main_frequency,
+    sectionsById.two_resonances,
+    sectionsById.three_frequencies_synthesis,
+  ].filter(Boolean)
+  const pathCards = extractPathCards(sectionsById.two_possible_paths?.content)
+  const leverCards = extractLeverCards(sectionsById.concrete_levers?.content)
+  const whyNowItems = parts?.whyNow?.length ? parts.whyNow : fallbackWhyNow(result?.sky?.timing)
   const fallbackReading = !readingSections.length ? esc(result?.interpretation) : ''
   const hasToken = !!(drawToken || legacyDrawToken)
   const selectedOffer = selectedProduct ? paypalConfig?.products?.[selectedProduct] : null
@@ -723,6 +812,14 @@ export default function ChronospherePage({ onBack, onNavigate }) {
             </div>
           )}
 
+          <div className="mb-5 rounded-2xl border border-gold/25 bg-white/55 px-5 py-4 text-center md:flex md:items-center md:justify-between md:gap-6 md:text-left">
+            <div>
+              <p className="font-georgia text-sm font-semibold text-deep">Vous voulez voir le résultat avant de remplir ?</p>
+              <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">L’exemple public est fictif, mais il montre la structure réelle d’une lecture Chronosphère.</p>
+            </div>
+            <a href="/chronosphere/exemple" className="mt-3 inline-flex shrink-0 rounded-lg border border-gold/45 px-4 py-2.5 font-georgia text-xs font-bold text-deep transition-colors hover:bg-gold/10 md:mt-0">Voir un exemple complet avant de remplir →</a>
+          </div>
+
           {/* Form — always visible */}
           <form
             onSubmit={hasToken ? handleSubmit : handleValidateAndPay}
@@ -785,7 +882,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
               </div>
               <div>
                 <label htmlFor="chrono-btime" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
-                  Heure exacte
+                  Heure exacte de naissance
                 </label>
                 <input
                   id="chrono-btime"
@@ -796,6 +893,9 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                   disabled={loading}
                   className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3.5 font-georgia text-base text-deep outline-none focus:border-gold/60 disabled:opacity-60"
                 />
+                <p className="mt-1.5 font-georgia text-xs leading-relaxed text-mist">
+                  Indispensable pour calculer l’Ascendant, le Milieu du Ciel et les maisons. Si vous ne la connaissez pas, vérifiez votre acte de naissance avant de lancer le tirage.
+                </p>
               </div>
               <div className="md:col-span-2">
                 <label htmlFor="chrono-bplace" className="mb-2 block font-georgia text-xs uppercase tracking-[0.12em] text-mist">
@@ -861,6 +961,11 @@ export default function ChronospherePage({ onBack, onNavigate }) {
             )}
 
             {/* Numbers */}
+            <div className="mb-4 rounded-xl border border-gold/25 bg-gold/[.06] px-4 py-3.5">
+              <p className="font-georgia text-sm leading-relaxed text-deep/80">
+                Choisissez spontanément <strong className="text-deep">trois nombres différents entre 1 et 58</strong>. Le premier porte l’axe principal du tirage ; les deux suivants servent de résonances. Il n’y a pas de bon ou de mauvais choix.
+              </p>
+            </div>
             <div className="mb-7 grid grid-cols-3 gap-3 md:gap-5">
               {['Carte principale', 'Résonance I', 'Résonance II'].map((label, index) => (
                 <label key={label} className="block">
@@ -917,7 +1022,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                     <span className={`mt-2 block font-georgia text-2xl ${selectedProduct === 'pack3' ? 'text-gold' : 'text-deep'}`}>
                       {packPrice || '9,90 € TTC'}
                     </span>
-                    <span className={`mt-1 block font-georgia text-xs ${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}`}>3 tirages</span>
+                    <span className={`mt-1 block font-georgia text-xs ${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}`}>3 tirages · les suivants quand vous voulez</span>
                   </button>
                 </div>
               </fieldset>
@@ -934,7 +1039,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                   </p>
                   <p className="mt-1 font-georgia text-xs text-mist">
                     {selectedProduct === 'pack3'
-                      ? 'Votre achat comprend 3 tirages Chronosphère, utilisables maintenant ou plus tard.'
+                      ? 'Votre achat comprend 3 tirages Chronosphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'
                       : 'Le tirage unique donne accès à une lecture Chronosphère complète.'}
                   </p>
                 </div>
@@ -1025,7 +1130,7 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                     <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
                       {selectedProduct === 'single'
                         ? 'Un paiement unique pour un tirage complet avec envoi du compte rendu par e-mail.'
-                        : 'Un paiement unique pour 3 tirages complets avec envoi de chaque compte rendu par e-mail.'}
+                        : 'Un paiement unique pour 3 tirages complets. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants.'}
                     </p>
                   </div>
                   <label className="mb-5 flex cursor-pointer items-start gap-3">
@@ -1131,70 +1236,150 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                 </div>
               )}
 
-              {/* Astro context */}
-              <div className="rounded-r-xl border-l-[3px] border-gold bg-white/60 px-4 py-3.5 font-georgia text-[13px] leading-relaxed text-mist">
-                <strong className="text-deep">{esc(result.profile.fullName)}</strong>{' '}
-                &middot; naissance {esc(result.profile.birthDate)} à {esc(result.profile.birthTime)}
-                <br />
-                {esc(result.sky.resolvedBirthPlace)} &middot; {esc(result.sky.timeZone)}
-                <br />
-                Ascendant <strong className="text-deep">{esc(result.sky.ascendant)}</strong> &middot; MC{' '}
-                {esc(result.sky.mc)} &middot; maisons {esc(result.sky.houseSystem)}
-              </div>
+              {/* Calculation identity */}
+              <ResultSection eyebrow="03 · Identité du calcul" title="Le socle utilisé pour cette lecture">
+                <div className="grid gap-3 font-georgia text-sm leading-relaxed text-deep/75 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-gold/20 bg-white/70 p-4">
+                    <span className="block text-[10px] uppercase tracking-[0.14em] text-gold">Profil</span>
+                    <strong className="mt-1 block text-deep">{esc(result.profile.fullName)}</strong>
+                    <span>Naissance {esc(result.profile.birthDate)} à {esc(result.profile.birthTime)}</span>
+                    <span className="block">{esc(result.sky.resolvedBirthPlace)}</span>
+                  </div>
+                  <div className="rounded-2xl border border-gold/20 bg-white/70 p-4">
+                    <span className="block text-[10px] uppercase tracking-[0.14em] text-gold">Calcul</span>
+                    <strong className="mt-1 block text-deep">Ascendant {esc(result.sky.ascendant)}</strong>
+                    <span>MC {esc(result.sky.mc)} · maisons {esc(result.sky.houseSystem)}</span>
+                    <span className="mt-2 block text-xs text-mist">Données calculées, interprétation symbolique.</span>
+                  </div>
+                </div>
+              </ResultSection>
 
-              {/* Cards */}
-              <div className="grid gap-4 md:grid-cols-3">
-                {result.cards.map((card, i) => (
-                  <article
-                    key={card.number}
-                    className={`rounded-2xl border-2 p-5 ${
-                      i === 0 ? 'border-gold bg-gold/[.09]' : 'border-gold/[.35] bg-white'
-                    }`}
-                  >
-                    <p className="font-georgia text-[11px] text-mist">
-                      {i === 0 ? 'FRÉQUENCE PRINCIPALE' : `RÉSONANCE ${i}`} &middot; N°
-                      {String(card.number).padStart(2, '0')}
-                    </p>
-                    <p className="mt-1.5 font-georgia text-lg font-medium leading-tight">{esc(card.name)}</p>
-                    <p className="mt-1 font-georgia text-[11px] text-mist">
-                      {esc(card.block)} &middot; {esc(card.density)}
-                      {card.astre ? ` · ${esc(card.astre)}` : ''}
-                    </p>
-                  </article>
-                ))}
-              </div>
-
-              {/* Reading */}
               {readingSections.length > 0 ? (
                 <div className="space-y-5">
-                  {readingSections.map((section) => (
-                    <div key={section.id || section.number}>
-                      <article
-                        className={section.number === 4
-                          ? "rounded-3xl border-2 border-gold bg-gold/[.08] p-6 shadow-sm md:p-8"
-                          : "rounded-3xl border border-gold/25 bg-white/80 p-6 shadow-sm md:p-8"}
-                      >
-                        <div className="flex items-start gap-4">
-                          <span className="mt-0.5 shrink-0 font-georgia text-[11px] font-semibold tracking-[0.14em] text-gold">
-                            {String(section.number).padStart(2, '0')}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <h2 className="font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">
-                              {section.title}
-                            </h2>
-                            <div className="mt-4 whitespace-pre-line font-georgia text-[15px] leading-[1.85] text-deep/80 md:text-base">
-                              {section.content}
-                            </div>
+                  {sectionsById.current_picture && (
+                    <ResultSection eyebrow="04 · Photographie de l’instant" title={sectionsById.current_picture.title}>
+                      <TextBlock content={sectionsById.current_picture.content} />
+                    </ResultSection>
+                  )}
+
+                  {parts.closure && (
+                    <ResultSection eyebrow="05 · Passage" title="Ce qui doit se terminer avant la suite">
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {parts.closure.stillOpen && (
+                          <div className="rounded-2xl border border-gold/25 bg-white/70 p-4">
+                            <p className="font-georgia text-[11px] uppercase tracking-[0.14em] text-gold">Reste ouvert</p>
+                            <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">{parts.closure.stillOpen}</p>
+                          </div>
+                        )}
+                        {parts.closure.mainLock && (
+                          <div className="rounded-2xl border border-gold/25 bg-white/70 p-4">
+                            <p className="font-georgia text-[11px] uppercase tracking-[0.14em] text-gold">Verrou principal</p>
+                            <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">{parts.closure.mainLock}</p>
+                          </div>
+                        )}
+                        {parts.closure.opensAfterClosure && (
+                          <div className="rounded-2xl border border-gold/25 bg-white/70 p-4">
+                            <p className="font-georgia text-[11px] uppercase tracking-[0.14em] text-gold">Peut ouvrir</p>
+                            <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">{parts.closure.opensAfterClosure}</p>
+                          </div>
+                        )}
+                      </div>
+                    </ResultSection>
+                  )}
+
+                  <ResultSection eyebrow="06 · Trois fréquences" title="Les cartes et leur synthèse" highlight>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {result.cards.map((card, i) => (
+                        <article key={card.number} className={`rounded-2xl border p-4 ${i === 0 ? 'border-gold bg-white' : 'border-gold/30 bg-white/70'}`}>
+                          <p className="font-georgia text-[10px] uppercase tracking-[0.12em] text-gold">
+                            {i === 0 ? 'Fréquence principale' : `Résonance ${i}`} · N°{String(card.number).padStart(2, '0')}
+                          </p>
+                          <h3 className="mt-2 font-georgia text-lg font-medium leading-tight text-deep">{esc(card.name)}</h3>
+                          <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
+                            {esc(card.block)} · {esc(card.density)}
+                            {card.astre ? ` · ${esc(card.astre)}` : ''}
+                          </p>
+                        </article>
+                      ))}
+                    </div>
+                    <div className="mt-5 grid gap-4">
+                      {frequencySections.map((section) => (
+                        <div key={section.id} className="rounded-2xl bg-white/70 p-4">
+                          <p className="font-georgia text-[11px] uppercase tracking-[0.14em] text-gold">{String(section.number).padStart(2, '0')} · {section.title}</p>
+                          <div className="mt-2">
+                            <TextBlock content={section.content} />
                           </div>
                         </div>
-                      </article>
-                      {section.number === 6 && (
-                        <div className="mt-5">
-                          <TimelineFrise timing={result.sky?.timing} />
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  </ResultSection>
+
+                  {sectionsById.birth_sky_context && (
+                    <ResultSection eyebrow="07 · Ciel utile du moment" title={sectionsById.birth_sky_context.title}>
+                      <TextBlock content={sectionsById.birth_sky_context.content} />
+                    </ResultSection>
+                  )}
+
+                  {whyNowItems.length > 0 && (
+                    <ResultSection eyebrow="08 · Pourquoi maintenant ?" title="Les appuis calculés de cette période">
+                      <div className="space-y-3">
+                        {whyNowItems.map((item, index) => (
+                          <div key={index} className="rounded-2xl border border-gold/25 bg-white/70 p-4">
+                            <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Donnée calculée</p>
+                            <p className="mt-1 font-georgia text-sm leading-relaxed text-deep">{item.calculated}</p>
+                            <p className="mt-3 font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Interprétation symbolique</p>
+                            <p className="mt-1 font-georgia text-sm leading-relaxed text-deep/75">{item.interpretation}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </ResultSection>
+                  )}
+
+                  {sectionsById.timeline && (
+                    <ResultSection eyebrow="09 · Ligne de temps" title={sectionsById.timeline.title}>
+                      <TextBlock content={sectionsById.timeline.content} />
+                      <div className="mt-5">
+                        <TimelineFrise timing={result.sky?.timing} />
+                      </div>
+                    </ResultSection>
+                  )}
+
+                  {sectionsById.two_possible_paths && (
+                    <ResultSection eyebrow="10 · Deux chemins" title={sectionsById.two_possible_paths.title}>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {pathCards.map((path) => (
+                          <div key={path.label} className="rounded-2xl border border-gold/25 bg-white/70 p-5">
+                            <p className="font-georgia text-[11px] uppercase tracking-[0.14em] text-gold">{path.label}</p>
+                            <h3 className="mt-2 font-georgia text-lg font-medium leading-snug text-deep">{path.title}</h3>
+                            <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/75">{path.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {!pathCards.length && <TextBlock content={sectionsById.two_possible_paths.content} />}
+                    </ResultSection>
+                  )}
+
+                  {sectionsById.concrete_levers && (
+                    <ResultSection eyebrow="11 · Trois leviers" title={sectionsById.concrete_levers.title} highlight>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {leverCards.map((lever) => (
+                          <div key={lever.label} className="rounded-2xl bg-white p-4 shadow-sm">
+                            <p className="font-georgia text-[11px] uppercase tracking-[0.14em] text-gold">{lever.label}</p>
+                            <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">{lever.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {!leverCards.length && <TextBlock content={sectionsById.concrete_levers.content} />}
+                    </ResultSection>
+                  )}
+
+                  {sectionsById.mirror_question && (
+                    <ResultSection eyebrow="12 · Question miroir" title={sectionsById.mirror_question.title}>
+                      <p className="font-bodoni text-2xl italic leading-relaxed text-deep md:text-3xl">
+                        {sectionsById.mirror_question.content}
+                      </p>
+                    </ResultSection>
+                  )}
                 </div>
               ) : (
                 <article className="rounded-3xl border-2 border-gold/25 bg-white p-7 md:p-9">
@@ -1216,6 +1401,14 @@ export default function ChronospherePage({ onBack, onNavigate }) {
                   {esc(parts.realignmentAct?.decree || result.cards[0].decree)}
                 </p>
               </article>
+
+              <EcosystemNextSteps
+                context="chronosphere"
+                onOpenOracle={onOpenOracle}
+                onOpenReseau={onOpenReseau}
+                onOpenFormation={onOpenFormation}
+                className="mt-8"
+              />
 
             </div>
           )}

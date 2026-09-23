@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import LegalFooter from './LegalFooter'
+import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 
 const DEMO_CARDS = [
   {
@@ -45,6 +47,8 @@ function Section({ eyebrow, title, children, dark = false }) {
 }
 
 export default function ChronosphereExamplePage({ onBack, onOpenChronosphere, onNavigate }) {
+  useEffect(() => { trackMediumiaMetric('chronosphere_example_view', 'chronosphere-example') }, [])
+
   return (
     <div className="cosmic-page cosmic-page--chronosphere min-h-screen bg-cream text-deep">
       <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
@@ -89,45 +93,65 @@ export default function ChronosphereExamplePage({ onBack, onOpenChronosphere, on
             </p>
           </Section>
 
-          <section className="grid gap-4 md:grid-cols-3">
-            {DEMO_CARDS.map((card, index) => (
-              <article key={card.number} className={`rounded-2xl border-2 p-5 ${index === 0 ? 'border-gold bg-gold/[.09]' : 'border-gold/30 bg-white/80'}`}>
-                <p className="font-georgia text-[10px] uppercase tracking-[0.13em] text-mist">{card.role} · N°{card.number}</p>
-                <h2 className="mt-2 font-georgia text-xl font-medium">{card.name}</h2>
-                <p className="mt-1 font-georgia text-xs text-gold">{card.meta}</p>
-                <p className="mt-4 font-georgia text-sm leading-relaxed text-deep/70">{card.text}</p>
-              </article>
-            ))}
-          </section>
-
-          <Section eyebrow="02" title="La fréquence principale">
-            <p>
-              <strong>L’Ouverture</strong> est l’axe de ce tirage fictif. Elle ne dit pas que « tout va arriver » : elle indique qu’une porte cesse d’être purement théorique. Ce qui était encore une idée ou une envie peut maintenant être confronté au réel.
-            </p>
-            <p className="mt-4">
-              Sa lumière : remettre du mouvement là où l’analyse tournait en boucle. Sa vigilance : confondre ouverture et obligation. Une possibilité peut être bonne sans devoir être acceptée immédiatement.
-            </p>
+          <Section eyebrow="02 · Passage" title="Ce qui doit se terminer avant la suite">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-5">
+                <strong>Ce qui reste ouvert</strong>
+                <p className="mt-2">Le désir de passer à l’action existe déjà, mais il n’a pas encore reçu de forme simple et vérifiable.</p>
+              </div>
+              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-5">
+                <strong>Le verrou principal</strong>
+                <p className="mt-2">L’attente d’une certitude parfaite avant de poser un premier acte.</p>
+              </div>
+              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-5">
+                <strong>Ce que la clôture peut ouvrir</strong>
+                <p className="mt-2">Une décision plus légère : tester le réel sans transformer ce test en engagement définitif.</p>
+              </div>
+            </div>
           </Section>
 
-          <Section eyebrow="03" title="Les deux résonances">
-            <p>
-              <strong>La Bifurcation</strong> déplace la question vers le choix : qu’est-ce que tu acceptes de changer pour que cette ouverture devienne réellement possible ? <strong>L’Alignement</strong> resserre ensuite le critère : la bonne direction doit pouvoir être tenue dans tes actes, ton temps et tes limites.
-            </p>
+          <Section eyebrow="03 · Trois fréquences" title="Les cartes et leur synthèse">
+            <section className="grid gap-4 md:grid-cols-3">
+              {DEMO_CARDS.map((card, index) => (
+                <article key={card.number} className={`rounded-2xl border-2 p-5 ${index === 0 ? 'border-gold bg-gold/[.09]' : 'border-gold/30 bg-white/80'}`}>
+                  <p className="font-georgia text-[10px] uppercase tracking-[0.13em] text-mist">{card.role} · N°{card.number}</p>
+                  <h3 className="mt-2 font-georgia text-xl font-medium">{card.name}</h3>
+                  <p className="mt-1 font-georgia text-xs text-gold">{card.meta}</p>
+                  <p className="mt-4 font-georgia text-sm leading-relaxed text-deep/70">{card.text}</p>
+                </article>
+              ))}
+            </section>
+            <div className="mt-5 rounded-2xl bg-cream/70 p-5">
+              <p>
+                <strong>La synthèse :</strong> ensemble, les trois fréquences décrivent moins une promesse qu’un passage : une possibilité apparaît, elle oblige à choisir, puis elle demande de vérifier si ce choix est vivable. Le triangle complet devient <strong>ouvrir → choisir → incarner</strong>.
+              </p>
+            </div>
           </Section>
 
-          <Section eyebrow="04" title="Ce que racontent les trois fréquences ensemble">
-            <p>
-              Ensemble, elles décrivent moins une promesse qu’un passage : une possibilité apparaît, elle oblige à choisir, puis elle demande de vérifier si ce choix est vivable. Le triangle complet devient donc : <strong>ouvrir → choisir → incarner</strong>.
-            </p>
-          </Section>
-
-          <Section eyebrow="05" title="Le ciel de naissance et le contexte astrologique">
+          <Section eyebrow="04" title="Le ciel de naissance et le contexte astrologique">
             <p>
               Dans cette démonstration, Chronosphère ne récite pas un thème astral complet. Elle retient seulement les éléments utiles au sujet : un climat favorable à la clarification, un appui pour rendre une idée plus visible, et une zone de tension qui invite à ne pas prendre une décision uniquement pour faire cesser l’inconfort.
             </p>
             <p className="mt-4 text-sm text-mist">
               Les positions, aspects et maisons d’un vrai tirage sont calculés côté serveur à partir des données de naissance fournies. Leur lecture reste symbolique et introspective.
             </p>
+          </Section>
+
+          <Section eyebrow="05" title="Pourquoi maintenant ?">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-5">
+                <p className="text-[10px] uppercase tracking-[0.16em] text-gold">Donnée calculée</p>
+                <p className="mt-2">Transit symbolique de Jupiter en aspect harmonique à Mercure natal dans la fenêtre prioritaire.</p>
+                <p className="mt-4 text-[10px] uppercase tracking-[0.16em] text-gold">Interprétation symbolique</p>
+                <p className="mt-2">Le climat soutient la clarification, la formulation et la présentation d’une idée.</p>
+              </div>
+              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-5">
+                <p className="text-[10px] uppercase tracking-[0.16em] text-gold">Donnée calculée</p>
+                <p className="mt-2">Maison natale liée aux choix concrets activée dans le ciel du tirage fictif.</p>
+                <p className="mt-4 text-[10px] uppercase tracking-[0.16em] text-gold">Interprétation symbolique</p>
+                <p className="mt-2">La lecture invite à vérifier par un acte simple plutôt qu’à attendre une certitude intérieure totale.</p>
+              </div>
+            </div>
           </Section>
 
           <article className="rounded-3xl border border-gold/30 bg-white/75 p-6 md:p-8">
@@ -184,7 +208,7 @@ export default function ChronosphereExamplePage({ onBack, onOpenChronosphere, on
               L’exemple montre la structure. Votre vrai tirage utilise vos données de naissance, les trois fréquences choisies et votre thème pour produire une lecture différente.
             </p>
             <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-              <button onClick={onOpenChronosphere} className="rounded-xl bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90">Faire mon tirage — dès 5 € →</button>
+              <button onClick={() => { trackMediumiaMetric('chronosphere_example_cta', 'chronosphere-example:chronosphere'); onOpenChronosphere() }} className="rounded-xl bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90">Faire mon tirage — dès 5 € →</button>
               <button onClick={onBack} className="rounded-xl border border-gold/45 px-7 py-4 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/[.08]">Retour à MediumIA</button>
             </div>
           </article>

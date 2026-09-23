@@ -4,7 +4,11 @@ const assetsDir = new URL('../dist/assets/', import.meta.url)
 const requiredLabels = [
   'Votre tirage en 30 secondes',
   'La fréquence principale',
+  'Ce qui doit se terminer avant la suite',
   'Ce que racontent les trois fréquences ensemble',
+  'Pourquoi maintenant ?',
+  'Donnée calculée',
+  'Interprétation symbolique',
   'Les deux chemins possibles',
   'Vos leviers concrets',
   'La question que Chronosphère vous renvoie',
@@ -19,6 +23,10 @@ const bundle = (await Promise.all(
 const missing = requiredLabels.filter((label) => !bundle.includes(label))
 if (missing.length) {
   throw new Error(`Chronosphere V2 bundle check failed. Missing labels: ${missing.join(', ')}`)
+}
+
+if (bundle.includes('ChronoSphère MAX')) {
+  throw new Error('Chronosphere V2 bundle check failed. Reserved premium label "ChronoSphère MAX" must not ship in this offer.')
 }
 
 console.log('Chronosphere V2 bundle check passed')

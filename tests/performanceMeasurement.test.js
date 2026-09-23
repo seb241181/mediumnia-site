@@ -32,6 +32,9 @@ test('heavy product routes are lazy-loaded behind Suspense', async () => {
   assert.match(app, /const OraclePage = lazy\(\(\) => import\('\.\/components\/OraclePage'\)\)/)
   assert.match(app, /const FormationPage = lazy\(\(\) => import\('\.\/components\/FormationPage'\)\)/)
   assert.doesNotMatch(app, /import ChronospherePage from '\.\/components\/ChronospherePage'/)
+  assert.match(app, /const ChronosphereMaxPage = lazy\(\(\) => import\('\.\/components\/ChronosphereMaxPage'\)\)/)
+  assert.doesNotMatch(app, /import ChronosphereMaxPage from '\.\/components\/ChronosphereMaxPage'/)
+  assert.match(app, /view === 'chronosphere-max'\) return <DeferredRoute><ChronosphereMaxPage/)
   assert.match(app, /function DeferredRoute/)
 })
 

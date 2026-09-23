@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import LegalFooter from './LegalFooter'
-import { chronosphereMaxDemoTimeline, chronosphereMaxDemoTimelines } from '../data/chronosphereMaxDemo.js'
+import { chronosphereMaxDemoProfile, chronosphereMaxDemoTimeline, chronosphereMaxDemoTimelines } from '../data/chronosphereMaxDemo.js'
+import { getSolarTemperament } from '../../lib/chronosphereSolarTemperament.js'
 
 function formatDate(value) {
   if (!value) return ''
@@ -31,6 +32,64 @@ function FactCard({ fact }) {
         </div>
       </div>
     </article>
+  )
+}
+
+function SolarTemperamentPanel({ sign, timelineTitle }) {
+  const temperament = getSolarTemperament(sign)
+  if (!temperament) return null
+
+  const traits = [
+    ['Force naturelle', temperament.naturalForce],
+    ['Réflexe sous tension', temperament.tensionReflex],
+    ['Façon d’avancer', temperament.movement],
+    ['Point de vigilance', temperament.vigilance],
+  ]
+
+  return (
+    <section className="rounded-3xl border-2 border-gold/60 bg-gradient-to-br from-white via-cream to-gold/[.08] p-5 shadow-md md:p-8">
+      <div className="grid gap-6 md:grid-cols-[.72fr_1.28fr] md:items-start">
+        <div className="rounded-3xl border border-gold/30 bg-deep p-6 text-cream">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Votre tempérament solaire</p>
+          <div className="mt-5 flex items-center gap-4">
+            <span className="font-georgia text-6xl leading-none text-gold" aria-hidden="true">{temperament.symbol}</span>
+            <div>
+              <h2 className="font-georgia text-3xl font-medium">{temperament.sign}</h2>
+              <p className="mt-1 font-georgia text-sm text-cream/65">{temperament.element} · {temperament.modality}</p>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {temperament.keywords.map((keyword) => (
+              <span key={keyword} className="rounded-full border border-gold/25 bg-white/[.06] px-3 py-1 font-georgia text-xs text-cream/80">
+                {keyword}
+              </span>
+            ))}
+          </div>
+          <p className="mt-5 font-georgia text-xs leading-relaxed text-cream/55">
+            Lecture symbolique du signe solaire : un langage de tempérament, pas une vérité psychologique ni un diagnostic.
+          </p>
+        </div>
+
+        <div>
+          <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Signature personnelle</p>
+          <h2 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">Comment votre signe colore votre manière de traverser le temps.</h2>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {traits.map(([label, text]) => (
+              <article key={label} className="rounded-2xl border border-gold/20 bg-white/75 p-4">
+                <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">{label}</p>
+                <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/75">{text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-gold/25 bg-white/80 p-5">
+        <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Comment ce tempérament colore cette Ligne de Temps</p>
+        <p className="mt-2 font-georgia text-sm text-mist">{timelineTitle}</p>
+        <p className="mt-3 max-w-4xl font-georgia text-base leading-relaxed text-deep/78">{temperament.lineTimeLens}</p>
+      </div>
+    </section>
   )
 }
 
@@ -187,6 +246,10 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
             </p>
           </aside>
         </section>
+
+        <div className="mt-7">
+          <SolarTemperamentPanel sign={chronosphereMaxDemoProfile.solarSign} timelineTitle={selected.title} />
+        </div>
 
         <section className="mt-9 grid gap-4 md:grid-cols-2">
           {chronosphereMaxDemoTimelines.map((timeline) => (

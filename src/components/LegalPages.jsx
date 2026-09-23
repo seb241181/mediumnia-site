@@ -446,17 +446,7 @@ export function CgvOracle({ onBack, onNavigate }) {
 
 /* ─────────────────────────────────────
    CGV CHRONOSPHÈRE 999 & CHRONOSPHÈRE MAX
-   Projet : les points « À valider » attendent une décision du vendeur
-   (ou d'un juriste) avant publication.
    ───────────────────────────────────── */
-function ToValidate({ children }) {
-  return (
-    <span className="block rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-      <strong>À valider :</strong> {children}
-    </span>
-  )
-}
-
 export function CgvChronosphere({ onBack, onNavigate }) {
   const link = (path, label) => (
     <a href={path} onClick={(e) => { e.preventDefault(); onNavigate(path) }} className="text-gold hover:underline">{label}</a>
@@ -464,9 +454,7 @@ export function CgvChronosphere({ onBack, onNavigate }) {
   return (
     <LegalShell onBack={onBack} onNavigate={onNavigate} title="Conditions générales de vente — ChronoSphère 999 et ChronoSphère MAX">
 
-      <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 font-georgia text-sm leading-relaxed text-amber-900">
-        Projet de conditions générales, en attente de validation. Les passages marqués « À valider » doivent être tranchés avant la mise en ligne définitive.
-      </div>
+      <p className="font-georgia text-xs text-mist">En vigueur à compter du 24 septembre 2026.</p>
 
       <Section title="1. Vendeur">
         <p>
@@ -505,7 +493,10 @@ export function CgvChronosphere({ onBack, onNavigate }) {
           Les lectures ne constituent pas des prédictions et ne garantissent aucun résultat. Elles ne remplacent pas l’avis
           d’un professionnel de santé, du droit ou de la finance, et ne décrivent pas avec certitude ce qu’une autre personne pense ou fera.
         </p>
-        <ToValidate>réserver l’achat aux personnes majeures (18 ans et plus).</ToValidate>
+        <p>
+          Les services sont destinés aux personnes majeures (18 ans et plus). En passant commande, le client déclare être majeur
+          ou agir avec l’autorisation de son représentant légal (articles 1146 et suivants du Code civil).
+        </p>
       </Section>
 
       <Section title="5. Commande et paiement">
@@ -530,7 +521,8 @@ export function CgvChronosphere({ onBack, onNavigate }) {
         <p>
           <strong className="text-deep">Durée de validité</strong> : les tirages d’un pack et les lectures d’un suivi ChronoSphère MAX
           doivent être utilisés dans les <strong className="text-deep">6 mois</strong> suivant l’achat. Passé ce délai, les tirages non utilisés
-          ne sont plus disponibles et ne donnent pas lieu à remboursement.
+          ne sont plus disponibles et ne donnent pas lieu à remboursement. Cette durée s’applique aux achats effectués à compter du
+          24 septembre 2026 ; la date limite figure dans l’e-mail envoyé après chaque lecture.
         </p>
       </Section>
 
@@ -538,9 +530,8 @@ export function CgvChronosphere({ onBack, onNavigate }) {
         <p>
           Si une lecture payée ne peut pas être générée ou fournie pour une raison technique, le client peut écrire à
           <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline"> contact@mediumia.fr</a> en indiquant l’adresse e-mail utilisée pour le paiement.
-          Le vendeur rétablit alors la lecture concernée ou, à défaut, rembourse la somme correspondante.
+          Le vendeur répond sous 72 heures ouvrées, puis rétablit la lecture concernée ou, à défaut, rembourse la somme correspondante.
         </p>
-        <ToValidate>délai de traitement annoncé (par exemple 72 heures ouvrées) et engagement de remboursement.</ToValidate>
       </Section>
 
       <Section title="8. Droit de rétractation">
@@ -554,11 +545,11 @@ export function CgvChronosphere({ onBack, onNavigate }) {
           une fois la lecture générée (première lecture pour le pack et pour ChronoSphère MAX). Tant qu’aucune lecture n’a été générée,
           le client peut se rétracter dans les 14 jours suivant l’achat via le {link('/retractation', 'formulaire de rétractation')}.
         </p>
-        <ToValidate>
-          sort des tirages non encore utilisés d’un pack ou d’un suivi MAX lorsque le client demande à arrêter après la première lecture
-          (aucun remboursement, ou remboursement au prorata). La confirmation envoyée par e-mail doit aussi reprendre l’accord et le renoncement
-          du client (support durable, article L. 221-13) : à vérifier dans les e-mails actuels.
-        </ToValidate>
+        <p>
+          Lorsque le client décide d’arrêter après une première lecture, les tirages ou lectures non utilisés ne donnent pas lieu
+          à remboursement, la prestation ayant commencé à sa demande. L’e-mail de confirmation envoyé après chaque lecture rappelle
+          cet accord et ce renoncement (article L. 221-13 du Code de la consommation).
+        </p>
       </Section>
 
       <Section title="9. Garantie légale de conformité">
@@ -576,7 +567,10 @@ export function CgvChronosphere({ onBack, onNavigate }) {
           les lectures ; le lieu de naissance et les coordonnées exactes n’y sont pas recopiés. Le client peut demander la suppression de ses données à
           <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline"> contact@mediumia.fr</a>. Voir la {link('/confidentialite', 'politique de confidentialité')}.
         </p>
-        <ToValidate>durée de conservation des lectures et du suivi MAX après la dernière utilisation.</ToValidate>
+        <p>
+          Les lectures et le suivi MAX sont conservés tant que le client utilise le service, puis au plus 3 ans après sa dernière
+          utilisation, avant d’être supprimés. Les informations de facturation sont conservées pendant la durée imposée par la loi.
+        </p>
       </Section>
 
       <Section title="11. Médiation">

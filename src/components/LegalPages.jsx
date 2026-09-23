@@ -138,6 +138,19 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
         </p>
       </Section>
 
+      <Section title="Données collectées — Avis clients">
+        <p>
+          Lorsque vous déposez un avis, nous collectons : prénom ou pseudonyme, adresse e-mail, prestation concernée, note,
+          texte de l’avis, mois de l’expérience (facultatif) et votre accord de publication. Aucune adresse IP n’est enregistrée.
+        </p>
+        <p>
+          Finalités : vérifier que l’avis correspond à une expérience réelle, le modérer, le publier et vous contacter à son sujet.
+          Seuls le prénom ou pseudonyme, la note, le texte, la prestation et les dates sont publiés ; l’e-mail ne l’est jamais.
+          Base légale : votre consentement, que vous pouvez retirer à tout moment en demandant le retrait de l’avis à
+          <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline"> contact@mediumia.fr</a>.
+        </p>
+      </Section>
+
       <Section title="Données collectées — Oracle (tirage gratuit)">
         <p>
           Le tirage test gratuit collecte votre adresse email. Côté serveur, un hash de cette adresse est conservé dans Supabase

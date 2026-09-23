@@ -128,3 +128,9 @@ test('reviews are reachable, indexed, and the moderation page is not', () => {
   assert.match(read('scripts/apply-mobile-seo-sprint.mjs'), /'\/avis',/)
   assert.match(read('scripts/apply-route-seo-cro.mjs'), /pathname\.startsWith\('\/avis\/moderation'\)/)
 })
+
+test('privacy policy describes the review data', () => {
+  const legal = fs.readFileSync(new URL('../src/components/LegalPages.jsx', import.meta.url), 'utf8')
+  assert.match(legal, /Données collectées — Avis clients/)
+  assert.match(legal, /Aucune adresse IP n’est enregistrée/)
+})

@@ -645,7 +645,7 @@ async function captureMaxOrder(orderId, token) {
                   <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-gold/25 bg-white/70 p-4">
                     <input type="checkbox" checked={consentAccepted} onChange={(e) => setConsentAccepted(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-gold" />
                     <span className="font-georgia text-xs leading-relaxed text-deep/78">
-                      Je demande l’exécution immédiate du service numérique ChronoSphère MAX. Je comprends que les lectures personnalisées sont générées à ma demande et que la mémoire du suivi est rattachée à mon compte MediumIA.
+                      Je demande l’exécution immédiate du service numérique ChronoSphère MAX et reconnais que ce contenu numérique personnalisé ne peut faire l’objet d’un droit de rétractation une fois la première lecture générée (art. L221-28 du Code de la consommation). Je comprends que la mémoire du suivi est rattachée à mon compte MediumIA.
                     </span>
                   </label>
                   {consentAccepted ? <div ref={paypalContainerRef} className="mt-5 min-h-[50px]" /> : <p className="mt-4 text-center font-georgia text-xs text-mist">Cochez la case pour afficher le paiement PayPal.</p>}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
-import { CONFERENCE_PUBLIC_API } from '../lib/conferenceApi.js'
+import { CONFERENCE_PUBLIC_API, registrationSource } from '../lib/conferenceApi.js'
 
 const EVENT_SLUG = 'premiere-conference-mediumia'
 const CONFERENCE_API = CONFERENCE_PUBLIC_API
@@ -47,12 +47,11 @@ export default function ConferencesPage({ onBack, onNavigate }) {
     e.preventDefault()
     setSubmitState('loading')
     setMessage('')
-    setTestLiveUrl('')
     try {
       const response = await fetch(CONFERENCE_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, slug: EVENT_SLUG, source: 'conference_page' }),
+        body: JSON.stringify({ ...form, slug: EVENT_SLUG, source: registrationSource(window.location.search) }),
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(data.error || 'Inscription impossible pour le moment.')

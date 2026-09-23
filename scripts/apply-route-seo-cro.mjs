@@ -57,8 +57,8 @@ const routeSeoHelpers = `const ROUTE_META = {
     description: 'Présentez votre pratique et rejoignez le Réseau MediumIA, pensé pour relier praticiens et personnes en recherche d’accompagnement.',
   },
   conferences: {
-    title: 'Conférences MediumIA — Rencontres et directs',
-    description: 'Découvrez les futures conférences MediumIA : transmission, échanges en direct, questions du public et réservation depuis MediumIA.',
+    title: 'Conférence offerte le 23 octobre — Et si la médiumnité devenait accessible ? | MediumIA',
+    description: 'Une heure en direct avec Sébastien Seguin, vendredi 23 octobre à 19 h sur Zoom. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
   },
   avis: {
     title: 'Avis clients — MediumIA',

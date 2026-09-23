@@ -9,7 +9,7 @@ test('public routes receive dedicated client-side metadata and canonical URLs', 
   assert.match(app, /Formation à la médiumnité consciente — MediumIA/)
   assert.match(app, /ChronoSphère 999 — Cycles, lignes de temps & thème astral \| MediumIA/)
   assert.match(app, /Réseau MediumIA — Trouver un praticien/)
-  assert.match(app, /Conférences MediumIA — Rencontres et directs/)
+  assert.match(app, /Conférence offerte le 23 octobre — Et si la médiumnité devenait accessible \? \| MediumIA/)
   assert.match(app, /'chronosphere-max': \{\n    title: 'ChronoSphère MAX — /)
   assert.match(app, /  pro: \{\n    title: 'MediumIA Pro — /)
   assert.match(app, /reseauPractitioners\.find/)

@@ -33,6 +33,11 @@ const ROUTE_PATHS = {
   avis: '/avis',
 }
 
+// Routes with their own share visual (default: the site image).
+const ROUTE_IMAGES = {
+  conferences: '/images/conference/conference-23-octobre-partage.jpg',
+}
+
 const escapeAttr = (value) => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 const escapeText = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const absolute = (url) => (/^https?:\/\//.test(url) ? url : `${SITE}${url.startsWith('/') ? '' : '/'}${url}`)
@@ -63,7 +68,8 @@ export function buildPages(shell, routeMeta, practitioners) {
   const pages = [{ file: 'index.html', meta: { ...routeMeta.home, url: `${SITE}/` } }]
   for (const [view, routePath] of Object.entries(ROUTE_PATHS)) {
     if (!routeMeta[view]) continue
-    pages.push({ file: `${routePath.slice(1)}/index.html`, meta: { ...routeMeta[view], url: SITE + routePath } })
+    const image = ROUTE_IMAGES[view] ? absolute(ROUTE_IMAGES[view]) : DEFAULT_IMAGE
+    pages.push({ file: `${routePath.slice(1)}/index.html`, meta: { ...routeMeta[view], url: SITE + routePath, image } })
   }
   for (const p of practitioners) {
     pages.push({

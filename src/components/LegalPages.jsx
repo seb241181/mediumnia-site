@@ -492,8 +492,7 @@ export function CgvChronosphere({ onBack, onNavigate }) {
           <strong className="text-deep">ChronoSphère 999 — pack de 3 tirages</strong> : trois lectures personnalisées à utiliser quand le client le souhaite — 9,90 € TTC.<br />
           <strong className="text-deep">ChronoSphère MAX</strong> : suivi d’une même situation en 3 lectures reliées, avec mémoire du suivi, comparaison entre les lectures et synthèse finale — 19,90 € TTC. Un compte MediumIA est nécessaire.
         </p>
-        <p>Les prix sont indiqués en euros, toutes taxes comprises, avant la validation du paiement.</p>
-        <ToValidate>la mention de TVA applicable (par exemple « TVA non applicable, art. 293 B du CGI » si le régime de franchise s’applique) doit être confirmée.</ToValidate>
+        <p>Les prix sont indiqués en euros, toutes taxes comprises (TVA française au taux de 20 % incluse), avant la validation du paiement.</p>
       </Section>
 
       <Section title="4. Nature des lectures">

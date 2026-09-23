@@ -2,6 +2,10 @@ import { READING_SECTION_TITLES } from '../../lib/chronosphereReading.js'
 import { buildChronosphereMaxSnapshot } from '../../lib/chronosphereMaxSnapshot.js'
 import { compareChronosphereSnapshots, summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
 
+export const chronosphereMaxDemoProfile = {
+  solarSign: 'Scorpion',
+}
+
 const baseSections = {
   "La photographie de l'instant": 'La situation ressemble à un lien encore vivant, mais traversé par une attente qui fatigue. Le tirage parle moins de conclusion définitive que de seuil à clarifier.',
   'La fréquence principale': 'La carte principale demande de regarder ce qui s’ouvre réellement, sans confondre ouverture et promesse déjà formée.',

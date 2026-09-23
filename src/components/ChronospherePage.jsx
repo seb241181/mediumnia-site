@@ -95,7 +95,7 @@ function extractLabeledText(content, label) {
   ]
   const escaped = labels.map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
   const pattern = new RegExp(`(?:^|\\n)\\s*(?:[-•]\\s*)?${label}\\s*[:：\\-–—]?\\s*([\\s\\S]*?)(?=\\n\\s*(?:[-•]\\s*)?(?:${escaped})\\s*[:：\\-–—]?|$)`, 'i')
-  return stripInlineLabel(content.match(pattern)?.[1] || '')
+  return stripInlineLabel(String(content || '').match(pattern)?.[1] || '')
 }
 
 function extractLeverCards(content) {
@@ -107,7 +107,8 @@ function extractLeverCards(content) {
   ].filter((item) => item.text)
 }
 
-function extractPathCards(content) {
+function extractPathCards(value) {
+  const content = String(value || '')
   const current = content.match(/Si (?:vous|tu) maintenez? la dynamique actuelle[\s.:–—-]*([\s\S]*?)(?=Si (?:vous|tu) modifiez?|$)/i)?.[1]
   const changed = content.match(/Si (?:vous|tu) modifiez? (?:cet élément|l'élément clé|l’élément clé)[\s.:–—-]*([\s\S]*)/i)?.[1]
   const fallback = paragraphs(content)

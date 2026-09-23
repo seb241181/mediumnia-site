@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { buildChronosphereMaxSnapshot } from '../lib/chronosphereMaxSnapshot.js'
 import { compareChronosphereSnapshots, summarizeChronosphereLine } from '../lib/chronosphereMaxCompare.js'
 import { chronosphereMaxDemoEntries, chronosphereMaxDemoTimeline } from '../src/data/chronosphereMaxDemo.js'
+import { getSolarTemperament, SOLAR_TEMPERAMENTS } from '../lib/chronosphereSolarTemperament.js'
 
 const migrationPath = new URL('../supabase/migrations/20260923143000_chronosphere_max_memory_foundation.sql', import.meta.url)
 const pagePath = new URL('../src/components/ChronosphereMaxPage.jsx', import.meta.url)
@@ -135,6 +136,24 @@ test('MAX migration prepares owner-scoped memory tables without applying payment
   assert.match(sql, /snapshot_json->>'schemaVersion' = 'chronosphere-max-snapshot-v1'/)
   assert.match(sql, /not snapshot_json \? 'birthPlace'/)
   assert.doesNotMatch(sql, /alter table public\.chronosphere_paid_draws|alter table public\.chronosphere_credit_packs|paypal/i)
+})
+
+test('MAX solar temperament covers all signs and keeps the framing symbolic', () => {
+  assert.equal(Object.keys(SOLAR_TEMPERAMENTS).length, 12)
+  const scorpio = getSolarTemperament('Scorpion')
+  assert.equal(scorpio.symbol, '♏')
+  assert.equal(scorpio.element, 'Eau')
+  assert.equal(scorpio.modality, 'Fixe')
+  assert.match(scorpio.lineTimeLens, /Ligne de Temps/)
+  assert.equal(getSolarTemperament('scorpion').sign, 'Scorpion')
+})
+
+test('MAX preview exposes the solar temperament panel without turning it into a diagnosis', async () => {
+  const page = await readFile(pagePath, 'utf8')
+  assert.match(page, /Votre tempérament solaire/)
+  assert.match(page, /Comment ce tempérament colore cette Ligne de Temps/)
+  assert.match(page, /langage de tempérament/)
+  assert.match(page, /pas une vérité psychologique/)
 })
 
 test('MAX preview route is isolated from V2 pricing and PayPal checkout', async () => {

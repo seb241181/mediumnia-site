@@ -60,6 +60,10 @@ const routeSeoHelpers = `const ROUTE_META = {
     title: 'Conférences MediumIA — Rencontres et directs',
     description: 'Découvrez les futures conférences MediumIA : transmission, échanges en direct, questions du public et réservation depuis MediumIA.',
   },
+  avis: {
+    title: 'Avis clients — MediumIA',
+    description: 'Avis vérifiés et modérés sur les consultations, la formation, l’Oracle et ChronoSphère MediumIA. Positifs comme négatifs, publiés du plus récent au plus ancien.',
+  },
 }
 
 function ensureHeadElement(selector, create) {
@@ -90,7 +94,7 @@ function applyRouteMeta(view) {
   const pathname = window.location.pathname
   const canonicalPath = pathname === '/' ? '/' : (pathname.endsWith('/') ? pathname.slice(0, -1) : pathname)
   const canonicalUrl = 'https://mediumia.fr' + canonicalPath
-  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation'
+  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation' || pathname.startsWith('/avis/moderation')
 
   document.title = meta.title
 

@@ -445,6 +445,156 @@ export function CgvOracle({ onBack, onNavigate }) {
 }
 
 /* ─────────────────────────────────────
+   CGV CHRONOSPHÈRE 999 & CHRONOSPHÈRE MAX
+   ───────────────────────────────────── */
+export function CgvChronosphere({ onBack, onNavigate }) {
+  const link = (path, label) => (
+    <a href={path} onClick={(e) => { e.preventDefault(); onNavigate(path) }} className="text-gold hover:underline">{label}</a>
+  )
+  return (
+    <LegalShell onBack={onBack} onNavigate={onNavigate} title="Conditions générales de vente — ChronoSphère 999 et ChronoSphère MAX">
+
+      <p className="font-georgia text-xs text-mist">En vigueur à compter du 24 septembre 2026.</p>
+
+      <Section title="1. Vendeur">
+        <p>
+          Sébastien Seguin, entrepreneur individuel<br />
+          Nom commercial : MediumIA<br />
+          SIRET : 81918584400027<br />
+          1 Chemin des Capucines, 59143 Lederzeele<br />
+          Email : <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline">contact@mediumia.fr</a><br />
+          Téléphone : 06 29 97 38 78
+        </p>
+      </Section>
+
+      <Section title="2. Objet">
+        <p>
+          Les présentes conditions régissent la vente à distance, sur mediumia.fr, des lectures numériques
+          personnalisées ChronoSphère 999 et du suivi ChronoSphère MAX. Elles sont acceptées par le client avant chaque paiement.
+        </p>
+      </Section>
+
+      <Section title="3. Services proposés et prix">
+        <p>
+          <strong className="text-deep">ChronoSphère 999 — tirage unique</strong> : une lecture personnalisée — 5,00 € TTC.<br />
+          <strong className="text-deep">ChronoSphère 999 — pack de 3 tirages</strong> : trois lectures personnalisées à utiliser quand le client le souhaite — 9,90 € TTC.<br />
+          <strong className="text-deep">ChronoSphère MAX</strong> : suivi d’une même situation en 3 lectures reliées, avec mémoire du suivi, comparaison entre les lectures et synthèse finale — 19,90 € TTC. Un compte MediumIA est nécessaire.
+        </p>
+        <p>Les prix sont indiqués en euros, toutes taxes comprises (TVA française au taux de 20 % incluse), avant la validation du paiement.</p>
+      </Section>
+
+      <Section title="4. Nature des lectures">
+        <p>
+          Chaque lecture est un contenu numérique généré à la demande à partir des informations fournies par le client
+          (date, heure et lieu de naissance, sujet, nombres choisis) et du moment de la demande. Les positions astrologiques
+          et les comparaisons entre lectures sont calculées ; leur interprétation est symbolique.
+        </p>
+        <p>
+          Les lectures ne constituent pas des prédictions et ne garantissent aucun résultat. Elles ne remplacent pas l’avis
+          d’un professionnel de santé, du droit ou de la finance, et ne décrivent pas avec certitude ce qu’une autre personne pense ou fera.
+        </p>
+        <p>
+          Les services sont destinés aux personnes majeures (18 ans et plus). En passant commande, le client déclare être majeur
+          ou agir avec l’autorisation de son représentant légal (articles 1146 et suivants du Code civil).
+        </p>
+      </Section>
+
+      <Section title="5. Commande et paiement">
+        <p>
+          Le client renseigne sa demande, prend connaissance des présentes conditions, coche la demande d’exécution immédiate
+          (article 8), puis paie en ligne via PayPal (PayPal (Europe) S.à r.l. et Cie, S.C.A.). Le vendeur n’a pas accès aux données bancaires du client.
+          La commande est confirmée dès la validation du paiement.
+        </p>
+      </Section>
+
+      <Section title="6. Fourniture des lectures">
+        <p>
+          La lecture est générée et affichée à l’écran immédiatement après le paiement, et une copie est envoyée par e-mail à l’adresse indiquée.
+        </p>
+        <p>
+          <strong className="text-deep">Pack de 3 tirages</strong> : l’e-mail de confirmation contient un lien personnel permettant de réaliser les tirages restants.
+          Ce lien est personnel ; le client est responsable de sa conservation.
+        </p>
+        <p>
+          <strong className="text-deep">ChronoSphère MAX</strong> : le suivi et ses lectures sont rattachés au compte MediumIA du client, qui peut les reprendre depuis n’importe quel appareil en se connectant.
+        </p>
+        <p>
+          <strong className="text-deep">Durée de validité</strong> : les tirages d’un pack et les lectures d’un suivi ChronoSphère MAX
+          doivent être utilisés dans les <strong className="text-deep">6 mois</strong> suivant l’achat. Passé ce délai, les tirages non utilisés
+          ne sont plus disponibles et ne donnent pas lieu à remboursement. Cette durée s’applique aux achats effectués à compter du
+          24 septembre 2026 ; la date limite figure dans l’e-mail envoyé après chaque lecture.
+        </p>
+      </Section>
+
+      <Section title="7. Incident technique">
+        <p>
+          Si une lecture payée ne peut pas être générée ou fournie pour une raison technique, le client peut écrire à
+          <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline"> contact@mediumia.fr</a> en indiquant l’adresse e-mail utilisée pour le paiement.
+          Le vendeur répond sous 72 heures ouvrées, puis rétablit la lecture concernée ou, à défaut, rembourse la somme correspondante.
+        </p>
+      </Section>
+
+      <Section title="8. Droit de rétractation">
+        <p>
+          Les lectures sont des contenus numériques personnalisés fournis sans support matériel. Conformément à l’article
+          L. 221-28, 13° du Code de la consommation, le droit de rétractation ne peut pas être exercé lorsque l’exécution a commencé
+          après accord préalable exprès du consommateur et renoncement exprès à ce droit.
+        </p>
+        <p>
+          Avant le paiement, le client demande expressément l’exécution immédiate et reconnaît qu’il perd son droit de rétractation
+          une fois la lecture générée (première lecture pour le pack et pour ChronoSphère MAX). Tant qu’aucune lecture n’a été générée,
+          le client peut se rétracter dans les 14 jours suivant l’achat via le {link('/retractation', 'formulaire de rétractation')}.
+        </p>
+        <p>
+          Lorsque le client décide d’arrêter après une première lecture, les tirages ou lectures non utilisés ne donnent pas lieu
+          à remboursement, la prestation ayant commencé à sa demande. L’e-mail de confirmation envoyé après chaque lecture rappelle
+          cet accord et ce renoncement (article L. 221-13 du Code de la consommation).
+        </p>
+      </Section>
+
+      <Section title="9. Garantie légale de conformité">
+        <p>
+          Les contenus numériques fournis bénéficient de la garantie légale de conformité prévue aux articles L. 224-25-1 et suivants
+          du Code de la consommation. En cas de défaut de conformité (lecture incomplète, illisible ou non fournie), le client peut
+          demander sa mise en conformité ou, à défaut, une réduction du prix ou la résolution du contrat.
+        </p>
+      </Section>
+
+      <Section title="10. Données personnelles">
+        <p>
+          Les informations de naissance et le sujet de la demande sont utilisés pour générer la lecture et l’envoyer au client.
+          Pour ChronoSphère MAX, un résumé de chaque lecture est conservé dans le compte du client pour permettre la comparaison entre
+          les lectures ; le lieu de naissance et les coordonnées exactes n’y sont pas recopiés. Le client peut demander la suppression de ses données à
+          <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline"> contact@mediumia.fr</a>. Voir la {link('/confidentialite', 'politique de confidentialité')}.
+        </p>
+        <p>
+          Les lectures et le suivi MAX sont conservés tant que le client utilise le service, puis au plus 3 ans après sa dernière
+          utilisation, avant d’être supprimés. Les informations de facturation sont conservées pendant la durée imposée par la loi.
+        </p>
+      </Section>
+
+      <Section title="11. Médiation">
+        <p>
+          En cas de litige non résolu après réclamation préalable auprès du vendeur (<a href="mailto:contact@mediumia.fr" className="text-gold hover:underline">contact@mediumia.fr</a>),
+          le consommateur peut recourir gratuitement au médiateur de la consommation :
+        </p>
+        <p>
+          CM2C — Centre de la Médiation de la Consommation de Conciliateurs de Justice<br />
+          49 rue de Ponthieu, 75008 Paris<br />
+          <a href="mailto:contact@cm2c.net" className="text-gold hover:underline">contact@cm2c.net</a> — 01 89 47 00 14<br />
+          <a href="https://www.cm2c.net" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">www.cm2c.net</a>
+        </p>
+      </Section>
+
+      <Section title="12. Droit applicable">
+        <p>Les présentes conditions sont soumises au droit français. En cas de litige, les tribunaux français sont compétents.</p>
+      </Section>
+
+    </LegalShell>
+  )
+}
+
+/* ─────────────────────────────────────
    RÉTRACTATION (page fonctionnelle)
    ───────────────────────────────────── */
 export function Retractation({ onBack, onNavigate }) {

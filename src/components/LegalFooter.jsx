@@ -17,6 +17,8 @@ export default function LegalFooter({ onNavigate }) {
         <span className="hidden sm:inline">·</span>
         <a href="/cgv-oracle" onClick={go('/cgv-oracle')} className="hover:text-gold transition-colors">CGV Oracle</a>
         <span className="hidden sm:inline">·</span>
+        <a href="/cgv-chronosphere" onClick={go('/cgv-chronosphere')} className="hover:text-gold transition-colors">CGV ChronoSphère</a>
+        <span className="hidden sm:inline">·</span>
         <a href="/retractation" onClick={go('/retractation')} className="hover:text-gold transition-colors">Rétractation</a>
         <span className="hidden sm:inline">·</span>
         <a href="mailto:contact@mediumia.fr" className="hover:text-gold transition-colors">Contact</a>

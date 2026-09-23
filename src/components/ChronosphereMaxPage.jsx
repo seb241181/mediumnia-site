@@ -656,6 +656,9 @@ async function captureMaxOrder(orderId, token) {
                       Je demande l’exécution immédiate du service numérique ChronoSphère MAX et reconnais que ce contenu numérique personnalisé ne peut faire l’objet d’un droit de rétractation une fois la première lecture générée (art. L221-28 du Code de la consommation). Je comprends que la mémoire du suivi est rattachée à mon compte MediumIA.
                     </span>
                   </label>
+                  <p className="mt-2 pl-7 font-georgia text-[11px] leading-relaxed text-mist">
+                    Les 3 lectures sont à utiliser dans les 6 mois. <a href="/cgv-chronosphere" target="_blank" rel="noopener noreferrer" className="text-gold underline">Conditions générales de vente</a>
+                  </p>
                   {consentAccepted ? <div ref={paypalContainerRef} className="mt-5 min-h-[50px]" /> : <p className="mt-4 text-center font-georgia text-xs text-mist">Cochez la case pour afficher le paiement PayPal.</p>}
                   {pendingPayment && (
                     <button type="button" disabled={paymentBusy} onClick={verifyPendingMaxPayment} className="mt-3 w-full rounded-xl border border-gold/45 px-5 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">

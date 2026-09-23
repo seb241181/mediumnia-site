@@ -1145,6 +1145,9 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                       Je demande l'exécution immédiate du tirage numérique CHRONOSPHERE 999 et reconnais que ce contenu numérique personnalisé ne peut faire l'objet d'un droit de rétractation une fois le tirage généré (art. L221-28 du Code de la consommation).
                     </span>
                   </label>
+                  <p className="-mt-3 mb-5 pl-7 font-georgia text-[11px] leading-relaxed text-mist">
+                    Pack : tirages à utiliser dans les 6 mois. <a href="/cgv-chronosphere" target="_blank" rel="noopener noreferrer" className="text-gold underline">Conditions générales de vente</a>
+                  </p>
 
                   {consentAccepted && (
                     <div ref={paypalContainerRef} className="min-h-[50px]" />

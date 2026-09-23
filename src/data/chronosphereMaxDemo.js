@@ -186,17 +186,5 @@ export const chronosphereMaxDemoTimeline = {
   finalSynthesis: summarizeChronosphereLine(chronosphereMaxDemoEntries),
 }
 
-export const chronosphereMaxDemoTimelines = [
-  chronosphereMaxDemoTimeline,
-  {
-    id: 'demo-timeline-projet',
-    title: 'Projet professionnel',
-    theme: 'travail',
-    status: 'active',
-    followedSinceDays: 21,
-    lastReadingLabel: '18 septembre 2026',
-    entries: chronosphereMaxDemoEntries.slice(0, 2),
-    comparison: compareChronosphereSnapshots(chronosphereMaxDemoEntries[0].snapshot, chronosphereMaxDemoEntries[1].snapshot, { previousSequence: 1, currentSequence: 2 }),
-    finalSynthesis: null,
-  },
-]
+// A single demo line: every demo entry is about the same relationship question.
+export const chronosphereMaxDemoTimelines = [chronosphereMaxDemoTimeline]

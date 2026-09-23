@@ -14,7 +14,8 @@ function formatDate(value) {
 
 function shortDate(value) {
   if (!value) return ''
-  const date = new Date(`${value}T00:00:00`)
+  const day = String(value).slice(0, 10)
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00`) : new Date(NaN)
   if (Number.isNaN(date.getTime())) return String(value)
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date)
 }
@@ -75,6 +76,13 @@ function normalizeLiveTimeline(value) {
   }
 }
 
+// Stored comparison facts keep raw values (ISO dates, "->"); show them readably.
+function readableFact(value) {
+  return String(value || '')
+    .replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (day) => shortDate(day))
+    .replace(/\s*->\s*/g, ' → ')
+}
+
 function FactCard({ fact }) {
   return (
     <article className="rounded-2xl border border-gold/25 bg-white/85 p-4 shadow-sm md:p-5">
@@ -82,7 +90,7 @@ function FactCard({ fact }) {
       <div className="mt-3 space-y-3 font-georgia text-sm leading-relaxed text-deep/78">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mist">Donnée comparée</p>
-          <p className="mt-1 text-deep">{fact.dataCompared}</p>
+          <p className="mt-1 text-deep">{readableFact(fact.dataCompared)}</p>
         </div>
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mist">Interprétation symbolique</p>
@@ -186,8 +194,8 @@ function TimelineCard({ timeline, selected, onSelect }) {
           <p className="font-georgia text-[10px] uppercase tracking-[0.12em] text-mist">jours</p>
         </div>
         <div className="rounded-xl bg-cream/80 p-3">
-          <p className="font-georgia text-xl text-deep">V2</p>
-          <p className="font-georgia text-[10px] uppercase tracking-[0.12em] text-mist">source</p>
+          <p className="font-georgia text-xl text-deep">{timeline.entries.length >= 3 ? '✓' : 3 - timeline.entries.length}</p>
+          <p className="font-georgia text-[10px] uppercase tracking-[0.12em] text-mist">{timeline.entries.length >= 3 ? 'synthèse' : 'avant synthèse'}</p>
         </div>
       </div>
       <p className="mt-4 font-georgia text-sm text-mist">Dernière lecture : {timeline.lastReadingLabel}</p>
@@ -206,7 +214,7 @@ function SequenceRail({ entries }) {
           <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Mémoire de lecture</p>
           <h2 className="mt-1 font-georgia text-2xl font-medium text-deep md:text-3xl">Trajectoire suivie</h2>
         </div>
-        <p className="font-georgia text-xs text-mist">Snapshots compacts, sans profil natal dupliqué.</p>
+        <p className="font-georgia text-xs text-mist">L’essentiel de chaque lecture, conservé pour comparer.</p>
       </div>
       <div className="mt-6 grid gap-3 md:grid-cols-3">
         {entries.map((entry) => (
@@ -216,7 +224,7 @@ function SequenceRail({ entries }) {
             <h3 className="mt-3 font-georgia text-lg font-medium text-deep">{entry.snapshot.mainCard?.name}</h3>
             <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/72">{entry.snapshot.synthesis}</p>
             <p className="mt-3 font-georgia text-xs text-gold">
-              Fenêtre : {shortDate(entry.snapshot.timing?.primary?.start)} {'>'} {shortDate(entry.snapshot.timing?.primary?.end)}
+              Fenêtre : du {shortDate(entry.snapshot.timing?.primary?.start)} au {shortDate(entry.snapshot.timing?.primary?.end)}
             </p>
           </article>
         ))}
@@ -238,7 +246,7 @@ function ComparisonPanel({ comparison }) {
       <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Depuis votre dernière lecture</p>
       <h2 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-4xl">Ce que MAX compare vraiment.</h2>
       <p className="mt-3 max-w-3xl font-georgia text-sm leading-relaxed text-deep/72 md:text-base">
-        Cette synthèse est construite d’abord par comparaison déterministe des snapshots. L’interprétation reste symbolique et ne transforme jamais le timing en annonce du futur.
+        Cette synthèse compare d’abord, point par point, vos lectures successives : les mêmes données, calculées de la même façon. L’interprétation reste symbolique et ne transforme jamais une période en annonce du futur.
       </p>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         {groups.map(([title, facts]) => (
@@ -246,7 +254,7 @@ function ComparisonPanel({ comparison }) {
             <h3 className="font-georgia text-lg font-medium text-deep">{title}</h3>
             <div className="mt-3 grid gap-3">
               {facts.length ? facts.map((fact) => <FactCard key={`${title}-${fact.kind}-${fact.dataCompared}`} fact={fact} />) : (
-                <p className="font-georgia text-sm leading-relaxed text-mist">Aucune donnée comparée pertinente sur ce bloc dans la fixture actuelle.</p>
+                <p className="font-georgia text-sm leading-relaxed text-mist">Rien de significatif sur ce point entre ces deux lectures.</p>
               )}
             </div>
           </div>
@@ -271,11 +279,11 @@ function FinalSynthesis({ timeline }) {
         </div>
         <div className="rounded-2xl border border-gold/25 p-4">
           <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Fenêtre déplacée</p>
-          <p className="mt-2 font-georgia text-sm text-cream/78">{shortDate(synthesis.firstWindow)} {'>'} {shortDate(synthesis.currentWindow)}</p>
+          <p className="mt-2 font-georgia text-sm text-cream/78">{shortDate(synthesis.firstWindow)} → {shortDate(synthesis.currentWindow)}</p>
         </div>
         <div className="rounded-2xl border border-gold/25 p-4">
           <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Lectures suivies</p>
-          <p className="mt-2 font-georgia text-sm text-cream/78">{synthesis.entriesCount} snapshots comparés</p>
+          <p className="mt-2 font-georgia text-sm text-cream/78">{synthesis.entriesCount} lectures comparées</p>
         </div>
       </div>
     </section>
@@ -588,13 +596,13 @@ async function captureMaxOrder(orderId, token) {
             <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">ChronoSphère MAX</p>
             <h1 className="mt-3 font-georgia text-4xl font-medium leading-tight md:text-6xl">Mes Lignes de Temps</h1>
             <p className="mt-5 max-w-xl font-georgia text-base leading-relaxed text-deep/74 md:text-lg">
-              MAX suit une situation dans le temps. Chaque lecture ajoute un snapshot compact, puis le moteur compare ce qui persiste, se déplace, disparaît ou s’ouvre.
+              MAX suit une situation dans le temps. Chaque nouvelle lecture est mise en regard des précédentes : vous voyez ce qui persiste, ce qui se déplace, ce qui disparaît et ce qui s’ouvre.
             </p>
           </div>
           <aside className="rounded-3xl border border-gold/30 bg-white/75 p-5">
             <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Compte MediumIA requis</p>
             <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/72">
-              La mémoire MAX est liée au compte connecté. Elle réutilise le profil MediumIA existant et ne stocke pas de coordonnées exactes ni de profil natal dupliqué dans le snapshot.
+              La mémoire MAX est liée au compte connecté. Elle réutilise votre profil MediumIA : ni votre lieu de naissance ni vos coordonnées exactes ne sont recopiés dans l’historique des lectures.
             </p>
           </aside>
         </section>

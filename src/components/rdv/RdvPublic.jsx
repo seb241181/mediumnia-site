@@ -29,11 +29,50 @@ function toDateStr(d) {
   ].join('-')
 }
 
+// Scrolls an element into view only when it is not already visible (mobile:
+// the time slots and the continue button sit below the calendar).
+function revealSoftly(el, block = 'nearest') {
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  if (rect.top >= 72 && rect.bottom <= window.innerHeight) return
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block })
+}
+
+const pad2 = (n) => String(n).padStart(2, '0')
+
+// Add-to-calendar links for the confirmed appointment (Paris wall time).
+function calendarLinks({ title, date, time, durationMin, details }) {
+  const [h, m] = time.split(':').map(Number)
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m)
+  const end = new Date(start.getTime() + (durationMin || 60) * 60_000)
+  const stamp = (d) => `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}T${pad2(d.getHours())}${pad2(d.getMinutes())}00`
+  const google = 'https://calendar.google.com/calendar/render?' + new URLSearchParams({
+    action: 'TEMPLATE', text: title, dates: `${stamp(start)}/${stamp(end)}`, ctz: 'Europe/Paris', details,
+  })
+  const esc = (v) => String(v).replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n')
+  const now = new Date()
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MediumIA//Rendez-vous//FR', 'BEGIN:VEVENT',
+    `UID:${stamp(start)}-${Math.random().toString(36).slice(2)}@mediumia.fr`,
+    `DTSTAMP:${now.getUTCFullYear()}${pad2(now.getUTCMonth() + 1)}${pad2(now.getUTCDate())}T${pad2(now.getUTCHours())}${pad2(now.getUTCMinutes())}00Z`,
+    `DTSTART;TZID=Europe/Paris:${stamp(start)}`, `DTEND;TZID=Europe/Paris:${stamp(end)}`,
+    `SUMMARY:${esc(title)}`, `DESCRIPTION:${esc(details)}`,
+    'BEGIN:VALARM', 'TRIGGER:-PT1H', 'ACTION:DISPLAY', `DESCRIPTION:${esc(title)}`, 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].join('\r\n')
+  return { google, ics: `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}` }
+}
+
 // ── Step indicator ───────────────────────────────────────────────────────────
 
 function StepBar({ step }) {
   const labels = ['Prestation', 'Date & Heure', 'Coordonnées', 'Paiement']
   return (
+    <>
+    <p className="sm:hidden font-georgia text-[11px] uppercase tracking-[0.16em] text-mist mb-2">
+      Étape {step + 1} sur {labels.length} · <span className="text-deep">{labels[step]}</span>
+    </p>
     <div className="flex items-center gap-0 mb-8">
       {labels.map((label, i) => (
         <div key={label} className="flex items-center flex-1 last:flex-none">
@@ -49,6 +88,7 @@ function StepBar({ step }) {
         </div>
       ))}
     </div>
+    </>
   )
 }
 
@@ -129,6 +169,13 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
   const [fetchError, setFetchError] = useState(null)
   const dayAvailRef = useRef(dayAvail)
   dayAvailRef.current = dayAvail
+  const autoAdvanceRef = useRef(true)
+
+  useEffect(() => {
+    autoAdvanceRef.current = true
+    const base = selected || new Date()
+    setViewDate(new Date(base.getFullYear(), base.getMonth(), 1))
+  }, [serviceSlug]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
@@ -142,10 +189,9 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
     return config?.availableWeekdays ? config.availableWeekdays.includes(wd) : (wd !== 0 && wd !== 6)
   }
 
-  // Fetches availability per day because rdv-availability depends on per-date
-  // Google FreeBusy, booking_exceptions, and day-of-week rules — a monthly
-  // batch would require refactoring the validated availability engine.
-  // Batches of 5 keep latency manageable (~4-5 rounds for a typical month).
+  // Loads the visible month in one range request (?from=&days=, same engine as
+  // the day view). If that fails, the per-day loop checks the remaining days in
+  // batches of 5.
   useEffect(() => {
     if (!serviceSlug || !config || config.mode === 'configuration_required') return
 
@@ -170,6 +216,8 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
     setLoadingMonths(prev => ({ ...prev, [monthKey]: true }))
 
     async function run() {
+      let monthHasAvailability = candidates.some(d => dayAvailRef.current[toDateStr(d)] === true)
+
       for (let i = 0; i < candidates.length; i += 5) {
         if (cancelled) return
         const batch = candidates.slice(i, i + 5)
@@ -204,14 +252,60 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
 
         const update = {}
         for (const r of results) {
-          if (r) update[r.dateStr] = r.has
+          if (r) {
+            update[r.dateStr] = r.has
+            if (r.has === true) monthHasAvailability = true
+          }
         }
         if (Object.keys(update).length > 0) onDayAvailUpdate(update)
       }
-      if (!cancelled) setLoadingMonths(prev => ({ ...prev, [monthKey]: false }))
+
+      if (!cancelled) {
+        setLoadingMonths(prev => ({ ...prev, [monthKey]: false }))
+        if (autoAdvanceRef.current) {
+          if (monthHasAvailability) {
+            autoAdvanceRef.current = false
+          } else {
+            const nextMonth = new Date(year, month + 1, 1)
+            if (nextMonth <= maxDate) {
+              setViewDate(nextMonth)
+            } else {
+              autoAdvanceRef.current = false
+            }
+          }
+        }
+      }
     }
 
-    run()
+    // One request for the whole month; on any doubt the per-day loop below
+    // re-checks only the days still unknown.
+    async function loadMonthAtOnce() {
+      try {
+        const first = candidates[0]
+        const last = candidates[candidates.length - 1]
+        const params = new URLSearchParams({
+          practitioner: practitionerSlug,
+          service_slug: serviceSlug,
+          from: toDateStr(candidates[0]),
+          days: String(Math.round((last - first) / 86_400_000) + 1),
+        })
+        const res = await fetch(`/api/rdv-availability?${params}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled || data?.mode !== 'live' || !data.days) return
+        const update = {}
+        for (const d of candidates) {
+          const key = toDateStr(d)
+          if (typeof data.days[key] === 'boolean') update[key] = data.days[key]
+        }
+        dayAvailRef.current = { ...dayAvailRef.current, ...update }
+        onDayAvailUpdate(update)
+      } catch {
+        // Fall back to per-day checks.
+      }
+    }
+
+    loadMonthAtOnce().then(() => { if (!cancelled) run() })
     return () => { cancelled = true }
   }, [monthKey, serviceSlug, practitionerSlug]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -309,7 +403,10 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
       </div>
 
       {loadingMonths[monthKey] && (
-        <p className="mt-3 pt-3 border-t border-gold/10 font-georgia text-[10px] text-mist/40 text-right">Vérification des disponibilités…</p>
+        <div className="mt-4 rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 flex items-center justify-center gap-2.5 shadow-sm">
+          <span className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin shrink-0" />
+          <p className="font-georgia text-sm font-semibold text-deep">Recherche des prochaines disponibilités…</p>
+        </div>
       )}
 
       {fetchError && (
@@ -358,7 +455,9 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
     )
   }
 
-  if (!result || result.slots.length === 0) {
+  const freeSlots = Array.isArray(result?.slots) ? result.slots.filter(slot => slot.available) : []
+
+  if (!freeSlots.length) {
     let msg = 'Aucun créneau disponible ce jour.'
     let sub = null
     if (result?.mode === 'configuration_required') {
@@ -368,6 +467,9 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
       msg = result.notice || 'Impossible de synchroniser avec Google Agenda.'
     } else if (result?.closed) {
       msg = 'Fermé ce jour (fermeture exceptionnelle).'
+    } else if (result?.slots?.length) {
+      msg = 'Tous les créneaux de ce jour sont déjà réservés.'
+      sub = 'Choisissez une autre date dans le calendrier.'
     }
     return (
       <div className="rounded-xl border border-gold/20 px-5 py-8 text-center">
@@ -382,26 +484,34 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
       {result.mode === 'demo' && (
         <p className="font-georgia text-xs text-mist/70 italic mb-3">Créneaux de démonstration — agenda réel non connecté.</p>
       )}
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        {result.slots.map(slot => (
-          <button
-            key={slot.time}
-            onClick={() => slot.available && onSelect(slot.time)}
-            disabled={!slot.available}
-            className={`rounded-xl border py-3 font-georgia text-sm font-semibold transition-all ${
-              selected === slot.time
-                ? 'border-gold bg-gold text-deep shadow-sm'
-                : slot.available
-                  ? 'border-gold/30 text-deep hover:border-gold hover:bg-gold/10'
-                  : 'border-gold/10 text-mist/30 cursor-not-allowed line-through'
-            }`}
-          >
-            {slot.time}
-          </button>
-        ))}
-      </div>
-      <p className="font-georgia text-xs text-mist/50 mt-3">
-        {service.durationLabel} · {service.modalityLabel}
+      {[
+        ['Matin', freeSlots.filter(slot => slot.time < '12:00')],
+        ['Après-midi', freeSlots.filter(slot => slot.time >= '12:00' && slot.time < '18:00')],
+        ['Soir', freeSlots.filter(slot => slot.time >= '18:00')],
+      ].filter(([, group]) => group.length).map(([label, group]) => (
+        <div key={label} className="mb-4 last:mb-0">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-mist mb-2">{label}</p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {group.map(slot => (
+              <button
+                key={slot.time}
+                type="button"
+                onClick={() => onSelect(slot.time)}
+                aria-pressed={selected === slot.time}
+                className={`rounded-xl border py-3 font-georgia text-sm font-semibold transition-all ${
+                  selected === slot.time
+                    ? 'border-gold bg-gold text-deep shadow-sm'
+                    : 'border-gold/30 text-deep hover:border-gold hover:bg-gold/10'
+                }`}
+              >
+                {slot.time}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <p className="font-georgia text-xs text-mist/60 mt-3">
+        {service.durationLabel} · {service.modalityLabel} · heure de Paris
       </p>
     </div>
   )
@@ -418,7 +528,7 @@ function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la ré
     const e = {}
     if (!form.firstName.trim()) e.firstName = 'Prénom requis'
     if (!form.lastName.trim())  e.lastName  = 'Nom requis'
-    if (!form.email.trim() || !form.email.includes('@')) e.email = 'Email invalide'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) e.email = 'Adresse e-mail à vérifier (ex. vous@exemple.fr)'
     return e
   }
 
@@ -441,28 +551,29 @@ function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la ré
       )}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={label}>Prénom <span className="text-gold">*</span></label>
-          <input type="text" value={form.firstName} onChange={e => set('firstName', e.target.value)} className={input} placeholder="Marie" />
+          <label htmlFor="rdv-first-name" className={label}>Prénom <span className="text-gold">*</span></label>
+          <input id="rdv-first-name" type="text" autoComplete="given-name" value={form.firstName} onChange={e => set('firstName', e.target.value)} className={input} placeholder="Marie" />
           {errors.firstName && <p className="font-georgia text-xs text-red-500 mt-1">{errors.firstName}</p>}
         </div>
         <div>
-          <label className={label}>Nom <span className="text-gold">*</span></label>
-          <input type="text" value={form.lastName} onChange={e => set('lastName', e.target.value)} className={input} placeholder="Dupont" />
+          <label htmlFor="rdv-last-name" className={label}>Nom <span className="text-gold">*</span></label>
+          <input id="rdv-last-name" type="text" autoComplete="family-name" value={form.lastName} onChange={e => set('lastName', e.target.value)} className={input} placeholder="Dupont" />
           {errors.lastName && <p className="font-georgia text-xs text-red-500 mt-1">{errors.lastName}</p>}
         </div>
       </div>
       <div>
-        <label className={label}>Email <span className="text-gold">*</span></label>
-        <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={input} placeholder="vous@exemple.fr" />
+        <label htmlFor="rdv-email" className={label}>Email <span className="text-gold">*</span></label>
+        <input id="rdv-email" type="email" autoComplete="email" inputMode="email" value={form.email} onChange={e => set('email', e.target.value)} className={input} placeholder="vous@exemple.fr" />
+        <p className="font-georgia text-[11px] text-mist/70 mt-1">La confirmation et le lien du rendez-vous arrivent à cette adresse.</p>
         {errors.email && <p className="font-georgia text-xs text-red-500 mt-1">{errors.email}</p>}
       </div>
       <div>
-        <label className={label}>Téléphone <span className="text-mist">(facultatif)</span></label>
-        <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={input} placeholder="06 12 34 56 78" />
+        <label htmlFor="rdv-phone" className={label}>Téléphone <span className="text-mist">(facultatif)</span></label>
+        <input id="rdv-phone" type="tel" autoComplete="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={input} placeholder="06 12 34 56 78" />
       </div>
       <div>
-        <label className={label}>Message <span className="text-mist">(facultatif)</span></label>
-        <textarea rows={3} value={form.message} onChange={e => set('message', e.target.value)} className={input} placeholder="Un mot sur votre démarche..." />
+        <label htmlFor="rdv-message" className={label}>Message <span className="text-mist">(facultatif)</span></label>
+        <textarea id="rdv-message" rows={3} value={form.message} onChange={e => set('message', e.target.value)} className={input} placeholder="Un mot sur votre démarche..." />
       </div>
       <button
         type="submit"
@@ -656,6 +767,13 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   const [dayAvail, setDayAvail] = useState({})
 
+  const flowRef = useRef(null)
+  const slotsRef = useRef(null)
+  const continueRef = useRef(null)
+  useEffect(() => { if (flowRef.current && flowRef.current.getBoundingClientRect().top < 0) revealSoftly(flowRef.current, 'start') }, [step])
+  useEffect(() => { if (date) revealSoftly(slotsRef.current, 'start') }, [date])
+  useEffect(() => { if (time) revealSoftly(continueRef.current) }, [time])
+
   useEffect(() => {
     fetch(`/api/rdv-config?practitioner=${encodeURIComponent(slug)}`)
       .then(r => r.json())
@@ -711,8 +829,10 @@ export default function RdvPublic({ onBack, onNavigate }) {
     }
   }
 
-  function selectDate(d)  { setDate(d); setTime(null) }
-  function selectTime(t)  { setTime(t) }
+  function selectDate(d)  { setDate(d); setTime(null); setBookingError(null) }
+  function selectTime(t)  { setTime(t); setBookingError(null) }
+  const nextAvailableKey = Object.keys(dayAvail).filter(key => dayAvail[key] === true).sort()[0]
+  const nextAvailableDate = nextAvailableKey ? new Date(`${nextAvailableKey}T12:00:00`) : null
 
   async function handleSubmitRequest(requestForm) {
     setBookingLoading(true)
@@ -885,6 +1005,28 @@ export default function RdvPublic({ onBack, onNavigate }) {
               )}
               {bookingResult.balanceCents != null && <p className="font-georgia text-sm"><span className="text-mist">Solde restant :</span> <strong>{(bookingResult.balanceCents / 100).toFixed(2).replace('.', ',')} €</strong></p>}
             </div>
+            {(() => {
+              const links = calendarLinks({
+                title: `Rendez-vous MediumIA — ${service.title}`,
+                date,
+                time,
+                durationMin: service.duration_min,
+                details: `${service.title}${practitioner ? ` avec ${practitioner.name}` : ''} (${service.modalityLabel}). Toutes les informations figurent dans votre e-mail de confirmation.`,
+              })
+              return (
+                <div className="mb-8">
+                  <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-mist mb-3">Ajouter à mon agenda</p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <a href={links.google} target="_blank" rel="noopener noreferrer" className="font-georgia rounded-xl border border-gold/40 px-5 py-3 text-sm font-semibold text-deep hover:bg-gold/10 transition-colors">
+                      Google Agenda
+                    </a>
+                    <a href={links.ics} download="rendez-vous-mediumia.ics" className="font-georgia rounded-xl border border-gold/40 px-5 py-3 text-sm font-semibold text-deep hover:bg-gold/10 transition-colors">
+                      Apple / Outlook (.ics)
+                    </a>
+                  </div>
+                </div>
+              )
+            })()}
             <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
               ← Retour à MediumIA
             </button>
@@ -929,7 +1071,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
         <div className="grid md:grid-cols-3 gap-8">
 
           {/* Main booking flow */}
-          <div className="md:col-span-2">
+          <div ref={flowRef} className="md:col-span-2 scroll-mt-24">
             {typeof step === 'number' ? <StepBar step={step} /> : <RequestStepBar />}
 
             {/* Step 0 — Service */}
@@ -957,6 +1099,21 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   <button onClick={() => setStep(0)} className="font-georgia text-xs text-mist hover:text-deep">← Prestation</button>
                   <h2 className="font-georgia font-medium text-xl">Choisissez une date</h2>
                 </div>
+                {bookingError && (
+                  <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-4 font-georgia text-sm text-red-800">
+                    {bookingError} Choisissez un autre horaire.
+                  </div>
+                )}
+                {!date && nextAvailableDate && (
+                  <button
+                    type="button"
+                    onClick={() => selectDate(nextAvailableDate)}
+                    className="mb-4 w-full rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-left font-georgia text-sm text-deep hover:bg-gold/15 transition-colors"
+                  >
+                    <span className="block text-[10px] uppercase tracking-[0.16em] text-mist">Prochaine disponibilité</span>
+                    <span className="font-semibold capitalize">{fmt(nextAvailableDate)}</span> — voir les horaires →
+                  </button>
+                )}
                 <CalendarGrid
                   practitionerSlug={slug}
                   serviceSlug={service.slug}
@@ -967,7 +1124,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   onDayAvailUpdate={(update) => setDayAvail(prev => ({ ...prev, ...update }))}
                 />
                 {date && (
-                  <div className="mt-6">
+                  <div ref={slotsRef} className="mt-6 scroll-mt-24">
                     <p className="font-georgia text-sm font-semibold text-deep capitalize mb-3">{fmt(date)}</p>
                     <TimeSlots
                       practitionerSlug={slug}
@@ -978,6 +1135,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                     />
                     {time && (
                       <button
+                        ref={continueRef}
                         onClick={() => setStep(2)}
                         className="mt-6 w-full font-georgia py-4 rounded-xl bg-gold text-deep font-bold hover:bg-gold/90 transition-colors"
                       >

@@ -957,6 +957,19 @@
     flex-basis: auto;
   }
 
+  /* Stacked, two full buttons read as a double call to action: on phones the
+     booking link stays reachable but becomes a discreet link under the main one. */
+  .cosmic-library__secondary {
+    min-height: 40px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    text-decoration: underline;
+    text-decoration-color: rgba(183, 122, 18, 0.55);
+    text-underline-offset: 4px;
+  }
+
   .cosmic-library__centerpiece {
     margin-top: 0.7rem;
   }

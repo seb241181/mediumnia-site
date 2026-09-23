@@ -32,3 +32,13 @@ test('robots and sitemap expose public doors without private API or cancellation
   assert.doesNotMatch(sitemap, /\/api\//)
   assert.doesNotMatch(sitemap, /\/rdv\/annuler/)
 })
+
+test('sitemap lists ChronoSphère MAX and every published practitioner profile', async () => {
+  const sitemap = read('public/sitemap.xml')
+  const { reseauPractitioners } = await import('../src/data/reseauPractitioners.js')
+  assert.match(sitemap, /<loc>https:\/\/mediumia\.fr\/chronosphere-max<\/loc>/)
+  assert.ok(reseauPractitioners.length > 0)
+  for (const { id } of reseauPractitioners) {
+    assert.match(sitemap, new RegExp(`<loc>https://mediumia\\.fr/reseau/${id}</loc>`), `missing /reseau/${id}`)
+  }
+})

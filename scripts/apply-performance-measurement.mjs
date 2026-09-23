@@ -30,6 +30,7 @@ for (const eagerImport of [
   `import RdvCancellation from './components/rdv/RdvCancellation'\n`,
   `import ChronospherePage from './components/ChronospherePage'\n`,
   `import ChronosphereExamplePage from './components/ChronosphereExamplePage'\n`,
+  `import ChronosphereMaxPage from './components/ChronosphereMaxPage'\n`,
 ]) {
   app = app.replace(eagerImport, '')
 }
@@ -46,6 +47,7 @@ const RdvPublic = lazy(() => import('./components/rdv/RdvPublic'))
 const RdvCancellation = lazy(() => import('./components/rdv/RdvCancellation'))
 const ChronospherePage = lazy(() => import('./components/ChronospherePage'))
 const ChronosphereExamplePage = lazy(() => import('./components/ChronosphereExamplePage'))
+const ChronosphereMaxPage = lazy(() => import('./components/ChronosphereMaxPage'))
 
 function DeferredRoute({ children }) {
   return (
@@ -109,6 +111,10 @@ const routeReplacements = [
   [
     `  if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>`,
     `  if (view === 'rdv-public')   return <DeferredRoute><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</DeferredRoute>`,
+  ],
+  [
+    `  if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>`,
+    `  if (view === 'chronosphere-max') return <DeferredRoute><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</DeferredRoute>`,
   ],
 ]
 

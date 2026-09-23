@@ -40,6 +40,14 @@ const routeSeoHelpers = `const ROUTE_META = {
     title: 'Exemple de tirage Chronosphère 999 | MediumIA',
     description: 'Découvrez un exemple complet de lecture Chronosphère 999 avant de réaliser votre propre tirage.',
   },
+  'chronosphere-max': {
+    title: 'ChronoSphère MAX — Suivre votre Ligne de Temps en 3 lectures | MediumIA',
+    description: 'Suivez une même situation dans le temps : 3 lectures reliées, mémoire du suivi, comparaison de ce qui persiste ou évolue, tempérament solaire et synthèse finale.',
+  },
+  pro: {
+    title: 'MediumIA Pro — Assistants IA pour les professionnels de l’accompagnement',
+    description: 'MediumIA Pro prépare des assistants IA et des outils pour les professionnels de l’accompagnement, du bien-être et de la médiumnité. Rejoignez la liste prioritaire.',
+  },
   'reseau-dir': {
     title: 'Réseau MediumIA — Trouver un praticien',
     description: 'Découvrez les praticiens du Réseau MediumIA et trouvez un accompagnement selon votre besoin, votre pratique et votre localisation.',

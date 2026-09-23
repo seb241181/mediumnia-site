@@ -6,6 +6,7 @@ import ConferenceLivePage from './components/ConferenceLivePage.jsx'
 import ConferenceCockpitPage from './components/ConferenceCockpitPage.jsx'
 import ConferenceRehearsalTokenPage from './components/ConferenceRehearsalTokenPage.jsx'
 import GlobalAccount from './components/GlobalAccount.jsx'
+import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 
 const pathname = window.location.pathname
 const isConferenceLiveRoute = pathname.startsWith('/live/')
@@ -19,7 +20,7 @@ if (isConferenceRehearsalRoute) page = <ConferenceRehearsalTokenPage />
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    {page}
-    <GlobalAccount />
+    <AppErrorBoundary>{page}</AppErrorBoundary>
+    <AppErrorBoundary silent><GlobalAccount /></AppErrorBoundary>
   </StrictMode>,
 )

@@ -15,7 +15,8 @@
     "test:pro-documents": "node --test tests/integration/mediumiaProDocumentShadowPhase1B.postgres.test.js",
     "test:pro-edge-bridge": "deno test --config supabase/functions/agent-documents/deno.json supabase/functions/agent-documents/*.test.ts && node --test tests/integration/mediumiaProEdgeBridgePhase1B.postgres.test.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke-render.mjs"
   },
   "dependencies": {
     "@photostructure/tz-lookup": "^11.6.1",

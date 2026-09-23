@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const root = process.cwd()
 const guardianPath = path.join(root, 'src/components/SiteGuardian.jsx')
@@ -85,18 +86,18 @@ writeIfChanged(indexPath, html)
 fs.mkdirSync(publicDir, { recursive: true })
 writeIfChanged(path.join(publicDir, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /rdv/annuler\nSitemap: https://mediumia.fr/sitemap.xml\n`)
 
+// Practitioner profiles come from the data file so every published profile is listed.
+const { reseauPractitioners } = await import(pathToFileURL(path.join(root, 'src/data/reseauPractitioners.js')).href)
 const urls = [
   '/',
   '/formation',
   '/oracle',
   '/chronosphere',
   '/chronosphere/exemple',
+  '/chronosphere-max',
   '/reseau',
   '/reseau/rejoindre',
-  '/reseau/amandine-pouwels',
-  '/reseau/lydie-lesaffre',
-  '/reseau/willy-ryckebusch',
-  '/reseau/gilda',
+  ...reseauPractitioners.map((practitioner) => `/reseau/${practitioner.id}`),
   '/conferences',
   '/pro',
 ]

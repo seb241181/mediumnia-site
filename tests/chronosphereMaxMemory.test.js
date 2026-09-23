@@ -7,6 +7,7 @@ import { chronosphereMaxDemoEntries, chronosphereMaxDemoTimeline } from '../src/
 import { getSolarTemperament, SOLAR_TEMPERAMENTS } from '../lib/chronosphereSolarTemperament.js'
 
 const migrationPath = new URL('../supabase/migrations/20260923143000_chronosphere_max_memory_foundation.sql', import.meta.url)
+const launchMigrationPath = new URL('../supabase/migrations/20260923154500_chronosphere_max_launch.sql', import.meta.url)
 const pagePath = new URL('../src/components/ChronosphereMaxPage.jsx', import.meta.url)
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const paypalPath = new URL('../lib/chronospherePayPal.js', import.meta.url)
@@ -31,6 +32,7 @@ function minimalResult() {
       houseSystem: 'Placidus',
       ascendant: '1° Balance',
       mc: '8° Cancer',
+      sunSign: 'Sagittaire',
       timing: {
         horizonDays: 120,
         quality: 'soutien en construction',
@@ -98,6 +100,7 @@ test('MAX snapshot is compact and excludes duplicated personal profile data', ()
   assert.equal(snapshot.schemaVersion, 'chronosphere-max-snapshot-v1')
   assert.equal(snapshot.sourceSchemaVersion, 'chronosphere-v2')
   assert.equal(snapshot.mainCard.name, 'Le Passage')
+  assert.equal(snapshot.solarSign, 'Sagittaire')
   assert.equal(snapshot.activatedDomain.house, 'X')
   assert.doesNotMatch(serialized, /birthDate|birthTime|birthPlace|resolvedBirthPlace|Europe\/Paris|Personne Exemple|interpretation|drawToken|packToken|deliveryEmail/)
 })
@@ -156,27 +159,33 @@ test('MAX preview exposes the solar temperament panel without turning it into a 
   assert.match(page, /pas une vérité psychologique/)
 })
 
-test('MAX preview route is isolated from V2 pricing and PayPal checkout', async () => {
-  const [page, app, paypal, vercel] = await Promise.all([
+test('MAX launch stays distinct from V2 and exposes its own 19.90 checkout', async () => {
+  const [page, app, paypal, vercel, launchSql] = await Promise.all([
     readFile(pagePath, 'utf8'),
     readFile(appPath, 'utf8'),
     readFile(paypalPath, 'utf8'),
     readFile(vercelPath, 'utf8'),
+    readFile(launchMigrationPath, 'utf8'),
   ])
   assert.match(app, /chronosphere-max/)
   assert.deepEqual(JSON.parse(vercel).rewrites.find((route) => route.source === '/chronosphere-max'), {
     source: '/chronosphere-max',
     destination: '/index.html',
   })
-  assert.match(page, /Mes Lignes de Temps/)
-  assert.match(page, /Continuer cette Ligne de Temps/)
+  assert.match(page, /19,90 €/)
+  assert.match(page, /ChronoSphère MAX activé/)
+  assert.match(page, /product: 'max3'/)
   assert.match(page, /Donnée comparée/)
   assert.match(page, /Interprétation symbolique/)
-  assert.match(page, /Créer une nouvelle Ligne de Temps/)
-  assert.doesNotMatch(page, /PayPal|paypal|9,90|5 €|Faire mon tirage/)
   assert.doesNotMatch(page, /probabilit/i)
+  assert.match(paypal, /MAX_CONSENT_VERSION/)
+  assert.match(paypal, /displayAmount: '19\.90'/)
+  assert.match(paypal, /product === 'max3'/)
   assert.match(paypal, /displayAmount: '9\.90'/)
   assert.match(paypal, /displayAmount: '5\.00'/)
+  assert.match(launchSql, /amount_cents in \(100, 990, 1990\)/)
+  assert.match(launchSql, /product_type in \('pack3', 'max3'\)/)
+  assert.match(launchSql, /max_pack_id/)
 })
 
 test('V2 bundle verifier stays scoped to the V2 offer while MAX becomes a distinct route', async () => {

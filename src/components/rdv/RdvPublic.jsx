@@ -141,8 +141,8 @@ function ServiceCard({ service, selected, onSelect }) {
         )}
         {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
           <span className="text-gold font-semibold">
-            → {service.modality?.includes('video')
-              ? `${service.reservationPaymentLabel} d’arrhes ou paiement intégral en ligne`
+            → {service.price_cents > service.reservationPaymentCents
+              ? `${service.reservationPaymentLabel} d’arrhes ou totalité en ligne — carte bancaire ou PayPal, 4X possible`
               : `${service.reservationPaymentLabel} d’arrhes à la réservation`}
           </span>
         )}
@@ -729,8 +729,8 @@ function Summary({ practitioner, service, date, time }) {
           <p className="font-georgia text-xs text-mist">{service.modalityLabel}</p>
           {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
             <p className="font-georgia text-xs text-gold mt-1">
-              {service.modality?.includes('video')
-                ? `Paiement en ligne : ${service.reservationPaymentLabel} d’arrhes ou totalité`
+              {service.price_cents > service.reservationPaymentCents
+                ? `Paiement en ligne : ${service.reservationPaymentLabel} d’arrhes ou totalité (carte bancaire ou PayPal, 4X possible)`
                 : `${service.reservationPaymentLabel} d’arrhes à la réservation`}
             </p>
           )}
@@ -814,7 +814,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
     && service?.reservationPaymentKind === 'arrhes'
     && service?.reservationPaymentCents > 0
   const selectedModality = service?.modality?.includes('video') ? 'video' : 'in-person'
-  const videoOffersFullPayment = requiresDeposit && service?.modality?.includes('video')
+  const offersFullPayment = requiresDeposit && service?.price_cents > service?.reservationPaymentCents
   const checkoutStorageKey = service && date && time
     ? `mediumia:rdv-arrhes:${slug}:${service.id}:${toDateStr(date)}:${time}`
     : null
@@ -1159,7 +1159,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   loading={bookingLoading}
                   error={bookingError}
                   submitLabel={requiresDeposit
-                    ? (videoOffersFullPayment
+                    ? (offersFullPayment
                       ? 'Continuer vers le paiement →'
                       : `Continuer vers le paiement des ${service.reservationPaymentLabel} d’arrhes →`)
                     : 'Confirmer la réservation →'}

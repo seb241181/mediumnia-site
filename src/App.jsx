@@ -126,7 +126,7 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function FeaturedChronosphere({ onOpen, onOpenExample }) {
+function FeaturedChronosphere({ onOpen, onOpenExample, onOpenMax }) {
   return (
     <article
       className="cosmic-card-lift relative isolate overflow-hidden rounded-3xl border border-gold/35 px-7 py-9 shadow-xl md:px-12 md:py-12"
@@ -154,6 +154,23 @@ function FeaturedChronosphere({ onOpen, onOpenExample }) {
             <button onClick={onOpenExample} className="rounded-lg border border-gold/55 px-7 py-4 font-georgia text-base font-bold text-gold transition-colors hover:bg-gold/10">
               Voir un exemple
             </button>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/[.08] p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">ChronoSphère MAX</span>
+                  <span className="font-georgia text-sm font-semibold text-cream">19,90 € TTC</span>
+                </div>
+                <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/72">
+                  ChronoSphère vous montre votre ligne de temps. MAX la suit avec vous : 3 lectures reliées, mémoire, comparaison, évolution des fenêtres et synthèse finale.
+                </p>
+              </div>
+              <button onClick={onOpenMax} className="shrink-0 rounded-lg border border-gold/65 bg-deep/40 px-6 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-gold/10">
+                Découvrir MAX →
+              </button>
+            </div>
           </div>
         </div>
         <div className="relative mx-auto w-full max-w-[265px] md:max-w-[310px]">
@@ -230,7 +247,7 @@ function OracleChronosphereBridge({ onOpenOracle, onOpenChronosphere }) {
   )
 }
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenChronosphereMax, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
     <div id="top" className="cosmic-home bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -262,7 +279,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
               <FeaturedAccompagnement onOpen={onOpenFormation} />
             </div>
             <OracleChronosphereBridge onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
-            <FeaturedChronosphere onOpen={onOpenChronosphere} onOpenExample={onOpenChronosphereExample} />
+            <FeaturedChronosphere onOpen={onOpenChronosphere} onOpenExample={onOpenChronosphereExample} onOpenMax={onOpenChronosphereMax} />
             <div className="grid md:grid-cols-2 gap-5">
               <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>
                 Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
@@ -337,6 +354,7 @@ export default function App() {
   const openOracle     = () => nav('/oracle',           'oracle')
   const openChronosphere = () => nav('/chronosphere',  'chronosphere')
   const openChronosphereExample = () => nav('/chronosphere/exemple', 'chronosphere-example')
+  const openChronosphereMax = () => nav('/chronosphere-max', 'chronosphere-max')
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
@@ -369,5 +387,5 @@ export default function App() {
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenChronosphereMax={openChronosphereMax} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
 }

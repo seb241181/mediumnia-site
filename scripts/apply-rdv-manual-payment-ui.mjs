@@ -31,6 +31,10 @@ if (source.includes('  }, [practitionerId, session, month])')) {
   source = source.replace('  }, [practitionerId, session, month])', '  }, [practitionerId, session, month, refreshNonce])')
   changed = true
 }
+if (source.includes('  }, [practitionerId, session, month, dayNonce])')) {
+  source = source.replace('  }, [practitionerId, session, month, dayNonce])', '  }, [practitionerId, session, month, dayNonce, refreshNonce])')
+  changed = true
+}
 
 if (!source.includes("window.addEventListener('mediumia:manual-payment'")) {
   const marker = "  const entries = data?.entries || []\n"

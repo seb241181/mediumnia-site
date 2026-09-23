@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import DailyPayments from './DailyPayments.jsx'
 
 function authHeader(session) {
   return session ? { Authorization: `Bearer ${session.access_token}` } : {}
@@ -87,6 +88,7 @@ export default function AccountingSection({ practitionerId, session }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [dayNonce, setDayNonce] = useState(0)
 
   useEffect(() => {
     if (!practitionerId || !session || !month) return
@@ -122,7 +124,7 @@ export default function AccountingSection({ practitionerId, session }) {
       })
 
     return () => { cancelled = true }
-  }, [practitionerId, session, month])
+  }, [practitionerId, session, month, dayNonce])
 
   const entries = data?.entries || []
   const totals = data?.totals || {}
@@ -194,7 +196,9 @@ export default function AccountingSection({ practitionerId, session }) {
         </div>
       </div>
 
-      <p className="mt-4 font-georgia text-xs font-semibold capitalize text-deep">{monthLabel}</p>
+      <DailyPayments practitionerId={practitionerId} session={session} onSaved={() => setDayNonce(value => value + 1)} />
+
+      <p className="mt-6 font-georgia text-xs font-semibold capitalize text-deep">{monthLabel}</p>
 
       {loading && (
         <div className="flex items-center justify-center gap-3 py-10">

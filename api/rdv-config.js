@@ -13,6 +13,7 @@ import { handleRdvDepositApi } from '../lib/rdvDepositApiHandler.js'
 import { handleRdvFullPaymentCreate } from '../lib/rdvFullPaymentApiHandler.js'
 import { handleRdvBalanceApi } from '../lib/rdvBalanceApiHandler.js'
 import { handleRdvBalanceDailyCron } from '../lib/rdvBalanceCronHandler.js'
+import { handleCustomerReviews } from '../lib/customerReviews.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -51,6 +52,11 @@ export default async function handler(req, res) {
 
   if (req.query?.action === 'reseau-apply') {
     return handleReseauApply(req, res)
+  }
+
+  const reviewsAction = req.query?.reviewsAction
+  if (reviewsAction) {
+    return handleCustomerReviews(req, res, reviewsAction)
   }
 
   const chronospherePayPalAction = req.query?.chronospherePayPalAction

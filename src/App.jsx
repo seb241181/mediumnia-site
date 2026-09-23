@@ -20,6 +20,7 @@ import ChronosphereMaxPage from './components/ChronosphereMaxPage'
 import SiteGuardian from './components/SiteGuardian'
 import CosmicLibraryHero from './components/CosmicLibraryHero'
 import ConferencePassPage from './components/ConferencePassPage'
+import ReviewsPage, { ReviewsHighlight } from './components/ReviewsPage'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -265,6 +266,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         {/* ── Consulter ── */}
         <ConsultationSection id="consulter" onOpenRdv={onOpenRdv} />
 
+        {/* ── Avis clients (uniquement ceux validés) ── */}
+        <ReviewsHighlight />
+
         {/* ── Découvrir ── */}
         <section id="decouvrir" className="cosmic-discovery px-6 py-16 max-w-6xl mx-auto">
           <div className="cosmic-section-heading text-center max-w-3xl mx-auto mb-12">
@@ -332,6 +336,7 @@ function pathToView(p) {
     : p.startsWith('/pass/mediumia/') ? 'conference-pass'
     : p.startsWith('/reseau/rejoindre') ? 'reseau-form'
     : p.startsWith('/reseau') ? 'reseau-dir'
+    : p === '/avis' || p.startsWith('/avis/') ? 'avis'
     : p === '/mentions' ? 'mentions'
     : p === '/confidentialite' ? 'confidentialite'
     : p === '/cgv-oracle' ? 'cgv-oracle'
@@ -381,6 +386,7 @@ export default function App() {
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-example') return <><ChronosphereExamplePage onBack={backHome} onOpenChronosphere={openChronosphere} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'avis')         return <><ReviewsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />

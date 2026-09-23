@@ -175,13 +175,15 @@ function CosmicDock({ items }) {
 export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir }) {
   const heroRef = useRef(null)
 
+  // Ordered as a path: try for free, go deeper, learn, meet people; the
+  // professional space comes last.
   const categories = [
+    { label: 'Oracle', detail: 'Tirage test offert', icon: 'oracle', href: '/oracle', onSelect: onOpenOracle },
+    { label: 'Chronosphère', detail: 'Cycles & fenêtres', icon: 'chronosphere', href: '/chronosphere', onSelect: onOpenChronosphere },
     { label: 'Formation', detail: 'Apprendre et pratiquer', icon: 'formation', href: '/formation', onSelect: onOpenFormation },
-    { label: 'Oracle', detail: 'Cartes & Lumïa', icon: 'oracle', href: '/oracle', onSelect: onOpenOracle },
-    { label: 'Chronosphère', detail: 'Temps & thème astral', icon: 'chronosphere', href: '/chronosphere', onSelect: onOpenChronosphere },
-    { label: 'Agents', detail: 'Amplifier sa pratique', icon: 'agents', href: '/agents', onSelect: onOpenPro },
-    { label: 'Conférences', detail: 'Partager les savoirs', icon: 'conferences', href: '/conferences' },
     { label: 'Réseau', detail: 'Rencontrer un praticien', icon: 'reseau', href: '/reseau', onSelect: onOpenReseauDir },
+    { label: 'Conférences', detail: 'Partager les savoirs', icon: 'conferences', href: '/conferences' },
+    { label: 'Agents', detail: 'Espace professionnel', icon: 'agents', href: '/agents', onSelect: onOpenPro },
   ]
 
   const handlePointerMove = (event) => {
@@ -270,6 +272,9 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
               onClick={(event) => { event.preventDefault(); onOpenFormation() }}
             >
               {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
+            </a>
+            <a className="cosmic-library__secondary" href="#consulter">
+              Prendre rendez-vous<span aria-hidden="true">→</span>
             </a>
           </div>
         </div>

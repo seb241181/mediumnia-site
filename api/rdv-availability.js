@@ -101,6 +101,174 @@ function generateSlots(dateStr, rules, googleBusy, existingBusy, offsetMs, durat
   return slots
 }
 
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * GET /api/rdv-availability?practitioner=<slug>&service_slug=<slug>&from=YYYY-MM-DD&days=N
+ *
+ * Vue calendrier : indique pour chaque jour s'il reste au moins un créneau libre,
+ * en une seule requête (un seul appel Google FreeBusy pour toute la période)
+ * au lieu d'un appel par jour. Mêmes règles que la vue jour (exceptions, règles
+ * hebdomadaires, max_per_day, buffers, délai minimum) ; la vue jour reste la
+ * source des créneaux affichés et rdv-book revérifie tout à la réservation.
+ *
+ * Réponse : { mode: 'live', days: { 'YYYY-MM-DD': true|false } }
+ */
+async function handleRange(req, res, slug) {
+  const { from, service_slug: serviceSlug } = req.query
+  const days = Number(req.query.days)
+
+  if (!DATE_RE.test(from) || !Number.isInteger(days) || days < 1 || days > 31)
+    return res.status(400).json({ error: 'Paramètres from/days invalides (31 jours maximum)' })
+  if (!serviceSlug || !SERVICE_SLUG_RE.test(serviceSlug))
+    return res.status(400).json({ error: 'Paramètre service_slug manquant ou invalide' })
+
+  if (!isSupabaseConfigured()) return res.status(200).json(CONFIG_REQUIRED())
+  const supabase = getSupabaseAdmin()
+
+  const { data: practitioner } = await supabase
+    .from('booking_practitioners')
+    .select('id, timezone, is_active, booking_enabled, min_advance_hours, buffer_before_min, buffer_after_min, max_per_day')
+    .eq('slug', slug)
+    .single()
+  if (!practitioner || !practitioner.is_active || !practitioner.booking_enabled) {
+    return res.status(200).json(CONFIG_REQUIRED())
+  }
+
+  const { data: conn } = await supabase
+    .from('booking_calendar_connections')
+    .select('access_token_enc, refresh_token_enc, token_expiry, google_calendar_id')
+    .eq('practitioner_id', practitioner.id)
+    .eq('is_active', true)
+    .single()
+  if (!conn || !conn.google_calendar_id || conn.google_calendar_id === 'primary') {
+    return res.status(200).json(CONFIG_REQUIRED())
+  }
+
+  const { data: svc } = await supabase
+    .from('booking_services')
+    .select('duration_min')
+    .eq('slug', serviceSlug)
+    .eq('practitioner_id', practitioner.id)
+    .eq('is_active', true)
+    .single()
+  if (!svc) return res.status(200).json(CONFIG_REQUIRED('Service introuvable ou inactif.'))
+
+  const bufBeforeMs = (practitioner.buffer_before_min ?? 0) * 60_000
+  const bufAfterMs  = (practitioner.buffer_after_min  ?? 0) * 60_000
+  const dates = Array.from({ length: days }, (_, i) => addDays(from, i))
+  const to = dates[dates.length - 1]
+  const rangeStartUTC = new Date(from + 'T00:00:00Z').getTime() + parisUTCOffsetMs(from)
+  const rangeEndUTC   = new Date(to + 'T00:00:00Z').getTime() + parisUTCOffsetMs(to) + 86_400_000
+
+  const [{ data: exceptions }, { data: allRules }, { data: bookings }] = await Promise.all([
+    supabase.from('booking_exceptions')
+      .select('exception_date, exception_type, slots')
+      .eq('practitioner_id', practitioner.id)
+      .gte('exception_date', from)
+      .lte('exception_date', to),
+    supabase.from('booking_availability_rules')
+      .select('day_of_week, start_time, end_time')
+      .eq('practitioner_id', practitioner.id)
+      .order('start_time'),
+    supabase.from('bookings')
+      .select('starts_at, ends_at')
+      .eq('practitioner_id', practitioner.id)
+      .eq('status', 'confirmed')
+      .gte('starts_at', new Date(rangeStartUTC).toISOString())
+      .lt('starts_at',  new Date(rangeEndUTC).toISOString()),
+  ])
+
+  const exceptionByDate = new Map((exceptions || []).map(e => [e.exception_date, e]))
+
+  // Règles effectives de chaque jour (null = fermé / non configuré).
+  const rulesByDate = new Map()
+  for (const date of dates) {
+    const exception = exceptionByDate.get(date)
+    let rules = null
+    if (exception?.exception_type === 'closed') rules = null
+    else if (exception?.exception_type === 'modified' && exception.slots?.length) rules = exception.slots
+    else {
+      const dbDay = (new Date(date + 'T12:00:00Z').getDay() + 6) % 7
+      const dayRules = (allRules || []).filter(r => r.day_of_week === dbDay)
+      rules = dayRules.length ? dayRules : null
+    }
+    rulesByDate.set(date, rules)
+  }
+
+  const result = Object.fromEntries(dates.map(date => [date, false]))
+  if (![...rulesByDate.values()].some(Boolean)) {
+    return res.status(200).json({ mode: 'live', days: result })
+  }
+
+  let accessToken
+  try {
+    const expiry = new Date(conn.token_expiry).getTime()
+    if (Date.now() > expiry - 60_000) {
+      const refreshed = await refreshGoogleToken(conn.refresh_token_enc)
+      accessToken = refreshed.access_token
+      await supabase.from('booking_calendar_connections').update({
+        access_token_enc: encrypt(accessToken),
+        token_expiry: refreshed.expires_at,
+        updated_at: new Date().toISOString(),
+      }).eq('practitioner_id', practitioner.id)
+    } else {
+      accessToken = decrypt(conn.access_token_enc)
+    }
+  } catch {
+    return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de rafraîchir le token Google — reconnectez votre agenda.' })
+  }
+
+  let googleBusy = []
+  try {
+    const freeBusyRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timeMin: new Date(rangeStartUTC - bufBeforeMs).toISOString(),
+        timeMax: new Date(rangeEndUTC + bufAfterMs).toISOString(),
+        timeZone: 'Europe/Paris',
+        items: [{ id: conn.google_calendar_id }],
+      }),
+    })
+    if (!freeBusyRes.ok) {
+      return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de synchroniser avec Google Agenda.' })
+    }
+    const freeBusyData = await freeBusyRes.json()
+    googleBusy = freeBusyData.calendars?.[conn.google_calendar_id]?.busy ?? []
+  } catch {
+    return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
+  }
+
+  const earliestBookableAt = Date.now() + (practitioner.min_advance_hours ?? 0) * 3600_000
+
+  for (const date of dates) {
+    const rules = rulesByDate.get(date)
+    if (!rules) continue
+    const offsetMs = parisUTCOffsetMs(date)
+    const dayStart = new Date(date + 'T00:00:00Z').getTime() + offsetMs
+    const dayEnd = dayStart + 86_400_000
+    // Comme la vue jour : seules les réservations qui commencent ce jour-là (heure de Paris).
+    const dayBookings = (bookings || []).filter(b => {
+      const s = new Date(b.starts_at).getTime()
+      return s >= dayStart && s < dayEnd
+    })
+    if (practitioner.max_per_day != null && dayBookings.length >= practitioner.max_per_day) continue
+    const existingBusy = dayBookings.map(b => ({
+      start: new Date(b.starts_at).getTime() - bufBeforeMs,
+      end:   new Date(b.ends_at).getTime() + bufAfterMs,
+    }))
+    result[date] = generateSlots(date, rules, googleBusy, existingBusy, offsetMs, svc.duration_min, bufBeforeMs, bufAfterMs)
+      .some(slot => slot.available && parisTimeToUTC(date, slot.time, offsetMs).getTime() >= earliestBookableAt)
+  }
+
+  return res.status(200).json({ mode: 'live', days: result })
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
 
@@ -110,6 +278,7 @@ export default async function handler(req, res) {
 
   if (!slug || !SLUG_RE.test(slug))
     return res.status(400).json({ error: 'Paramètre practitioner manquant ou invalide' })
+  if (req.query.from) return handleRange(req, res, slug)
   if (!date || !DATE_RE.test(date))
     return res.status(400).json({ error: 'Paramètre date manquant ou invalide (YYYY-MM-DD attendu)' })
   if (serviceSlugParam && !SERVICE_SLUG_RE.test(serviceSlugParam))

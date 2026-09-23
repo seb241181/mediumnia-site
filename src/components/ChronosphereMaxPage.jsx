@@ -325,6 +325,8 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     ? (liveTimeline.entries.at(-1)?.snapshot?.solarSign || null)
     : chronosphereMaxDemoProfile.solarSign
 
+  const hasMaxAccess = Boolean(packToken || creditState?.product === 'max3')
+
   useEffect(() => {
     fetch('/api/rdv-config?chronospherePayPalAction=config')
       .then(async (res) => {
@@ -354,30 +356,58 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     }
   }, [user])
 
-  async function refreshMaxStatus(token = packToken) {
-    if (!token || !session?.access_token) return null
+  async function refreshMaxStatus(token = packToken, allowAccountFallback = true) {
+    if (!session?.access_token) return null
+    const payload = token ? { packToken: token } : { product: 'max3' }
     const res = await fetch('/api/rdv-config?chronospherePayPalAction=status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ packToken: token }),
+      body: JSON.stringify(payload),
     })
     const data = await res.json().catch(() => ({}))
+
     if (!res.ok || !data.valid || data.product !== 'max3') {
-      if (res.status === 404 || res.status === 401) {
+      if (token && allowAccountFallback && (res.status === 404 || res.status === 401)) {
         try { localStorage.removeItem(maxTokenKey(user?.id)) } catch {}
         setPackToken('')
+        return refreshMaxStatus('', false)
+      }
+      if (!token && res.status === 404) {
+        setCreditState(null)
+        setLiveTimeline(null)
       }
       return null
     }
-    setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: data.status })
-    setLiveTimeline(normalizeLiveTimeline(data.maxTimeline))
+
+    if (data.packToken && user?.id) {
+      try { localStorage.setItem(maxTokenKey(user.id), data.packToken) } catch {}
+      setPackToken(data.packToken)
+    }
+    setCreditState({
+      product: 'max3',
+      creditsRemaining: data.creditsRemaining,
+      creditsTotal: data.creditsTotal,
+      status: data.status,
+      resumeMode: data.resumeMode || (token ? 'token' : 'account'),
+    })
+    const normalizedTimeline = normalizeLiveTimeline(data.maxTimeline)
+    setLiveTimeline(normalizedTimeline)
+    setForm((current) => ({
+      ...current,
+      fullName: current.fullName || data.maxProfile?.fullName || '',
+      birthDate: current.birthDate || data.maxProfile?.birthDate || '',
+      birthTime: current.birthTime || data.maxProfile?.birthTime || '',
+      birthPlace: current.birthPlace || data.maxProfile?.birthPlace || '',
+      deliveryEmail: current.deliveryEmail || user?.email || '',
+      theme: normalizedTimeline?.theme || current.theme,
+    }))
     return data
   }
 
   useEffect(() => {
-    if (!packToken || !session?.access_token) return
-    refreshMaxStatus(packToken).catch(() => setPaymentError('Impossible de relire votre suivi MAX pour le moment.'))
-  }, [packToken, session?.access_token])
+    if (!session?.access_token || !user) return
+    refreshMaxStatus(packToken, true).catch(() => setPaymentError('Impossible de relire votre suivi MAX pour le moment.'))
+  }, [packToken, session?.access_token, user?.id])
 
   async function handleAuth(mode) {
     setAuthMessage('')
@@ -415,7 +445,7 @@ async function captureMaxOrder(orderId, token) {
     pendingPaymentRef.current = null
     setPendingPayment(null)
     setPackToken(token)
-    setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: data.packStatus || 'active' })
+    setCreditState({ product: 'max3', creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: data.packStatus || 'active', resumeMode: 'token' })
     await refreshMaxStatus(token)
     return data
   }
@@ -438,7 +468,7 @@ async function captureMaxOrder(orderId, token) {
 
   useEffect(() => {
     const offer = paypalConfig?.products?.max3
-    if (!user || !session?.access_token || !paypalConfig?.clientId || !offer || packToken || !consentAccepted) return
+    if (!user || !session?.access_token || !paypalConfig?.clientId || !offer || hasMaxAccess || !consentAccepted) return
     const node = paypalContainerRef.current
     if (!node) return
 
@@ -484,7 +514,7 @@ async function captureMaxOrder(orderId, token) {
       cancelled = true
       if (node) node.innerHTML = ''
     }
-  }, [paypalConfig, user, session?.access_token, packToken, consentAccepted])
+  }, [paypalConfig, user, session?.access_token, hasMaxAccess, consentAccepted])
 
   async function submitMaxReading(event) {
     event.preventDefault()
@@ -532,7 +562,7 @@ async function captureMaxOrder(orderId, token) {
       setLastResult(data)
       setPendingReadNonce('')
       setForm((current) => ({ ...current, number1: '', number2: '', number3: '' }))
-      await refreshMaxStatus(packToken)
+      await refreshMaxStatus(packToken, true)
     } catch (error) {
       setDrawError(error?.message || 'La lecture MAX n’a pas pu être générée.')
     } finally {
@@ -607,7 +637,7 @@ async function captureMaxOrder(orderId, token) {
                     {authMessage && <p className="font-georgia text-xs leading-relaxed text-mist">{authMessage}</p>}
                   </div>
                 </>
-              ) : !packToken ? (
+              ) : !hasMaxAccess ? (
                 <>
                   <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Compte connecté</p>
                   <h2 className="mt-2 font-georgia text-2xl font-medium">Ouvrir votre suivi MAX</h2>
@@ -761,7 +791,7 @@ async function captureMaxOrder(orderId, token) {
               </section>
             )}
           </>
-        ) : !packToken ? (
+        ) : !hasMaxAccess ? (
           <>
             <div className="mt-8 flex items-center gap-3">
               <span className="h-px flex-1 bg-gold/25" />

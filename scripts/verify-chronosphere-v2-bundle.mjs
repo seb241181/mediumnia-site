@@ -16,16 +16,25 @@ const requiredLabels = [
 
 const files = await readdir(assetsDir).catch(() => [])
 const scripts = files.filter((file) => file.endsWith('.js'))
-const bundle = (await Promise.all(
-  scripts.map(async (file) => readFile(new URL(file, assetsDir), 'utf8')),
-)).join('\n')
+const scriptSources = await Promise.all(
+  scripts.map(async (file) => ({
+    file,
+    source: await readFile(new URL(file, assetsDir), 'utf8'),
+  })),
+)
+const bundle = scriptSources.map((item) => item.source).join('\n')
 
 const missing = requiredLabels.filter((label) => !bundle.includes(label))
 if (missing.length) {
   throw new Error(`Chronosphere V2 bundle check failed. Missing labels: ${missing.join(', ')}`)
 }
 
-if (bundle.includes('ChronoSphère MAX')) {
+const v2OfferBundle = scriptSources
+  .filter((item) => item.file.startsWith('ChronospherePage-') || item.source.includes('chronosphere_packPendingPayment'))
+  .map((item) => item.source)
+  .join('\n')
+
+if ((v2OfferBundle || bundle).includes('ChronoSphère MAX')) {
   throw new Error('Chronosphere V2 bundle check failed. Reserved premium label "ChronoSphère MAX" must not ship in this offer.')
 }
 

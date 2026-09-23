@@ -16,6 +16,7 @@ import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
 import ChronospherePage from './components/ChronospherePage'
 import ChronosphereExamplePage from './components/ChronosphereExamplePage'
+import ChronosphereMaxPage from './components/ChronosphereMaxPage'
 import SiteGuardian from './components/SiteGuardian'
 import CosmicLibraryHero from './components/CosmicLibraryHero'
 import ConferencePassPage from './components/ConferencePassPage'
@@ -307,6 +308,7 @@ function pathToView(p) {
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
     : p.startsWith('/formation') ? 'formation'
+    : p.startsWith('/chronosphere-max') ? 'chronosphere-max'
     : p.startsWith('/chronosphere/exemple') ? 'chronosphere-example'
     : p.startsWith('/chronosphere') ? 'chronosphere'
     : p.startsWith('/oracle') ? 'oracle'
@@ -361,6 +363,7 @@ export default function App() {
   if (view === 'conference-pass') return <><ConferencePassPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-example') return <><ChronosphereExamplePage onBack={backHome} onOpenChronosphere={openChronosphere} onNavigate={legalNav} />{guardian}</>
+  if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />

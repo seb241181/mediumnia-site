@@ -92,6 +92,25 @@ test('email pack épuisé ne contient plus le token et propose un nouveau pack',
   assert.doesNotMatch(email.html, /#resume=/)
 })
 
+
+test('email MAX avec lectures restantes reprend par le compte sans lien secret', () => {
+  const email = buildChronosphereEmail(emailResult, { product: 'max3', creditsRemaining: 2 })
+  assert.match(email.html, /Votre suivi ChronoSphère MAX/)
+  assert.match(email.html, /Il vous reste 2 lectures ChronoSphère MAX/)
+  assert.match(email.html, /Continuer ma Ligne de Temps/)
+  assert.match(email.html, /https:\/\/mediumia\.fr\/chronosphere-max/)
+  assert.doesNotMatch(email.html, /#resume=/)
+  assert.doesNotMatch(email.text, /#resume=/)
+})
+
+test('email MAX terminé renvoie vers la synthèse du compte', () => {
+  const email = buildChronosphereEmail(emailResult, { product: 'max3', creditsRemaining: 0 })
+  assert.match(email.html, /Vos 3 lectures MAX sont maintenant réunies/)
+  assert.match(email.html, /Retrouver ma Ligne de Temps/)
+  assert.match(email.text, /VOTRE SUIVI CHRONOSPHÈRE MAX/)
+  assert.doesNotMatch(email.html, /9,90 €/)
+})
+
 test('email single ne contient aucune section ni lien secret de pack', () => {
   const email = buildChronosphereEmail(emailResult)
   assert.doesNotMatch(email.html, /Votre pack Chronosphère/)

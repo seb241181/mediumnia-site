@@ -37,9 +37,13 @@ export default function ProductDetail({ product, onClose, onPurchaseRequest }) {
           <ul>{product.highlights.map((highlight) => <li key={highlight}><CheckIcon />{highlight}</li>)}</ul>
           <div className="boutique-detail__action">
             <strong>{product.priceLabel}</strong>
-            <button type="button" disabled={isComingSoon} onClick={() => onPurchaseRequest(product)}>
-              {isComingSoon ? 'Prochainement' : (product.purchaseLabel || 'Acheter — bientôt disponible')}
-            </button>
+            {product.externalPurchase && product.purchaseUrl && !isComingSoon ? (
+              <a href={product.purchaseUrl} target="_blank" rel="noopener noreferrer">{product.purchaseLabel || 'Voir chez le vendeur'}</a>
+            ) : (
+              <button type="button" disabled={isComingSoon} onClick={() => onPurchaseRequest(product)}>
+                {isComingSoon ? 'Prochainement' : (product.purchaseLabel || 'Acheter — bientôt disponible')}
+              </button>
+            )}
           </div>
           <p className="boutique-detail__notice">
             {product.externalPurchase ? 'Achat, paiement et livraison gérés sur le site du vendeur.' : 'Maquette uniquement · Paiement désactivé · Aucun débit possible'}

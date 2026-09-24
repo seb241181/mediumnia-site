@@ -8,6 +8,9 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   const isOracle = product.id === 'oracle-au-dela-ame'
   const isFormation = product.id === 'formation-mediumia'
   const isEcho = product.category === 'echo-des-fees'
+  // Products sold elsewhere (CODEX on Amazon) open the seller directly with a
+  // real link: phones never block it, unlike a scripted window.open.
+  const external = product.externalPurchase && product.purchaseUrl
 
   const handleClick = () => {
     if (isOracle && onOpenOracle) {
@@ -19,10 +22,15 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
     }
   }
 
+  const Card = external ? 'a' : 'article'
+  const cardProps = external
+    ? { href: product.purchaseUrl, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${product.name} — ${product.purchaseLabel || 'voir chez le vendeur'}` }
+    : { onClick: handleClick }
+
   return (
-    <article
-      onClick={handleClick}
-      className="bg-white border rounded-xl overflow-hidden cursor-pointer group transition-all hover:shadow-md hover:-translate-y-0.5"
+    <Card
+      {...cardProps}
+      className="block bg-white border rounded-xl overflow-hidden cursor-pointer group transition-all hover:shadow-md hover:-translate-y-0.5"
       style={{ borderColor: isEcho ? 'rgba(201,168,76,.35)' : 'rgba(53,40,79,.12)' }}
     >
       {/* Image / artwork */}
@@ -59,11 +67,11 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
         <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'rgba(201,168,76,.18)' }}>
           <span className="font-georgia text-sm font-semibold text-deep">{product.priceLabel}</span>
           <span className="font-georgia text-xs text-gold group-hover:translate-x-1 transition-transform inline-block">
-            Voir →
+            {external ? '→' : 'Voir →'}
           </span>
         </div>
       </div>
-    </article>
+    </Card>
   )
 }
 

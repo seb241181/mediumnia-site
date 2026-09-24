@@ -89,7 +89,12 @@ function Purchase() {
           setNotice('')
           const res = await fetch(`${API}create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
           const data = await res.json().catch(() => ({}))
-          if (!res.ok) throw new Error(data.error === 'validation_failed' ? 'Vérifiez les informations saisies.' : 'Le paiement ne peut pas être préparé pour le moment.')
+          if (!res.ok) {
+            const labels = { buyerName: 'votre prénom', buyerEmail: 'votre e-mail', recipientName: 'le prénom du bénéficiaire', recipientEmail: 'l’e-mail du bénéficiaire', sendOn: 'la date d’envoi', termsAccepted: 'les conditions' }
+            if (data.error === 'validation_failed') throw new Error(`Vérifiez ${labels[data.field] || 'les informations saisies'}.`)
+            if (data.error === 'invalid_offer') throw new Error('Cette offre n’est pas reconnue. Rechargez la page puis réessayez.')
+            throw new Error(`Le paiement ne peut pas être préparé pour le moment${data.error ? ` (${data.error})` : ''}.`)
+          }
           return data.id
         },
         onApprove: async (data) => {

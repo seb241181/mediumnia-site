@@ -51,6 +51,7 @@ function entryLabel(value) {
     balance: 'Solde',
     full_payment: 'Paiement intégral',
     manual: 'Saisie manuelle',
+    gift_card_sale: 'Vente carte cadeau',
     sale: 'Encaissement',
   }
   return labels[value] || value || 'Encaissement'

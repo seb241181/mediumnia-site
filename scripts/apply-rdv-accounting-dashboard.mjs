@@ -60,6 +60,8 @@ async function handleFinance(req, res, supabase, userId) {
     .from('rdv_financial_entries')
     .select('id, booking_id, service_id, source, entry_kind, direction, payment_method, occurred_at, gross_cents, net_cents, vat_cents, vat_rate_bps, vat_status, currency, service_price_cents, appointment_starts_at, customer_name, external_payment_ref, note')
     .eq('practitioner_id', pid)
+    // Gift card uses are not revenue: the card was counted (with VAT) when sold.
+    .neq('payment_method', 'gift_card')
     .gte('occurred_at', from.toISOString())
     .lt('occurred_at', to.toISOString())
     .order('occurred_at', { ascending: false })

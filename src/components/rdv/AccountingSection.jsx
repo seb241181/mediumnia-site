@@ -231,8 +231,13 @@ export default function AccountingSection({ practitionerId, session }) {
                   <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Livres · Amazon KDP</p>
                   <h3 className="mt-1 font-georgia text-lg font-medium text-deep">CODEX — {kdp.total_units || 0} exemplaire(s) vendu(s)</h3>
                   <p className="mt-2 font-georgia text-xs text-mist">
-                    {kdp.paperback_units || 0} broché(s) · {kdp.ebook_units || 0} ebook(s){kdp.hardcover_units ? ` · ${kdp.hardcover_units} relié(s)` : ''}
+                    {kdp.paperback_units || 0} broché(s) · {kdp.ebook_units || 0} ebook(s){kdp.hardcover_units ? ` · ${kdp.hardcover_units} relié(s)` : ''}{kdp.unclassified_units ? ` · ${kdp.unclassified_units} à ventiler` : ''}
                   </p>
+                  {kdp.unclassified_units ? (
+                    <p className="mt-2 font-georgia text-[10px] leading-relaxed text-mist/80">
+                      {kdp.unclassified_units} vente(s) supplémentaire(s) signalée(s) : le total est à jour, mais leur format et les redevances correspondantes restent à compléter depuis le prochain relevé KDP.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="grid min-w-[300px] grid-cols-2 gap-2">
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">

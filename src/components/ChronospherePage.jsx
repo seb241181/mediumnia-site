@@ -324,6 +324,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
   const [creditState, setCreditState] = useState(null)
   const [consentAccepted, setConsentAccepted] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const [giftRedeemMode, setGiftRedeemMode] = useState(false)
   const [resumeMessage, setResumeMessage] = useState('')
   const paypalContainerRef = useRef(null)
   const drawTokenRef = useRef(pendingPayment?.drawToken || pendingPayment?.packToken || drawToken)
@@ -351,6 +352,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
     setCreditState(null)
     setSelectedProduct(null)
     setShowPayment(false)
+    setGiftRedeemMode(false)
     setConsentAccepted(false)
 
     if (!packToken) {
@@ -1002,7 +1004,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               ))}
             </div>
 
-            {!result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken && (
+            {!result && !showPayment && !giftRedeemMode && !pendingPayment && !legacyPendingPayment && !hasToken && (
               <fieldset className="mb-6">
                 <legend className="mb-3 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">
                   Choisissez votre offre
@@ -1043,28 +1045,32 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               </fieldset>
             )}
 
-            {/* Validate-and-pay button — before payment */}
+            {/* Purchase or gift-card activation — mutually exclusive modes */}
             {!result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken && (
               <>
-                <div className="mb-3 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
-                  <p className="font-georgia text-base font-medium text-deep">
-                    {selectedProduct
-                      ? `${selectedProduct === 'single' ? 'Tirage unique' : 'Pack de 3 tirages'} : ${formattedPrice}`
-                      : 'Sélectionnez une offre avant le paiement'}
-                  </p>
-                  <p className="mt-1 font-georgia text-xs text-mist">
-                    {selectedProduct === 'pack3'
-                      ? 'Votre achat comprend 3 tirages Chronosphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'
-                      : 'Le tirage unique donne accès à une lecture Chronosphère complète.'}
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading || !paypalConfig || !selectedProduct}
-                  className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  Procéder au paiement →
-                </button>
+                {!giftRedeemMode && (
+                  <>
+                    <div className="mb-3 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
+                      <p className="font-georgia text-base font-medium text-deep">
+                        {selectedProduct
+                          ? `${selectedProduct === 'single' ? 'Tirage unique' : 'Pack de 3 tirages'} : ${formattedPrice}`
+                          : 'Sélectionnez une offre avant le paiement'}
+                      </p>
+                      <p className="mt-1 font-georgia text-xs text-mist">
+                        {selectedProduct === 'pack3'
+                          ? 'Votre achat comprend 3 tirages ChronoSphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'
+                          : 'Le tirage unique donne accès à une lecture ChronoSphère complète.'}
+                      </p>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading || !paypalConfig || !selectedProduct}
+                      className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
+                    >
+                      Procéder au paiement →
+                    </button>
+                  </>
+                )}
                 <GiftChronosphereRedeem
                   product="pack3"
                   consentText="Je demande l'exécution immédiate du tirage numérique CHRONOSPHERE 999 et reconnais que ce contenu numérique personnalisé ne peut faire l'objet d'un droit de rétractation une fois le tirage généré (art. L221-28 du Code de la consommation)."
@@ -1074,6 +1080,14 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                     if (err) { setError(`Avant d’activer la carte : ${err.charAt(0).toLowerCase()}${err.slice(1)}`); return false }
                     setError('')
                     return true
+                  }}
+                  onOpenChange={(open) => {
+                    setGiftRedeemMode(open)
+                    if (open) {
+                      setShowPayment(false)
+                      setPaymentMessage('')
+                      setSelectedProduct('pack3')
+                    }
                   }}
                   onRedeemed={handleGiftRedeemed}
                 />

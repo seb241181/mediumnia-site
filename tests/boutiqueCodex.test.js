@@ -18,6 +18,10 @@ test('boutique supports external purchase products without fake local checkout c
   const ecommerce = read('src/components/BoutiqueEcommerce.jsx')
   const detail = read('src/components/ProductDetail.jsx')
   assert.match(ecommerce, /window\.open\(product\.purchaseUrl/)
+  // External products (CODEX) open the seller with a real link, straight from the card.
+  assert.match(ecommerce, /const external = product\.externalPurchase && product\.purchaseUrl/)
+  assert.match(ecommerce, /href: product\.purchaseUrl, target: '_blank', rel: 'noopener noreferrer'/)
+  assert.match(detail, /<a href=\{product\.purchaseUrl\} target="_blank" rel="noopener noreferrer">/)
   assert.match(detail, /product\.coverImage/)
   assert.match(detail, /product\.purchaseLabel/)
   assert.match(detail, /Achat, paiement et livraison gérés sur le site du vendeur/)

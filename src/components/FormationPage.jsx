@@ -240,7 +240,7 @@ function FormationCheckout() {
         <>
           <div ref={containerRef} className={termsAccepted && immediateAccessAccepted ? 'min-h-[48px]' : 'hidden'} />
           {(!termsAccepted || !immediateAccessAccepted) && (
-            <p className="font-georgia text-xs text-mist text-center italic">Cochez les deux cases ci-dessus pour afficher le paiement PayPal.</p>
+            <p className="font-georgia text-xs text-mist text-center italic">Cochez les deux cases ci-dessus pour afficher les boutons de paiement : carte bancaire (sans compte PayPal) ou PayPal, en une ou plusieurs fois.</p>
           )}
           {status && <p className="font-georgia text-xs text-mist text-center mt-3">{status}</p>}
         </>
@@ -365,7 +365,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               </ul>
               <div className="text-center">
                 <div className="mb-1"><span className="font-georgia text-5xl text-deep font-medium">597 €</span></div>
-                <p className="font-georgia text-mist text-sm italic mb-2">Paiement sécurisé via PayPal</p>
+                <p className="font-georgia text-mist text-sm italic mb-2">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte</p>
                 <p className="font-georgia text-mist text-xs mb-7">Paiement en plusieurs fois avec PayPal : 4X sans frais, ou 6X, 12X et 24X avec intérêts selon éligibilité.</p>
                 <FormationCheckout />
               </div>

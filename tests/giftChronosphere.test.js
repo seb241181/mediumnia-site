@@ -152,3 +152,13 @@ test('both ChronoSphère pages offer the gift card box, and the e-mail says wher
   assert.match(read('lib/giftCards.js'), /action === 'chronosphere'\) return handleGiftChronosphere/)
   assert.match(giftUsageText({ consultation_credit_cents: 0, chronosphere_product: 'max3' }).join(' '), /chronosphere-max.*code/)
 })
+
+test('the gift cards page shares its own visual', async () => {
+  const { buildPages } = await import('../scripts/prerender-route-meta.mjs')
+  const shell = '<html><head><title>x</title></head><body></body></html>'
+  const pages = buildPages(shell, { home: { title: 'H', description: 'h' }, 'cartes-cadeaux': { title: 'Cartes cadeaux', description: 'd' } }, [])
+  const html = pages.find((p) => p.file === 'cartes-cadeaux/index.html').html
+  assert.match(html, /og:image" content="https:\/\/mediumia\.fr\/images\/cartes-cadeaux\/cartes-cadeaux-partage\.jpg"/)
+  assert.match(html, /og:image:width" content="1200"/)
+  assert.ok(fs.existsSync(new URL('../public/images/cartes-cadeaux/cartes-cadeaux-partage.jpg', import.meta.url)))
+})

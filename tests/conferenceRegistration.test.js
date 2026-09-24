@@ -23,18 +23,33 @@ test('the registration form only calls state setters that exist', () => {
 test('the conference page shares its own visual and event title', async () => {
   const { buildPages } = await import('../scripts/prerender-route-meta.mjs')
   const shell = '<html><head><title>x</title></head><body></body></html>'
-  const pages = buildPages(shell, { home: { title: 'H', description: 'h' }, conferences: { title: 'Conférence offerte le 23 octobre', description: 'd' } }, [])
+  const pages = buildPages(shell, { home: { title: 'H', description: 'h' }, conferences: { title: 'Conférence offerte le 22 octobre', description: 'd' } }, [])
   const conf = pages.find((p) => p.file === 'conferences/index.html').html
-  assert.match(conf, /og:image" content="https:\/\/mediumia\.fr\/images\/conference\/conference-23-octobre-partage\.jpg"/)
+  assert.match(conf, /og:image" content="https:\/\/mediumia\.fr\/images\/conference\/conference-22-octobre-partage\.jpg"/)
   assert.match(conf, /og:image:width" content="1200"/)
   assert.match(conf, /og:image:height" content="630"/)
   assert.match(conf, /og:image:alt" content="Conférence offerte MediumIA/)
-  assert.ok(fs.existsSync(new URL('../public/images/conference/conference-23-octobre-partage.jpg', import.meta.url)))
+  assert.ok(fs.existsSync(new URL('../public/images/conference/conference-22-octobre-partage.jpg', import.meta.url)))
 })
 
 test('draw rules exclude the organizer household and give a reachable contact', () => {
-  const rules = fs.readFileSync(new URL('../public/reglement-tirage-conference-mediumia-23-10-2026.html', import.meta.url), 'utf8')
+  const rules = fs.readFileSync(new URL('../public/reglement-tirage-conference-mediumia-22-10-2026.html', import.meta.url), 'utf8')
   assert.match(rules, /Ne peuvent pas gagner : l’organisateur, les membres de son foyer/)
   assert.match(rules, /Contact : contact@mediumia\.fr\./)
   assert.match(rules, /sans obligation d’achat/)
+})
+
+test('the conference is on Thursday 22 October everywhere, and the e-mail reads the date from the event', () => {
+  const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
+  const fn = read('supabase/functions/conference-public/index.ts')
+  assert.doesNotMatch(fn, /Vendredi 23 octobre/)
+  assert.match(fn, /const dateLabel = eventDateLabel\(event\)/)
+  for (const file of ['src/components/ConferencesPage.jsx', 'src/components/ConferenceLivePage.jsx', 'scripts/apply-route-seo-cro.mjs', 'public/reglement-tirage-conference-mediumia-22-10-2026.html']) {
+    assert.doesNotMatch(read(file).replace(/initialement prévue le vendredi 23 octobre/, ''), /23 octobre/i, file)
+  }
+  const migration = read('supabase/migrations/20260924200000_conference_date_22_octobre.sql')
+  assert.match(migration, /starts_at = starts_at - interval '1 day'/)
+  assert.match(migration, /r\.status <> 'drawn'/)
+  const vercel = JSON.parse(read('vercel.json'))
+  assert.ok(vercel.redirects.some((r) => r.source.includes('23-10-2026') && r.destination.includes('22-10-2026')))
 })

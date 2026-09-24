@@ -5,7 +5,7 @@ import { CONFERENCE_PUBLIC_API, registrationSource } from '../lib/conferenceApi.
 
 const EVENT_SLUG = 'premiere-conference-mediumia'
 const CONFERENCE_API = CONFERENCE_PUBLIC_API
-const RAFFLE_RULES_URL = '/reglement-tirage-conference-mediumia-23-10-2026.html'
+const RAFFLE_RULES_URL = '/reglement-tirage-conference-mediumia-22-10-2026.html'
 
 function Step({ number, title, children }) {
   return <div className="rounded-2xl border border-gold/20 bg-white/65 p-5"><div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full border border-gold/35 bg-gold/10 font-georgia text-sm font-semibold text-gold">{number}</div><h3 className="font-georgia text-lg font-medium text-deep">{title}</h3><p className="mt-2 font-georgia text-sm leading-relaxed text-mist">{children}</p></div>
@@ -68,7 +68,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
   const title = event?.title || 'Et si la médiumnité devenait accessible ?'
   const eventDate = event?.startsAt
     ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: event.timezone || 'Europe/Paris' }).format(new Date(event.startsAt))
-    : 'Vendredi 23 octobre 2026 à 19 h'
+    : 'Jeudi 22 octobre 2026 à 19 h'
   const duration = durationLabel(event)
   const prizeValue = raffle?.prizeValueCents
     ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: raffle.currency || 'EUR', maximumFractionDigits: 0 }).format(raffle.prizeValueCents / 100)
@@ -163,7 +163,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
                   <p className="mt-4 font-georgia text-[11px] leading-relaxed text-cream/45">Votre e-mail est utilisé pour gérer cette inscription et vous transmettre les informations liées à la conférence. L’inscription à la conférence n’inscrit pas automatiquement à une prospection commerciale.</p>
                 </> : <>
                   <p className="mt-3 font-georgia text-2xl font-medium">Ouverture prochaine</p>
-                  <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/60">La conférence du 23 octobre est enregistrée. Le formulaire s’ouvrira ici dès que le parcours live et le tirage auront passé leurs derniers tests.</p>
+                  <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/60">La conférence du 22 octobre est enregistrée. Le formulaire s’ouvrira ici dès que le parcours live et le tirage auront passé leurs derniers tests.</p>
                   <div className="mt-6 rounded-2xl border border-gold/30 bg-cream/95 p-4 font-georgia text-xs leading-relaxed text-deep">Aucun paiement ne sera demandé pour participer à cette première conférence ni au tirage au sort.</div>
                 </>}
               </div>
@@ -202,7 +202,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
           >
             <div className="grid gap-8 md:grid-cols-[1fr_.8fr] md:items-center">
               <div>
-                <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">LE TIRAGE DU 23 OCTOBRE</p>
+                <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">LE TIRAGE DU 22 OCTOBRE</p>
                 <h2 className="mt-3 font-georgia text-3xl font-medium md:text-4xl">Une personne repartira avec MediumIA complet.</h2>
                 <p className="mt-4 max-w-2xl font-georgia leading-relaxed text-cream/65">Vers la fin du direct, une fenêtre de participation s’ouvrira dans l’espace MediumIA. Vous confirmez votre participation en un clic. Le gagnant est ensuite choisi aléatoirement parmi les participants présents et éligibles.</p>
                 <p className="mt-5 font-georgia text-sm text-gold"><strong>Lot :</strong> 1 accès complet à la formation MediumIA · valeur {prizeValue}</p>

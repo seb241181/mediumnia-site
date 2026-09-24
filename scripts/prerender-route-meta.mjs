@@ -37,7 +37,7 @@ const ROUTE_PATHS = {
 // Routes with their own share visual (default: the site image).
 // Width/height let Facebook show the image on the very first share of a link.
 const ROUTE_IMAGES = {
-  conferences: { src: '/images/conference/conference-23-octobre-partage.jpg', width: 1200, height: 630, alt: 'Conférence offerte MediumIA le vendredi 23 octobre à 19 h avec Sébastien Seguin' },
+  conferences: { src: '/images/conference/conference-22-octobre-partage.jpg', width: 1200, height: 630, alt: 'Conférence offerte MediumIA le jeudi 22 octobre à 19 h avec Sébastien Seguin' },
   'cartes-cadeaux': { src: '/images/cartes-cadeaux/cartes-cadeaux-partage.jpg', width: 1200, height: 630, alt: 'Cartes cadeaux MediumIA : consultation, montant libre, ChronoSphère ou coffret' },
 }
 

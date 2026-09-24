@@ -57,8 +57,8 @@ const routeSeoHelpers = `const ROUTE_META = {
     description: 'Présentez votre pratique et rejoignez le Réseau MediumIA, pensé pour relier praticiens et personnes en recherche d’accompagnement.',
   },
   conferences: {
-    title: 'Conférence offerte le 23 octobre — Et si la médiumnité devenait accessible ? | MediumIA',
-    description: 'Une heure en direct avec Sébastien Seguin, vendredi 23 octobre à 19 h sur Zoom. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
+    title: 'Conférence offerte le 22 octobre — Et si la médiumnité devenait accessible ? | MediumIA',
+    description: 'Une heure en direct avec Sébastien Seguin, jeudi 22 octobre à 19 h sur Zoom. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
   },
   'cartes-cadeaux': {
     title: 'Cartes cadeaux MediumIA — Offrir une consultation ou ChronoSphère',

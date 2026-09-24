@@ -47,3 +47,13 @@ test('service list and summary announce card or PayPal and 4X', () => {
   assert.doesNotMatch(page, /[23] ou 4 ?(x|fois)|en [23] fois/i)
   assert.doesNotMatch(page, /videoOffersFullPayment/)
 })
+
+test('checkouts say plainly that a card works without a PayPal account', () => {
+  const rdv = read('src/components/rdv/RdvDepositCheckout.jsx')
+  assert.match(rdv, /Pas de compte PayPal \?/)
+  assert.match(rdv, /en une fois ou en 4 fois sans frais avec PayPal/)
+  assert.match(rdv, /Pourquoi cette case \?/)
+  assert.match(read('src/components/FormationPage.jsx'), /pas besoin de compte PayPal pour payer par carte/)
+  assert.match(read('lib/rdvFullPaymentApiHandler.js'), /TERMS_VERSION = 'rdv-arrhes-2026-09-24-v2'/)
+  assert.match(read('lib/rdvDepositApiHandler.js'), /TERMS_VERSION = 'rdv-arrhes-2026-09-24-v2'/)
+})

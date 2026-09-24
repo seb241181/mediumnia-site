@@ -249,14 +249,15 @@ export default function RdvDepositCheckout({
           <input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} className="mt-0.5 h-6 w-6 min-h-6 min-w-6 shrink-0 cursor-pointer accent-gold" />
           <span className="font-georgia text-sm leading-relaxed text-mist">
             {paymentChoice === 'full_payment'
-              ? `J’accepte les conditions de réservation et règle maintenant la totalité de la prestation, soit ${money(priceCents)}. Les conditions d’annulation et mes droits légaux restent applicables.`
+              ? `J’accepte les conditions de réservation et je règle la totalité de la prestation, soit ${money(priceCents)}${priceCents >= PAY_LATER_MIN_CENTS ? ', en une fois ou en 4 fois sans frais avec PayPal' : ''}. Les conditions d’annulation et mes droits légaux restent applicables.`
               : `J’accepte les conditions de réservation : les ${money(depositCents)} versés constituent des arrhes. En cas d’annulation à moins de 48 heures, leur traitement suit les conditions acceptées et les droits légaux applicables.`}
           </span>
         </label>
         <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/20 bg-gold/5 p-3">
           <input type="checkbox" checked={earlyPerformance} onChange={event => setEarlyPerformance(event.target.checked)} className="mt-0.5 h-6 w-6 min-h-6 min-w-6 shrink-0 cursor-pointer accent-gold" />
           <span className="font-georgia text-sm leading-relaxed text-mist">
-            Je demande expressément que le service de réservation puisse commencer immédiatement, y compris lorsque le rendez-vous est fixé avant la fin du délai légal de rétractation. Mes droits légaux restent applicables dans les conditions prévues par la loi.
+            Je souhaite que mon rendez-vous ait lieu à la date choisie, même si elle tombe pendant le délai légal de rétractation de 14 jours. Mes droits légaux restent applicables.
+            <span className="mt-1 block text-xs text-mist/80">Pourquoi cette case ? Après une réservation en ligne, la loi vous donne 14 jours pour changer d’avis. Sans votre accord, une séance ne pourrait pas avoir lieu avant la fin de ce délai.</span>
           </span>
         </label>
       </div>
@@ -266,7 +267,7 @@ export default function RdvDepositCheckout({
         <div className="mb-4 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 font-georgia text-xs leading-relaxed text-deep">
           <p className="font-semibold">Comment payer ?</p>
           <ul className="mt-1.5 space-y-1 text-mist">
-            <li>• <strong className="text-deep">Carte bancaire</strong>, sans compte PayPal : bouton « Carte de débit ou de crédit », paiement en 1 fois.</li>
+            <li>• <strong className="text-deep">Pas de compte PayPal ?</strong> Payez directement par carte bancaire avec le bouton « Carte de débit ou de crédit » : aucun compte n’est nécessaire (paiement en 1 fois).</li>
             <li>• <strong className="text-deep">PayPal</strong> : en 1 fois{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou en 4 fois sans frais avec le bouton « Payer en 4X » (compte PayPal requis, il peut être créé pendant le paiement)' : ''}.</li>
           </ul>
           {paymentCents < PAY_LATER_MIN_CENTS && priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
@@ -279,7 +280,7 @@ export default function RdvDepositCheckout({
         {holdUntil && <p className="font-georgia text-xs text-mist mb-3">Créneau protégé jusqu’à {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(holdUntil))}.</p>}
         {notice && <p className="font-georgia text-sm text-red-800 bg-red-50 rounded-xl px-3 py-2 mb-3">{notice}</p>}
         {!consentsReady ? (
-          <p className="font-georgia text-sm text-mist text-center py-3">Cochez les deux cases ci-dessus pour afficher le paiement sécurisé.</p>
+          <p className="font-georgia text-sm text-mist text-center py-3">Cochez les deux cases ci-dessus pour afficher les boutons de paiement : <strong className="text-deep">carte bancaire</strong> (sans compte PayPal) ou <strong className="text-deep">PayPal</strong>{paymentCents >= PAY_LATER_MIN_CENTS ? ', en une fois ou en 4 fois' : ''}.</p>
         ) : (
           <div ref={containerRef}>{!config && !notice && <p className="font-georgia text-sm text-mist">Chargement du paiement sécurisé…</p>}</div>
         )}

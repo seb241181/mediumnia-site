@@ -1043,28 +1043,9 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               </fieldset>
             )}
 
-            {/* Validate-and-pay button — before payment */}
+            {/* Gift-card activation and regular purchase are mutually exclusive in the UI. */}
             {!result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken && (
               <>
-                <div className="mb-3 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
-                  <p className="font-georgia text-base font-medium text-deep">
-                    {selectedProduct
-                      ? `${selectedProduct === 'single' ? 'Tirage unique' : 'Pack de 3 tirages'} : ${formattedPrice}`
-                      : 'Sélectionnez une offre avant le paiement'}
-                  </p>
-                  <p className="mt-1 font-georgia text-xs text-mist">
-                    {selectedProduct === 'pack3'
-                      ? 'Votre achat comprend 3 tirages Chronosphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'
-                      : 'Le tirage unique donne accès à une lecture Chronosphère complète.'}
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading || !paypalConfig || !selectedProduct}
-                  className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  Procéder au paiement →
-                </button>
                 <GiftChronosphereRedeem
                   product="pack3"
                   consentText="Je demande l'exécution immédiate du tirage numérique CHRONOSPHERE 999 et reconnais que ce contenu numérique personnalisé ne peut faire l'objet d'un droit de rétractation une fois le tirage généré (art. L221-28 du Code de la consommation)."
@@ -1077,6 +1058,27 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                   }}
                   onRedeemed={handleGiftRedeemed}
                 />
+                <div className="chronosphere-standard-payment">
+                  <div className="mb-3 mt-4 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3 text-center">
+                    <p className="font-georgia text-base font-medium text-deep">
+                      {selectedProduct
+                        ? `${selectedProduct === 'single' ? 'Tirage unique' : 'Pack de 3 tirages'} : ${formattedPrice}`
+                        : 'Sélectionnez une offre avant le paiement'}
+                    </p>
+                    <p className="mt-1 font-georgia text-xs text-mist">
+                      {selectedProduct === 'pack3'
+                        ? 'Votre achat comprend 3 tirages Chronosphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'
+                        : 'Le tirage unique donne accès à une lecture Chronosphère complète.'}
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || !paypalConfig || !selectedProduct}
+                    className="w-full rounded-xl bg-gold px-6 py-4 font-georgia text-base font-bold text-deep transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    Procéder au paiement →
+                  </button>
+                </div>
               </>
             )}
 

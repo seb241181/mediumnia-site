@@ -162,3 +162,14 @@ test('the gift cards page shares its own visual', async () => {
   assert.match(html, /og:image:width" content="1200"/)
   assert.ok(fs.existsSync(new URL('../public/images/cartes-cadeaux/cartes-cadeaux-partage.jpg', import.meta.url)))
 })
+
+
+test('ChronoSphère gift redemption hides the PayPal checkout while the code box is open', () => {
+  const page = read('src/components/ChronospherePage.jsx')
+  const redeem = read('src/components/GiftChronosphereRedeem.jsx')
+  assert.match(page, /<GiftChronosphereRedeem[\s\S]*?<div className="chronosphere-standard-payment">/)
+  assert.match(redeem, /gift-redeem-peer/)
+  assert.match(redeem, /data-open="true"/)
+  assert.match(redeem, /chronosphere-standard-payment \{ display: none; \}/)
+  assert.match(redeem, /Finalement, payer normalement/)
+})

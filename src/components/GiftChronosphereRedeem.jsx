@@ -53,17 +53,28 @@ export default function GiftChronosphereRedeem({ product, consentAccepted, conse
     }
   }
 
+  function setOpenState(next) {
+    setOpen(next)
+  }
+
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="mt-4 w-full rounded-xl border border-gold/40 bg-white/70 px-5 py-3 font-georgia text-sm text-deep hover:bg-gold/10">
-        🎁 J’ai une carte cadeau
-      </button>
+      <div className="gift-redeem-peer" data-open="false">
+        <style>{'.gift-redeem-peer[data-open="true"] ~ .chronosphere-standard-payment { display: none; }'}</style>
+        <button type="button" onClick={() => setOpenState(true)} className="mt-4 w-full rounded-xl border border-gold/40 bg-white/70 px-5 py-3 font-georgia text-sm text-deep hover:bg-gold/10">
+          🎁 J’ai une carte cadeau
+        </button>
+      </div>
     )
   }
 
   return (
-    <div className="mt-4 rounded-2xl border border-gold/35 bg-white/75 p-4 text-left">
-      <p className="font-georgia text-sm font-medium text-deep">🎁 Activer ma carte cadeau</p>
+    <div className="gift-redeem-peer mt-4 rounded-2xl border border-gold/35 bg-white/75 p-4 text-left" data-open="true">
+      <style>{'.gift-redeem-peer[data-open="true"] ~ .chronosphere-standard-payment { display: none; }'}</style>
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-georgia text-sm font-medium text-deep">🎁 Activer ma carte cadeau</p>
+        <button type="button" onClick={() => setOpenState(false)} className="font-georgia text-xs text-mist underline underline-offset-2 hover:text-deep">Finalement, payer normalement</button>
+      </div>
       <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
         {product === 'max3'
           ? 'Le suivi MAX offert (3 lectures) est rattaché à votre compte, à utiliser dans les 6 mois.'

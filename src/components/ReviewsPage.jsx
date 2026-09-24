@@ -74,7 +74,72 @@ export function useApprovedReviews() {
   return state
 }
 
-// Home block: shows the latest approved reviews, or an invitation to leave one.
+// Google reviews of the MediumIA profile (Places API, cached 6 h server-side).
+// Without the API key the block still offers the two Google links.
+const GOOGLE_LINKS = { mapsUrl: 'https://g.page/r/CbFv2pHpBKtYEBM', writeUrl: 'https://g.page/r/CbFv2pHpBKtYEBM/review' }
+
+export function useGoogleReviews() {
+  const [state, setState] = useState({ loading: true, available: false, ...GOOGLE_LINKS, reviews: [] })
+  useEffect(() => {
+    let active = true
+    fetch(`${API}google`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((data) => { if (active) setState({ loading: false, ...GOOGLE_LINKS, reviews: [], ...data }) })
+      .catch(() => { if (active) setState((s) => ({ ...s, loading: false })) })
+    return () => { active = false }
+  }, [])
+  return state
+}
+
+function GoogleReviewCard({ review }) {
+  return (
+    <article className="rounded-2xl border border-gold/25 bg-white/80 p-5 shadow-[0_8px_24px_rgba(26,21,53,.04)]">
+      <div className="flex items-center justify-between gap-2">
+        {review.rating ? <Stars value={Math.round(review.rating)} /> : <span />}
+        <span className="font-georgia text-[10px] uppercase tracking-[0.14em] text-mist">Avis Google</span>
+      </div>
+      <p className="mt-3 line-clamp-6 whitespace-pre-line font-georgia text-sm leading-relaxed text-deep/85">{review.text}</p>
+      <p className="mt-4 font-georgia text-xs text-mist">
+        {review.authorUrl
+          ? <a href={review.authorUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-deep hover:underline">{review.author}</a>
+          : <strong className="text-deep">{review.author}</strong>}
+        {review.when && <> · {review.when}</>}
+      </p>
+    </article>
+  )
+}
+
+export function GoogleReviewsBlock({ max = 3, columns = 'md:grid-cols-3' }) {
+  const google = useGoogleReviews()
+  if (google.loading) return null
+  const hasReviews = google.available && google.count > 0
+  return (
+    <div className="mb-8">
+      {hasReviews && (
+        <>
+          <p className="mb-5 text-center font-georgia text-sm text-mist">
+            <Stars value={Math.round(google.rating || 0)} />{' '}
+            <strong className="text-deep">{String(google.rating?.toFixed?.(1) || '').replace('.', ',')} / 5</strong> · {google.count} avis sur Google
+          </p>
+          <div className={`grid gap-4 ${columns}`}>
+            {google.reviews.slice(0, max).map((review, i) => <GoogleReviewCard key={`${review.author}-${i}`} review={review} />)}
+          </div>
+        </>
+      )}
+      <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a href={google.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-gold/45 bg-white/80 px-6 py-3 font-georgia text-sm font-bold text-deep hover:bg-white">
+          {hasReviews ? 'Voir tous les avis sur Google' : 'Voir nos avis sur Google'} <span aria-hidden="true">→</span>
+        </a>
+        <a href={google.writeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold hover:opacity-90">
+          Laisser un avis sur Google
+        </a>
+      </div>
+    </div>
+  )
+}
+
+// Home block: Google reviews first (what visitors trust most), then the
+// reviews collected on the site, or an invitation to leave one.
 export function ReviewsHighlight() {
   const { loading, reviews } = useApprovedReviews()
   if (loading) return null
@@ -83,7 +148,7 @@ export function ReviewsHighlight() {
       <div className="text-center max-w-2xl mx-auto mb-8">
         <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-3">Avis clients</p>
         <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight text-deep">
-          {reviews.length ? 'Ils ont vécu l’expérience MediumIA.' : 'Votre expérience compte.'}
+          Ils ont vécu l’expérience MediumIA.
         </h2>
         {!reviews.length && (
           <p className="mt-4 font-georgia text-mist leading-relaxed">
@@ -91,6 +156,7 @@ export function ReviewsHighlight() {
           </p>
         )}
       </div>
+      <GoogleReviewsBlock max={3} />
       {reviews.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3 mb-8">
           {reviews.slice(0, 3).map((review) => <ReviewCard key={review.id} review={review} />)}
@@ -98,7 +164,7 @@ export function ReviewsHighlight() {
       )}
       <div className="text-center">
         <a href="/avis" className="inline-flex items-center gap-2 rounded-full border border-gold/45 bg-white/80 px-6 py-3 font-georgia text-sm font-bold text-deep hover:bg-white transition-colors">
-          {reviews.length ? 'Lire tous les avis et laisser le vôtre' : 'Laisser un avis'} <span aria-hidden="true">→</span>
+          {reviews.length ? 'Lire tous les avis et laisser le vôtre' : 'Laisser un avis sur le site'} <span aria-hidden="true">→</span>
         </a>
       </div>
     </section>
@@ -356,6 +422,7 @@ export default function ReviewsPage({ onBack, onNavigate }) {
 
             <div className="mt-10 grid gap-10 md:grid-cols-[1.1fr_.9fr]">
               <section aria-label="Avis publiés" className="space-y-4">
+                <GoogleReviewsBlock max={5} columns="grid-cols-1" />
                 {loading && <p className="font-georgia text-sm text-mist">Chargement des avis…</p>}
                 {!loading && reviews.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-gold/35 p-6 text-center">

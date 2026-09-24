@@ -111,6 +111,14 @@
     {
       "source": "/avis",
       "destination": "/index.html"
+    },
+    {
+      "source": "/cartes-cadeaux",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/carte-cadeau/:token",
+      "destination": "/index.html"
     }
   ],
   "crons": [

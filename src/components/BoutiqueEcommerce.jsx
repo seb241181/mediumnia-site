@@ -11,6 +11,7 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   // Products sold elsewhere (CODEX on Amazon) open the seller directly with a
   // real link: phones never block it, unlike a scripted window.open.
   const external = product.externalPurchase && product.purchaseUrl
+  const internalLink = !external && product.href
 
   const handleClick = () => {
     if (isOracle && onOpenOracle) {
@@ -22,10 +23,10 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
     }
   }
 
-  const Card = external ? 'a' : 'article'
+  const Card = external || internalLink ? 'a' : 'article'
   const cardProps = external
     ? { href: product.purchaseUrl, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${product.name} — ${product.purchaseLabel || 'voir chez le vendeur'}` }
-    : { onClick: handleClick }
+    : internalLink ? { href: product.href } : { onClick: handleClick }
 
   return (
     <Card

@@ -31,6 +31,7 @@ const ROUTE_PATHS = {
   'reseau-form': '/reseau/rejoindre',
   conferences: '/conferences',
   avis: '/avis',
+  'cartes-cadeaux': '/cartes-cadeaux',
 }
 
 // Routes with their own share visual (default: the site image).

@@ -14,6 +14,7 @@ import { handleRdvFullPaymentCreate } from '../lib/rdvFullPaymentApiHandler.js'
 import { handleRdvBalanceApi } from '../lib/rdvBalanceApiHandler.js'
 import { handleRdvBalanceDailyCron } from '../lib/rdvBalanceCronHandler.js'
 import { handleCustomerReviews } from '../lib/customerReviews.js'
+import { handleGiftCards } from '../lib/giftCards.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -52,6 +53,11 @@ export default async function handler(req, res) {
 
   if (req.query?.action === 'reseau-apply') {
     return handleReseauApply(req, res)
+  }
+
+  const giftCardAction = req.query?.giftCardAction
+  if (giftCardAction) {
+    return handleGiftCards(req, res, giftCardAction)
   }
 
   const reviewsAction = req.query?.reviewsAction

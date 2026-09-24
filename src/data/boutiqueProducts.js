@@ -8,6 +8,7 @@ export const boutiqueCategories = [
   { id: 'livres', label: 'Livres' },
   { id: 'echo-des-fees', label: "L'Écho des Fées" },
   { id: 'formations', label: 'Formations' },
+  { id: 'cadeaux', label: 'Cartes cadeaux' },
 ]
 
 export const boutiqueProducts = [
@@ -59,6 +60,20 @@ export const boutiqueProducts = [
     purchaseUrl: 'https://www.amazon.fr/dp/B0HJY4CFFD',
     purchaseLabel: 'Voir sur Amazon',
     externalPurchase: true,
+  },
+  {
+    id: 'cartes-cadeaux',
+    name: 'Cartes cadeaux MediumIA',
+    category: 'cadeaux',
+    categoryLabel: 'À offrir',
+    eyebrow: 'Consultation · ChronoSphère · Coffret',
+    priceLabel: 'Dès 9,90 €',
+    summary: "Offrez une consultation, un montant libre, une lecture ChronoSphère ou un coffret. Valable 12 mois.",
+    description: "Une carte à imprimer ou envoyée par e-mail à la date de votre choix.",
+    highlights: ['Montant libre ou consultation', 'ChronoSphère et coffrets', 'Envoi programmé', 'Valable 12 mois'],
+    artwork: 'formation',
+    availability: 'available',
+    href: '/cartes-cadeaux',
   },
   {
     id: 'formation-mediumia',

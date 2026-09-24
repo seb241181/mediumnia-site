@@ -626,6 +626,7 @@ export default async function handler(req, res) {
         gift_code_invalid: 'Ce code de carte cadeau n’est pas reconnu.',
         gift_code_expired: 'Cette carte cadeau a expiré.',
         gift_code_used: 'Cette carte cadeau a déjà été entièrement utilisée.',
+        gift_code_chronosphere_only: 'Cette carte cadeau offre ChronoSphère : elle s’utilise sur la page ChronoSphère.',
       }
       return res.status(found.error === 'gift_lookup_failed' ? 500 : 409).json({ error: messages[found.error] || 'Carte cadeau indisponible.', code: found.error })
     }

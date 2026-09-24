@@ -24,7 +24,8 @@ export default function GiftCardRedeem({ practitionerSlug, service, dateStr, tim
       if (res.ok) setCard(data)
       else setError({
         gift_code_expired: 'Cette carte cadeau a expiré.',
-        gift_code_used: 'Cette carte cadeau a déjà été entièrement utilisée (ou c’est une carte ChronoSphère).',
+        gift_code_used: 'Cette carte cadeau a déjà été entièrement utilisée.',
+        gift_code_chronosphere_only: 'Cette carte offre ChronoSphère : elle s’utilise sur la page ChronoSphère.',
         too_many_attempts: 'Trop d’essais. Réessayez dans une heure.',
       }[data.error] || 'Ce code n’est pas reconnu. Vérifiez-le (format MDIA-XXXX-XXXX).')
     } catch {

@@ -55,11 +55,6 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
             ✦ Nouveauté
           </span>
         )}
-        {Number(product.salesCount) > 0 && (
-          <span className="absolute bottom-3 left-3 rounded-full border border-gold/30 bg-deep/90 px-3 py-1 font-georgia text-[10px] font-semibold text-gold shadow-sm backdrop-blur-sm">
-            {product.salesCount} {Number(product.salesCount) === 1 ? 'exemplaire vendu' : 'exemplaires vendus'}
-          </span>
-        )}
       </div>
 
       {/* Info */}

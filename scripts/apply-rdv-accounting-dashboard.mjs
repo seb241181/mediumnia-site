@@ -73,7 +73,7 @@ async function handleFinance(req, res, supabase, userId) {
   const toDate = to.toISOString().slice(0, 10)
   const { data: kdpReports, error: kdpError } = await supabase
     .from('kdp_income_reports')
-    .select('period_month, snapshot_date, title, paperback_units, ebook_units, hardcover_units, free_ebook_units, paperback_royalty_cents, ebook_royalty_cents, hardcover_royalty_cents, royalty_cents, currency, payout_status, paid_at')
+    .select('period_month, snapshot_date, title, paperback_units, ebook_units, hardcover_units, unclassified_units, free_ebook_units, paperback_royalty_cents, ebook_royalty_cents, hardcover_royalty_cents, royalty_cents, currency, payout_status, paid_at')
     .eq('practitioner_id', pid)
     .gte('period_month', fromDate)
     .lt('period_month', toDate)
@@ -85,6 +85,7 @@ async function handleFinance(req, res, supabase, userId) {
     acc.paperback_units += Number(report.paperback_units || 0)
     acc.ebook_units += Number(report.ebook_units || 0)
     acc.hardcover_units += Number(report.hardcover_units || 0)
+    acc.unclassified_units += Number(report.unclassified_units || 0)
     acc.free_ebook_units += Number(report.free_ebook_units || 0)
     acc.royalty_cents += Number(report.royalty_cents || 0)
     acc.paid_royalty_cents += report.payout_status === 'paid' ? Number(report.royalty_cents || 0) : 0
@@ -95,13 +96,14 @@ async function handleFinance(req, res, supabase, userId) {
     paperback_units: 0,
     ebook_units: 0,
     hardcover_units: 0,
+    unclassified_units: 0,
     free_ebook_units: 0,
     royalty_cents: 0,
     paid_royalty_cents: 0,
     pending_royalty_cents: 0,
     reports: [],
   })
-  kdp.total_units = kdp.paperback_units + kdp.ebook_units + kdp.hardcover_units
+  kdp.total_units = kdp.paperback_units + kdp.ebook_units + kdp.hardcover_units + kdp.unclassified_units
 
   const serviceIds = [...new Set((entries || []).map(entry => entry.service_id).filter(Boolean))]
   let serviceMap = {}

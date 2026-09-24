@@ -89,3 +89,11 @@ test('gift card pages are routed, indexed (shop page) and private (card page)', 
   assert.match(read('scripts/apply-route-seo-cro.mjs'), /pathname\.startsWith\('\/carte-cadeau\/'\)/)
   assert.match(read('src/components/GiftCardsPage.jsx'), /enable-funding=paylater/)
 })
+
+
+test('gift card checkout always shows a visible payment call-to-action', () => {
+  const page = read('src/components/GiftCardsPage.jsx')
+  assert.match(page, /Passer au règlement/)
+  assert.match(page, /Pour activer le règlement/)
+  assert.match(page, /catalog\?\.open && ready/)
+})

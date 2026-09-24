@@ -68,6 +68,19 @@ function publicRaffle(raffle: any) {
   };
 }
 
+// "Jeudi 22 octobre 2026 à 19 h", read from the event itself (Paris time).
+export function eventDateLabel(event: any) {
+  const start = event?.starts_at ? new Date(event.starts_at) : null;
+  if (!start || !Number.isFinite(start.getTime())) return "Jeudi 22 octobre 2026 à 19 h";
+  const tz = event?.timezone || "Europe/Paris";
+  const day = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: tz }).format(start);
+  const parts = new Intl.DateTimeFormat("fr-FR", { hour: "numeric", minute: "2-digit", hourCycle: "h23", timeZone: tz }).formatToParts(start);
+  const hour = parts.find((p) => p.type === "hour")?.value || "";
+  const minute = parts.find((p) => p.type === "minute")?.value || "00";
+  const label = `${day} à ${Number(hour)} h${minute === "00" ? "" : ` ${minute}`}`;
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 function durationLabel(event: any) {
   const start = event?.starts_at ? new Date(event.starts_at).getTime() : NaN;
   const end = event?.ends_at ? new Date(event.ends_at).getTime() : NaN;
@@ -144,13 +157,14 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
   const safePreparationUrl = preparationUrl ? escapeHtml(preparationUrl) : "";
   const safeLiveUrl = liveUrl ? escapeHtml(liveUrl) : "";
   const duration = durationLabel(event);
+  const dateLabel = eventDateLabel(event);
   const subject = "Votre place est réservée — Conférence MediumIA";
 
   const zoomText = zoomJoinUrl ? `\nLien Zoom : ${zoomJoinUrl}\n` : `\nLe lien d’accès au direct vous sera transmis dès qu’il sera prêt.\n`;
   const preparationText = preparationUrl ? `\nCarnet de préparation : ${preparationUrl}\n` : `\nVotre carnet de préparation vous sera transmis dès qu’il sera disponible.\n`;
   const liveText = liveUrl ? `\nEspace LIVE MediumIA (questions + tirage) : ${liveUrl}\n` : "";
   const raffleText = `\n🎁 Pendant le direct, 1 accès complet à la formation MediumIA (valeur 597 €) sera offert par tirage au sort parmi les participants présents ayant validé leur participation au tirage. Participation gratuite, sans obligation d’achat.\n`;
-  const text = `Bonjour ${firstName},\n\nVotre inscription à la première conférence publique MediumIA est bien enregistrée.\n\n« Et si la médiumnité devenait accessible ? »\nVendredi 23 octobre 2026 à 19 h\nEn direct · durée prévue : ${duration}\n${raffleText}${liveText}${zoomText}${preparationText}\nGardez cet e-mail : il contient vos accès à la conférence.\n\nÀ très bientôt,\nSébastien · MediumIA`;
+  const text = `Bonjour ${firstName},\n\nVotre inscription à la première conférence publique MediumIA est bien enregistrée.\n\n« Et si la médiumnité devenait accessible ? »\n${dateLabel}\nEn direct · durée prévue : ${duration}\n${raffleText}${liveText}${zoomText}${preparationText}\nGardez cet e-mail : il contient vos accès à la conférence.\n\nÀ très bientôt,\nSébastien · MediumIA`;
 
   const liveBlock = liveUrl
     ? `<div style="margin:26px 0;padding:20px;background:#1a1535;border-radius:10px;color:#fffaf0"><p style="margin:0 0 8px;color:#c9a84c;font-size:12px;letter-spacing:1.2px"><strong>VOTRE ESPACE LIVE MEDIUMIA</strong></p><p style="margin:0 0 16px;font-size:14px;color:#ddd7e7">Pendant le direct, posez vos questions à Sébastien et confirmez votre participation au tirage au sort depuis cet espace personnel.</p><p style="text-align:center;margin:0"><a href="${safeLiveUrl}" style="display:inline-block;background:#c9a84c;color:#1a1535;text-decoration:none;padding:14px 22px;border-radius:8px;font-weight:bold">Ouvrir mon espace LIVE</a></p><p style="margin:12px 0 0;font-size:11px;color:#bcb5c9;text-align:center">Ce lien est personnel : ne le partagez pas.</p></div>`
@@ -166,7 +180,7 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
 
   const raffleBlock = `<div style="margin:26px 0;padding:20px;border:1px solid #c9a84c;background:#fbf7ea;border-radius:10px;color:#1a1535"><p style="margin:0 0 7px;font-size:12px;letter-spacing:1.2px;color:#9a7b2f"><strong>TIRAGE AU SORT EN DIRECT</strong></p><p style="margin:0"><strong>1 formation MediumIA complète offerte — valeur 597 €.</strong></p><p style="margin:8px 0 0;font-size:13px;color:#706a80">Participation gratuite, sans obligation d’achat, réservée aux participants présents en direct ayant validé leur participation au tirage.</p></div>`;
 
-  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>Vendredi 23 octobre 2026 à 19 h</strong><br>En direct · durée prévue : ${duration}</p>${raffleBlock}${liveBlock}${preparationBlock}${zoomBlock}<p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il contient vos accès à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>${escapeHtml(dateLabel)}</strong><br>En direct · durée prévue : ${duration}</p>${raffleBlock}${liveBlock}${preparationBlock}${zoomBlock}<p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il contient vos accès à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
 
   try {
     const response = await fetch("https://api.resend.com/emails", {

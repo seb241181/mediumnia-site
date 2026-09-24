@@ -209,8 +209,24 @@ function Purchase() {
         </label>
         {notice && <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 font-georgia text-xs text-red-800">{notice}</p>}
         {catalog && !catalog.open && <p className="rounded-xl border border-gold/30 bg-gold/10 px-3 py-3 font-georgia text-sm text-deep">Les cartes cadeaux arrivent très bientôt.</p>}
-        {catalog?.open && !ready && <p className="font-georgia text-xs text-mist">Complétez les étapes et cochez les conditions pour afficher le paiement : <strong className="text-deep">carte bancaire</strong> (sans compte PayPal) ou <strong className="text-deep">PayPal</strong>{price >= PAY_LATER_MIN_CENTS ? ', en une fois ou en 4 fois' : ''}.</p>}
-        {catalog?.open && ready && <div ref={buttonsRef} className="min-h-[48px]" />}
+        {catalog?.open && !ready && (
+          <>
+            <button type="button" disabled className="w-full cursor-not-allowed rounded-xl bg-deep/35 px-5 py-3 font-georgia text-sm font-bold text-white/80">
+              Passer au règlement
+            </button>
+            <p className="font-georgia text-xs leading-relaxed text-mist">
+              Pour activer le règlement, indiquez le prénom du bénéficiaire, votre prénom, votre e-mail{form.delivery === 'recipient' ? ', son e-mail' : ''}, puis cochez les conditions ci-dessus.
+            </p>
+          </>
+        )}
+        {catalog?.open && ready && (
+          <>
+            <p className="font-georgia text-xs leading-relaxed text-mist">
+              Choisissez votre règlement sécurisé : <strong className="text-deep">carte bancaire</strong> (sans compte PayPal) ou <strong className="text-deep">PayPal</strong>{price >= PAY_LATER_MIN_CENTS ? ', en une fois ou en 4 fois' : ''}.
+            </p>
+            <div ref={buttonsRef} className="min-h-[48px]" />
+          </>
+        )}
         {catalog?.env === 'sandbox' && <p className="font-georgia text-[10px] text-mist">Mode test : montant fictif de 1,00 €.</p>}
       </aside>
     </div>

@@ -162,3 +162,15 @@ test('the gift cards page shares its own visual', async () => {
   assert.match(html, /og:image:width" content="1200"/)
   assert.ok(fs.existsSync(new URL('../public/images/cartes-cadeaux/cartes-cadeaux-partage.jpg', import.meta.url)))
 })
+
+
+test('ChronoSphère gift redemption is exclusive with the PayPal checkout', () => {
+  const page = read('src/components/ChronospherePage.jsx')
+  const redeem = read('src/components/GiftChronosphereRedeem.jsx')
+  assert.match(page, /giftRedeemMode/)
+  assert.match(page, /!giftRedeemMode && \(/)
+  assert.match(page, /onOpenChange=\{\(open\) =>/)
+  assert.match(page, /setSelectedProduct\('pack3'\)/)
+  assert.match(redeem, /Finalement, payer normalement/)
+  assert.match(redeem, /onOpenChange\?\.\(next\)/)
+})

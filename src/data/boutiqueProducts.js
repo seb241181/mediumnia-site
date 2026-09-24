@@ -51,6 +51,7 @@ export const boutiqueProducts = [
     coverImage: '/images/boutique/codex-cover.jpg',
     imageFit: 'contain',
     priceLabel: 'Disponible sur Amazon',
+    salesCount: 35,
     summary: "L'Octave entière — de l'un au neuf. Un ouvrage de Sébastien Seguin autour de l'Arche, des symboles et d'une lecture initiatique du chemin.",
     description: "CODEX rassemble une transmission structurée autour de l'Arche et de l'Octave entière, de l'un au neuf. Une première édition pensée comme un livre de lecture, de réflexion et d'exploration symbolique.",
     highlights: ['Première édition', 'Auteur : Sébastien Seguin', 'Disponible en broché et Kindle', 'Commande et livraison gérées par Amazon'],

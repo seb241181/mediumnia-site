@@ -117,6 +117,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/defi-intuition",
+      "destination": "/index.html"
+    },
+    {
       "source": "/carte-cadeau/:token",
       "destination": "/index.html"
     }

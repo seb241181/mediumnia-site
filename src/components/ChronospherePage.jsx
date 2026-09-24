@@ -8,6 +8,7 @@ import {
   resolveChronosphereResumeStatus,
 } from '../../lib/chronosphereResume.js'
 import { getChronosphereReading } from '../../lib/chronosphereReading.js'
+import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 
 const THEMES = [
   { value: 'amour', label: 'Amour' },
@@ -690,6 +691,19 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
     }
   }
 
+  // Carte cadeau : le pack offert remplace le paiement, puis le premier tirage part.
+  function handleGiftRedeemed(data) {
+    const token = data.packToken
+    try { localStorage.setItem(PACK_TOKEN_KEY, token) } catch {}
+    resumeValidatedTokenRef.current = token
+    drawTokenRef.current = token
+    paymentProductRef.current = 'pack3'
+    setSelectedProduct('pack3')
+    setDrawToken(token)
+    setCreditState({ creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal || 3, status: 'active' })
+    if (launchRef.current) launchRef.current(token, false)
+  }
+
   async function handleEmailRetry() {
     if (!resultToken) return
     await launchInterpretation(resultToken.token, resultToken.legacy)
@@ -1051,6 +1065,18 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                 >
                   Procéder au paiement →
                 </button>
+                <GiftChronosphereRedeem
+                  product="pack3"
+                  consentText="Je demande l'exécution immédiate du tirage numérique CHRONOSPHERE 999 et reconnais que ce contenu numérique personnalisé ne peut faire l'objet d'un droit de rétractation une fois le tirage généré (art. L221-28 du Code de la consommation)."
+                  email={deliveryEmail.trim().toLowerCase()}
+                  beforeRedeem={() => {
+                    const err = validateForm()
+                    if (err) { setError(`Avant d’activer la carte : ${err.charAt(0).toLowerCase()}${err.slice(1)}`); return false }
+                    setError('')
+                    return true
+                  }}
+                  onRedeemed={handleGiftRedeemed}
+                />
               </>
             )}
 

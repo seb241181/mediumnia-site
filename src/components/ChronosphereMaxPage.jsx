@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 import { chronosphereMaxDemoProfile, chronosphereMaxDemoTimeline, chronosphereMaxDemoTimelines } from '../data/chronosphereMaxDemo.js'
 import { getSolarTemperament } from '../../lib/chronosphereSolarTemperament.js'
 import { summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
@@ -660,6 +661,16 @@ async function captureMaxOrder(orderId, token) {
                     Les 3 lectures sont à utiliser dans les 6 mois. <a href="/cgv-chronosphere" target="_blank" rel="noopener noreferrer" className="text-gold underline">Conditions générales de vente</a>
                   </p>
                   {consentAccepted ? <div ref={paypalContainerRef} className="mt-5 min-h-[50px]" /> : <p className="mt-4 text-center font-georgia text-xs text-mist">Cochez la case pour afficher le paiement PayPal.</p>}
+                  <GiftChronosphereRedeem
+                    product="max3"
+                    consentAccepted={consentAccepted}
+                    accessToken={session?.access_token}
+                    onRedeemed={(data) => {
+                      try { localStorage.setItem(maxTokenKey(user.id), data.packToken) } catch {}
+                      setCreditState({ product: 'max3', creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: 'active', resumeMode: 'token' })
+                      setPackToken(data.packToken)
+                    }}
+                  />
                   {pendingPayment && (
                     <button type="button" disabled={paymentBusy} onClick={verifyPendingMaxPayment} className="mt-3 w-full rounded-xl border border-gold/45 px-5 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">
                       {paymentBusy ? 'Vérification…' : 'Vérifier un paiement en cours'}

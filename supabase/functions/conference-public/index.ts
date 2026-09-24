@@ -133,7 +133,7 @@ async function buildPreparationUrl(supabase: any, path?: string | null, endsAt?:
 
   const { data, error } = await supabase.storage
     .from(PREPARATION_BUCKET)
-    .createSignedUrl(path, expiresIn, { download: "MEDIUMIA_Carnet_Preparation_Conference_23-10-2026.pdf" });
+    .createSignedUrl(path, expiresIn, { download: "MEDIUMIA_Carnet_Preparation_Conference_22-10-2026.pdf" });
 
   if (error || !data?.signedUrl) {
     console.error("conference_preparation_signed_url_failed");
@@ -171,7 +171,7 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
     : "";
 
   const zoomBlock = zoomJoinUrl
-    ? `<p style="text-align:center;margin:28px 0"><a href="${safeZoomUrl}" style="display:inline-block;background:#c9a84c;color:#1a1535;text-decoration:none;padding:14px 24px;border-radius:8px;font-weight:bold">Rejoindre la conférence sur Zoom</a></p><p style="font-size:13px;color:#706a80;text-align:center">Accès au direct du 23 octobre à 19 h.</p>`
+    ? `<p style="text-align:center;margin:28px 0"><a href="${safeZoomUrl}" style="display:inline-block;background:#c9a84c;color:#1a1535;text-decoration:none;padding:14px 24px;border-radius:8px;font-weight:bold">Rejoindre la conférence sur Zoom</a></p><p style="font-size:13px;color:#706a80;text-align:center">${escapeHtml(dateLabel)}.</p>`
     : `<p>Le lien d’accès au direct vous sera transmis dès qu’il sera prêt.</p>`;
 
   const preparationBlock = preparationUrl

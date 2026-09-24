@@ -142,7 +142,7 @@ function ServiceCard({ service, selected, onSelect }) {
         {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
           <span className="text-gold font-semibold">
             → {service.price_cents > service.reservationPaymentCents
-              ? `${service.reservationPaymentLabel} d’arrhes ou totalité en ligne — carte bancaire ou PayPal, 4X possible`
+              ? `${service.reservationPaymentLabel} d’arrhes ou totalité en ligne — carte bancaire ou PayPal, paiement en plusieurs fois possible`
               : `${service.reservationPaymentLabel} d’arrhes à la réservation`}
           </span>
         )}
@@ -730,7 +730,7 @@ function Summary({ practitioner, service, date, time }) {
           {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
             <p className="font-georgia text-xs text-gold mt-1">
               {service.price_cents > service.reservationPaymentCents
-                ? `Paiement en ligne : ${service.reservationPaymentLabel} d’arrhes ou totalité (carte bancaire ou PayPal, 4X possible)`
+                ? `Paiement en ligne : ${service.reservationPaymentLabel} d’arrhes ou totalité (carte bancaire ou PayPal, paiement en plusieurs fois possible)`
                 : `${service.reservationPaymentLabel} d’arrhes à la réservation`}
             </p>
           )}

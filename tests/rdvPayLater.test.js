@@ -42,6 +42,8 @@ test('checkout offers PayPal 4X with the mandatory credit notice, and keeps the 
 
 test('service list and summary announce card or PayPal and 4X', () => {
   const page = read('src/components/rdv/RdvPublic.jsx')
-  assert.match(page, /carte bancaire ou PayPal, 4X possible/)
+  assert.match(page, /carte bancaire ou PayPal, paiement en plusieurs fois possible/)
+  // PayPal France only offers 4 instalments: never advertise 2 or 3.
+  assert.doesNotMatch(page, /[23] ou 4 ?(x|fois)|en [23] fois/i)
   assert.doesNotMatch(page, /videoOffersFullPayment/)
 })

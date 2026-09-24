@@ -40,3 +40,15 @@ test('accounting UI exposes KDP units, royalties and activity generated separate
   assert.match(component, /À recevoir Amazon/)
   assert.match(component, /ne sont pas ajoutées au « TTC encaissé »/)
 })
+
+
+test('KDP dashboard can show reported sales before format and royalties are fully reconciled', () => {
+  const migration = read('supabase/migrations/20260924113000_kdp_unclassified_units.sql')
+  const script = read('scripts/apply-rdv-accounting-dashboard.mjs')
+  const component = read('src/components/rdv/AccountingSection.jsx')
+  assert.match(migration, /unclassified_units/)
+  assert.match(script, /unclassified_units/)
+  assert.match(script, /kdp\.paperback_units \+ kdp\.ebook_units \+ kdp\.hardcover_units \+ kdp\.unclassified_units/)
+  assert.match(component, /à ventiler/)
+  assert.match(component, /redevances correspondantes restent à compléter/)
+})

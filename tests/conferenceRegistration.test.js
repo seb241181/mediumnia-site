@@ -43,6 +43,8 @@ test('the conference is on Thursday 22 October everywhere, and the e-mail reads 
   const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
   const fn = read('supabase/functions/conference-public/index.ts')
   assert.doesNotMatch(fn, /Vendredi 23 octobre/)
+  assert.doesNotMatch(fn, /Accès au direct du 23 octobre/)
+  assert.doesNotMatch(fn, /Conference_23-10-2026\.pdf/)
   assert.match(fn, /const dateLabel = eventDateLabel\(event\)/)
   for (const file of ['src/components/ConferencesPage.jsx', 'src/components/ConferenceLivePage.jsx', 'scripts/apply-route-seo-cro.mjs', 'public/reglement-tirage-conference-mediumia-22-10-2026.html']) {
     assert.doesNotMatch(read(file).replace(/initialement prévue le vendredi 23 octobre/, ''), /23 octobre/i, file)

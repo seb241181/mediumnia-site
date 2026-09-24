@@ -60,6 +60,10 @@ const routeSeoHelpers = `const ROUTE_META = {
     title: 'Conférence offerte le 23 octobre — Et si la médiumnité devenait accessible ? | MediumIA',
     description: 'Une heure en direct avec Sébastien Seguin, vendredi 23 octobre à 19 h sur Zoom. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
   },
+  'cartes-cadeaux': {
+    title: 'Cartes cadeaux MediumIA — Offrir une consultation ou ChronoSphère',
+    description: 'Offrez une consultation, un montant libre, une lecture ChronoSphère ou un coffret. Carte à imprimer ou envoyée par e-mail à la date de votre choix, valable 12 mois.',
+  },
   avis: {
     title: 'Avis clients — MediumIA',
     description: 'Avis vérifiés et modérés sur les consultations, la formation, l’Oracle et ChronoSphère MediumIA. Positifs comme négatifs, publiés du plus récent au plus ancien.',
@@ -94,7 +98,7 @@ function applyRouteMeta(view) {
   const pathname = window.location.pathname
   const canonicalPath = pathname === '/' ? '/' : (pathname.endsWith('/') ? pathname.slice(0, -1) : pathname)
   const canonicalUrl = 'https://mediumia.fr' + canonicalPath
-  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation' || pathname.startsWith('/avis/moderation')
+  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation' || pathname.startsWith('/avis/moderation') || pathname.startsWith('/carte-cadeau/')
 
   document.title = meta.title
 

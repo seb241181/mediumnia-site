@@ -21,6 +21,7 @@ import SiteGuardian from './components/SiteGuardian'
 import CosmicLibraryHero from './components/CosmicLibraryHero'
 import ConferencePassPage from './components/ConferencePassPage'
 import ReviewsPage, { ReviewsHighlight } from './components/ReviewsPage'
+import GiftCardsPage from './components/GiftCardsPage'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -337,6 +338,7 @@ function pathToView(p) {
     : p.startsWith('/reseau/rejoindre') ? 'reseau-form'
     : p.startsWith('/reseau') ? 'reseau-dir'
     : p === '/avis' || p.startsWith('/avis/') ? 'avis'
+    : p === '/cartes-cadeaux' || p.startsWith('/carte-cadeau/') ? 'cartes-cadeaux'
     : p === '/mentions' ? 'mentions'
     : p === '/confidentialite' ? 'confidentialite'
     : p === '/cgv-oracle' ? 'cgv-oracle'
@@ -389,6 +391,7 @@ export default function App() {
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-example') return <><ChronosphereExamplePage onBack={backHome} onOpenChronosphere={openChronosphere} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'cartes-cadeaux') return <><GiftCardsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'avis')         return <><ReviewsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>

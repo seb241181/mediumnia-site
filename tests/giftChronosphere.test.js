@@ -164,13 +164,12 @@ test('the gift cards page shares its own visual', async () => {
 })
 
 
-test('ChronoSphère gift redemption is exclusive with the PayPal checkout', () => {
+test('ChronoSphère gift redemption hides the PayPal checkout while the code box is open', () => {
   const page = read('src/components/ChronospherePage.jsx')
   const redeem = read('src/components/GiftChronosphereRedeem.jsx')
-  assert.match(page, /giftRedeemMode/)
-  assert.match(page, /!giftRedeemMode && \(/)
-  assert.match(page, /onOpenChange=\{\(open\) =>/)
-  assert.match(page, /setSelectedProduct\('pack3'\)/)
+  assert.match(page, /<GiftChronosphereRedeem[\s\S]*?<div className="chronosphere-standard-payment">/)
+  assert.match(redeem, /gift-redeem-peer/)
+  assert.match(redeem, /data-open="true"/)
+  assert.match(redeem, /chronosphere-standard-payment \{ display: none; \}/)
   assert.match(redeem, /Finalement, payer normalement/)
-  assert.match(redeem, /onOpenChange\?\.\(next\)/)
 })

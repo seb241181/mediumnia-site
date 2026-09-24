@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import GiftCardRedeem from './GiftCardRedeem.jsx'
 
 // PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
 const PAY_LATER_MIN_CENTS = 3000
@@ -261,6 +262,20 @@ export default function RdvDepositCheckout({
           </span>
         </label>
       </div>
+
+      <GiftCardRedeem
+        practitionerSlug={practitionerSlug}
+        service={service}
+        dateStr={dateStr}
+        time={time}
+        customer={customer}
+        selectedModality={selectedModality}
+        consentsReady={consentsReady}
+        depositCents={fullPaymentRequired ? priceCents : depositCents}
+        priceCents={priceCents}
+        onComplete={onComplete}
+        onUnavailable={onUnavailable}
+      />
 
       <div className="rounded-2xl border border-gold/30 bg-white/70 p-5">
         <p className="font-georgia text-sm text-mist leading-relaxed mb-4">Votre créneau est bloqué pendant 15 minutes à partir de la création du paiement.</p>

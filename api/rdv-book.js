@@ -35,6 +35,7 @@
 import { createHmac } from 'node:crypto'
 import { decrypt, refreshGoogleToken, encrypt, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
+import { findUsableGiftCard, recordGiftRedemption, reserveGiftBalance, restoreGiftBalance, restoreGiftForCancelledBooking } from '../lib/giftCards.js'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import { deleteBookingFromGoogleCalendar, syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 import {
@@ -404,6 +405,14 @@ async function handleCancellation(req, res, supabase) {
     })
   }
 
+  // Gift card: cancelled in time, the amount goes back on the card.
+  let giftRestoredCents = 0
+  try {
+    giftRestoredCents = await restoreGiftForCancelledBooking(supabase, booking)
+  } catch {
+    console.error('[rdv-book] gift card restore failed')
+  }
+
   const email = await sendEmail({
     to: booking.customer_email,
     subject: 'MediumIA — Votre rendez-vous est annulé',
@@ -417,6 +426,7 @@ async function handleCancellation(req, res, supabase) {
     cancelled: true,
     google_status: googleDelete.status,
     email_status: email.status,
+    gift_restored_cents: giftRestoredCents,
   })
 }
 
@@ -574,7 +584,7 @@ export default async function handler(req, res) {
 
   const { data: service, error: svcErr } = await supabase
     .from('booking_services')
-    .select('id, title, duration_min, price_cents, modality, booking_mode')
+    .select('id, title, duration_min, price_cents, modality, booking_mode, reservation_payment_kind, reservation_payment_cents')
     .eq('slug', service_slug)
     .eq('practitioner_id', practitioner.id)
     .eq('is_active', true)
@@ -599,6 +609,39 @@ export default async function handler(req, res) {
   // ── 4d. Mode "instant" : valider date/time ────────────────────────────────
   if (!date || !DATE_RE.test(date)) return res.status(400).json({ error: 'date invalide (YYYY-MM-DD)' })
   if (!time || !TIME_RE.test(time)) return res.status(400).json({ error: 'time invalide (HH:MM)' })
+
+  // ── 5b. Arrhes obligatoires / carte cadeau ────────────────────────────────
+  // A service with a deposit is booked through PayPal (rdvDepositAction), never
+  // here — except with a gift card whose balance covers at least the deposit.
+  const giftCode = typeof req.body?.gift_code === 'string' ? req.body.gift_code : ''
+  const requiresDeposit = service.reservation_payment_kind === 'arrhes' && Number(service.reservation_payment_cents) > 0
+  let gift = null
+  if (requiresDeposit || giftCode) {
+    if (!giftCode) {
+      return res.status(409).json({ error: 'Cette prestation se réserve avec un paiement en ligne.', code: 'online_payment_required' })
+    }
+    const found = await findUsableGiftCard(supabase, giftCode)
+    if (!found.card) {
+      const messages = {
+        gift_code_invalid: 'Ce code de carte cadeau n’est pas reconnu.',
+        gift_code_expired: 'Cette carte cadeau a expiré.',
+        gift_code_used: 'Cette carte cadeau a déjà été entièrement utilisée.',
+      }
+      return res.status(found.error === 'gift_lookup_failed' ? 500 : 409).json({ error: messages[found.error] || 'Carte cadeau indisponible.', code: found.error })
+    }
+    const appliedCents = Math.min(found.card.balance_cents, service.price_cents)
+    if (requiresDeposit && appliedCents < Number(service.reservation_payment_cents)) {
+      return res.status(409).json({ error: 'Le solde de cette carte ne couvre pas les arrhes de cette prestation.', code: 'gift_balance_too_low' })
+    }
+    // Same rule as the PayPal checkout: a video appointment within 48 h must be
+    // fully paid before it takes place.
+    const isVideo = Array.isArray(service.modality) && service.modality.includes('video')
+    const startsSoon = parisTimeToUTC(date, time, parisUTCOffsetMs(date)).getTime() <= Date.now() + 48 * 3_600_000
+    if (requiresDeposit && isVideo && startsSoon && appliedCents < service.price_cents) {
+      return res.status(409).json({ error: 'À moins de 48 heures d’une visioconférence, la carte cadeau doit couvrir la totalité de la séance.', code: 'gift_must_cover_full' })
+    }
+    gift = { card: found.card, appliedCents }
+  }
 
   // ── 6. Calcul des bornes UTC ──────────────────────────────────────────────
 
@@ -766,6 +809,10 @@ export default async function handler(req, res) {
   // La fonction create_booking utilise pg_advisory_xact_lock(hashtext(practitioner_id))
   // et vérifie buffers + max_per_day côté base sous le même verrou.
 
+  if (gift && !(await reserveGiftBalance(supabase, gift.card, gift.appliedCents))) {
+    return res.status(409).json({ error: 'Cette carte cadeau vient d’être utilisée. Vérifiez son solde.', code: 'gift_code_used' })
+  }
+
   const { data: rpcResult, error: rpcErr } = await supabase.rpc('create_booking', {
     p_practitioner_id:      practitioner.id,
     p_service_id:           service.id,
@@ -778,6 +825,10 @@ export default async function handler(req, res) {
     p_customer_message:     customer.message?.trim() || null,
     p_timezone:             practitioner.timezone || 'Europe/Paris',
   })
+
+  if (gift && (rpcErr || !rpcResult || rpcResult.conflict)) {
+    await restoreGiftBalance(supabase, gift.card.id, gift.appliedCents)
+  }
 
   if (rpcErr) {
     if (rpcErr.code === 'PGRST202') {
@@ -795,6 +846,23 @@ export default async function handler(req, res) {
   // ── 13. Succès — INSERT confirmé ──────────────────────────────────────────
 
   const instantBookingId = rpcResult.booking_id
+
+  if (gift) {
+    await supabase.from('bookings')
+      .update({ booked_price_cents: service.price_cents, reservation_payment_cents: gift.appliedCents })
+      .eq('id', instantBookingId)
+    await recordGiftRedemption(supabase, {
+      card: gift.card,
+      bookingId: instantBookingId,
+      practitionerId: practitioner.id,
+      serviceId: service.id,
+      servicePriceCents: service.price_cents,
+      appliedCents: gift.appliedCents,
+      startsAt: startsAtUTC.toISOString(),
+      customerName: `${customer.firstName.trim()} ${customer.lastName.trim()}`,
+      customerEmail: customer.email.trim().toLowerCase(),
+    })
+  }
   const cancellation = createCancellationToken()
   const { error: tokenErr } = await supabase
     .from('bookings')
@@ -870,5 +938,6 @@ export default async function handler(req, res) {
     google_sync:     gStatus,
     google_event_id: googleSync.google_event_id,
     email_confirmation: emailStatus,
+    ...(gift ? { gift_applied_cents: gift.appliedCents, service_price_cents: service.price_cents, balance_due_cents: service.price_cents - gift.appliedCents } : {}),
   })
 }

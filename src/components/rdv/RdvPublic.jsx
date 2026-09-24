@@ -972,7 +972,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
     const paidInFull = hasOnlinePayment
       && Number(bookingResult.balanceCents) === 0
       && Number(bookingResult.amountCents) >= servicePriceCents
-    const confirmationCopy = hasOnlinePayment
+    const confirmationCopy = bookingResult.paidWithGift
+      ? `Votre carte cadeau a réglé ${(bookingResult.amountCents / 100).toFixed(2).replace('.', ',')} € et un e-mail de confirmation vous est envoyé.`
+      : hasOnlinePayment
       ? (paidInFull
         ? 'Votre prestation a été réglée intégralement et un e-mail de confirmation vous est envoyé.'
         : 'Vos arrhes ont été réglées et un e-mail de confirmation vous est envoyé.')
@@ -999,7 +1001,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
               <p className="font-georgia text-sm"><span className="text-mist">Modalité :</span> <strong>{service.modalityLabel}</strong></p>
               {bookingResult.amountCents != null && (
                 <p className="font-georgia text-sm">
-                  <span className="text-mist">{paidInFull ? 'Montant réglé :' : 'Arrhes réglées :'}</span>{' '}
+                  <span className="text-mist">{bookingResult.paidWithGift ? 'Réglé par carte cadeau :' : paidInFull ? 'Montant réglé :' : 'Arrhes réglées :'}</span>{' '}
                   <strong>{(bookingResult.amountCents / 100).toFixed(2).replace('.', ',')} €</strong>
                 </p>
               )}

@@ -11,7 +11,7 @@ const ON_SITE_METHODS = [
   ['transfer', 'Virement'],
 ]
 
-const METHOD_LABELS = { card: 'Carte bancaire', cash: 'Espèces', check: 'Chèque', transfer: 'Virement', paypal: 'PayPal (en ligne)', other: 'Autre' }
+const METHOD_LABELS = { card: 'Carte bancaire', cash: 'Espèces', check: 'Chèque', transfer: 'Virement', paypal: 'PayPal (en ligne)', gift_card: 'Carte cadeau', other: 'Autre' }
 const KIND_LABELS = { arrhes: 'arrhes', balance: 'solde', full_payment: 'paiement intégral', refund: 'remboursement', arrhes_retained: 'arrhes conservées', adjustment: 'règlement' }
 
 const pad = (n) => String(n).padStart(2, '0')

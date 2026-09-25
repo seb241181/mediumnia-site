@@ -24,6 +24,7 @@ import ReviewsPage, { ReviewsHighlight } from './components/ReviewsPage'
 import GiftCardsPage from './components/GiftCardsPage'
 import DefiIntuitionPage from './components/DefiIntuitionPage'
 import DefiHomeBanner from './components/DefiHomeBanner'
+import FormationParcoursPage from './components/FormationParcoursPage'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -334,6 +335,7 @@ function pathToView(p) {
     : p.startsWith('/rdv/') ? 'rdv-public'
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
+    : p === '/formation/parcours' ? 'formation-parcours'
     : p.startsWith('/formation') ? 'formation'
     : p.startsWith('/chronosphere-max') ? 'chronosphere-max'
     : p.startsWith('/chronosphere/exemple') ? 'chronosphere-example'
@@ -398,6 +400,7 @@ export default function App() {
   if (view === 'chronosphere-example') return <><ChronosphereExamplePage onBack={backHome} onOpenChronosphere={openChronosphere} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cartes-cadeaux') return <><GiftCardsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'formation-parcours') return <><FormationParcoursPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'defi-intuition') return <><DefiIntuitionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'avis')         return <><ReviewsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>

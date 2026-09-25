@@ -38,3 +38,17 @@ test('long pages get a discreet « Sur cette page » rail on wide screens only',
   assert.match(rail, /window\.scrollY > window\.innerHeight \* 0\.75/)
   assert.match(app, /<PageRail items=\{HOME_RAIL\} \/>/)
 })
+
+test('home order: hero, Formation (597 €), Consulter, avis, Découvrir, boutique, praticiens', async () => {
+  const app = await read('src/App.jsx')
+  const home = app.slice(app.indexOf('function PublicPlatformHome('))
+  const order = ['<CosmicLibraryHero', '<section id="formation"', '<ConsultationSection id="consulter" compact', '<ReviewsHighlight />', '<DiscoverSection id="decouvrir"', '<section id="boutique"', '<PractitionersBand']
+  const positions = order.map((marker) => home.indexOf(marker))
+  assert.ok(positions.every((p) => p > 0), JSON.stringify(positions))
+  assert.deepEqual([...positions].sort((a, b) => a - b), positions)
+  assert.doesNotMatch(app, /function FeaturedChronosphere|function OracleChronosphereBridge|Pour éviter toute confusion|Le socle arrive/)
+  assert.match(app, /597 € TTC<\/p>/)
+  assert.match(app, /Paiement en plusieurs fois disponible avec PayPal selon éligibilité\./)
+  const band = await read('src/components/PractitionersBand.jsx')
+  assert.match(band, /label: 'Espace Pro', href: '\/pro'/)
+})

@@ -27,30 +27,11 @@ import DefiHomeBanner from './components/DefiHomeBanner'
 import FormationParcoursPage from './components/FormationParcoursPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
+import DiscoverSection from './components/DiscoverSection'
+import PractitionersBand from './components/PractitionersBand'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir, onOpenConferences }) {
   return <SiteNav current="home" onOpenFormation={onOpenFormation} onOpenConferences={onOpenConferences} onOpenReseauDir={onOpenReseauDir} />
-}
-
-function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, badge }) {
-  const classes = 'border-gold/35 bg-white/75 text-deep shadow-[0_10px_28px_rgba(26,21,53,.06)] transition-shadow hover:shadow-[0_14px_34px_rgba(26,21,53,.1)]'
-  const buttonClasses = 'text-deep transition-colors hover:text-gold'
-  return (
-    <article className={`cosmic-card-lift rounded-3xl border p-7 md:p-8 shadow-sm flex flex-col min-h-[300px] ${classes}`}>
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <span className="text-gold text-3xl">{icon}</span>
-        {badge && <span className="font-georgia text-[10px] uppercase tracking-[0.16em] rounded-full bg-gold/10 px-3 py-1 text-gold">{badge}</span>}
-      </div>
-      <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-3">{eyebrow}</p>
-      <h2 className="font-georgia text-2xl md:text-3xl leading-tight mb-4 font-medium">{title}</h2>
-      <p className="font-georgia leading-relaxed text-mist flex-1">{children}</p>
-      {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer" className={`font-georgia text-sm font-bold mt-7 ${buttonClasses}`}>{action} →</a>
-      ) : (
-        <button onClick={onClick} className={`font-georgia text-sm font-bold text-left mt-7 ${buttonClasses}`}>{action} →</button>
-      )}
-    </article>
-  )
 }
 
 function FeaturedAccompagnement({ onOpen }) {
@@ -66,21 +47,24 @@ function FeaturedAccompagnement({ onOpen }) {
       style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
     >
       <div className="flex-1 min-w-0">
-        <p className="font-georgia text-gold tracking-[0.28em] text-[11px] uppercase mb-2">MEDIUMIA</p>
-        <p className="font-georgia text-gold/55 tracking-[0.14em] text-sm mb-6">Accompagnement à la Médiumnité Consciente</p>
+        <p className="font-georgia text-gold tracking-[0.28em] text-[11px] uppercase mb-2">L’offre principale</p>
+        <p className="font-georgia text-gold/60 tracking-[0.14em] text-sm mb-6">Accompagnement à la médiumnité consciente</p>
         <h2 className="font-georgia text-cream text-3xl md:text-5xl font-medium leading-tight mb-5">
-          Médiumnité Consciente
+          Formation MediumIA
         </h2>
         <p className="font-georgia text-cream/65 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
           25 modules en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès.
           Une transmission née de plus de douze ans de pratique réelle.
         </p>
-        <button
-          onClick={onOpen}
-          className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold text-base hover:bg-gold/90 transition-colors"
+        <p className="font-georgia text-cream text-3xl font-medium mb-1">597 € TTC</p>
+        <p className="font-georgia text-cream/60 text-sm mb-7">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
+        <a
+          href="/formation"
+          onClick={(event) => { event.preventDefault(); onOpen() }}
+          className="inline-block font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold text-base hover:bg-gold/90 transition-colors"
         >
-          Découvrir l'accompagnement →
-        </button>
+          Découvrir la formation →
+        </a>
       </div>
       <div className="shrink-0 md:w-72">
         <div className="mb-3 overflow-hidden rounded-2xl border border-gold/30 bg-cream p-3 shadow-[0_18px_34px_rgba(0,0,0,.2)]">
@@ -108,133 +92,13 @@ function FeaturedAccompagnement({ onOpen }) {
   )
 }
 
-function FeaturedChronosphere({ onOpen, onOpenExample }) {
-  return (
-    <article
-      className="cosmic-card-lift relative isolate overflow-hidden rounded-3xl border border-gold/35 px-7 py-9 shadow-xl md:px-12 md:py-12"
-      style={{ background: 'radial-gradient(circle at 84% 18%, rgba(201,168,76,.2), transparent 26%), linear-gradient(135deg, #0d1730 0%, #1a1535 54%, #241d42 100%)' }}
-    >
-      <div className="pointer-events-none absolute -left-20 top-12 h-56 w-56 rounded-full border border-gold/15" />
-      <div className="pointer-events-none absolute left-24 top-20 h-2 w-2 rounded-full bg-gold/70 shadow-[0_0_26px_rgba(201,168,76,.9)]" />
-      <div className="pointer-events-none absolute right-[39%] top-12 h-1.5 w-1.5 rounded-full bg-cream/70" />
-      <div className="relative grid gap-10 md:grid-cols-[1.2fr_.8fr] md:items-center md:gap-14">
-        <div className="max-w-2xl">
-          <span className="inline-flex rounded-full border border-gold/45 bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">
-            CHRONOSPHÈRE
-          </span>
-          <p className="mt-7 font-georgia text-xs uppercase tracking-[0.24em] text-gold/65">Cycles · lignes de temps · thème astral</p>
-          <h2 className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-5xl">La passerelle entre votre ciel et vos lignes de temps</h2>
-          <p className="mt-5 font-georgia text-base leading-relaxed text-cream/75 md:text-lg">
-            ChronoSphère part de votre date, de votre heure et de votre lieu de naissance pour éclairer l’énergie actuelle, puis ouvrir un tirage temporel guidé. Le thème astral complet arrive comme prochaine marche, avec un moteur de calcul précis.
-          </p>
-          <p className="mt-6 font-georgia text-sm font-medium text-gold">Pack conseillé : 9,90 € TTC pour 3 tirages</p>
-          <p className="mt-2 font-georgia text-xs text-cream/65">Le tirage éclaire le moment ; le futur thème astral posera le socle natal.</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <button onClick={onOpen} className="rounded-lg bg-gold px-7 py-4 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90">
-              Entrer dans ChronoSphère
-            </button>
-            <button onClick={onOpenExample} className="rounded-lg border border-gold/55 px-7 py-4 font-georgia text-base font-bold text-gold transition-colors hover:bg-gold/10">
-              Voir un exemple
-            </button>
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/[.08] p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="max-w-xl">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">ChronoSphère MAX</span>
-                  <span className="font-georgia text-sm font-semibold text-cream">19,90 € TTC</span>
-                </div>
-                <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/72">
-                  ChronoSphère vous montre votre ligne de temps. MAX la suit avec vous : 3 lectures reliées, mémoire, comparaison, évolution des fenêtres et synthèse finale.
-                </p>
-              </div>
-              <a href="/chronosphere-max" className="shrink-0 rounded-lg border border-gold/65 bg-deep/40 px-6 py-3 text-center font-georgia text-sm font-bold text-gold transition-colors hover:bg-gold/10">
-                Découvrir MAX →
-              </a>
-            </div>
-          </div>
-        </div>
-        <div className="relative mx-auto w-full max-w-[265px] md:max-w-[310px]">
-          <div className="absolute -inset-2 rounded-[34px] bg-gold/10 blur-2xl" />
-          <div
-            className="relative aspect-[3/4] overflow-hidden rounded-[28px] border border-gold/40 shadow-[0_24px_55px_rgba(0,0,0,.38)]"
-            style={{ background: 'radial-gradient(circle at 50% 48%, rgba(201,168,76,.2), transparent 21%), radial-gradient(circle at 50% 42%, #242763 0%, #161943 35%, #091127 76%)' }}
-          >
-            <div className="absolute left-1/2 top-1/2 h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/20 blur-3xl" />
-            <span className="absolute left-[18%] top-[20%] h-1.5 w-1.5 rounded-full bg-gold/85 shadow-[0_0_12px_rgba(201,168,76,.8)]" />
-            <span className="absolute right-[16%] top-[28%] h-1 w-1 rounded-full bg-cream/75" />
-            <span className="absolute bottom-[22%] left-[21%] h-1 w-1 rounded-full bg-cream/60" />
-            <span className="absolute bottom-[17%] right-[19%] h-1.5 w-1.5 rounded-full bg-gold/75 shadow-[0_0_12px_rgba(201,168,76,.7)]" />
-            <div className="absolute inset-8 flex items-center justify-center">
-              <img
-                src="/images/brand/MEDIUMIA_symbol_header.png"
-                alt="Symbole MediumIA au coeur de Chronosphere"
-                className="relative w-full max-w-[255px] object-contain brightness-110 saturate-125 drop-shadow-[0_0_24px_rgba(201,168,76,.42)]"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </article>
-  )
-}
-
-
-function OracleChronosphereBridge({ onOpenOracle, onOpenChronosphere }) {
-  return (
-    <section className="rounded-3xl border border-gold/25 bg-white/70 px-7 py-8 shadow-[0_10px_28px_rgba(26,21,53,.05)] md:px-10 md:py-10">
-      <div className="mx-auto max-w-3xl text-center">
-        <p className="font-georgia text-[11px] uppercase tracking-[0.24em] text-gold">Deux portes, un même chemin</p>
-        <h2 className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">
-          L’Oracle révèle le symbole. ChronoSphère éclaire le temps.
-        </h2>
-        <p className="mt-4 font-georgia text-base leading-relaxed text-mist">
-          Pour éviter toute confusion, MediumIA garde deux expériences complémentaires : l’Oracle Au-delà de l’Âme reste le dialogue avec vos cartes physiques et Lumïa ; ChronoSphère devient la porte des cycles, des lignes de temps et du futur thème astral.
-        </p>
-      </div>
-
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <article className="rounded-2xl border border-gold/25 bg-cream/70 p-5">
-          <span className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">01 · Oracle</span>
-          <h3 className="mt-2 font-georgia text-xl font-medium text-deep">La carte parle</h3>
-          <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
-            Vous tirez avec le jeu physique, puis Lumïa vous aide à entendre le symbole, sans remplacer votre geste.
-          </p>
-          <button onClick={onOpenOracle} className="mt-4 font-georgia text-sm font-bold text-deep hover:text-gold">
-            Découvrir l’Oracle →
-          </button>
-        </article>
-
-        <article className="rounded-2xl border border-gold/35 bg-deep p-5 text-cream">
-          <span className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">02 · ChronoSphère</span>
-          <h3 className="mt-2 font-georgia text-xl font-medium">Le temps répond</h3>
-          <p className="mt-2 font-georgia text-sm leading-relaxed text-cream/72">
-            Vous indiquez naissance, sujet et nombres : ChronoSphère croise ciel, fenêtres temporelles et résonances.
-          </p>
-          <button onClick={onOpenChronosphere} className="mt-4 font-georgia text-sm font-bold text-gold hover:text-gold/80">
-            Entrer dans ChronoSphère →
-          </button>
-        </article>
-
-        <article className="rounded-2xl border border-gold/25 bg-cream/70 p-5">
-          <span className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">03 · Thème astral</span>
-          <h3 className="mt-2 font-georgia text-xl font-medium text-deep">Le socle arrive</h3>
-          <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
-            Le thème natal premium sera branché seulement après moteur astrologique fiable : pas d’ascendant ou de Lune approximatifs.
-          </p>
-        </article>
-      </div>
-    </section>
-  )
-}
-
 const HOME_RAIL = [
   { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
   { id: 'decouvrir', label: 'Découvrir' },
   { id: 'boutique', label: 'Boutique' },
+  { id: 'praticiens', label: 'Praticiens' },
 ]
 
 function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
@@ -256,47 +120,19 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         {/* ── Jeu gratuit du jour ── */}
         <DefiHomeBanner />
 
+        {/* ── Formation MediumIA : l'offre principale, dès le premier défilement ── */}
+        <section id="formation" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16">
+          <FeaturedAccompagnement onOpen={onOpenFormation} />
+        </section>
+
         {/* ── Consulter ── */}
-        <ConsultationSection id="consulter" onOpenRdv={onOpenRdv} />
+        <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} />
 
         {/* ── Avis clients (uniquement ceux validés) ── */}
         <ReviewsHighlight />
 
-        {/* ── Découvrir ── */}
-        <section id="decouvrir" className="cosmic-discovery px-6 py-16 max-w-6xl mx-auto">
-          <div className="cosmic-section-heading text-center max-w-3xl mx-auto mb-12">
-            <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="h-10 w-auto mx-auto mb-5 opacity-60" />
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">L'univers MediumIA</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-5">Ce que vous trouverez ici.</h2>
-            <p className="font-georgia text-mist text-lg leading-relaxed">Un accompagnement pour apprendre et pratiquer, des praticiens pour être guidé, et pour les professionnels, des outils pensés pour leur activité.</p>
-          </div>
-
-          <div className="flex flex-col gap-5">
-            <div id="formation">
-              <FeaturedAccompagnement onOpen={onOpenFormation} />
-            </div>
-            <OracleChronosphereBridge onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
-            <FeaturedChronosphere onOpen={onOpenChronosphere} onOpenExample={onOpenChronosphereExample} />
-            <div className="grid md:grid-cols-2 gap-5">
-              <UniverseCard icon="✦" eyebrow="Réseau" title="Rencontrer un membre du réseau MediumIA" action="Découvrir le réseau" onClick={onOpenReseauDir}>
-                Découvrez les praticiens présents sur MediumIA, leur approche, leurs spécialités et leur manière d'accompagner.
-              </UniverseCard>
-              <UniverseCard icon="✺" eyebrow="MediumIA Pro" title="Votre pratique, amplifiée par des outils qui vous ressemblent" action="Découvrir MediumIA Pro" onClick={onOpenPro} badge="Bientôt disponible">
-                Assistants IA métier, mémoire professionnelle, aide à la communication, rendez-vous et automatisations — des outils pensés pour les professionnels de l'accompagnement.
-              </UniverseCard>
-            </div>
-            <aside className="cosmic-card-lift rounded-3xl border border-gold/35 bg-white/75 px-7 py-8 shadow-[0_10px_28px_rgba(26,21,53,.06)] md:flex md:items-center md:justify-between md:gap-10 md:px-10">
-              <div className="max-w-3xl">
-                <p className="font-georgia text-gold text-[11px] uppercase tracking-[0.2em]">Vous êtes praticien ?</p>
-                <h3 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">Rejoignez le réseau MediumIA</h3>
-                <p className="mt-3 font-georgia leading-relaxed text-mist">Présentez votre pratique et rejoignez un réseau pensé pour relier praticiens et personnes en recherche d’accompagnement.</p>
-              </div>
-              <button onClick={onOpenReseauForm} className="mt-6 shrink-0 font-georgia text-sm font-bold text-deep transition-colors hover:text-gold md:mt-0">
-                Rejoindre le réseau →
-              </button>
-            </aside>
-          </div>
-        </section>
+        {/* ── Découvrir et expérimenter ── */}
+        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
 
         {/* ── Boutique ── */}
         <section id="boutique" className="border-t border-gold/15">
@@ -308,6 +144,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           </div>
           <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} onOpenFormation={onOpenFormation} />
         </section>
+
+        {/* ── Praticiens : réseau et Espace Pro ── */}
+        <PractitionersBand onOpenReseauDir={onOpenReseauDir} onOpenReseauForm={onOpenReseauForm} onOpenPro={onOpenPro} />
 
       </main>
 

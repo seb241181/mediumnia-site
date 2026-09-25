@@ -32,10 +32,9 @@ test('MAX page speaks to customers, not in engineering terms', () => {
   assert.match(page, /function readableFact/)
 })
 
-test('home dock reads as a path and the hero offers booking directly', () => {
+test('home hero has no dock anymore and offers booking directly', () => {
   const hero = read('src/components/CosmicLibraryHero.jsx')
-  const labels = [...hero.matchAll(/\{ label: '([^']+)'/g)].map((m) => m[1])
-  assert.deepEqual(labels, ['Oracle', 'Chronosphère', 'Formation', 'Réseau', 'Conférences', 'Agents'])
+  assert.deepEqual([...hero.matchAll(/\{ label: '([^']+)'/g)].map((m) => m[1]), [])
   assert.match(hero, /className="cosmic-library__secondary" href="#consulter"/)
 })
 

@@ -41,17 +41,17 @@ test('each public product wing opts into the shared system without changing its 
   }
 })
 
-test('the homepage hero keeps main editorial copy and existing destinations', async () => {
+test('the homepage hero says what MediumIA is and where to click', async () => {
   const component = await source('src/components/CosmicLibraryHero.jsx')
 
   for (const wording of [
-    'Comprendre. Apprendre. Rencontrer.',
-    'Exercer autrement.',
-    "Découvrir l'accompagnement",
+    'Se former à la médiumnité.',
+    'Consulter un médium.',
+    'Découvrir la Formation · 597 €',
   ]) {
     assert.match(component, new RegExp(wording.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }
-  for (const href of ['/formation', '/oracle', '/chronosphere', '/agents', '/conferences', '/reseau']) {
+  for (const href of ['/formation', '#consulter']) {
     assert.match(component, new RegExp(href.replace('/', '\\/')))
   }
 })

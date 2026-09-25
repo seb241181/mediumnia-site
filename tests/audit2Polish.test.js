@@ -19,7 +19,7 @@ test('homepage has one clear H1 and commercial navigation uses real links', asyn
     readFile(cosmicHeroPath, 'utf8'),
   ])
   assert.match(cosmicHero, /<h1 id="cosmic-home-title">[\s\S]*COSMIC_HOME_CONFIG\.title/)
-  assert.match(cosmicHero, /Découvrir l'accompagnement/)
+  assert.match(cosmicHero, /Découvrir la Formation · 597 €/)
   // The navigation (real links) lives in SiteNav, used by the home page.
   const siteNav = await readFile(new URL('../src/components/SiteNav.jsx', import.meta.url), 'utf8')
   assert.match(app, /<SiteNav current="home"/)

@@ -23,3 +23,8 @@
 @media (min-width: 1041px) {
   .cosmic-nav .site-nav__panel { display: none; }
 }
+
+/* Le lien actif est celui de la page en cours (et non plus toujours le premier). */
+.cosmic-nav nav > a.site-nav__link.site-nav__link { color: rgba(16, 25, 56, 0.78); }
+.cosmic-nav nav > a.site-nav__link.site-nav__link[aria-current="page"],
+.cosmic-nav nav > a.site-nav__link.site-nav__link:hover { color: #9b640b; }

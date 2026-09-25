@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import LegalFooter from './LegalFooter'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
+import PublicPageNav from './PublicPageNav'
 
 const DEMO_CARDS = [
   {
@@ -51,15 +52,7 @@ export default function ChronosphereExamplePage({ onBack, onOpenChronosphere, on
 
   return (
     <div className="cosmic-page cosmic-page--chronosphere min-h-screen bg-cream text-deep">
-      <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <button onClick={onBack} className="flex items-center gap-2.5 font-georgia text-sm font-semibold tracking-[0.18em] text-deep">
-            <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="h-8 w-auto" />
-            MEDIUMIA
-          </button>
-          <button onClick={onBack} className="font-georgia text-xs text-mist transition-colors hover:text-deep">← Retour</button>
-        </div>
-      </header>
+      <PublicPageNav current="decouvrir" onHome={onBack} />
 
       <main>
         <section className="mx-auto max-w-4xl px-6 pb-10 pt-14 text-center md:pt-20">

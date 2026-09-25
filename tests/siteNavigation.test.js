@@ -90,3 +90,31 @@ test('Formation first screen: promise, audience, benefits, 597 € TTC, payment 
   assert.match(page, /<SiteNav current="formation"/)
   assert.match(page, /<PageRail items=\{FORMATION_SECTIONS\}/)
 })
+
+test('every public page keeps the main navigation (no more lone « ← Accueil » headers)', async () => {
+  const pages = {
+    'src/components/OraclePage.jsx': 'decouvrir',
+    'src/components/ChronospherePage.jsx': 'decouvrir',
+    'src/components/ChronosphereExamplePage.jsx': 'decouvrir',
+    'src/components/ChronosphereMaxPage.jsx': 'decouvrir',
+    'src/components/ConferencesPage.jsx': 'conferences',
+    'src/components/GiftCardsPage.jsx': 'boutique',
+    'src/components/ReviewsPage.jsx': null,
+    'src/components/ReseauDirectory.jsx': 'reseau',
+    'src/components/PractitionerProfile.jsx': 'reseau',
+    'src/components/ReseauJoindre.jsx': 'reseau',
+  }
+  for (const [path, current] of Object.entries(pages)) {
+    const source = await read(path)
+    assert.match(source, /<PublicPageNav\b/, path)
+    if (current) assert.match(source, new RegExp(`<PublicPageNav current="${current}"`), path)
+    assert.doesNotMatch(source, /<header\b/, `${path} still has its own header`)
+    assert.doesNotMatch(source, /← Accueil|← MediumIA/, path)
+  }
+  for (const path of ['src/components/FormationPage.jsx', 'src/components/DefiIntuitionPage.jsx']) {
+    assert.match(await read(path), /<SiteNav current=/, path)
+  }
+  // Business actions kept in the context line.
+  assert.match(await read('src/components/OraclePage.jsx'), /Commander et payer — 34,69 € TTC/)
+  assert.match(await read('src/components/PractitionerProfile.jsx'), /← Tous les praticiens/)
+})

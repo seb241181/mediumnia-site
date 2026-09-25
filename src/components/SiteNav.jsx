@@ -78,7 +78,7 @@ export default function SiteNav({ current = 'home', onOpenFormation, onOpenConfe
               href={item.href}
               onClick={follow(item)}
               aria-current={current === item.id ? 'page' : undefined}
-              className={`transition-colors hover:text-gold ${current === item.id ? 'text-gold' : ''}`}
+              className="site-nav__link transition-colors hover:text-gold"
             >
               {item.label}
             </a>

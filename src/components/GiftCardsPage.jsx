@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import PublicPageNav from './PublicPageNav'
 
 const API = '/api/rdv-config?giftCardAction='
 const PAY_LATER_MIN_CENTS = 3000
@@ -14,17 +15,6 @@ const KINDS = [
   ['chronosphere', 'ChronoSphère', 'Des lectures personnalisées de son cycle.'],
   ['coffret', 'Coffret', 'Une consultation + un pack ChronoSphère.'],
 ]
-
-function Header({ onBack }) {
-  return (
-    <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm print:hidden">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <button onClick={onBack} className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">✦ MEDIUMIA</button>
-        <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep">← Accueil</button>
-      </div>
-    </header>
-  )
-}
 
 function loadPayPal(clientId) {
   return new Promise((resolve, reject) => {
@@ -274,7 +264,7 @@ export default function GiftCardsPage({ onBack, onNavigate }) {
     <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
       {/* Floating account / guardian buttons must not print on the card. */}
       <style>{'@media print { .guardian-fab, button[aria-label$="MediumIA"] { display: none !important } }'}</style>
-      <Header onBack={onBack} />
+      <div className="print:hidden"><PublicPageNav current="boutique" onHome={onBack} /></div>
       <main className="mx-auto max-w-5xl px-6 pb-24 pt-10">
         {viewToken ? <CardView token={viewToken} /> : (
           <>

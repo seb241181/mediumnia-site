@@ -1,5 +1,6 @@
 import LegalFooter from './LegalFooter'
 import { reseauPractitioners } from '../data/reseauPractitioners'
+import PublicPageNav from './PublicPageNav'
 
 function withPreviewShareToken(src) {
   if (typeof window === 'undefined' || !src?.startsWith('/')) return src
@@ -79,7 +80,8 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
   if (!practitioner) {
     return (
       <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
-        <div className="mx-auto max-w-2xl px-6 py-24 text-center">
+        <PublicPageNav current="reseau" />
+        <div className="mx-auto max-w-2xl px-6 py-16 text-center">
           <p className="font-georgia text-xs uppercase tracking-[0.22em] text-gold">Réseau MediumIA</p>
           <h1 className="mt-4 font-georgia text-3xl font-medium">Ce profil n’est pas disponible.</h1>
           <button onClick={onBack} className="mt-8 rounded-xl border border-gold/40 px-6 py-3 font-georgia text-sm font-semibold text-deep">
@@ -104,12 +106,9 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
 
   return (
     <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
-      <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <button onClick={onBack} className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">✦ MEDIUMIA</button>
-          <button onClick={onBack} className="font-georgia text-xs text-mist transition-colors hover:text-deep">← Tous les praticiens</button>
-        </div>
-      </header>
+      <PublicPageNav current="reseau">
+        <button onClick={onBack} className="font-georgia text-sm text-mist transition-colors hover:text-deep">← Tous les praticiens</button>
+      </PublicPageNav>
 
       <main>
         <section className="border-b border-gold/15 bg-white/35 px-6 py-14 md:py-20">

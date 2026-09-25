@@ -32,6 +32,7 @@ const ROUTE_PATHS = {
   conferences: '/conferences',
   avis: '/avis',
   'cartes-cadeaux': '/cartes-cadeaux',
+  'defi-intuition': '/defi-intuition',
 }
 
 // Routes with their own share visual (default: the site image).
@@ -39,6 +40,7 @@ const ROUTE_PATHS = {
 const ROUTE_IMAGES = {
   conferences: { src: '/images/conference/conference-22-octobre-partage.jpg', width: 1200, height: 630, alt: 'Conférence offerte MediumIA le jeudi 22 octobre à 19 h avec Sébastien Seguin' },
   'cartes-cadeaux': { src: '/images/cartes-cadeaux/cartes-cadeaux-partage.jpg', width: 1200, height: 630, alt: 'Cartes cadeaux MediumIA : consultation, montant libre, ChronoSphère ou coffret' },
+  'defi-intuition': { src: '/images/defi-intuition/defi-intuition-partage.jpg', width: 1200, height: 630, alt: 'Défi Intuition MediumIA : cinq cartes, une seule cache l’Étoile' },
 }
 
 const escapeAttr = (value) => String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')

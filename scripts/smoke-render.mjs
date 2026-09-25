@@ -15,7 +15,7 @@ const { reseauPractitioners } = await import(pathToFileURL(join(root, 'src/data/
 
 const routes = [
   '/', '/formation', '/oracle', '/chronosphere', '/chronosphere/exemple', '/chronosphere-max',
-  '/conferences', '/reseau', '/reseau/rejoindre', '/pro', '/mentions', '/confidentialite', '/cgv-oracle', '/cgv-chronosphere', '/retractation', '/avis', '/avis/moderation', '/cartes-cadeaux',
+  '/conferences', '/reseau', '/reseau/rejoindre', '/pro', '/mentions', '/confidentialite', '/cgv-oracle', '/cgv-chronosphere', '/retractation', '/avis', '/avis/moderation', '/defi-intuition', '/cartes-cadeaux',
   ...reseauPractitioners.map((practitioner) => `/reseau/${practitioner.id}`),
 ]
 

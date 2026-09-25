@@ -1,3 +1,4 @@
+/* global process */
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -111,6 +112,13 @@ function makePayPal({ captures = {}, payer = 'claire@example.com', down = false 
     s.calls.push([init.method || 'GET', u.pathname])
     if (u.hostname === 'api.resend.com') { s.emails.push(body.to); return json({ id: 'email' }) }
     if (u.pathname === '/v1/oauth2/token') return json({ access_token: 'tok' })
+    const sub = u.pathname.match(/^\/v1\/billing\/subscriptions\/([^/]+)(\/(cancel|transactions))?$/)
+    if (sub) {
+      s.subscriptions ||= {}
+      if (sub[3] === 'cancel') { s.subscriptions[sub[1]] = 'CANCELLED'; return new Response(null, { status: 204 }) }
+      if (sub[3] === 'transactions') return json({ transactions: [] })
+      return json({ id: sub[1], status: s.subscriptions[sub[1]] || 'ACTIVE', custom_id: CLAIRE })
+    }
     if (u.pathname.startsWith('/v2/payments/captures/')) {
       if (down) return json({}, 500)
       const c = s.captures[decodeURIComponent(u.pathname.split('/').pop())]
@@ -277,6 +285,49 @@ test('a parcours already under way is finished with « Tout débloquer », not w
   makePayPal({ captures: paidDiscovery('DISC1') })
   const created = await call('create', { body: consent, headers: as('jwt-claire') })
   assert.deepEqual([created.statusCode, created.body.error], [409, 'parcours_in_progress'])
+})
+
+test('an open parcours subscription (even before its first instalment) also blocks the 568 € credit', async () => {
+  live()
+  for (const status of ['approval_pending', 'active', 'suspended']) {
+    const db = makeDb({ discoveries: [{ user_id: CLAIRE, paypal_capture_id: 'DISC1' }] }); __paypalFormationTest.useSupabase(db)
+    db.t.mediumia_formation_subscriptions = [{ paypal_subscription_id: 'I-SUB1', user_id: CLAIRE, paypal_env: 'live', status }]
+    const pp = makePayPal({ captures: paidDiscovery('DISC1') })
+    const shown = await call('credit', { method: 'GET', headers: as('jwt-claire') })
+    assert.equal(shown.body.error, 'parcours_in_progress', status)
+    const created = await call('create', { body: consent, headers: as('jwt-claire') })
+    assert.deepEqual([created.statusCode, created.body.error], [409, 'parcours_in_progress'], status)
+    assert.equal(Object.keys(pp.orders).length, 0)
+  }
+  // A stopped parcours no longer blocks: the credit applies again (29 + 568 = 597).
+  const db = makeDb({ discoveries: [{ user_id: CLAIRE, paypal_capture_id: 'DISC1' }] }); __paypalFormationTest.useSupabase(db)
+  db.t.mediumia_formation_subscriptions = [{ paypal_subscription_id: 'I-SUB1', user_id: CLAIRE, paypal_env: 'live', status: 'cancelled' }]
+  makePayPal({ captures: paidDiscovery('DISC1') })
+  assert.equal((await call('credit', { method: 'GET', headers: as('jwt-claire') })).body.displayAmount, '568.00')
+})
+
+test('a complete purchase made outside « Mon parcours » stops the subscription and reports any overpayment', async () => {
+  live()
+  process.env.PAYPAL_FORMATION_PATH_ENABLED = 'true'
+  try {
+    const db = makeDb({
+      discoveries: [{ user_id: CLAIRE, paypal_capture_id: 'DISC1' }],
+      pathPayments: [
+        { user_id: CLAIRE, paypal_env: 'live', kind: 'discovery', amount_cents: 2900, value_cents: 2900, paypal_ref: 'DISC1', paid_at: '2026-10-01T10:00:00Z' },
+        { user_id: CLAIRE, paypal_env: 'live', kind: 'monthly', amount_cents: 4800, value_cents: 4800, paypal_ref: 'TX1', paid_at: '2026-11-01T10:00:00Z' },
+      ],
+    }); __paypalFormationTest.useSupabase(db)
+    db.t.mediumia_formation_subscriptions = [{ paypal_subscription_id: 'I-SUB1', user_id: CLAIRE, paypal_env: 'live', status: 'active', created_at: '2026-10-01T10:00:00Z' }]
+    // Anonymous checkout paid with Claire's address: 597 € (no deduction without login).
+    const pp = makePayPal({ captures: paidDiscovery('DISC1'), payer: 'claire@example.com' })
+    const { captured } = await buy(db, pp, {})
+    assert.equal(captured.statusCode, 200, JSON.stringify(captured.body))
+    assert.equal(pp.subscriptions['I-SUB1'], 'CANCELLED', 'no further instalment can be taken')
+    assert.equal(db.t.mediumia_formation_subscriptions[0].status, 'completed')
+    assert.ok(pp.emails.includes('contact@mediumia.fr'), 'the owner is warned: 29 + 48 + 597 > 597, refund the excess')
+  } finally {
+    delete process.env.PAYPAL_FORMATION_PATH_ENABLED
+  }
 })
 
 test('Découverte refunded between the order and the payment: nothing is captured', async () => {

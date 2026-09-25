@@ -214,13 +214,13 @@ export default function FormationParcoursPage({ onBack, onNavigate }) {
             {state.complete ? (
               <p className="rounded-2xl border border-gold/30 bg-white/80 p-5 font-georgia text-sm text-deep">Votre parcours est complet : les 25 modules sont à vous. Aucun prélèvement n’est prévu.</p>
             ) : !state.hasDiscovery && state.maxModule === 0 ? (
-              <p className="rounded-2xl border border-gold/30 bg-white/80 p-5 font-georgia text-sm text-deep">Votre parcours commence par la Découverte à 29 € (introduction et module 1). <a href="/formation" className="text-gold underline">La découvrir</a></p>
+              <p className="rounded-2xl border border-gold/30 bg-white/80 p-5 font-georgia text-sm text-deep">Votre parcours commence par la Découverte à {money(state.discoveryCents || 2900)} (introduction et module 1). <a href="/formation" className="text-gold underline">La découvrir</a></p>
             ) : (
               <>
                 {hasLiveSub && (
                   <section className="rounded-3xl border border-gold/30 bg-white/85 p-6">
                     <h2 className="font-georgia text-xl">Mon parcours avance chaque mois</h2>
-                    <p className="mt-2 font-georgia text-sm text-mist">Chaque prélèvement de 34 € ouvre 2 nouveaux modules, puis l’Étape finale « Intégration » de {money(state.subscription.finalCents)} ouvre les derniers et termine le parcours. Aucun prélèvement au-delà.</p>
+                    <p className="mt-2 font-georgia text-sm text-mist">Chaque prélèvement de {money(state.stepCents)} ouvre 2 nouveaux modules, puis l’Étape finale « Intégration » de {money(state.subscription.finalCents)} ouvre les derniers et termine le parcours. Aucun prélèvement au-delà.</p>
                     {!confirmStop ? (
                       <button type="button" onClick={() => setConfirmStop(true)} className="mt-4 w-full rounded-xl border border-gold/40 bg-white px-5 py-3 font-georgia text-sm text-deep">Arrêter mon parcours</button>
                     ) : (
@@ -238,7 +238,7 @@ export default function FormationParcoursPage({ onBack, onNavigate }) {
                 {canSubscribe && (
                   <section className="rounded-3xl border border-gold/40 bg-white/90 p-6">
                     <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Étape suivante</p>
-                    <h2 className="mt-1 font-georgia text-2xl">Continuer mon parcours · 34 € / mois</h2>
+                    <h2 className="mt-1 font-georgia text-2xl">Continuer mon parcours · {money(state.stepCents)} / mois</h2>
                     <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
                       Tout de suite : {modulesLabel(state.nextModules)}. Ensuite, 2 nouveaux modules à chaque prélèvement, puis l’Étape finale « Intégration » à {money(state.schedule.finalCents)}.
                       Au total {money(state.schedule.totalCents)} en {state.schedule.regularCount + 1} étapes, jamais plus de {money(state.capCents)} en tout. Arrêt en un clic à tout moment.
@@ -261,7 +261,7 @@ export default function FormationParcoursPage({ onBack, onNavigate }) {
               </>
             )}
 
-            {state.env === 'sandbox' && <p className="font-georgia text-[11px] text-mist">Préversion : paiements PayPal Sandbox (argent fictif) aux montants réels, pour tester le plafond de 397 €.</p>}
+            {state.env === 'sandbox' && <p className="font-georgia text-[11px] text-mist">Préversion : paiements PayPal Sandbox (argent fictif) aux montants réels, pour tester le plafond de {money(state.capCents)}.</p>}
           </>
         )}
       </main>

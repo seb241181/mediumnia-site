@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import LegalFooter from './LegalFooter'
 import FormationCreditNotice from './FormationCreditNotice'
+import ParcoursOffer from './ParcoursOffer'
 import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
 import SiteNav from './SiteNav'
@@ -433,6 +434,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               </div>
             </div>
           </div>
+          <ParcoursOffer />
         </section>
 
         {/* ── Essayer gratuitement : l'assistant et 3 exercices par e-mail ── */}

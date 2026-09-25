@@ -72,7 +72,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
   const duration = durationLabel(event)
   const prizeValue = raffle?.prizeValueCents
     ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: raffle.currency || 'EUR', maximumFractionDigits: 0 }).format(raffle.prizeValueCents / 100)
-    : '597 €'
+    : '397 €'
 
   return (
     <div className="cosmic-page cosmic-page--conferences min-h-screen bg-cream text-deep">

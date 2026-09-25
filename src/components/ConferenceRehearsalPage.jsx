@@ -503,7 +503,7 @@ export default function ConferenceRehearsalPage() {
 
             <section className="rounded-3xl border border-purple-300/25 bg-purple-300/5 p-6">
               <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-purple-200">🎁 FAUX TIRAGE</p>
-              <h2 className="mt-3 font-georgia text-2xl">Formation complète · 597 €</h2>
+              <h2 className="mt-3 font-georgia text-2xl">Formation complète · 397 €</h2>
               <p className="mt-3 font-georgia text-sm text-cream/55">{counts.raffleEntries} faux participants éligibles.</p>
               {winner ? (
                 <div className="mt-5 rounded-2xl border border-purple-200/40 bg-purple-200/10 p-5 text-center">

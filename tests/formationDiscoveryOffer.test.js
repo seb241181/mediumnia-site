@@ -48,8 +48,8 @@ test('server catalog keeps the complete offer unchanged and adds discovery', () 
     const full = __paypalFormationTest.runtimeConfig(null, 'full')
     const discovery = __paypalFormationTest.runtimeConfig(null, 'discovery')
 
-    assert.equal(full.amount, '597.00')
-    assert.equal(full.referenceId, 'MEDIUMIA_FORMATION_597')
+    assert.equal(full.amount, '397.00')
+    assert.equal(full.referenceId, 'MEDIUMIA_FORMATION_397')
     assert.equal(full.accessLevel, 'full')
     assert.equal(full.maxModule, 25)
     assert.equal(full.durationDays, 365)
@@ -116,7 +116,7 @@ test('capture verification uses durable server intent when capture omits custom_
     assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, wrongPrice, intent), /paypal_amount_mismatch/)
 
     const wrongProduct = structuredClone(valid)
-    wrongProduct.purchase_units[0].reference_id = 'MEDIUMIA_FORMATION_597'
+    wrongProduct.purchase_units[0].reference_id = 'MEDIUMIA_FORMATION_397'
     assert.throws(() => __paypalFormationTest.verifiedPayment(discovery, wrongProduct, intent), /paypal_payment_invalid/)
 
     assert.doesNotThrow(() => __paypalFormationTest.validateOrderAgainstIntent(discovery, valid, intent, { requireCaptured: true }))
@@ -221,7 +221,8 @@ test('public Formation page presents full first and discovery without calling it
   assert.match(catalog, /Prix public : 29 € TTC/)
   assert.match(paypal, /mediumia_grant_purchase_access_atomic/)
   assert.match(terms, /Découverte MediumIA est de <strong>29 € TTC/)
-  assert.match(terms, /solde est donc de <strong>568 € TTC/)
+  assert.match(terms, /Formation complète est de <strong>397 € TTC/)
+  assert.match(terms, /solde est donc de <strong>368 € TTC/)
   assert.match(terms, /30 jours<\/strong> et jusqu’au Module 1/)
   assert.doesNotMatch(page, /livre Découverte/i)
 })

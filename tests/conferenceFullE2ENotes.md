@@ -39,3 +39,5 @@ Nettoyage final effectué :
 - offre conférence configurée à 399 € TTC, prix normal 597 €, Pass valable 30 jours ;
 - la conférence Production reste en `draft` et les inscriptions restent fermées ;
 - aucun paiement PayPal Live n’a été effectué.
+
+Alignement tarifaire préparé le 25/09/2026 (migration `20260925170000_tarif_formation_397_conference_297.sql`, à appliquer par le propriétaire) : prix public de la formation 397 € TTC, offre conférence 297 € TTC, lot du tirage 397 € TTC.

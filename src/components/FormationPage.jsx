@@ -31,7 +31,7 @@ const FAQ = [
   { q: 'Est-ce que MediumIA remplace un vrai accompagnement humain ?', r: "Non. MediumIA, l'assistant intégré, est un soutien disponible jour et nuit, mais il ne remplace pas la relation humaine. Il vous aide à découvrir votre propre canal et à gagner en autonomie. C'est un compagnon de route, pas un substitut." },
   { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. MediumIA n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin." },
   { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, l'assistant intégré et les modules PDF sont accessibles en ligne. Après confirmation du paiement, votre accès est activé sur l'adresse e-mail utilisée avec PayPal." },
-  { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. Le parcours complet est à 597 €. PayPal peut proposer, selon votre éligibilité, le 4X sans frais ainsi que des financements en 6X, 12X ou 24X avec intérêts. Les conditions exactes sont affichées par PayPal avant validation." },
+  { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. Le parcours complet est à 397 €. PayPal peut proposer, selon votre éligibilité, le 4X sans frais ainsi que des financements en 6X, 12X ou 24X avec intérêts. Les conditions exactes sont affichées par PayPal avant validation." },
 ]
 
 const POUR_QUI = [
@@ -260,7 +260,7 @@ export default function FormationPage({ onBack, onNavigate }) {
         <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
           <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors flex items-center gap-2">← MediumIA</button>
           <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold hidden md:block">Développer sa médiumnité</span>
-          <button onClick={() => document.getElementById('offre')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">597 € · Rejoindre →</button>
+          <button onClick={() => document.getElementById('offre')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">397 € · Rejoindre →</button>
         </div>
       </header>
 
@@ -364,7 +364,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                 ))}
               </ul>
               <div className="text-center">
-                <div className="mb-1"><span className="font-georgia text-5xl text-deep font-medium">597 €</span></div>
+                <div className="mb-1"><span className="font-georgia text-5xl text-deep font-medium">397 €</span></div>
                 <p className="font-georgia text-mist text-sm italic mb-2">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte</p>
                 <p className="font-georgia text-mist text-xs mb-7">Paiement en plusieurs fois avec PayPal : 4X sans frais, ou 6X, 12X et 24X avec intérêts selon éligibilité.</p>
                 <FormationCheckout />

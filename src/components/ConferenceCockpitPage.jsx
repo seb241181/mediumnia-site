@@ -447,7 +447,7 @@ export default function ConferenceCockpitPage() {
 
             <section className="rounded-3xl border border-gold/35 bg-[#1b1738] p-6">
               <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">🎁 TIRAGE AU SORT</p>
-              <h2 className="mt-3 font-georgia text-2xl">Formation complète · 597 €</h2>
+              <h2 className="mt-3 font-georgia text-2xl">Formation complète · 397 €</h2>
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4 font-georgia text-sm text-cream/65">
                 <strong className="text-cream">Fenêtre :</strong> {formatClock(raffle?.opens_at)} → {formatClock(raffle?.closes_at)}<br />
                 <strong className="text-cream">Participants :</strong> {counts.raffleEntries ?? 0}

@@ -84,19 +84,19 @@ test('server decides conference pass amount and refuses missing promotion config
     process.env.PAYPAL_ENV = 'live'
     process.env.PAYPAL_CONFERENCE_PASS_ENABLED = 'true'
     assert.throws(() => __conferencePassPayPalTest.runtimeConfig(null), /offer_not_configured/)
-    const cfg = __conferencePassPayPalTest.runtimeConfig(39900)
-    assert.equal(cfg.amount, '399.00')
-    assert.equal(cfg.displayAmount, '399.00')
+    const cfg = __conferencePassPayPalTest.runtimeConfig(29700)
+    assert.equal(cfg.amount, '297.00')
+    assert.equal(cfg.displayAmount, '297.00')
     assert.equal(cfg.referenceId, 'MEDIUMIA_CONFERENCE_PASS')
     assert.equal(cfg.accessLevel, 'full')
     assert.equal(cfg.maxModule, 25)
     assert.equal(cfg.durationDays, 365)
 
     process.env.VERCEL_ENV = 'preview'
-    const sandbox = __conferencePassPayPalTest.runtimeConfig(39900)
+    const sandbox = __conferencePassPayPalTest.runtimeConfig(29700)
     assert.equal(sandbox.env, 'sandbox')
     assert.equal(sandbox.amount, '1.00')
-    assert.equal(sandbox.displayAmount, '399.00')
+    assert.equal(sandbox.displayAmount, '297.00')
   } finally {
     for (const [key, value] of Object.entries(previous)) {
       if (value === undefined) delete process.env[key]
@@ -109,7 +109,7 @@ test('capture validation enforces reference, amount, payer email and optional cu
   const previousVercelEnv = process.env.VERCEL_ENV
   try {
     process.env.VERCEL_ENV = 'preview'
-    const cfg = __conferencePassPayPalTest.runtimeConfig(39900)
+    const cfg = __conferencePassPayPalTest.runtimeConfig(29700)
     const order = {
       id: 'ORDER-PASS-123',
       status: 'COMPLETED',
@@ -122,7 +122,7 @@ test('capture validation enforces reference, amount, payer email and optional cu
 
     assert.equal(__conferencePassPayPalTest.validateCompletedOrder(cfg, order, order.id).payerEmail, 'participant@example.test')
     const wrongAmount = structuredClone(order)
-    wrongAmount.purchase_units[0].payments.captures[0].amount.value = '597.00'
+    wrongAmount.purchase_units[0].payments.captures[0].amount.value = '397.00'
     assert.throws(() => __conferencePassPayPalTest.validateCompletedOrder(cfg, wrongAmount, order.id), /paypal_amount_mismatch/)
     const wrongCustomId = structuredClone(order)
     wrongCustomId.purchase_units[0].custom_id = 'WRONG'

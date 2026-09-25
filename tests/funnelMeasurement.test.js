@@ -49,7 +49,7 @@ test('private pilotage exposes Oracle and Formation funnels plus Oracle next ste
   const pilotage = read('src/components/rdv/PilotageDashboard.jsx')
   const admin = read('api/rdv-admin.js')
   assert.match(pilotage, /ORACLE GRATUIT/)
-  assert.match(pilotage, /FORMATION 597 €/)
+  assert.match(pilotage, /FORMATION 397 €/)
   assert.match(pilotage, /Aperçu réel du Module 1 vu/)
   assert.match(pilotage, /Accès Formation activé/)
   assert.match(admin, /oracle_next_steps/)

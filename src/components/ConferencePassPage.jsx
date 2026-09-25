@@ -213,7 +213,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
               <aside className="rounded-3xl border border-gold/35 bg-deep p-6 text-cream shadow-[0_18px_44px_rgba(26,21,53,.18)]">
                 <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Offre conférence</p>
                 <p className="mt-4 font-georgia text-sm text-cream/60">Prix normal</p>
-                <p className="font-georgia text-2xl line-through decoration-gold/60">{formatPrice(config?.offer?.normalAmountCents || 59700, currency)}</p>
+                <p className="font-georgia text-2xl line-through decoration-gold/60">{formatPrice(config?.offer?.normalAmountCents || 39700, currency)}</p>
                 <p className="mt-5 font-georgia text-sm text-cream/60">Offre spéciale conférence</p>
                 <p className="font-georgia text-4xl font-medium text-gold">{formatPrice(config?.offer?.displayAmountCents, currency)}</p>
                 <p className="mt-5 rounded-2xl border border-gold/25 bg-white/5 px-4 py-3 font-georgia text-sm text-cream/75">

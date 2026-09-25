@@ -3,6 +3,9 @@ import LegalFooter from './LegalFooter'
 import FormationCreditNotice from './FormationCreditNotice'
 import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
+import SiteNav from './SiteNav'
+import PageRail from './PageRail'
+import '../styles/formation-page.css'
 
 const NIVEAUX = [
   { num: '01', titre: 'Les Fondations', modules: 'Modules 1 à 6', texte: "Poser l'intention juste. Recevoir avant d'interpréter. Découvrir votre canal dominant. Comprendre ce qu'est vraiment un oracle. Développer le discernement vibratoire. Entrer en contact avec vos guides." },
@@ -33,7 +36,7 @@ const FAQ = [
   { q: 'Est-ce que MediumIA remplace un vrai accompagnement humain ?', r: "Non. MediumIA, l'assistant intégré, est un soutien disponible jour et nuit, mais il ne remplace pas la relation humaine. Il vous aide à découvrir votre propre canal et à gagner en autonomie. C'est un compagnon de route, pas un substitut." },
   { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. MediumIA n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin." },
   { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, l'assistant intégré et les modules PDF sont accessibles en ligne. Après confirmation du paiement, votre accès est activé sur l'adresse e-mail utilisée avec PayPal." },
-  { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. Le parcours complet est à 597 €. PayPal peut proposer, selon votre éligibilité, le 4X sans frais ainsi que des financements en 6X, 12X ou 24X avec intérêts. Les conditions exactes sont affichées par PayPal avant validation." },
+  { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. La Formation MediumIA est à 597 € TTC. Paiement en plusieurs fois disponible avec PayPal selon éligibilité." },
 ]
 
 const POUR_QUI = [
@@ -86,6 +89,42 @@ function FAQAccordion() {
         </div>
       ))}
     </div>
+  )
+}
+
+const HERO_APPORTS = [
+  '25 modules PDF en 4 niveaux (269 pages) et 84 exercices guidés',
+  'MediumIA, un assistant formé sur le parcours, pendant 12 mois',
+  'Un carnet de pratique pour relire vos ressentis',
+]
+
+const FORMATION_SECTIONS = [
+  { id: 'programme', label: 'Programme' },
+  { id: 'formation-apercu-reel', label: 'Aperçu' },
+  { id: 'offre', label: 'Tarif' },
+  { id: 'essayer', label: 'Essayer' },
+  { id: 'formateur', label: 'Formateur' },
+  { id: 'faq', label: 'FAQ' },
+]
+
+// Téléphone, tablette et petits écrans : barre d'ancres sous le menu, avec le prix.
+// Sur grand écran, le sommaire latéral (PageRail) prend le relais.
+function FormationSectionBar() {
+  const go = (id) => (event) => {
+    event.preventDefault()
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  return (
+    <nav aria-label="Sections de la page Formation" className="formation-section-bar min-[1360px]:hidden">
+      <div className="max-w-6xl mx-auto flex items-center gap-3 px-4">
+        <ul className="flex flex-1 gap-1.5 overflow-x-auto py-2 [scrollbar-width:none]">
+          {FORMATION_SECTIONS.map((item) => (
+            <li key={item.id} className="shrink-0"><a href={`#${item.id}`} onClick={go(item.id)} className="block rounded-full border border-gold/30 bg-white/80 px-3 py-1.5 font-georgia text-xs text-deep">{item.label}</a></li>
+          ))}
+        </ul>
+        <a href="#offre" onClick={go('offre')} className="shrink-0 rounded-lg bg-deep px-3 py-2 font-georgia text-xs font-bold text-gold">597 € · Rejoindre</a>
+      </div>
+    </nav>
   )
 }
 
@@ -256,108 +295,128 @@ export default function FormationPage({ onBack, onNavigate }) {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [])
 
+  const goTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
   return (
     <div className="cosmic-page cosmic-page--formation bg-cream min-h-screen text-deep">
-      <header className="cosmic-page__header fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-        <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
-          <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors flex items-center gap-2">← MediumIA</button>
-          <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold hidden md:block">Développer sa médiumnité</span>
-          <button onClick={() => document.getElementById('offre')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-deep text-gold font-bold">597 € · Rejoindre →</button>
-        </div>
-      </header>
+      <SiteNav current="formation" onHome={onBack} onOpenFormation={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
+      <PageRail items={FORMATION_SECTIONS} cta={{ label: '597 € · Rejoindre', target: 'offre' }} />
+      <FormationSectionBar />
 
-      <main className="pt-20">
-        <section className="px-6 py-20 md:py-28 max-w-4xl mx-auto text-center">
-          <img src="/images/brand/MEDIUMIA_logo_transparent_2026-08-16.png" alt="MediumIA" className="w-36 md:w-48 mx-auto mb-8 opacity-90" />
-          <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-6">Accompagnement · Médiumnité consciente</p>
-          <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-tight mb-4">Développer sa médiumnité</h1>
-          <p className="font-georgia text-mist text-sm tracking-[0.12em] uppercase mb-6">MEDIUMIA — Accompagnement à la Médiumnité Consciente</p>
-          <blockquote className="font-bodoni text-2xl md:text-4xl text-deep leading-relaxed max-w-2xl mx-auto mb-3 italic">« La médiumnité ne s'apprend pas. Elle se découvre. »</blockquote>
-          <p className="font-georgia text-gold/70 text-xs tracking-[0.2em] uppercase mb-10">— Sébastien Seguin</p>
-          <p className="font-georgia text-mist text-lg leading-relaxed max-w-2xl mx-auto mb-10">Un accompagnement structuré en 25 modules et 4 niveaux, né de plus de douze ans de pratique médiumnique réelle. Pas de théories. Une transmission.</p>
-          <div aria-labelledby="formation-summary-title" className="max-w-3xl mx-auto mb-10 rounded-2xl border-2 border-gold/30 bg-white/60 p-5 sm:p-7 text-left">
-            <h2 id="formation-summary-title" className="font-georgia text-deep text-xl leading-snug mb-4">Un parcours complet pour explorer et structurer votre pratique</h2>
-            <p className="font-georgia text-deep text-base leading-relaxed mb-4">
-              25 modules répartis en 4 niveaux, réunissant <strong>269 pages de contenu pédagogique en PDF</strong>, avec <strong>84 exercices guidés</strong>.
-            </p>
-            <p className="font-georgia text-deep text-base leading-relaxed mb-3">
-              Vous bénéficiez également de <strong>12 mois d’accès à l’application MediumIA</strong>, à son assistant IA dédié et à votre carnet de pratique.
-            </p>
-            <p className="font-georgia text-mist text-sm leading-relaxed">Les PDF téléchargés restent à votre disposition pour votre usage personnel.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={() => document.getElementById('offre')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold">Rejoindre l’accompagnement →</button>
-            <button onClick={() => document.getElementById('niveaux')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-8 py-4 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">Découvrir les 4 niveaux ↓</button>
+      <main className="formation-main">
+        {/* ── Premier écran : quoi, pour qui, ce que ça apporte, prix, comment rejoindre ── */}
+        <section id="formation-top" className="px-6 pt-6 pb-14 md:pt-12 md:pb-20">
+          <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-center">
+            <div>
+              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Formation MediumIA · en ligne</p>
+              <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-[1.08] mb-5">Développer sa médiumnité, pas à pas</h1>
+              <p className="font-georgia text-lg md:text-xl text-deep/85 leading-relaxed mb-4">Une formation en 25 modules et 4 niveaux, avec un assistant dédié, pour comprendre et structurer votre pratique dans la clarté.</p>
+              <p className="font-georgia text-base text-mist leading-relaxed mb-6"><strong className="text-deep">Pour qui :</strong> les personnes sensibles qui veulent comprendre ce qu’elles perçoivent, qu’elles débutent ou pratiquent déjà.</p>
+              <ul className="font-georgia text-base text-deep space-y-2">
+                {HERO_APPORTS.map((item) => (
+                  <li key={item} className="flex gap-3 items-start"><span className="text-gold shrink-0" aria-hidden="true">✓</span><span>{item}</span></li>
+                ))}
+              </ul>
+            </div>
+            <aside className="rounded-2xl border-2 border-gold/45 bg-white/85 p-6 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="Tarif de la Formation MediumIA">
+              <p className="font-georgia text-xs uppercase tracking-[0.18em] text-mist mb-2">Formation complète</p>
+              <p className="font-georgia text-deep"><span className="text-5xl font-medium">597 €</span> <span className="text-lg text-mist">TTC</span></p>
+              <p className="font-georgia text-sm text-mist mt-2 mb-6">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
+              <div className="flex flex-col gap-3">
+                <button onClick={() => goTo('offre')} className="font-georgia px-7 py-4 rounded-lg bg-deep text-gold font-bold">Rejoindre la formation →</button>
+                <button onClick={() => goTo('programme')} className="font-georgia px-7 py-3.5 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">Voir le programme</button>
+              </div>
+              <p className="font-georgia text-xs text-mist mt-5">Par Sébastien Seguin, médium depuis plus de douze ans. 12 mois d’accès, PDF à vous pour votre usage personnel.</p>
+            </aside>
           </div>
         </section>
 
-        <section className="bg-deep/[0.04] px-6 py-14">
-          <div className="max-w-3xl mx-auto">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-6 text-center">Ce parcours est pour vous si</p>
-            <div className="grid sm:grid-cols-2 gap-4">
+        <section className="bg-deep/[0.04] px-6 py-12">
+          <div className="max-w-4xl mx-auto">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-5 text-center">Ce parcours est pour vous si</p>
+            <div className="grid sm:grid-cols-2 gap-3">
               {POUR_QUI.map((item, i) => (
-                <div key={i} className="flex gap-3 items-start border-2 border-gold/20 rounded-xl p-5 bg-white/50"><span className="text-gold shrink-0 mt-0.5">—</span><p className="font-georgia text-deep text-sm leading-relaxed">{item}</p></div>
+                <div key={i} className="flex gap-3 items-start rounded-xl border border-gold/25 p-4 bg-white/60"><span className="text-gold shrink-0 mt-0.5" aria-hidden="true">—</span><p className="font-georgia text-deep text-sm leading-relaxed">{item}</p></div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="px-6 py-16 max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le parcours complet</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">Ce que contient l'accompagnement</h2>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {INCLUS.map((item, i) => (
-              <div key={i} className="border-2 border-gold/25 rounded-2xl p-6 bg-white/60 hover:border-gold/60 transition-all"><span className="text-gold text-2xl block mb-3">{item.icon}</span><p className="font-georgia font-medium text-deep text-base mb-2">{item.titre}</p><p className="font-georgia text-sm text-mist leading-relaxed">{item.texte}</p></div>
-            ))}
-          </div>
-        </section>
-
-        <section id="niveaux" className="bg-deep/[0.04] px-6 py-16">
+        {/* ── Programme : contenu et 4 niveaux, détails repliés ── */}
+        <section id="programme" className="px-6 py-16 scroll-mt-40">
           <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Structure du parcours</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">Le parcours en 4 niveaux</h2><p className="font-georgia text-mist text-base leading-relaxed">25 modules répartis progressivement — chaque niveau s'appuie sur le précédent selon la logique naturelle par laquelle la médiumnité se découvre.</p></div>
-            <NiveauxAccordion />
-          </div>
-        </section>
-
-        <section className="px-6 py-16 max-w-4xl mx-auto">
-          <div className="text-center mb-12"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">L'approche</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Ce qui rend MediumIA différente</h2></div>
-          <div className="space-y-5">
-            {POINTS.map((p, i) => (
-              <div key={i} className="flex gap-5 items-start border-2 border-gold/20 rounded-2xl p-5 bg-white/40 hover:border-gold/40 transition-all"><span className="text-gold text-lg mt-0.5 shrink-0">✦</span><div><p className="font-georgia font-medium text-deep mb-1">{p.titre}</p><p className="font-georgia text-sm text-mist leading-relaxed">{p.texte}</p></div></div>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-deep/[0.04] px-6 py-16 md:py-20">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le créateur du parcours</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Sébastien Seguin</h2></div>
-            <div className="flex flex-col md:flex-row gap-10 items-start">
-              <div className="shrink-0 flex justify-center md:justify-start w-full md:w-auto"><img src="/sebastien.jpg" alt="Sébastien Seguin, médium et fondateur de MediumIA" className="w-52 h-72 md:w-56 md:h-80 object-cover object-top rounded-2xl border-2 shadow-md" style={{ borderColor: '#C9A84C' }} /></div>
-              <div className="space-y-4 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
-                <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
-                <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
-                <p>Ce parcours a été construit à partir de cette pratique réelle, quotidienne. Pas à partir de livres. Pas à partir de théories. À partir de milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles — à partir de ce qui fonctionne vraiment quand on est en face d'un être humain qui souffre et qui cherche.</p>
-                <p className="text-deep font-medium">MediumIA n'est pas un parcours théorique. C'est une transmission.</p>
-                <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies. Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer.</p>
-                <blockquote className="border-l-4 border-gold pl-5 py-1 mt-4"><p className="font-georgia text-lg text-mist italic leading-relaxed">« L'enfer précède le paradis. La lumière s'exprime à travers l'obscurité. C'est le jeu ici. »</p></blockquote>
-              </div>
+            <div className="text-center mb-10">
+              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Programme</p>
+              <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-3">Ce que contient la formation</h2>
+              <p className="font-georgia text-mist text-base leading-relaxed">Ouvrez chaque élément pour le détail.</p>
+            </div>
+            <div className="space-y-2 mb-12">
+              {INCLUS.map((item) => (
+                <details key={item.titre} className="group rounded-xl border-2 border-gold/20 bg-white/60 open:border-gold/45">
+                  <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 font-georgia text-deep font-medium [&::-webkit-details-marker]:hidden">
+                    <span className="text-gold text-lg shrink-0" aria-hidden="true">{item.icon}</span>
+                    <span className="flex-1">{item.titre}</span>
+                    <span className="text-gold/70 text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                  </summary>
+                  <p className="px-5 pb-5 pl-14 font-georgia text-sm text-mist leading-relaxed">{item.texte}</p>
+                </details>
+              ))}
+            </div>
+            <div id="niveaux" className="scroll-mt-40">
+              <h3 className="font-georgia font-medium text-2xl text-center mb-2">Le parcours en 4 niveaux</h3>
+              <p className="font-georgia text-mist text-sm text-center mb-6">25 modules, des fondations à la pratique accomplie.</p>
+              <NiveauxAccordion />
             </div>
           </div>
         </section>
 
-        <section className="px-6 py-16 bg-deep/3">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Essai gratuit</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">Poser vos questions à MediumIA</h2><p className="font-georgia text-mist text-base leading-relaxed">Découvrez l'assistant qui vous accompagnera tout au long du parcours. 5 messages offerts, sans inscription.</p></div>
-            <TrialChat />
+        <section id="formation-apercu-reel" className="px-6 py-16 md:py-20">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Aperçu réel · Module 1</p>
+              <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">L'Intention comme Porte</h2>
+              <p className="font-georgia text-mist text-base leading-relaxed">Avant d'investir dans le parcours complet, découvrez un vrai extrait de la pédagogie MediumIA.</p>
+            </div>
+
+            <article className="rounded-3xl border-2 border-gold/30 bg-white/70 p-7 md:p-10 shadow-[0_12px_34px_rgba(26,21,53,.06)]">
+              <div className="flex flex-wrap items-center gap-3 mb-7">
+                <span className="rounded-full bg-gold/10 px-3 py-1 font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Niveau 1 · Les Fondations</span>
+                <span className="font-georgia text-xs text-mist">Extrait du contenu réellement remis aux élèves</span>
+              </div>
+
+              <blockquote className="border-l-4 border-gold pl-5 md:pl-6 py-1 mb-7">
+                <p className="font-bodoni text-2xl md:text-3xl italic leading-relaxed text-deep">« Avant de recevoir, il faut avoir décidé d'être disponible. »</p>
+              </blockquote>
+
+              <p className="font-georgia text-base md:text-lg leading-relaxed text-deep/80">
+                On commence toujours par la porte. Pas par la technique, pas par les exercices spectaculaires, pas par les protocoles compliqués. La porte. Ce qui ouvre tout le reste. Et la porte de la médiumnité, c'est l'intention.
+              </p>
+
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-gold/25 bg-cream p-5">
+                  <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold mb-2">Ce que le module installe</p>
+                  <p className="font-georgia text-sm leading-relaxed text-deep">Comprendre que l'intention n'est pas un simple souhait : elle donne une direction consciente à la pratique et à la qualité de l'information recherchée.</p>
+                </div>
+                <div className="rounded-2xl border border-gold/25 bg-cream p-5">
+                  <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold mb-2">Mise en pratique</p>
+                  <p className="font-georgia text-sm leading-relaxed text-deep">Vous formulez votre propre intention d'ouverture de canal avec vos mots, puis vous l'installez progressivement comme une signature de pratique.</p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col items-center text-center">
+                <p className="font-georgia text-xs leading-relaxed text-mist max-w-xl mb-5">Cet aperçu est volontairement partiel : le parcours complet contient les explications, exercices, questions de réflexion et la progression des 25 modules.</p>
+                <button onClick={() => document.getElementById('essayer')?.scrollIntoView({ behavior: 'smooth' })} className="font-georgia px-7 py-3.5 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">
+                  Tester ensuite MediumIA →
+                </button>
+              </div>
+            </article>
           </div>
         </section>
 
-        <section id="offre" className="px-6 py-16">
+        <section id="offre" className="px-6 py-16 scroll-mt-40">
           <div className="max-w-2xl mx-auto text-center">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Rejoindre l'accompagnement</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-8">Commencer votre parcours</h2>
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Tarif</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-8">Rejoindre la Formation MediumIA</h2>
             <div className="border-2 border-gold/40 rounded-2xl p-8 md:p-10 bg-white/70 text-left mb-6">
               <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-6 text-center">Le parcours complet comprend</p>
               <ul className="font-georgia text-base text-deep space-y-3 mb-8">
@@ -366,9 +425,9 @@ export default function FormationPage({ onBack, onNavigate }) {
                 ))}
               </ul>
               <div className="text-center">
-                <div className="mb-1"><span className="font-georgia text-5xl text-deep font-medium">597 €</span></div>
+                <div className="mb-1"><span className="font-georgia text-5xl text-deep font-medium">597 €</span> <span className="font-georgia text-lg text-mist">TTC</span></div>
                 <p className="font-georgia text-mist text-sm italic mb-2">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte</p>
-                <p className="font-georgia text-mist text-xs mb-7">Paiement en plusieurs fois avec PayPal : 4X sans frais, ou 6X, 12X et 24X avec intérêts selon éligibilité.</p>
+                <p className="font-georgia text-mist text-xs mb-7">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
                 <FormationCreditNotice />
                 <FormationCheckout />
               </div>
@@ -376,12 +435,73 @@ export default function FormationPage({ onBack, onNavigate }) {
           </div>
         </section>
 
-        <section className="px-6 pb-16 max-w-3xl mx-auto">
+        {/* ── Essayer gratuitement : l'assistant et 3 exercices par e-mail ── */}
+        <section id="essayer" className="bg-deep/[0.04] px-6 pt-16 scroll-mt-40">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Essayer gratuitement</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-3">Avant de vous décider</h2>
+            <p className="font-georgia text-mist text-base leading-relaxed">Posez vos questions à l’assistant ou recevez 3 exercices par e-mail.</p>
+          </div>
+        </section>
+
+        <section id="essai-assistant" className="px-6 py-12 bg-deep/[0.04]">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8"><h3 className="font-georgia font-medium text-2xl leading-tight mb-2">Poser vos questions à MediumIA</h3><p className="font-georgia text-mist text-base leading-relaxed">Découvrez l'assistant qui vous accompagnera tout au long du parcours. 5 messages offerts, sans inscription.</p></div>
+            <TrialChat />
+          </div>
+        </section>
+
+        <FormationExerciseLead />
+
+        {/* ── Le formateur et l'approche : l'essentiel visible, le reste replié ── */}
+        <section id="formateur" className="px-6 py-16 scroll-mt-40">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le formateur</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Sébastien Seguin</h2></div>
+            <div className="flex flex-col md:flex-row gap-10 items-start">
+              <div className="shrink-0 flex justify-center md:justify-start w-full md:w-auto"><img src="/sebastien.jpg" alt="Sébastien Seguin, médium et fondateur de MediumIA" loading="lazy" decoding="async" className="w-44 h-60 md:w-52 md:h-72 object-cover object-top rounded-2xl border-2 shadow-md" style={{ borderColor: '#C9A84C' }} /></div>
+              <div className="space-y-4 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
+                <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
+                <p>Ce parcours a été construit à partir de cette pratique réelle, quotidienne : des milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles. <strong className="text-deep">MediumIA n'est pas un parcours théorique. C'est une transmission.</strong></p>
+                <details className="group">
+                  <summary className="cursor-pointer list-none font-georgia text-sm font-bold text-gold [&::-webkit-details-marker]:hidden"><span className="group-open:hidden">Lire la suite →</span><span className="hidden group-open:inline">Réduire ↑</span></summary>
+                  <div className="space-y-4 pt-4">
+                    <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
+                    <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies. Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer.</p>
+                    <blockquote className="border-l-4 border-gold pl-5 py-1"><p className="font-georgia text-lg text-mist italic leading-relaxed">« La médiumnité ne s'apprend pas. Elle se découvre. »</p></blockquote>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            <div className="mt-12 max-w-3xl mx-auto">
+              <h3 className="font-georgia font-medium text-2xl text-center mb-6">Ce qui rend MediumIA différente</h3>
+              <div className="space-y-2">
+                {POINTS.map((p) => (
+                  <details key={p.titre} className="group rounded-xl border-2 border-gold/20 bg-white/50 open:border-gold/45">
+                    <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 font-georgia text-deep font-medium [&::-webkit-details-marker]:hidden">
+                      <span className="text-gold shrink-0" aria-hidden="true">✦</span>
+                      <span className="flex-1">{p.titre}</span>
+                      <span className="text-gold/70 text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                    </summary>
+                    <p className="px-5 pb-5 pl-12 font-georgia text-sm text-mist leading-relaxed">{p.texte}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="px-6 pb-16 max-w-3xl mx-auto scroll-mt-40">
           <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Questions fréquentes</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">FAQ</h2></div>
           <FAQAccordion />
         </section>
 
-        <section className="px-6 py-12 text-center border-t border-gold/20"><button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">← Retour à MediumIA</button></section>
+        <section className="px-6 py-14 text-center border-t border-gold/20">
+          <p className="font-georgia text-2xl text-deep mb-1">Formation MediumIA · 597 € TTC</p>
+          <p className="font-georgia text-sm text-mist mb-6">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
+          <button onClick={() => goTo('offre')} className="font-georgia px-8 py-4 rounded-lg bg-deep text-gold font-bold">Rejoindre la formation →</button>
+          <div className="mt-8"><button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">← Retour à MediumIA</button></div>
+        </section>
       </main>
 
       <LegalFooter onNavigate={onNavigate} />

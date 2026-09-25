@@ -180,12 +180,7 @@ formation = replaceRequired(
   `${leadComponent}\nfunction FormationCheckout() {`,
   'Formation exercise lead component',
 )
-formation = replaceRequired(
-  formation,
-  `            <TrialChat />\n          </div>\n        </section>\n\n        <section id="offre" className="px-6 py-16">`,
-  `            <TrialChat />\n          </div>\n        </section>\n\n        <FormationExerciseLead />\n\n        <section id="offre" className="px-6 py-16">`,
-  'Formation exercise lead placement before offer',
-)
+// Placement of <FormationExerciseLead /> is now written in FormationPage.jsx (section « Essayer gratuitement »).
 await writeFile(formationPath, formation)
 
 let legalPages = await readFile(legalPagesPath, 'utf8')

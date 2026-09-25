@@ -1,25 +1,21 @@
 import LegalFooter from './LegalFooter'
 import OracleTest from './OracleTest'
+import PublicPageNav from './PublicPageNav'
 
 export default function OraclePage({ onBack, onNavigate }) {
   return (
     <div className="cosmic-page cosmic-page--oracle bg-cream min-h-screen text-deep">
 
       {/* ── Nav ── */}
-      <header className="cosmic-page__header fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-        <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 flex items-center justify-between gap-4">
-          <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors flex items-center gap-2">
-            ← MediumIA
-          </button>
-          <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold hidden md:block">Oracle Au-delà de l'Âme</span>
-          <a href="https://www.paypal.com/ncp/payment/7B25CPZQBT9SJ" target="_blank" rel="noopener noreferrer"
-            className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-gold text-deep font-bold">
-            Commander et payer — 34,69 € TTC →
-          </a>
-        </div>
-      </header>
+      <PublicPageNav current="decouvrir" onHome={onBack}>
+        <span className="font-georgia text-deep tracking-[0.15em] text-sm font-semibold">Oracle Au-delà de l'Âme</span>
+        <a href="https://www.paypal.com/ncp/payment/7B25CPZQBT9SJ" target="_blank" rel="noopener noreferrer"
+          className="font-georgia text-xs md:text-sm tracking-wide px-4 py-2.5 md:px-5 rounded-lg bg-gold text-deep font-bold">
+          Commander et payer — 34,69 € TTC →
+        </a>
+      </PublicPageNav>
 
-      <main className="pt-20">
+      <main>
 
         {/* ── Hero produit ── */}
         <section className="px-6 py-16 md:py-20 max-w-5xl mx-auto">

@@ -30,19 +30,17 @@ test('ecosystem pathways stay contextual and non-coercive', async () => {
   assert.match(component, /Explorer ma ligne de temps/)
 })
 
-test('public home guidance is lightweight and placed directly after the hero', async () => {
+test('home no longer repeats an orientation block: the main navigation and « Découvrir » replace it', async () => {
   const { component, app } = await readSources()
-  const homePathways = app.indexOf('context="home"')
-  const discover = app.indexOf('{/* ── Découvrir ── */}')
-  assert.ok(homePathways >= 0)
-  assert.ok(discover > homePathways)
+  assert.doesNotMatch(app, /context="home"/)
+  assert.match(app, /<DiscoverSection id="decouvrir"/)
   assert.match(component, /Que recherchez-vous aujourd’hui \?/)
   assert.doesNotMatch(component, /Par où commencer \?/)
   assert.match(component, /context === 'home'/)
   assert.match(component, /grid-cols-2 gap-2 sm:grid-cols-4/)
   assert.match(app, /onOpenOracle=\{onOpenOracle\}/)
   assert.match(app, /onOpenChronosphere=\{onOpenChronosphere\}/)
-  assert.match(app, /onOpenReseau=\{onOpenReseauDir\}/)
+  assert.match(app, /onOpenReseauDir=\{onOpenReseauDir\}/)
   assert.match(app, /onOpenFormation=\{onOpenFormation\}/)
 })
 

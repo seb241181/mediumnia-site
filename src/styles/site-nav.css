@@ -1,0 +1,30 @@
+/* Navigation principale (SiteNav) : complète le style « cosmic-nav » existant. */
+
+/* Bouton « Menu » : téléphone et tablette seulement (la barre de liens
+   s'affiche au-delà de 1040 px, comme le style cosmic-nav). */
+.cosmic-nav .site-nav__toggle { display: inline-flex; }
+@media (min-width: 1041px) {
+  .cosmic-nav .site-nav__toggle { display: none; }
+}
+
+/* Menu déroulant : même verre que la barre, sous elle. */
+.cosmic-nav .site-nav__panel {
+  pointer-events: auto;
+  width: min(100%, 1280px);
+  margin: 0.5rem auto 0;
+  padding: 0.35rem 1.1rem 0.6rem;
+  border: 1px solid var(--cosmic-glass-line, rgba(201, 168, 76, 0.28));
+  border-radius: 1.4rem;
+  background: rgba(250, 247, 238, 0.97);
+  box-shadow: 0 18px 50px rgba(16, 25, 56, 0.14);
+  max-height: calc(100vh - 6.5rem);
+  overflow-y: auto;
+}
+@media (min-width: 1041px) {
+  .cosmic-nav .site-nav__panel { display: none; }
+}
+
+/* Le lien actif est celui de la page en cours (et non plus toujours le premier). */
+.cosmic-nav nav > a.site-nav__link.site-nav__link { color: rgba(16, 25, 56, 0.78); }
+.cosmic-nav nav > a.site-nav__link.site-nav__link[aria-current="page"],
+.cosmic-nav nav > a.site-nav__link.site-nav__link:hover { color: #9b640b; }

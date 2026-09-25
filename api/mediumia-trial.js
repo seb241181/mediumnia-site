@@ -16,7 +16,7 @@ LE PARCOURS
 - 84 exercices guidés et un carnet de pratique intégré
 - 12 mois d'accès à l'application MediumIA
 - MediumIA comme assistant personnel tout au long du cheminement
-- Prix : 597 €, paiement en 4× disponible via PayPal
+- Prix : 597 € TTC. Paiement en plusieurs fois disponible avec PayPal selon éligibilité.
 
 LES 4 NIVEAUX
 1. Les Fondations (modules 1-6) — poser l'intention juste, découvrir son canal dominant

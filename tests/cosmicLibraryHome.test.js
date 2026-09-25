@@ -30,7 +30,7 @@ test('cosmic homepage preserves the supplied official logo and uses its transpar
   assert.doesNotMatch(component, /filter:|brightness-|saturate-|hue-rotate/)
 })
 
-test('cosmic hero uses responsive monumental scenes with the original editorial promise', async () => {
+test('cosmic hero uses responsive monumental scenes with the simplified promise (formation + consultations)', async () => {
   const [component, desktopScene, mobileScene] = await Promise.all([
     readFile(componentPath, 'utf8'),
     readFile(desktopScenePath),
@@ -39,26 +39,25 @@ test('cosmic hero uses responsive monumental scenes with the original editorial 
 
   assert.match(component, /mediumia-cosmic-library-hero\.webp/)
   assert.match(component, /mediumia-cosmic-library-hero-mobile\.webp/)
-  assert.match(component, /Comprendre\. Apprendre\. Rencontrer\./)
-  assert.match(component, /Exercer autrement\./)
-  assert.match(component, /MediumIA rassemble celles et ceux qui explorent, transmettent et accompagnent/)
-  assert.match(component, /Découvrir l'accompagnement/)
+  assert.match(component, /Se former à la médiumnité\./)
+  assert.match(component, /Consulter un médium\./)
+  assert.match(component, /Sébastien Seguin, médium depuis plus de douze ans/)
+  assert.match(component, /Découvrir la Formation · 597 €/)
   assert.doesNotMatch(component, /Là où la conscience rencontre l’intelligence artificielle/)
-  assert.doesNotMatch(component, /Commencer l'exploration|Découvrir la Formation/)
   assert.ok(desktopScene.byteLength < 400_000)
   assert.ok(mobileScene.byteLength < 400_000)
 })
 
-test('cosmic hero keeps the six requested public entry points wired to real routes', async () => {
+test('simplified hero: no tiles, two clear actions (formation and booking)', async () => {
   const [app, component] = await Promise.all([
     readFile(appPath, 'utf8'),
     readFile(componentPath, 'utf8'),
   ])
 
-  assert.match(app, /<CosmicLibraryHero[\s\S]*onOpenPro=\{onOpenPro\}[\s\S]*onOpenFormation=\{onOpenFormation\}[\s\S]*onOpenOracle=\{onOpenOracle\}[\s\S]*onOpenChronosphere=\{onOpenChronosphere\}[\s\S]*onOpenReseauDir=\{onOpenReseauDir\}/)
-  for (const href of ['/formation', '/oracle', '/chronosphere', '/agents', '/conferences', '/reseau']) {
-    assert.match(component, new RegExp(`href: '${href.replace('/', '\\/')}'|href="${href.replace('/', '\\/')}"`))
-  }
+  assert.match(app, /<CosmicLibraryHero[\s\S]*onOpenFormation=\{onOpenFormation\}/)
+  assert.match(component, /href="\/formation"/)
+  assert.match(component, /className="cosmic-library__secondary" href="#consulter"/)
+  assert.doesNotMatch(component, /CosmicDock|cosmic-dock__item|href: '\/agents'/)
 })
 
 test('cosmic motion is CSS-only, responsive and disabled for reduced motion', async () => {
@@ -69,10 +68,7 @@ test('cosmic motion is CSS-only, responsive and disabled for reduced motion', as
 
   assert.match(component, /cosmic-sphere/)
   assert.match(component, /cosmic-orbit--outer/)
-  assert.match(component, /cosmic-dock__item/)
   assert.doesNotMatch(component, /cosmic-library__eye-blink|cosmic-library__eyelid|cosmic-library__blink-seam/)
-  assert.match(component, /setDockInfluence/)
-  assert.match(component, /0\.94 \+ easedInfluence \* 0\.24/)
   assert.match(component, /--sphere-x', `\$\{x \* 8\}px`/)
   assert.doesNotMatch(component, /cosmic-satellite/)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)

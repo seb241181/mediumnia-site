@@ -5,6 +5,7 @@ import { chronosphereMaxDemoProfile, chronosphereMaxDemoTimeline, chronosphereMa
 import { getSolarTemperament } from '../../lib/chronosphereSolarTemperament.js'
 import { summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
 import { useAuth } from '../lib/useAuth.js'
+import PublicPageNav from './PublicPageNav'
 
 function formatDate(value) {
   if (!value) return ''
@@ -581,15 +582,7 @@ async function captureMaxOrder(orderId, token) {
 
   return (
     <div className="cosmic-page cosmic-page--chronosphere min-h-screen bg-cream text-deep">
-      <header className="sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
-          <button onClick={onBack} className="flex items-center gap-2.5 font-georgia text-sm font-semibold tracking-[0.18em] text-deep">
-            <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" className="h-8 w-auto" />
-            MEDIUMIA
-          </button>
-          <button onClick={onBack} className="font-georgia text-xs text-mist transition-colors hover:text-deep">← Retour</button>
-        </div>
-      </header>
+      <PublicPageNav current="decouvrir" onHome={onBack} />
 
       <main className="mx-auto max-w-6xl px-5 pb-20 pt-10 md:pt-14">
         <section className="grid gap-7 md:grid-cols-[.88fr_1.12fr] md:items-end">

@@ -19,23 +19,7 @@ app = replaceRequired(
   'App ecosystem import',
 )
 
-app = replaceRequired(
-  app,
-  `        {/* ── Découvrir ── */}`,
-  `        {/* ── Orientation légère ── */}
-        <section className="mx-auto max-w-6xl px-6 pb-4">
-          <EcosystemNextSteps
-            context="home"
-            onOpenOracle={onOpenOracle}
-            onOpenChronosphere={onOpenChronosphere}
-            onOpenReseau={onOpenReseauDir}
-            onOpenFormation={onOpenFormation}
-          />
-        </section>
-
-        {/* ── Découvrir ── */}`,
-  'Home lightweight pathways',
-)
+// Home orientation block removed: the home page now uses the main navigation.
 
 app = replaceRequired(
   app,

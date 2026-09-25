@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 import { CONFERENCE_PUBLIC_API, registrationSource } from '../lib/conferenceApi.js'
+import PublicPageNav from './PublicPageNav'
 
 const EVENT_SLUG = 'premiere-conference-mediumia'
 const CONFERENCE_API = CONFERENCE_PUBLIC_API
@@ -76,24 +77,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
 
   return (
     <div className="cosmic-page cosmic-page--conferences min-h-screen bg-cream text-deep">
-      <header className="cosmic-page__header sticky top-0 z-40 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-        <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-5 py-4 md:px-6">
-          <a
-            href="/"
-            onClick={(event) => {
-              if (typeof onBack === 'function') {
-                event.preventDefault()
-                onBack()
-              }
-            }}
-            className="justify-self-start font-georgia text-xs text-mist transition-colors hover:text-deep"
-          >
-            ← MediumIA
-          </a>
-          <div className="flex items-center gap-2.5"><img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" className="h-8 w-auto" /><span className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">CONFÉRENCES</span></div>
-          <span aria-hidden="true" />
-        </div>
-      </header>
+      <PublicPageNav current="conferences" onHome={onBack} />
 
       <main>
         <section

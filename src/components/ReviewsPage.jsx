@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { useAuth } from '../lib/useAuth.js'
+import PublicPageNav from './PublicPageNav'
 
 const API = '/api/rdv-config?reviewsAction='
 
@@ -396,12 +397,7 @@ export default function ReviewsPage({ onBack, onNavigate }) {
 
   return (
     <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
-      <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <button onClick={onBack} className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">✦ MEDIUMIA</button>
-          <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep">← Accueil</button>
-        </div>
-      </header>
+      <PublicPageNav onHome={onBack} />
 
       <main className="mx-auto max-w-5xl px-6 pb-24 pt-10">
         {moderation ? (

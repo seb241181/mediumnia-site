@@ -9,6 +9,7 @@ import {
 } from '../../lib/chronosphereResume.js'
 import { getChronosphereReading } from '../../lib/chronosphereReading.js'
 import GiftChronosphereRedeem from './GiftChronosphereRedeem'
+import PublicPageNav from './PublicPageNav'
 
 const THEMES = [
   { value: 'amour', label: 'Amour' },
@@ -758,16 +759,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
   return (
     <div className="cosmic-page cosmic-page--chronosphere min-h-screen bg-cream text-deep">
       {/* Header */}
-      <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <button onClick={onBack} className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">
-            ✦ MEDIUMIA
-          </button>
-          <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep transition-colors">
-            ← Retour
-          </button>
-        </div>
-      </header>
+      <PublicPageNav current="decouvrir" onHome={onBack} />
 
       <main>
         {/* Hero */}

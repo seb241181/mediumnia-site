@@ -65,8 +65,8 @@ const routeSeoHelpers = `const ROUTE_META = {
     description: 'Offrez une consultation, un montant libre, une lecture ChronoSphère ou un coffret. Carte à imprimer ou envoyée par e-mail à la date de votre choix, valable 12 mois.',
   },
   'defi-intuition': {
-    title: 'Défi Intuition — Trouverez-vous l’Étoile ? | MediumIA',
-    description: 'Un petit jeu gratuit chaque jour : cinq cartes, une seule cache l’Étoile. Écoutez votre ressenti, gardez votre série et partagez votre score.',
+    title: 'Défi Intuition — Exercice d’intuition du jour | MediumIA',
+    description: 'Un exercice d’intuition gratuit chaque jour : cinq cartes, une seule cache l’Étoile. Écoutez votre premier ressenti, gardez votre série et partagez votre score.',
   },
   avis: {
     title: 'Avis clients — MediumIA',

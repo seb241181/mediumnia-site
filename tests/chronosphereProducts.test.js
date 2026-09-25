@@ -136,10 +136,10 @@ test('pack_not_found clears an obsolete pending payment', async () => {
   assert.match(recovery, /drawTokenRef\.current = null[\s\S]*setShowPayment\(false\)/)
 })
 
-test('home presents Chronosphere as a bridge to the future astral theme', async () => {
-  const { home } = await readSources()
-  assert.match(home, /Pack conseillé : 9,90 € TTC pour 3 tirages/)
-  assert.match(home, /Le tirage éclaire le moment ; le futur thème astral posera le socle natal/)
-  assert.match(home, /Entrer dans ChronoSphère/)
-  assert.match(home, /Deux portes, un même chemin/)
+test('home presents ChronoSphère as a compact « Découvrir » card with its pack and an example', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const discover = await readFile(new URL('../src/components/DiscoverSection.jsx', import.meta.url), 'utf8')
+  assert.match(discover, /Pack conseillé : 9,90 € TTC pour 3 tirages/)
+  assert.match(discover, /Entrer dans ChronoSphère/)
+  assert.match(discover, /href="\/chronosphere\/exemple"/)
 })

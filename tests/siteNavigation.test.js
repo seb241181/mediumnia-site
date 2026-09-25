@@ -52,3 +52,21 @@ test('home order: hero, Formation (597 €), Consulter, avis, Découvrir, boutiq
   const band = await read('src/components/PractitionersBand.jsx')
   assert.match(band, /label: 'Espace Pro', href: '\/pro'/)
 })
+
+test('shop: Formation MediumIA first, as the lead offer, at 597 € TTC; other prices unchanged', async () => {
+  const { boutiqueProducts, boutiqueCategories } = await import('../src/data/boutiqueProducts.js')
+  const visible = boutiqueProducts.filter((p) => p.publicVisible !== false)
+  assert.equal(visible[0].id, 'formation-mediumia')
+  assert.equal(visible[0].name, 'Formation MediumIA')
+  assert.equal(visible[0].priceLabel, '597 € TTC')
+  assert.equal(visible[0].spotlight, true)
+  assert.equal(visible[0].paymentNote, 'Paiement en plusieurs fois disponible avec PayPal selon éligibilité.')
+  assert.deepEqual(visible.map((p) => [p.id, p.priceLabel]).slice(1), [
+    ['oracle-au-dela-ame', '29,90 €'],
+    ['cartes-cadeaux', 'Dès 9,90 €'],
+    ['le-codex', 'Disponible sur Amazon'],
+  ])
+  assert.equal(boutiqueCategories[1].id, 'formations')
+  const shop = await read('src/components/BoutiqueEcommerce.jsx')
+  assert.match(shop, /\{spotlight && <SpotlightCard product=\{spotlight\}/)
+})

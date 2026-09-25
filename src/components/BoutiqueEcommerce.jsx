@@ -76,6 +76,39 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   )
 }
 
+// Offre phare (Formation MediumIA) : en grand, en tête de la boutique.
+function SpotlightCard({ product, onOpenFormation }) {
+  const open = (event) => {
+    if (!onOpenFormation || event.metaKey || event.ctrlKey || event.shiftKey) return
+    event.preventDefault()
+    onOpenFormation()
+  }
+  return (
+    <article className="mb-6 grid overflow-hidden rounded-2xl border border-gold/40 bg-white shadow-[0_14px_40px_rgba(26,21,53,.08)] md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+      <a href={product.href} onClick={open} className="block bg-deep" aria-label={`${product.name} — découvrir la formation`}>
+        <img src={product.coverImage} alt="Couverture de la Formation MediumIA : 25 modules, 4 niveaux, Sébastien Seguin" loading="lazy" decoding="async" className="h-full max-h-[340px] w-full object-cover md:max-h-none" />
+      </a>
+      <div className="flex flex-col p-7 md:p-9">
+        <p className="font-georgia text-[10px] uppercase tracking-[0.2em]" style={{ color: '#C9A84C' }}>{product.eyebrow}</p>
+        <h3 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">{product.name}</h3>
+        <p className="mt-3 font-georgia leading-relaxed text-mist">{product.summary}</p>
+        <ul className="mt-4 grid grid-cols-1 gap-1.5 font-georgia text-sm text-deep sm:grid-cols-2">
+          {product.highlights.map((item) => (
+            <li key={item} className="flex gap-2"><span className="text-gold" aria-hidden="true">✓</span>{item}</li>
+          ))}
+        </ul>
+        <p className="mt-6 font-georgia text-3xl font-medium text-deep">{product.priceLabel}</p>
+        {product.paymentNote && <p className="mt-1 font-georgia text-xs text-mist">{product.paymentNote}</p>}
+        <div className="mt-6">
+          <a href={product.href} onClick={open} className="inline-block rounded-lg bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90">
+            Découvrir la formation →
+          </a>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 function EchoFeesBanner() {
   return (
     <div className="relative overflow-hidden rounded-2xl mb-4 border-2" style={{ borderColor: 'rgba(201,168,76,.4)', background: 'linear-gradient(140deg,#f9f4ea,#ede6d6 50%,#f9f4ea)' }}>
@@ -106,9 +139,11 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpe
   const activeCategoryIds = new Set(publicProducts.map(p => p.category))
   const publicCategories = boutiqueCategories.filter(c => c.id === 'all' || activeCategoryIds.has(c.id))
 
-  const visibleProducts = activeCategory === 'all'
+  const inCategory = activeCategory === 'all'
     ? publicProducts
     : publicProducts.filter(p => p.category === activeCategory)
+  const spotlight = inCategory.find(p => p.spotlight)
+  const visibleProducts = inCategory.filter(p => !p.spotlight)
 
   const showEchoBanner = activeCategoryIds.has('echo-des-fees') && (
     activeCategory === 'echo-des-fees' ||
@@ -148,8 +183,11 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpe
       {/* Bannière L'Écho des Fées */}
       {showEchoBanner && <EchoFeesBanner />}
 
+      {/* Offre phare */}
+      {spotlight && <SpotlightCard product={spotlight} onOpenFormation={onOpenFormation} />}
+
       {/* Grille produits */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {visibleProducts.map(product => (
           <ProductCard
             key={product.id}

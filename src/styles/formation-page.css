@@ -1,0 +1,27 @@
+/* Page Formation : barre d'ancres collée sous la navigation principale
+   (téléphone, tablette, petits écrans) ; le sommaire latéral prend le relais
+   à partir de 1360 px. */
+.formation-section-bar {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  background: rgba(250, 247, 238, 0.96);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.22);
+  backdrop-filter: blur(10px);
+}
+.formation-main { padding-top: 124px; }
+
+@media (min-width: 761px) {
+  .formation-section-bar { top: 88px; }
+  .formation-main { padding-top: 150px; }
+}
+@media (min-width: 1360px) {
+  .formation-main { padding-top: 104px; }
+}
+/* Les ancres tiennent compte des deux barres. */
+.formation-main [id] { scroll-margin-top: 150px; }
+@media (min-width: 1360px) {
+  .formation-main [id] { scroll-margin-top: 110px; }
+}

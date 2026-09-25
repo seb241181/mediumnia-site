@@ -70,3 +70,23 @@ test('shop: Formation MediumIA first, as the lead offer, at 597 € TTC; other p
   const shop = await read('src/components/BoutiqueEcommerce.jsx')
   assert.match(shop, /\{spotlight && <SpotlightCard product=\{spotlight\}/)
 })
+
+test('Formation first screen: promise, audience, benefits, 597 € TTC, payment phrase and CTA', async () => {
+  const page = await read('src/components/FormationPage.jsx')
+  const top = page.slice(page.indexOf('id="formation-top"'), page.indexOf('Ce parcours est pour vous si'))
+  assert.match(top, /<h1[^>]*>Développer sa médiumnité, pas à pas<\/h1>/)
+  assert.match(top, /Pour qui :/)
+  assert.match(top, /HERO_APPORTS\.map/)
+  assert.match(top, /597 €<\/span> <span className="text-lg text-mist">TTC/)
+  assert.match(top, /Paiement en plusieurs fois disponible avec PayPal selon éligibilité\./)
+  assert.match(top, /Rejoindre la formation →/)
+  // Only the validated installment phrase, nowhere the old detail.
+  assert.doesNotMatch(page, /4X|6X|12X|24X/)
+  // Details kept but folded.
+  assert.match(page, /INCLUS\.map\(\(item\) => \(\n\s+<details/)
+  assert.match(page, /POINTS\.map\(\(p\) => \(\n\s+<details/)
+  assert.match(page, /<NiveauxAccordion \/>/)
+  assert.match(page, /<FAQAccordion \/>/)
+  assert.match(page, /<SiteNav current="formation"/)
+  assert.match(page, /<PageRail items=\{FORMATION_SECTIONS\}/)
+})

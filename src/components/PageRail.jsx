@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 // « Sur cette page » : sommaire latéral discret des pages longues, sur grand
 // écran uniquement (à partir de 1360 px, là où il ne réduit pas le contenu).
 // La section en cours est surlignée. Sur téléphone, rien : le menu suffit.
-export default function PageRail({ items = [], label = 'Sur cette page' }) {
+export default function PageRail({ items = [], label = 'Sur cette page', cta = null }) {
   const [active, setActive] = useState('')
   // Hidden over the opening screen (hero), shown once the visitor scrolls on.
   const [shown, setShown] = useState(false)
@@ -54,6 +54,11 @@ export default function PageRail({ items = [], label = 'Sur cette page' }) {
           </li>
         ))}
       </ol>
+      {cta && (
+        <a href={`#${cta.target}`} onClick={go(cta.target)} tabIndex={shown ? undefined : -1} className="mt-5 block rounded-lg bg-deep px-3 py-2 text-center font-georgia text-xs font-bold text-gold">
+          {cta.label}
+        </a>
+      )}
     </nav>
   )
 }

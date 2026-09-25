@@ -2,17 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import {
   CARDS, CHANCE_RATE, ROUNDS, SHARE_URL,
-  loadState, parisDay, recordDay, saveState, scoreMessage, secureIndex, shareText, stats,
+  isNewPlayer, loadState, parisDay, recordDay, saveState, scoreMessage, secureIndex, shareText, stats,
 } from '../lib/defiIntuition.js'
+import { canvasToFile, drawScoreImage } from '../lib/defiShareImage.js'
 
 const storage = typeof window !== 'undefined' ? window.localStorage : null
 const pct = (rate) => `${Math.round(rate * 100)} %`
+const API = '/api/rdv-config?defiAction='
 
-const NEXT_STEPS = [
-  { href: '/chronosphere', title: 'Votre tirage ChronoSphère', text: 'Une lecture personnalisée de vos cycles, dès 5 €.' },
-  { href: '/formation', title: 'Développer votre intuition', text: 'La formation MediumIA, pas à pas.' },
-  { href: '/rdv/sebastien-seguin', title: 'Une séance avec Sébastien', text: 'En visio ou au cabinet.' },
-]
+// Anonymous counters (plays, new players, shares): never blocks the game.
+function track(event) {
+  try {
+    fetch(`${API}event`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event }), keepalive: true, credentials: 'omit' }).catch(() => {})
+  } catch { /* suivi indisponible */ }
+}
 
 function Header({ onBack }) {
   return (
@@ -55,25 +58,87 @@ function Card({ index, state, onPick, disabled }) {
 
 function Share({ day, hits }) {
   const [copied, setCopied] = useState(false)
+  const [imageNote, setImageNote] = useState('')
+  const [busy, setBusy] = useState(false)
   const text = shareText(day, hits)
-  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
-  async function nativeShare() {
-    try { await navigator.share({ text }) } catch { /* partage annulé */ }
+
+  // Instagram, TikTok and Facebook stories take an image, not a text: the
+  // phone's share menu receives the score picture when it accepts files,
+  // otherwise the picture is downloaded to be added to a story by hand.
+  async function shareImage() {
+    setBusy(true)
+    setImageNote('')
+    try {
+      const file = await canvasToFile(await drawScoreImage(document.createElement('canvas'), { day, hits }), `defi-intuition-${day}.png`)
+      track('defi_share_image')
+      if (navigator.canShare?.({ files: [file] })) {
+        try { await navigator.share({ files: [file], text }) } catch { /* partage annulé */ }
+      } else {
+        const url = URL.createObjectURL(file)
+        const link = Object.assign(document.createElement('a'), { href: url, download: file.name })
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 2000)
+        setImageNote('Image enregistrée : ajoutez-la à votre story Instagram, TikTok ou Facebook.')
+      }
+    } catch {
+      setImageNote('L’image n’a pas pu être créée sur cet appareil. Utilisez « Copier le texte ».')
+    } finally {
+      setBusy(false)
+    }
   }
   async function copy() {
-    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2500) } catch { setCopied(false) }
+    try { await navigator.clipboard.writeText(text); setCopied(true); track('defi_share_copy'); setTimeout(() => setCopied(false), 2500) } catch { setCopied(false) }
   }
   const btn = 'rounded-xl px-4 py-3 font-georgia text-sm font-bold text-center'
   return (
     <div className="mt-6">
-      <pre className="whitespace-pre-wrap rounded-xl border border-gold/25 bg-white/70 p-4 text-left font-georgia text-sm leading-relaxed text-deep">{text}</pre>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {canShare && <button type="button" onClick={nativeShare} className={`${btn} bg-deep text-gold sm:col-span-2`}>Partager mon score</button>}
-        <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer" className={`${btn} bg-[#1f8f4e] text-white`}>WhatsApp</a>
-        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}`} target="_blank" rel="noopener noreferrer" className={`${btn} bg-[#1b4fa0] text-white`}>Facebook</a>
-        <button type="button" onClick={copy} className={`${btn} border border-gold/40 bg-white text-deep sm:col-span-2`}>{copied ? 'Copié ✓ — collez-le où vous voulez' : 'Copier le texte'}</button>
+      <p className="font-georgia text-sm text-deep">Partagez votre score :</p>
+      <button type="button" onClick={shareImage} disabled={busy} className={`${btn} mt-3 w-full bg-[linear-gradient(90deg,#7b3fe4,#d62f7f,#f0a23b)] text-white disabled:opacity-60`}>
+        {busy ? 'Création de l’image…' : '📸 En story : Instagram, TikTok, Facebook'}
+      </button>
+      {imageNote && <p role="status" className="mt-2 font-georgia text-xs text-mist">{imageNote}</p>}
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}`} onClick={() => track('defi_share_facebook')} target="_blank" rel="noopener noreferrer" className={`${btn} bg-[#1b4fa0] text-white`}>Facebook</a>
+        <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} onClick={() => track('defi_share_whatsapp')} target="_blank" rel="noopener noreferrer" className={`${btn} bg-[#1f8f4e] text-white`}>WhatsApp</a>
+        <button type="button" onClick={copy} className={`${btn} col-span-2 border border-gold/40 bg-white text-deep`}>{copied ? 'Copié ✓ — collez-le où vous voulez' : 'Copier le texte'}</button>
       </div>
     </div>
+  )
+}
+
+function Reminder() {
+  const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState('')
+  const [consent, setConsent] = useState(false)
+  const [status, setStatus] = useState('')
+  async function submit(event) {
+    event.preventDefault()
+    if (!consent) { setStatus('Cochez la case pour recevoir le rappel.'); return }
+    setStatus('…')
+    try {
+      const res = await fetch(`${API}subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, consent: true }) })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) { setStatus('done'); return }
+      setStatus({ invalid_email: 'Cette adresse e-mail ne semble pas valide.', too_many_attempts: 'Trop d’essais : réessayez plus tard.' }[data.error] || 'Inscription impossible pour le moment.')
+    } catch {
+      setStatus('Inscription impossible pour le moment.')
+    }
+  }
+  if (status === 'done') return <p role="status" className="mt-6 rounded-xl border border-gold/30 bg-white/75 p-4 font-georgia text-sm text-deep">C’est noté ✦ Un e-mail de confirmation vient de partir, puis un petit rappel chaque matin. Désinscription en un clic dans chaque e-mail.</p>
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="mt-6 w-full rounded-xl border border-gold/40 bg-white/80 px-5 py-3 font-georgia text-sm text-deep">🔔 Me le rappeler chaque matin (facultatif)</button>
+  return (
+    <form onSubmit={submit} className="mt-6 rounded-2xl border border-gold/30 bg-white/80 p-4">
+      <p className="font-georgia text-sm text-deep">🔔 Un petit e-mail chaque matin pour ne pas oublier votre défi.</p>
+      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Votre e-mail" autoComplete="email" aria-label="Votre e-mail" className="mt-3 w-full rounded-xl border border-gold/30 bg-white px-4 py-3 font-georgia text-sm text-deep" />
+      <label className="mt-3 flex cursor-pointer items-start gap-3">
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-gold" />
+        <span className="font-georgia text-xs leading-relaxed text-deep/80">J’accepte de recevoir un e-mail de rappel par jour pour le Défi Intuition. Mon adresse ne sert qu’à ça ; je peux me désinscrire en un clic.</span>
+      </label>
+      <button type="submit" className="mt-3 w-full rounded-xl bg-[#1a1535] px-5 py-3 font-georgia text-sm font-bold text-gold">Activer le rappel</button>
+      {status && status !== '…' && <p role="alert" className="mt-2 font-georgia text-xs text-red-700">{status}</p>}
+    </form>
   )
 }
 
@@ -91,7 +156,19 @@ export default function DefiIntuitionPage({ onBack, onNavigate }) {
   const summary = stats(saved, today)
   const todayHits = playedToday?.hits || []
 
+  const [notice, setNotice] = useState('')
+
   useEffect(() => { window.scrollTo(0, 0) }, [mode])
+
+  // One-click unsubscribe from the reminder e-mail (?stop=<signed token>).
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('stop')
+    if (!token) return
+    window.history.replaceState(window.history.state, '', window.location.pathname)
+    fetch(`${API}unsubscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })
+      .then((res) => setNotice(res.ok ? 'C’est fait : vous ne recevrez plus le rappel du Défi Intuition.' : 'Ce lien de désinscription n’est plus valide. Écrivez-nous à contact@mediumia.fr.'))
+      .catch(() => setNotice('Désinscription impossible pour le moment. Réessayez plus tard.'))
+  }, [])
 
   function start(isPractice) {
     setPractice(isPractice)
@@ -117,7 +194,9 @@ export default function DefiIntuitionPage({ onBack, onNavigate }) {
       return
     }
     if (!practice) {
-      const updated = recordDay(saved, today, hits)
+      if (isNewPlayer(saved)) track('defi_new_player')
+      track('defi_played')
+      const updated = { ...recordDay(saved, today, hits), counted: true }
       saveState(storage, updated)
       setSaved(updated)
     }
@@ -140,11 +219,12 @@ export default function DefiIntuitionPage({ onBack, onNavigate }) {
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-8">
         <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Récréation · un défi par jour</p>
         <h1 className="mt-2 font-georgia text-3xl font-medium leading-tight md:text-5xl">Défi Intuition</h1>
+        {notice && <p role="status" className="mt-4 rounded-xl border border-gold/30 bg-white/80 p-4 font-georgia text-sm text-deep">{notice}</p>}
 
         {mode === 'intro' && (
           <section className="mt-4">
             <p className="max-w-xl font-georgia text-base leading-relaxed text-mist">
-              Cinq cartes, une seule cache l’Étoile. Respirez, écoutez votre premier ressenti, et choisissez. Cinq manches par jour : le hasard en trouve une sur cinq… et vous ?
+              Cinq cartes, une seule cache l’Étoile. Respirez, écoutez votre premier ressenti, et choisissez. Trois manches par jour : le hasard trouve l’Étoile une fois sur cinq… et vous ?
             </p>
             <ul className="mt-6 space-y-2 font-georgia text-sm text-deep/80">
               <li>✦ L’Étoile est placée avant votre choix, au hasard.</li>
@@ -212,15 +292,7 @@ export default function DefiIntuitionPage({ onBack, onNavigate }) {
               S’entraîner encore (ne compte pas)
             </button>
 
-            <h2 className="mt-10 font-georgia text-xl">Envie d’aller plus loin ?</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {NEXT_STEPS.map((step) => (
-                <a key={step.href} href={step.href} className="rounded-2xl border border-gold/30 bg-white/75 p-4 font-georgia transition hover:border-gold">
-                  <p className="text-base text-deep">{step.title} →</p>
-                  <p className="mt-1 text-xs leading-relaxed text-mist">{step.text}</p>
-                </a>
-              ))}
-            </div>
+            {!practice && playedToday && <Reminder />}
           </section>
         )}
 

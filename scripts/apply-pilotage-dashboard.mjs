@@ -126,7 +126,7 @@ let dashboard = await readFile(dashboardPath, 'utf8')
 dashboard = replaceRequired(
   dashboard,
   `import { useAuth } from '../../lib/useAuth'`,
-  `import { useAuth } from '../../lib/useAuth'\nimport PilotageDashboard from './PilotageDashboard'`,
+  `import { useAuth } from '../../lib/useAuth'\nimport PilotageDashboard from './PilotageDashboard'\nimport DefiStats from './DefiStats'`,
   'pilotage import',
 )
 
@@ -183,7 +183,10 @@ const headingWithTabs = `        <div className="mb-8">
         )}
 
         {workspace === 'pilotage' && canSeePilotage ? (
-          <PilotageDashboard session={session} />
+          <>
+            <PilotageDashboard session={session} />
+            <DefiStats session={session} />
+          </>
         ) : (
           <>
         {/* Loading */}`

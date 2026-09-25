@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
-const { secureIndex, parisDay, recordDay, stats, shareText, loadState, saveState, emptyState, ROUNDS, CARDS } = await import('../src/lib/defiIntuition.js')
+const { secureIndex, parisDay, recordDay, stats, shareText, loadState, saveState, emptyState, isNewPlayer, ROUNDS, CARDS } = await import('../src/lib/defiIntuition.js')
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 
 test('the Étoile is drawn fairly among the 5 cards', () => {
@@ -22,18 +22,19 @@ test('the daily challenge follows the Paris calendar', () => {
 
 test('one score per day, a streak of consecutive days, and replays do not count', () => {
   let state = emptyState()
-  state = recordDay(state, '2026-10-20', [true, false, false, false, false])
-  state = recordDay(state, '2026-10-21', [true, true, false, false, true])
-  state = recordDay(state, '2026-10-21', [true, true, true, true, true])
-  assert.deepEqual(state.days['2026-10-21'].hits.filter(Boolean).length, 3, 'first result of the day is kept')
+  state = recordDay(state, '2026-10-20', [true, false, false])
+  state = recordDay(state, '2026-10-21', [true, true, true])
+  state = recordDay(state, '2026-10-21', [false, false, false])
+  assert.equal(state.days['2026-10-21'].hits.filter(Boolean).length, 3, 'first result of the day is kept')
   const s = stats(state, '2026-10-22')
-  assert.deepEqual([s.daysPlayed, s.rounds, s.found, s.streak, s.best], [2, 10, 4, 2, 3], 'streak still alive the next morning')
+  assert.deepEqual([s.daysPlayed, s.rounds, s.found, s.streak, s.best], [2, 6, 4, 2, 3], 'streak still alive the next morning')
   assert.equal(stats(state, '2026-10-24').streak, 0, 'a missed day breaks the streak')
 })
 
 test('the shared score reads like a little grid, with the chance baseline and the link', () => {
-  const text = shareText('2026-10-22', [true, false, true, false, false])
-  assert.equal(text, `🔮 Défi Intuition MediumIA · 22/10/2026\n🌟🌑🌟🌑🌑 2/${ROUNDS}\nLe hasard trouve 1 carte sur 5. Et vous ?\nhttps://mediumia.fr/defi-intuition`)
+  assert.equal(ROUNDS, 3, 'three rounds count each day')
+  const text = shareText('2026-10-22', [true, false, true])
+  assert.equal(text, `🔮 Défi Intuition MediumIA · 22/10/2026\n🌟🌑🌟 2/3\nLe hasard trouve 1 carte sur 5. Et vous ?\nhttps://mediumia.fr/defi-intuition`)
 })
 
 test('scores survive a broken or missing storage', () => {
@@ -51,4 +52,15 @@ test('the game is routed, previewed when shared, and honest about chance', () =>
   const page = read('src/components/DefiIntuitionPage.jsx')
   assert.match(page, /ne mesure pas un don et ne prédit rien/)
   assert.match(page, /setTarget\(secureIndex\(CARDS\)\)/)
+  assert.doesNotMatch(page, /\/chronosphere'|\/formation'|\/rdv\//, 'no sales links after the game')
+  assert.match(page, /Instagram, TikTok, Facebook/)
+  assert.match(read('src/App.jsx'), /<DefiHomeBanner \/>/)
+  assert.match(read('scripts/apply-pilotage-dashboard.mjs'), /<DefiStats session=\{session\} \/>/)
+  assert.match(read('src/components/LegalPages.jsx'), /Défi Intuition \(jeu gratuit\)/)
+})
+
+test('a player is counted as new only once', () => {
+  assert.equal(isNewPlayer(emptyState()), true)
+  assert.equal(isNewPlayer({ days: {}, counted: true }), false)
+  assert.equal(isNewPlayer(recordDay(emptyState(), '2026-10-22', [true, false, false])), false)
 })

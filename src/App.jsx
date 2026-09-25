@@ -23,6 +23,7 @@ import ConferencePassPage from './components/ConferencePassPage'
 import ReviewsPage, { ReviewsHighlight } from './components/ReviewsPage'
 import GiftCardsPage from './components/GiftCardsPage'
 import DefiIntuitionPage from './components/DefiIntuitionPage'
+import DefiHomeBanner from './components/DefiHomeBanner'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
   return (
@@ -264,6 +265,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenChronosphere={onOpenChronosphere}
           onOpenReseauDir={onOpenReseauDir}
         />
+
+        {/* ── Jeu gratuit du jour ── */}
+        <DefiHomeBanner />
 
         {/* ── Consulter ── */}
         <ConsultationSection id="consulter" onOpenRdv={onOpenRdv} />

@@ -1,8 +1,8 @@
 // Défi Intuition : logique du jeu, sans interface (testable).
-// Chaque jour, 5 manches ; à chaque manche, l'Étoile est cachée sous l'une des
+// Chaque jour, 3 manches ; à chaque manche, l'Étoile est cachée sous l'une des
 // 5 cartes AVANT le choix du joueur. Le hasard trouve donc 1 carte sur 5.
 
-export const ROUNDS = 5
+export const ROUNDS = 3
 export const CARDS = 5
 export const CHANCE_RATE = 1 / CARDS
 export const STORAGE_KEY = 'mediumia_defi_intuition_v1'
@@ -61,11 +61,15 @@ export function stats(state, today) {
 }
 
 export function scoreMessage(score) {
-  if (score >= 4) return 'Une intuition remarquable aujourd’hui. Notez ce que vous ressentiez au moment de choisir.'
-  if (score === 3) return 'Bien au-dessus du hasard ! Votre ressenti était là.'
-  if (score === 2) return 'Un peu au-dessus du hasard. Continuez demain, l’intuition se travaille.'
-  if (score === 1) return 'Exactement le hasard aujourd’hui. Essayez de choisir plus vite, sans réfléchir.'
+  if (score >= 3) return 'Trois Étoiles sur trois : une intuition remarquable aujourd’hui ! Notez ce que vous ressentiez au moment de choisir.'
+  if (score === 2) return 'Deux Étoiles : bien au-dessus du hasard. Votre ressenti était là.'
+  if (score === 1) return 'Une Étoile trouvée : mieux que le hasard, qui n’en trouve qu’une tous les deux jours environ.'
   return 'Journée brouillée : ça arrive à tout le monde. Revenez demain, l’esprit plus léger.'
+}
+
+// First game ever on this phone: counted once as a new player.
+export function isNewPlayer(state) {
+  return !state.counted && Object.keys(state.days).length === 0
 }
 
 export function shareText(day, hits) {

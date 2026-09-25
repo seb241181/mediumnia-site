@@ -151,6 +151,20 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
         </p>
       </Section>
 
+      <Section title="Données collectées — Défi Intuition (jeu gratuit)">
+        <p>
+          Le jeu ne demande aucune inscription : vos scores et votre série restent uniquement sur votre appareil. Le site
+          compte, de façon anonyme et par jour, le nombre de parties, de nouveaux joueurs et de partages, sans aucune donnée
+          personnelle ni adresse IP.
+        </p>
+        <p>
+          Si vous activez le rappel quotidien, nous conservons votre adresse e-mail et la date de votre accord, uniquement pour
+          vous envoyer ce rappel (via Resend). Base légale : votre consentement. Chaque e-mail contient un lien de
+          désinscription en un clic ; vous pouvez aussi écrire à
+          <a href="mailto:contact@mediumia.fr" className="text-gold hover:underline"> contact@mediumia.fr</a>.
+        </p>
+      </Section>
+
       <Section title="Données collectées — Oracle (tirage gratuit)">
         <p>
           Le tirage test gratuit collecte votre adresse email. Côté serveur, un hash de cette adresse est conservé dans Supabase

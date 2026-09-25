@@ -26,12 +26,7 @@ app = replaceRequired(
   'Nav conference prop',
 )
 
-app = replaceRequired(
-  app,
-  `          <a href="#consulter" className="hover:text-gold transition-colors">Consulter</a>\n          <a href="#boutique" className="hover:text-gold transition-colors">Boutique</a>`,
-  `          <a href="#consulter" className="hover:text-gold transition-colors">Consulter</a>\n          <button onClick={onOpenConferences} className="hover:text-gold transition-colors">Conférences</button>\n          <a href="#boutique" className="hover:text-gold transition-colors">Boutique</a>`,
-  'desktop conference navigation',
-)
+// Desktop navigation now lives in src/components/SiteNav.jsx (Conférences included).
 
 app = replaceRequired(
   app,

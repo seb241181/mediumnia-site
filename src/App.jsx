@@ -25,34 +25,11 @@ import GiftCardsPage from './components/GiftCardsPage'
 import DefiIntuitionPage from './components/DefiIntuitionPage'
 import DefiHomeBanner from './components/DefiHomeBanner'
 import FormationParcoursPage from './components/FormationParcoursPage'
+import SiteNav from './components/SiteNav'
+import PageRail from './components/PageRail'
 
-function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir }) {
-  return (
-    <header className="cosmic-nav fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-      <div className="max-w-6xl mx-auto px-5 md:px-6 py-4 md:py-5 flex items-center justify-between gap-5">
-        <a href="#top" className="shrink-0 flex items-center gap-2.5" aria-label="MediumIA — retour en haut">
-          <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-9 md:h-12 w-auto" />
-          <span className="font-georgia text-deep tracking-[0.2em] text-base md:text-lg font-semibold">MEDIUMIA</span>
-        </a>
-        <nav className="hidden md:flex items-center gap-7 font-georgia text-[15px] text-deep font-medium">
-          <a href="#decouvrir" className="hover:text-gold transition-colors">Découvrir</a>
-          <button onClick={onOpenFormation} className="hover:text-gold transition-colors">Se former</button>
-          <a href="#consulter" className="hover:text-gold transition-colors">Consulter</a>
-          <a href="#boutique" className="hover:text-gold transition-colors">Boutique</a>
-          <button onClick={onOpenReseauDir} className="hover:text-gold transition-colors">Trouver un praticien</button>
-        </nav>
-        <div className="shrink-0 flex items-center gap-2">
-          <a
-            href="https://espace.mediumia.fr"
-            className="font-georgia text-[10px] sm:text-xs md:text-sm tracking-wide px-3 py-3 sm:px-4 md:px-5 rounded-lg border border-gold/60 text-deep font-bold whitespace-nowrap hover:bg-gold/10 transition-colors"
-          >
-            Espace élèves →
-          </a>
-          <button onClick={onOpenPro} className="font-georgia text-[10px] sm:text-xs md:text-sm tracking-wide px-3 py-3 sm:px-4 md:px-5 rounded-lg bg-deep text-gold font-bold whitespace-nowrap">Espace Pro →</button>
-        </div>
-      </div>
-    </header>
-  )
+function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir, onOpenConferences }) {
+  return <SiteNav current="home" onOpenFormation={onOpenFormation} onOpenConferences={onOpenConferences} onOpenReseauDir={onOpenReseauDir} />
 }
 
 function UniverseCard({ icon, eyebrow, title, children, action, onClick, href, badge }) {
@@ -252,10 +229,19 @@ function OracleChronosphereBridge({ onOpenOracle, onOpenChronosphere }) {
   )
 }
 
+const HOME_RAIL = [
+  { id: 'formation', label: 'Formation' },
+  { id: 'consulter', label: 'Consulter' },
+  { id: 'avis', label: 'Avis' },
+  { id: 'decouvrir', label: 'Découvrir' },
+  { id: 'boutique', label: 'Boutique' },
+]
+
 function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
   return (
     <div id="top" className="cosmic-home bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
+      <PageRail items={HOME_RAIL} />
       <main>
 
         {/* ── Hero ── */}

@@ -159,7 +159,7 @@ test('capture flow persists intent first and can reconcile without recapturing',
   const paypal = read('lib/paypalSandbox.js')
   const migration = read('supabase/migrations/20260909133000_mediumia_paypal_order_intents.sql')
 
-  assert.match(paypal, /await saveOrderIntent\(getSupabaseAdmin\(\), cfg, data\.id\)/)
+  assert.match(paypal, /await saveOrderIntent\(db\(\), orderCfg, data\.id, priced\.credit\)/)
   assert.match(paypal, /if \(fetched\.data\.status !== 'COMPLETED'\)/)
   assert.match(paypal, /completedOrder = await captureOrder/)
   assert.match(paypal, /status: 'provisioning_failed'/)

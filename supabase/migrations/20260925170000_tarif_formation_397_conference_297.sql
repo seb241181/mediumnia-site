@@ -138,11 +138,16 @@ $$;
 revoke all on function public.validate_conference_pass(text) from public, anon, authenticated;
 grant execute on function public.validate_conference_pass(text) to service_role;
 
--- 4. Achat de la Formation complète sur le site : montant live 397 €.
---    59700 reste toléré seulement pour les intentions de paiement déjà enregistrées :
+-- 4. Achat de la Formation complète sur le site : 397 €, ou 368 € après une vraie
+--    Découverte live à 29 € (crédit consommé une seule fois).
+--    59700 reste toléré seulement pour les commandes et achats déjà enregistrés :
 --    une contrainte est revérifiée à chaque mise à jour de ligne, et le suivi d'une
---    ancienne commande échouerait sinon. Le site (nouvelle version) ne crée plus que
---    des intentions à 39700 et refuse toute capture live d'un autre montant.
+--    ancienne commande échouerait sinon. Le site ne crée plus que 39700 ou 36800.
+alter table public.mediumia_paypal_order_intents
+  add column if not exists user_id uuid references auth.users(id) on delete set null,
+  add column if not exists upgrade_credit_purchase_id uuid references public.mediumia_paypal_purchases(id) on delete restrict,
+  add column if not exists upgrade_credit_claimed_at timestamptz;
+
 do $$
 declare
   v_name text;
@@ -152,7 +157,8 @@ begin
     from pg_constraint c
     where c.conrelid = 'public.mediumia_paypal_order_intents'::regclass
       and c.contype = 'c'
-      and pg_get_constraintdef(c.oid) like '%amount_cents = 2900%'
+      and (pg_get_constraintdef(c.oid) like '%amount_cents = 2900%'
+        or c.conname = 'mediumia_paypal_order_intents_credit_check')
   loop
     execute format('alter table public.mediumia_paypal_order_intents drop constraint %I', v_name);
   end loop;
@@ -164,7 +170,44 @@ alter table public.mediumia_paypal_order_intents
     (paypal_env = 'sandbox' and amount_cents = 100)
     or (paypal_env = 'live' and product_code = 'discovery' and amount_cents = 2900)
     or (paypal_env = 'live' and product_code = 'full' and amount_cents in (39700, 59700))
+    or (paypal_env = 'live' and product_code = 'full' and amount_cents = 36800)
+  ),
+  -- 368 € si et seulement si une Découverte live est rattachée au compte connecté.
+  add constraint mediumia_paypal_order_intents_credit_check check (
+    (upgrade_credit_purchase_id is null and upgrade_credit_claimed_at is null
+      and not (paypal_env = 'live' and product_code = 'full' and amount_cents = 36800))
+    or (upgrade_credit_purchase_id is not null and user_id is not null
+      and paypal_env = 'live' and product_code = 'full' and amount_cents = 36800)
   );
+
+-- Une Découverte ne peut être réservée que par une seule commande à la fois.
+create unique index if not exists ux_mediumia_order_intents_credit_claim
+  on public.mediumia_paypal_order_intents (upgrade_credit_purchase_id)
+  where upgrade_credit_claimed_at is not null;
+
+do $$
+begin
+  if exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.mediumia_paypal_purchases'::regclass
+      and conname = 'mediumia_paypal_purchases_product_amount_check'
+  ) then
+    alter table public.mediumia_paypal_purchases drop constraint mediumia_paypal_purchases_product_amount_check;
+  end if;
+end;
+$$;
+
+alter table public.mediumia_paypal_purchases
+  add constraint mediumia_paypal_purchases_product_amount_check check (
+    (paypal_env = 'sandbox' and amount_cents = 100)
+    or (paypal_env = 'live' and product_code = 'full' and amount_cents in (39700, 36800, 59700))
+    or (paypal_env = 'live' and product_code = 'discovery' and amount_cents = 2900)
+  );
+
+-- Un achat complet ne consomme qu'une seule Découverte.
+create unique index if not exists ux_mediumia_purchases_credit_redeemed_by
+  on public.mediumia_paypal_purchases (upgrade_credit_redeemed_purchase_id)
+  where upgrade_credit_redeemed_purchase_id is not null;
 
 -- Vérification : doit afficher 397 € / 297 € / 397 €.
 select e.slug,

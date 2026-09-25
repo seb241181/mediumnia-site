@@ -52,7 +52,7 @@ test('the pricing migration is additive: event, raffle, pass fallback and site c
   assert.match(executed, /set prize_value_cents = 39700[\s\S]*r\.status <> 'drawn'/)
   assert.match(executed, /coalesce\(v_event\.pass_normal_amount_cents, 39700\)/)
   assert.match(executed, /product_code = 'full' and amount_cents in \(39700, 59700\)/)
-  assert.doesNotMatch(executed, /\b(delete|truncate|drop table)\b/i)
+  assert.doesNotMatch(executed, /\bdelete\s+from\b|\btruncate\b|\bdrop\s+table\b/i)
   // Outside the re-created pass function, only prices are touched: no access, no registration, no pass.
   const fnStart = executed.indexOf('create or replace function public.validate_conference_pass')
   const outside = executed.slice(0, fnStart) + executed.slice(executed.indexOf('$$;', fnStart))

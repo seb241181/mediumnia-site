@@ -269,3 +269,25 @@ test('webhooks never trust their content and ignore unknown subscriptions', asyn
   assert.equal(r.statusCode, 200)
   assert.equal(paidTotal(db), 2900)
 })
+
+test('the student space may read the status and stop the parcours, other sites may not', async () => {
+  const { db } = setup()
+  const allowed = res()
+  await handleFormationPath({ method: 'OPTIONS', headers: { origin: 'https://espace.mediumia.fr' }, body: {} }, allowed, 'status', db)
+  assert.equal(allowed.statusCode, 204)
+  const denied = res()
+  await handleFormationPath({ method: 'OPTIONS', headers: { origin: 'https://evil.example' }, body: {} }, denied, 'status', db)
+  assert.equal(denied.statusCode, 403)
+  const payment = res()
+  await handleFormationPath({ method: 'OPTIONS', headers: { origin: 'https://espace.mediumia.fr' }, body: {} }, payment, 'unlock-create', db)
+  assert.equal(payment.statusCode, 403, 'payments stay on mediumia.fr')
+})
+
+test('students who already hold the whole course (conference pass, former code, founder) are complete: nothing is offered', async () => {
+  const { db } = setup()
+  db.t.mediumia_entitlements = [{ user_id: USER, origin_ref: 'conference-pass:live:CAP1', status: 'active', max_module: 25 }]
+  const status = await call(db, 'status')
+  assert.deepEqual([status.body.complete, status.body.maxModule, status.body.remainingCents], [true, 25, 0])
+  assert.equal((await call(db, 'subscribe', { consent: true })).body.error, 'already_complete')
+  assert.equal((await call(db, 'unlock-create', { consent: true })).body.error, 'already_complete')
+})

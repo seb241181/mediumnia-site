@@ -37,6 +37,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/formation/parcours",
+      "destination": "/index.html"
+    },
+    {
       "source": "/conferences",
       "destination": "/index.html"
     },

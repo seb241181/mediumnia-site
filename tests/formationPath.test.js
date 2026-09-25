@@ -297,11 +297,13 @@ test('only permanent complete origins count as "already complete"; temporary or 
   assert.equal(ownsCompleteFormation([r({ origin_ref: 'paypal:live:8XK123' })]), true)
   assert.equal(ownsCompleteFormation([r({ origin_ref: 'conference-pass:live:5TP9' })]), true)
   assert.equal(ownsCompleteFormation([r({ type: 'admin', origin_ref: 'founder:0b6f3c1e-2a4d-4f5e-9a8b-7c6d5e4f3a2b' })]), true)
-  assert.equal(ownsCompleteFormation([r({ type: 'legacy_code', origin_ref: 'hmac', access_started_at: '2026-08-30T00:00:00Z', access_expires_at: '2027-08-30T00:00:00Z' })]), true)
-  assert.equal(ownsCompleteFormation([r({ origin_ref: 'legacy-paypal:9AB12345CD', access_level: 'full', access_started_at: '2026-09-02T10:00:00Z', access_expires_at: '2027-08-14T10:00:00Z' })]), true, 'historical 597 € purchase')
-  for (const temp of [r({ origin_ref: 'paypal:sandbox:8XK123' }), r({ origin_ref: 'conference-pass:sandbox:5TP9' }),
-    r({ origin_ref: 'legacy-paypal:9AB12345CD', access_level: 'full', access_started_at: '2026-10-01T00:00:00Z' }),
-    r({ origin_ref: 'legacy-paypal:9AB12345CD', access_level: 'full', access_started_at: '2026-09-02T10:00:00Z', status: 'expired' }),
+  const annualCode = r({ type: 'legacy_code', origin_ref: 'hmac', access_level: 'full', access_started_at: '2026-08-30T00:00:00Z', access_expires_at: '2027-08-30T00:00:00Z' })
+  assert.equal(ownsCompleteFormation([annualCode]), true)
+  // The historical 597 € purchase has no exception in the code: the founder status covers it.
+  const historical = r({ origin_ref: 'legacy-paypal:9AB12345CD', access_level: 'full', access_started_at: '2026-09-02T10:00:00Z', access_expires_at: '2027-08-14T10:00:00Z' })
+  assert.equal(ownsCompleteFormation([historical, r({ type: 'admin', origin_ref: 'founder:0b6f3c1e-2a4d-4f5e-9a8b-7c6d5e4f3a2b', access_level: 'full' })]), true, 'with the founder status')
+  for (const temp of [r({ origin_ref: 'paypal:sandbox:8XK123' }), r({ origin_ref: 'conference-pass:sandbox:5TP9' }), historical,
+    { ...annualCode, access_level: 'discovery' },
     r({ origin_ref: 'v2:ab12' }), r({ type: 'admin', origin_ref: 'manual:gift' }), r({ origin_ref: 'promo:x' }), r({ origin_ref: 'paypal:live:discovery:X', max_module: 1 }), r({ type: 'legacy_code', origin_ref: 'hmac', access_expires_at: '2026-10-10T00:00:00Z' }), r({ origin_ref: 'paypal:live:8XK123', status: 'revoked' })]) {
     assert.equal(ownsCompleteFormation([temp]), false, temp.origin_ref)
   }

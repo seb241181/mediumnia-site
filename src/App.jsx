@@ -23,7 +23,6 @@ import ConferencePassPage from './components/ConferencePassPage'
 import ReviewsPage, { ReviewsHighlight } from './components/ReviewsPage'
 import GiftCardsPage from './components/GiftCardsPage'
 import DefiIntuitionPage from './components/DefiIntuitionPage'
-import DefiHomeBanner from './components/DefiHomeBanner'
 import FormationParcoursPage from './components/FormationParcoursPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
@@ -116,9 +115,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenChronosphere={onOpenChronosphere}
           onOpenReseauDir={onOpenReseauDir}
         />
-
-        {/* ── Jeu gratuit du jour ── */}
-        <DefiHomeBanner />
 
         {/* ── Formation MediumIA : l'offre principale, dès le premier défilement ── */}
         <section id="formation" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16">

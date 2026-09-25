@@ -42,6 +42,9 @@ export default function DiscoverSection({ id = 'decouvrir', onOpenOracle, onOpen
         >
           À partir de votre naissance, une lecture de l’énergie actuelle et de vos fenêtres temporelles. Pack conseillé : 9,90 € TTC pour 3 tirages.
         </DiscoverCard>
+        <DiscoverCard eyebrow="Défi Intuition · 2 minutes" title="Exercice d’intuition du jour" action="Faire l’exercice" href="/defi-intuition">
+          Cinq cartes, une seule cache l’Étoile. Respirez, écoutez votre premier ressenti : un exercice de perception, renouvelé chaque jour.
+        </DiscoverCard>
         {children}
       </div>
     </section>

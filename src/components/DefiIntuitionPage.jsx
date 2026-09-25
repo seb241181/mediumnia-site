@@ -5,6 +5,7 @@ import {
   isNewPlayer, loadState, parisDay, recordDay, saveState, scoreMessage, secureIndex, shareText, stats,
 } from '../lib/defiIntuition.js'
 import { canvasToFile, drawScoreImage } from '../lib/defiShareImage.js'
+import SiteNav from './SiteNav'
 
 const storage = typeof window !== 'undefined' ? window.localStorage : null
 const pct = (rate) => `${Math.round(rate * 100)} %`
@@ -15,17 +16,6 @@ function track(event) {
   try {
     fetch(`${API}event`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event }), keepalive: true, credentials: 'omit' }).catch(() => {})
   } catch { /* suivi indisponible */ }
-}
-
-function Header({ onBack }) {
-  return (
-    <header className="cosmic-page__header sticky top-0 z-50 border-b border-gold/20 bg-cream/95 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-        <button onClick={onBack} className="font-georgia text-sm font-semibold tracking-[0.18em] text-deep">✦ MEDIUMIA</button>
-        <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep">← Accueil</button>
-      </div>
-    </header>
-  )
 }
 
 function Card({ index, state, onPick, disabled }) {
@@ -215,10 +205,10 @@ export default function DefiIntuitionPage({ onBack, onNavigate }) {
 
   return (
     <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
-      <Header onBack={onBack} />
-      <main className="mx-auto max-w-3xl px-5 pb-20 pt-8">
-        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Récréation · un défi par jour</p>
-        <h1 className="mt-2 font-georgia text-3xl font-medium leading-tight md:text-5xl">Défi Intuition</h1>
+      <SiteNav current="decouvrir" onHome={onBack} />
+      <main className="mx-auto max-w-3xl px-5 pb-20 pt-28 md:pt-32">
+        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Défi Intuition · exercice de perception</p>
+        <h1 className="mt-2 font-georgia text-3xl font-medium leading-tight md:text-5xl">Exercice d’intuition du jour</h1>
         {notice && <p role="status" className="mt-4 rounded-xl border border-gold/30 bg-white/80 p-4 font-georgia text-sm text-deep">{notice}</p>}
 
         {mode === 'intro' && (
@@ -232,7 +222,7 @@ export default function DefiIntuitionPage({ onBack, onNavigate }) {
               <li>✦ Gardez votre série de jours et partagez votre score.</li>
             </ul>
             <button type="button" onClick={() => start(false)} className="mt-8 w-full rounded-xl bg-deep px-6 py-4 font-georgia text-base font-bold text-gold sm:w-auto">
-              Commencer le défi du jour →
+              Commencer l’exercice du jour →
             </button>
             {summary.streak > 0 && <p className="mt-4 font-georgia text-sm text-mist">Série en cours : {summary.streak} jour{summary.streak > 1 ? 's' : ''} ✦ gardez-la aujourd’hui.</p>}
           </section>
@@ -297,7 +287,7 @@ export default function DefiIntuitionPage({ onBack, onNavigate }) {
         )}
 
         <p className="mt-12 font-georgia text-xs leading-relaxed text-mist/80">
-          Jeu gratuit d’entraînement, pour le plaisir : il ne mesure pas un don et ne prédit rien. Aucune inscription, vos scores restent sur votre téléphone.
+          Exercice gratuit d’entraînement à l’écoute intuitive : il ne mesure pas un don et ne prédit rien. Aucune inscription, vos scores restent sur votre téléphone.
         </p>
       </main>
       <LegalFooter onNavigate={onNavigate} />

@@ -132,9 +132,11 @@ begin
 
   insert into public.mediumia_students (user_id) values (p_user_id) on conflict (user_id) do nothing;
 
+  -- A path row at module 1 (Discovery bought with the new parcours) keeps the
+  -- Discovery level, so the coach uses the Discovery frame.
   update public.mediumia_entitlements
   set max_module = p_max_module,
-      access_level = 'full',
+      access_level = case when p_max_module = 1 then 'discovery' else 'full' end,
       access_expires_at = p_expires_at,
       status = 'active',
       updated_at = now()
@@ -143,7 +145,7 @@ begin
 
   if not found then
     insert into public.mediumia_entitlements (user_id, type, origin_ref, access_started_at, access_expires_at, status, access_level, max_module)
-    values (p_user_id, 'purchase', v_ref, now(), p_expires_at, 'active', 'full', p_max_module)
+    values (p_user_id, 'purchase', v_ref, now(), p_expires_at, 'active', case when p_max_module = 1 then 'discovery' else 'full' end, p_max_module)
     returning * into v_row;
   end if;
 

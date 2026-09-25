@@ -8,7 +8,7 @@ process.env.PAYPAL_CLIENT_SECRET = 'secret'
 delete process.env.VERCEL_ENV
 delete process.env.RESEND_API_KEY
 
-const { handleFormationPath, syncLiveSubscriptions } = await import('../lib/formationPath.js')
+const { handleFormationPath, syncLiveSubscriptions, ownsCompleteFormation } = await import('../lib/formationPath.js')
 
 const USER = '11111111-1111-4111-8111-111111111111'
 
@@ -268,4 +268,52 @@ test('webhooks never trust their content and ignore unknown subscriptions', asyn
   const r = await webhook(db, 'I-UNKNOWN123')
   assert.equal(r.statusCode, 200)
   assert.equal(paidTotal(db), 2900)
+})
+
+test('the student space may read the status and stop the parcours, other sites may not', async () => {
+  const { db } = setup()
+  const allowed = res()
+  await handleFormationPath({ method: 'OPTIONS', headers: { origin: 'https://espace.mediumia.fr' }, body: {} }, allowed, 'status', db)
+  assert.equal(allowed.statusCode, 204)
+  const denied = res()
+  await handleFormationPath({ method: 'OPTIONS', headers: { origin: 'https://evil.example' }, body: {} }, denied, 'status', db)
+  assert.equal(denied.statusCode, 403)
+  const payment = res()
+  await handleFormationPath({ method: 'OPTIONS', headers: { origin: 'https://espace.mediumia.fr' }, body: {} }, payment, 'unlock-create', db)
+  assert.equal(payment.statusCode, 403, 'payments stay on mediumia.fr')
+})
+
+test('students who already hold the whole course (conference pass, former code, founder) are complete: nothing is offered', async () => {
+  const { db } = setup()
+  db.t.mediumia_entitlements = [{ user_id: USER, type: 'purchase', origin_ref: 'conference-pass:live:CAP1', status: 'active', max_module: 25 }]
+  const status = await call(db, 'status')
+  assert.deepEqual([status.body.complete, status.body.maxModule, status.body.remainingCents], [true, 25, 0])
+  assert.equal((await call(db, 'subscribe', { consent: true })).body.error, 'already_complete')
+  assert.equal((await call(db, 'unlock-create', { consent: true })).body.error, 'already_complete')
+})
+
+test('only permanent complete origins count as "already complete"; temporary or unknown ones never do', () => {
+  const r = (over) => ({ type: 'purchase', status: 'active', max_module: 25, access_started_at: '2026-09-10T00:00:00Z', access_expires_at: '2027-09-10T00:00:00Z', ...over })
+  assert.equal(ownsCompleteFormation([r({ origin_ref: 'paypal:live:8XK123' })]), true)
+  assert.equal(ownsCompleteFormation([r({ origin_ref: 'conference-pass:live:5TP9' })]), true)
+  assert.equal(ownsCompleteFormation([r({ type: 'admin', origin_ref: 'founder:0b6f3c1e-2a4d-4f5e-9a8b-7c6d5e4f3a2b' })]), true)
+  const annualCode = r({ type: 'legacy_code', origin_ref: 'hmac', access_level: 'full', access_started_at: '2026-08-30T00:00:00Z', access_expires_at: '2027-08-30T00:00:00Z' })
+  assert.equal(ownsCompleteFormation([annualCode]), true)
+  // The historical 597 € purchase has no exception in the code: the founder status covers it.
+  const historical = r({ origin_ref: 'legacy-paypal:9AB12345CD', access_level: 'full', access_started_at: '2026-09-02T10:00:00Z', access_expires_at: '2027-08-14T10:00:00Z' })
+  assert.equal(ownsCompleteFormation([historical, r({ type: 'admin', origin_ref: 'founder:0b6f3c1e-2a4d-4f5e-9a8b-7c6d5e4f3a2b', access_level: 'full' })]), true, 'with the founder status')
+  for (const temp of [r({ origin_ref: 'paypal:sandbox:8XK123' }), r({ origin_ref: 'conference-pass:sandbox:5TP9' }), historical,
+    { ...annualCode, access_level: 'discovery' },
+    r({ origin_ref: 'v2:ab12' }), r({ type: 'admin', origin_ref: 'manual:gift' }), r({ origin_ref: 'promo:x' }), r({ origin_ref: 'paypal:live:discovery:X', max_module: 1 }), r({ type: 'legacy_code', origin_ref: 'hmac', access_expires_at: '2026-10-10T00:00:00Z' }), r({ origin_ref: 'paypal:live:8XK123', status: 'revoked' })]) {
+    assert.equal(ownsCompleteFormation([temp]), false, temp.origin_ref)
+  }
+})
+
+test('former Discoveries stay as sold (30 days); only a Discovery bought once the parcours is open gets its module 1 for good', async () => {
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../lib/paypalSandbox.js', import.meta.url), 'utf8')
+  assert.match(src, /if \(cfg\.product === 'discovery' && pathEnv\(\)\) \{\s*await supabase\.rpc\('mediumia_set_path_entitlement'/)
+  const migration = readFileSync(new URL('../supabase/migrations/20260925120000_formation_parcours_mensuel.sql', import.meta.url), 'utf8')
+  assert.doesNotMatch(migration, /update public\.mediumia_entitlements[^;]*discovery[^;]*where[^;]*paypal:/i, 'no update of existing Discovery rows')
+  assert.match(migration, /case when p_max_module = 1 then 'discovery' else 'full' end/)
 })

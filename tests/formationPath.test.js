@@ -489,3 +489,15 @@ test('the abandoned 397 / 368 / 34 € amounts appear nowhere in the parcours co
   assert.match(migration, /paypal_env = 'sandbox'\s+and step_cents = 3400/, 'the former 34 € rule survives only for Sandbox tests')
   assert.match(migration, /amount_cents between 1 and 56800/)
 })
+
+test('a Découverte refunded mid-parcours: the student keeps going, its 29 € join what is left, 597 € in all', async () => {
+  const { db, pp } = setup({ monthlyPaid: 3 })
+  pp.state.captures['CAP-DISC'].status = 'REFUNDED'
+  const sub = await call(db, 'subscribe', { consent: true })
+  assert.equal(sub.statusCode, 201)
+  const cycles = pp.state.subs[sub.body.id].plan.billing_cycles
+  const planned = cycles[0].total_cycles * 4800 + Math.round(Number(cycles[1].pricing_scheme.fixed_price.value) * 100)
+  assert.equal(3 * 4800 + planned, 59700)
+  const status = await call(db, 'status')
+  assert.deepEqual([status.body.maxModule, status.body.remainingCents], [7, 59700 - 3 * 4800])
+})

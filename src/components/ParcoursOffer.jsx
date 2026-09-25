@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 // (formationPathAction=offer répond 404 tant que le parcours est fermé).
 // Les montants viennent du serveur : 29 € puis 48 €/mois, dernière 40 €, 597 € maximum.
 
-const money = (cents) => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',').replace(',00', '')} €`
+const money = (cents) => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',').replace(',00', '')}\u00a0€`
 
 export default function ParcoursOffer() {
   const [offer, setOffer] = useState(null)

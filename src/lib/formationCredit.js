@@ -39,13 +39,28 @@ export async function fetchFormationCredit(token) {
   return data
 }
 
+// Retour exact sur https://mediumia.fr/formation (adresse autorisée dans Supabase Auth),
+// sans fragment : Supabase y ajoute lui-même la session. Le retour à l'offre se fait ensuite.
+const RETURN_TO_OFFER = 'mediumia_formation_credit_login'
+
 export async function sendFormationLoginLink(email) {
   if (!supabase) throw new Error('login_unavailable')
   const { error } = await supabase.auth.signInWithOtp({
     email: String(email || '').trim().toLowerCase(),
-    options: { emailRedirectTo: `${window.location.origin}/formation#offre`, shouldCreateUser: false },
+    options: { emailRedirectTo: `${window.location.origin}/formation`, shouldCreateUser: false },
   })
   if (error) throw new Error('login_failed')
+  try { window.localStorage.setItem(RETURN_TO_OFFER, '1') } catch { /* optional */ }
+}
+
+export function consumeReturnToOffer() {
+  try {
+    if (window.localStorage.getItem(RETURN_TO_OFFER) !== '1') return false
+    window.localStorage.removeItem(RETURN_TO_OFFER)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function onStudentSessionChange(callback) {

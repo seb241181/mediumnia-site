@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchFormationCredit, onStudentSessionChange, sendFormationLoginLink, setShownFullAmount, studentAccessToken } from '../lib/formationCredit.js'
+import { consumeReturnToOffer, fetchFormationCredit, onStudentSessionChange, sendFormationLoginLink, setShownFullAmount, studentAccessToken } from '../lib/formationCredit.js'
 
 const euros = (value) => `${String(value || '').replace('.00', '').replace('.', ',')} €`
 
@@ -25,6 +25,8 @@ export default function FormationCreditNotice() {
         if (cancelled) return
         setShownFullAmount(credit.displayAmount)
         setState({ status: credit.credited ? 'credited' : 'none', credit })
+        // Back from the login link: bring the buyer to the offer and its price.
+        if (consumeReturnToOffer()) document.getElementById('offre')?.scrollIntoView({ behavior: 'smooth' })
       } catch (error) {
         if (cancelled) return
         setShownFullAmount(null)

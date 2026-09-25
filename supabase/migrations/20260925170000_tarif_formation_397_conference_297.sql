@@ -4,6 +4,9 @@
 -- Migration additive, à appliquer manuellement par le propriétaire (SQL Editor Supabase).
 -- Elle ne modifie aucune migration déjà appliquée et peut être relancée sans effet.
 -- Aucun paiement, aucun accès et aucune inscription ne sont modifiés.
+-- Tout s'applique en une seule transaction : si une instruction échoue, rien n'est modifié.
+
+begin;
 
 -- 1. Conférence : prix normal affiché 397 €, offre participants 297 €.
 do $$
@@ -185,15 +188,21 @@ create unique index if not exists ux_mediumia_order_intents_credit_claim
   on public.mediumia_paypal_order_intents (upgrade_credit_purchase_id)
   where upgrade_credit_claimed_at is not null;
 
+-- Toute contrainte de montant existante (quel que soit son nom) est remplacée.
 do $$
+declare
+  v_name text;
 begin
-  if exists (
-    select 1 from pg_constraint
-    where conrelid = 'public.mediumia_paypal_purchases'::regclass
-      and conname = 'mediumia_paypal_purchases_product_amount_check'
-  ) then
-    alter table public.mediumia_paypal_purchases drop constraint mediumia_paypal_purchases_product_amount_check;
-  end if;
+  for v_name in
+    select c.conname
+    from pg_constraint c
+    where c.conrelid = 'public.mediumia_paypal_purchases'::regclass
+      and c.contype = 'c'
+      and (pg_get_constraintdef(c.oid) like '%amount_cents = 2900%'
+        or c.conname = 'mediumia_paypal_purchases_product_amount_check')
+  loop
+    execute format('alter table public.mediumia_paypal_purchases drop constraint %I', v_name);
+  end loop;
 end;
 $$;
 
@@ -208,6 +217,8 @@ alter table public.mediumia_paypal_purchases
 create unique index if not exists ux_mediumia_purchases_credit_redeemed_by
   on public.mediumia_paypal_purchases (upgrade_credit_redeemed_purchase_id)
   where upgrade_credit_redeemed_purchase_id is not null;
+
+commit;
 
 -- Vérification : doit afficher 397 € / 297 € / 397 €.
 select e.slug,

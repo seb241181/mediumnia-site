@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import LegalFooter from './LegalFooter'
+import FormationCreditNotice from './FormationCreditNotice'
+import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
 
 const NIVEAUX = [
@@ -153,7 +155,7 @@ function FormationCheckout() {
             setStatus('Création sécurisée de la commande…')
             const res = await fetch('/api/rdv-config?paypalAction=create', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...(await formationCheckoutHeaders()) },
               body: JSON.stringify({ termsAccepted: true, immediateAccessAccepted: true }),
             })
             const data = await res.json().catch(() => ({}))
@@ -174,7 +176,7 @@ function FormationCheckout() {
             node.innerHTML = ''
           },
           onCancel: () => setStatus('Paiement annulé. Aucun accès n’a été activé.'),
-          onError: () => setStatus('Le paiement n’a pas pu aboutir. Vous pouvez réessayer sans être débité deux fois.'),
+          onError: (err) => setStatus(/price_changed|discovery_credit_unavailable|session_expired/.test(String(err?.message || '')) ? 'Le montant à régler a changé depuis l’affichage de la page (vérification de votre Découverte). Rechargez la page avant de payer : rien n’a été débité.' : 'Le paiement n’a pas pu aboutir. Vous pouvez réessayer sans être débité deux fois.'),
         }).render(node)
       })
       .catch(() => setStatus('PayPal est momentanément indisponible. Réessayez dans quelques instants.'))
@@ -367,6 +369,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                 <div className="mb-1"><span className="font-georgia text-5xl text-deep font-medium">597 €</span></div>
                 <p className="font-georgia text-mist text-sm italic mb-2">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte</p>
                 <p className="font-georgia text-mist text-xs mb-7">Paiement en plusieurs fois avec PayPal : 4X sans frais, ou 6X, 12X et 24X avec intérêts selon éligibilité.</p>
+                <FormationCreditNotice />
                 <FormationCheckout />
               </div>
             </div>

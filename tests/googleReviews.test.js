@@ -76,3 +76,32 @@ test('Google reviews keep author attribution and never expose more than 5', () =
   assert.match(page, /Laisser un avis sur Google/)
   assert.match(read('lib/customerReviews.js'), /action === 'google'/)
 })
+
+test('Places errors are logged with Google\'s reason, never with the API key', async () => {
+  const { describePlacesError, handleGooglePlaceReviews } = await import('../lib/googlePlaceReviews.js')
+  const fakeKey = 'AIza' + 'SyD-FAKE_key_for_tests_0123456789abcdef'
+  const referrer = describePlacesError(403, { error: { code: 403, status: 'PERMISSION_DENIED', message: `Requests from referer <empty> are blocked. key=${fakeKey}`, details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_HTTP_REFERRER_BLOCKED', metadata: { service: 'places.googleapis.com', consumer: 'projects/123456789' } }] } })
+  assert.deepEqual([referrer.status, referrer.reason, referrer.service, referrer.consumer], ['PERMISSION_DENIED', 'API_KEY_HTTP_REFERRER_BLOCKED', 'places.googleapis.com', 'projects/123456789'])
+  assert.equal(JSON.stringify(referrer).includes(fakeKey), false)
+  assert.equal(describePlacesError(403, null).reason, null, 'a non-JSON body does not break the logging')
+
+  const logs = []
+  const originalError = console.error
+  const originalFetch = globalThis.fetch
+  process.env.GOOGLE_PLACES_API_KEY = fakeKey
+  process.env.GOOGLE_PLACE_ID = 'ChIJtest'
+  console.error = (...args) => logs.push(args.join(' '))
+  globalThis.fetch = async () => new Response(JSON.stringify({ error: { code: 403, status: 'PERMISSION_DENIED', message: 'Places API (New) has not been used in project 123 before or it is disabled.', details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'SERVICE_DISABLED' }] } }), { status: 403 })
+  const res = { code: 0, body: null, status(c) { this.code = c; return this }, json(b) { this.body = b; return this }, setHeader() {} }
+  try {
+    await handleGooglePlaceReviews({}, res)
+  } finally {
+    console.error = originalError
+    globalThis.fetch = originalFetch
+    delete process.env.GOOGLE_PLACES_API_KEY
+    delete process.env.GOOGLE_PLACE_ID
+  }
+  assert.equal(res.body.available, false)
+  assert.match(logs.join('\n'), /Places HTTP 403 .*"reason":"SERVICE_DISABLED"/)
+  assert.equal(logs.join('\n').includes(fakeKey), false, 'the key is never logged')
+})

@@ -25,11 +25,11 @@ test('the conference page shares its own visual and event title', async () => {
   const shell = '<html><head><title>x</title></head><body></body></html>'
   const pages = buildPages(shell, { home: { title: 'H', description: 'h' }, conferences: { title: 'Conférence offerte le 22 octobre', description: 'd' } }, [])
   const conf = pages.find((p) => p.file === 'conferences/index.html').html
-  assert.match(conf, /og:image" content="https:\/\/mediumia\.fr\/images\/conference\/conference-22-octobre-partage\.jpg"/)
+  assert.match(conf, /og:image" content="https:\/\/mediumia\.fr\/images\/conference\/conference-22-octobre-partage-397\.jpg"/)
   assert.match(conf, /og:image:width" content="1200"/)
   assert.match(conf, /og:image:height" content="630"/)
   assert.match(conf, /og:image:alt" content="Conférence offerte MediumIA/)
-  assert.ok(fs.existsSync(new URL('../public/images/conference/conference-22-octobre-partage.jpg', import.meta.url)))
+  assert.ok(fs.existsSync(new URL('../public/images/conference/conference-22-octobre-partage-397.jpg', import.meta.url)))
 })
 
 test('draw rules exclude the organizer household and give a reachable contact', () => {

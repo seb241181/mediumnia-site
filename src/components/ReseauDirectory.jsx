@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { reseauPractitioners } from '../data/reseauPractitioners'
+import PublicPageNav from './PublicPageNav'
 
 const filters = ['Tous', 'Médiumnité', 'Voyance', 'Cartomancie', 'Magnétisme', 'Reiki', 'Soin énergétique', 'Tarot évolutif', 'Hypnose Ericksonienne', 'Constellations familiales', 'Deuil', 'Transitions de vie', 'Burn-out', 'Accompagnement intérieur']
 
@@ -43,16 +44,7 @@ export default function ReseauDirectory({ onBack, onNavigate, onOpenProfile }) {
 
   return (
     <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
-      <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">
-            ✦ MEDIUMIA
-          </button>
-          <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep transition-colors">
-            ← Retour
-          </button>
-        </div>
-      </header>
+      <PublicPageNav current="reseau" onHome={onBack} />
 
       <main>
         <section className="px-6 pt-16 pb-12 max-w-4xl mx-auto text-center">

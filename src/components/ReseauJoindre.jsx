@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import LegalFooter from './LegalFooter'
+import PublicPageNav from './PublicPageNav'
 
 const FORM_INIT = {
   prenom: '', nom: '', nom_pro: '', email: '', telephone: '',
@@ -174,9 +175,7 @@ export default function ReseauJoindre({ onBack, onNavigate }) {
   if (status === 'success') {
     return (
       <div className="cosmic-page cosmic-page--network min-h-screen bg-cream flex flex-col">
-        <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20 px-6 py-4">
-          <button onClick={onBack} className="font-georgia text-sm text-deep font-semibold">✦ MEDIUMIA</button>
-        </header>
+        <PublicPageNav current="reseau" onHome={onBack} />
         <div className="flex-1 flex items-center justify-center px-6 py-24 text-center">
           <div className="max-w-lg">
             <p className="text-gold text-5xl mb-6">✦</p>
@@ -207,12 +206,7 @@ export default function ReseauJoindre({ onBack, onNavigate }) {
 
   return (
     <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
-      <header className="cosmic-page__header sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button onClick={onBack} className="font-georgia text-deep tracking-[0.18em] text-sm font-semibold">✦ MEDIUMIA</button>
-          <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Retour</button>
-        </div>
-      </header>
+      <PublicPageNav current="reseau" onHome={onBack} />
 
       <main className="max-w-3xl mx-auto px-6 pt-16 pb-24">
 

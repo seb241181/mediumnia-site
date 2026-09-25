@@ -4,14 +4,32 @@
  */
 export const boutiqueCategories = [
   { id: 'all', label: 'Tout' },
+  { id: 'formations', label: 'Formations' },
   { id: 'oracles', label: 'Oracles' },
+  { id: 'cadeaux', label: 'Cartes cadeaux' },
   { id: 'livres', label: 'Livres' },
   { id: 'echo-des-fees', label: "L'Écho des Fées" },
-  { id: 'formations', label: 'Formations' },
-  { id: 'cadeaux', label: 'Cartes cadeaux' },
 ]
 
 export const boutiqueProducts = [
+  {
+    // Offre phare : toujours en tête, présentée en grand au-dessus de la grille.
+    id: 'formation-mediumia',
+    name: 'Formation MediumIA',
+    category: 'formations',
+    categoryLabel: 'Formations',
+    eyebrow: 'Offre principale · Parcours en ligne',
+    priceLabel: '597 € TTC',
+    paymentNote: 'Paiement en plusieurs fois disponible avec PayPal selon éligibilité.',
+    summary: "25 modules en 4 niveaux pour développer sa médiumnité — avec un assistant IA dédié et 12 mois d'accès.",
+    description: "Un accompagnement progressif né de douze ans de pratique réelle. Des fondations à la pratique accomplie.",
+    highlights: ["25 modules PDF (269 pages)", "84 exercices guidés", "Assistant IA dédié", "12 mois d'accès"],
+    coverImage: '/images/boutique/formation-mediumia-couverture.webp',
+    artwork: 'formation',
+    spotlight: true,
+    availability: 'available',
+    href: '/formation',
+  },
   {
     id: 'oracle-au-dela-ame',
     name: "Oracle Au-delà de l'Âme",
@@ -43,6 +61,21 @@ export const boutiqueProducts = [
     availability: 'preview',
   },
   {
+    id: 'cartes-cadeaux',
+    name: 'Cartes cadeaux MediumIA',
+    category: 'cadeaux',
+    categoryLabel: 'À offrir',
+    eyebrow: 'Consultation · ChronoSphère · Coffret',
+    priceLabel: 'Dès 9,90 €',
+    summary: "Offrez une consultation, un montant libre, une lecture ChronoSphère ou un coffret. Valable 12 mois.",
+    description: "Une carte à imprimer ou envoyée par e-mail à la date de votre choix.",
+    highlights: ['Montant libre ou consultation', 'ChronoSphère et coffrets', 'Envoi programmé', 'Valable 12 mois'],
+    coverImage: '/images/cartes-cadeaux/cartes-cadeaux-partage.jpg',
+    imageFit: 'contain',
+    artwork: 'formation',
+    availability: 'available',
+    href: '/cartes-cadeaux',
+  },  {
     id: 'le-codex',
     name: "CODEX — Le Livre de l'Arche",
     category: 'livres',
@@ -61,34 +94,8 @@ export const boutiqueProducts = [
     purchaseLabel: 'Voir sur Amazon',
     externalPurchase: true,
   },
-  {
-    id: 'cartes-cadeaux',
-    name: 'Cartes cadeaux MediumIA',
-    category: 'cadeaux',
-    categoryLabel: 'À offrir',
-    eyebrow: 'Consultation · ChronoSphère · Coffret',
-    priceLabel: 'Dès 9,90 €',
-    summary: "Offrez une consultation, un montant libre, une lecture ChronoSphère ou un coffret. Valable 12 mois.",
-    description: "Une carte à imprimer ou envoyée par e-mail à la date de votre choix.",
-    highlights: ['Montant libre ou consultation', 'ChronoSphère et coffrets', 'Envoi programmé', 'Valable 12 mois'],
-    artwork: 'formation',
-    availability: 'available',
-    href: '/cartes-cadeaux',
-  },
-  {
-    id: 'formation-mediumia',
-    name: 'Accompagnement MediumIA',
-    category: 'formations',
-    categoryLabel: 'Formations',
-    eyebrow: 'Parcours en ligne',
-    priceLabel: '597 €',
-    summary: "25 modules en 4 niveaux pour développer sa médiumnité — avec un assistant IA dédié et 12 mois d'accès.",
-    description: "Un accompagnement progressif né de douze ans de pratique réelle. Des fondations à la pratique accomplie.",
-    highlights: ["25 modules PDF (269 pages)", "84 exercices guidés", "Assistant IA dédié", "12 mois d'accès"],
-    coverImage: '/images/brand/MEDIUMIA_logo_maitre_2026-08-16.png',
-    artwork: 'formation',
-    availability: 'preview',
-  },
+
+
   {
     id: 'echo-des-fees-objet',
     publicVisible: false,

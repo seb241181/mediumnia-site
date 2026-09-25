@@ -16,6 +16,7 @@ function replaceRequired(source, before, after, label) {
 }
 
 let app = await readFile(appPath, 'utf8')
+// Navigation links (real <a href>) now live in src/components/SiteNav.jsx.
 const hasCosmicLibraryHero = app.includes("import CosmicLibraryHero from './components/CosmicLibraryHero'")
 
 if (!hasCosmicLibraryHero) {
@@ -34,26 +35,8 @@ if (!hasCosmicLibraryHero) {
   )
 }
 
-app = replaceRequired(
-  app,
-  `          <button onClick={onOpenFormation} className="hover:text-gold transition-colors">Se former</button>`,
-  `          <a href="/formation" onClick={(event) => { event.preventDefault(); onOpenFormation() }} className="hover:text-gold transition-colors">Se former</a>`,
-  'formation nav link',
-)
 
-app = replaceRequired(
-  app,
-  `          <button onClick={onOpenConferences} className="hover:text-gold transition-colors">Conférences</button>`,
-  `          <a href="/conferences" onClick={(event) => { event.preventDefault(); onOpenConferences() }} className="hover:text-gold transition-colors">Conférences</a>`,
-  'conference nav link',
-)
 
-app = replaceRequired(
-  app,
-  `          <button onClick={onOpenReseauDir} className="hover:text-gold transition-colors">Trouver un praticien</button>`,
-  `          <a href="/reseau" onClick={(event) => { event.preventDefault(); onOpenReseauDir() }} className="hover:text-gold transition-colors">Trouver un praticien</a>`,
-  'network nav link',
-)
 
 if (!hasCosmicLibraryHero) {
   app = replaceRequired(

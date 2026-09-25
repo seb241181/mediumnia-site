@@ -1,0 +1,18 @@
+/* Accueil simplifié : hero sans tuiles, centré, un peu moins haut, pour que la
+   Formation apparaisse dès le premier défilement. */
+.cosmic-library--simple {
+  min-height: max(640px, 86svh);
+}
+.cosmic-library--simple .cosmic-library__content {
+  justify-content: center;
+  padding-bottom: clamp(2.5rem, 7vh, 4.5rem);
+}
+@media (max-width: 760px) {
+  .cosmic-library--simple,
+  .cosmic-library--simple .cosmic-library__content {
+    min-height: max(600px, 88svh);
+  }
+  .cosmic-library--simple .cosmic-library__content {
+    padding-bottom: 2.5rem;
+  }
+}

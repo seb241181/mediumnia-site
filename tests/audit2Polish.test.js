@@ -19,10 +19,14 @@ test('homepage has one clear H1 and commercial navigation uses real links', asyn
     readFile(cosmicHeroPath, 'utf8'),
   ])
   assert.match(cosmicHero, /<h1 id="cosmic-home-title">[\s\S]*COSMIC_HOME_CONFIG\.title/)
-  assert.match(cosmicHero, /Découvrir l'accompagnement/)
-  assert.match(app, /href="\/formation"[\s\S]*>Se former<\/a>/)
-  assert.match(app, /href="\/conferences"[\s\S]*>Conférences<\/a>/)
-  assert.match(app, /href="\/reseau"[\s\S]*>Trouver un praticien<\/a>/)
+  assert.match(cosmicHero, /Découvrir la Formation · 597 €/)
+  // The navigation (real links) lives in SiteNav, used by the home page.
+  const siteNav = await readFile(new URL('../src/components/SiteNav.jsx', import.meta.url), 'utf8')
+  assert.match(app, /<SiteNav current="home"/)
+  assert.match(siteNav, /label: 'Se former', href: '\/formation'/)
+  assert.match(siteNav, /label: 'Conférences', href: '\/conferences'/)
+  assert.match(siteNav, /label: 'Trouver un praticien', href: '\/reseau'/)
+  assert.match(siteNav, /<a\n\s+key=\{item\.id\}\n\s+href=\{item\.href\}/)
 })
 
 test('homepage prioritizes the hero image and defers heavy below-fold imagery', async () => {

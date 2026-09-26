@@ -17,6 +17,7 @@ import { handleCustomerReviews } from '../lib/customerReviews.js'
 import { handleGiftCards } from '../lib/giftCards.js'
 import { handleFormationPath } from '../lib/formationPath.js'
 import { handleDefi } from '../lib/defiIntuitionServer.js'
+import { handleCspReport } from '../lib/cspReport.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -31,6 +32,9 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
+
+  // Rapports CSP (en-tête Content-Security-Policy-Report-Only, vercel.json)
+  if (req.query?.cspReport) return handleCspReport(req, res)
 
   const rdvBalanceAction = req.query?.rdvBalanceAction
   if (rdvBalanceAction === 'cron') {

@@ -1,3 +1,5 @@
+import { handleConferencePassPayPal } from '../lib/conferencePassPayPal.js'
+/* global process */
 /**
  * GET /api/rdv-config?practitioner=<slug>
  *
@@ -30,7 +32,35 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 })
 
 export default async function handler(req, res) {
+  if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res, req.query.conferencePassAction)
   res.setHeader('Cache-Control', 'no-store')
+
+  // TEMPORAIRE (test Sandbox S2) — à retirer juste après usage. Préversion de la
+  // branche feat/parcours-597 uniquement ; refusé partout ailleurs, dont la production.
+  // Aucun paramètre utilisateur : lien de connexion pour le compte du dernier achat
+  // Découverte Sandbox provisionné, refusé si ce compte a le moindre achat réel.
+  // Ne journalise rien et ne modifie aucune donnée métier.
+  if (req.query?.previewTestLoginAction === 'magic-link') {
+    if (process.env.VERCEL_ENV !== 'preview' || process.env.VERCEL_GIT_COMMIT_REF !== 'feat/parcours-597' || !process.env.VERCEL_BRANCH_URL) {
+      return res.status(404).json({ error: 'not_found' })
+    }
+    if (req.method !== 'GET') return res.status(405).json({ error: 'method_not_allowed' })
+    if (!isSupabaseConfigured()) return res.status(503).json({ error: 'supabase_unavailable' })
+    const supabase = getSupabaseAdmin()
+    const { data: purchase, error: purchaseError } = await supabase.from('mediumia_paypal_purchases')
+      .select('user_id').eq('paypal_env', 'sandbox').eq('product_code', 'discovery').eq('status', 'provisioned')
+      .not('user_id', 'is', null).order('provisioned_at', { ascending: false }).limit(1).maybeSingle()
+    if (purchaseError || !purchase?.user_id) return res.status(404).json({ error: 'no_sandbox_discovery' })
+    const { data: live, error: liveError } = await supabase.from('mediumia_paypal_purchases')
+      .select('paypal_order_id').eq('user_id', purchase.user_id).eq('paypal_env', 'live').limit(1)
+    if (liveError || live?.length) return res.status(403).json({ error: 'not_a_test_account' })
+    const { data: account, error: accountError } = await supabase.auth.admin.getUserById(purchase.user_id)
+    if (accountError || !account?.user?.email) return res.status(404).json({ error: 'account_not_found' })
+    const redirectTo = `https://${process.env.VERCEL_BRANCH_URL}/formation/parcours`
+    const { data: link, error: linkError } = await supabase.auth.admin.generateLink({ type: 'magiclink', email: account.user.email, options: { redirectTo } })
+    if (linkError || !link?.properties?.action_link) return res.status(502).json({ error: 'magic_link_failed' })
+    return res.status(200).json({ action_link: link.properties.action_link, redirect_to: redirectTo })
+  }
 
   const rdvBalanceAction = req.query?.rdvBalanceAction
   if (rdvBalanceAction === 'cron') {

@@ -47,7 +47,7 @@ const escapeAttr = (value) => String(value).replace(/&/g, '&amp;').replace(/"/g,
 const escapeText = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const absolute = (url) => (/^https?:\/\//.test(url) ? url : `${SITE}${url.startsWith('/') ? '' : '/'}${url}`)
 
-export function withMeta(html, { title, description, url, image = DEFAULT_IMAGE, imageWidth, imageHeight, imageAlt }) {
+export function withMeta(html, { title, description, url, image = DEFAULT_IMAGE, imageWidth, imageHeight, imageAlt, robots }) {
   const setMeta = (source, attr, key, content) => {
     const re = new RegExp(`<meta ${attr}="${key}" content="[^"]*"\\s*/?>`)
     const tag = `<meta ${attr}="${key}" content="${escapeAttr(content)}" />`
@@ -67,11 +67,32 @@ export function withMeta(html, { title, description, url, image = DEFAULT_IMAGE,
     out = setMeta(out, 'property', 'og:image:height', imageHeight)
   }
   if (imageAlt) out = setMeta(out, 'property', 'og:image:alt', imageAlt)
+  if (robots) out = setMeta(out, 'name', 'robots', robots)
   const canonical = `<link rel="canonical" href="${escapeAttr(url)}" />`
   out = /<link rel="canonical"[^>]*>/.test(out)
     ? out.replace(/<link rel="canonical"[^>]*>/, canonical)
     : out.replace('</head>', `    ${canonical}\n  </head>`)
   return out
+}
+
+// Pages sans entrée ROUTE_META : sans elles, leur HTML reprenait le titre et
+// l'URL canonique de l'accueil (Google les voyait comme des copies de l'accueil).
+// Les pages privées (compte, agenda) sont en noindex dès le HTML statique.
+export const STATIC_PAGES = [
+  { path: '/mentions', title: 'Mentions légales — MediumIA', description: 'Mentions légales du site MediumIA : éditeur, hébergement, propriété intellectuelle et contact.' },
+  { path: '/confidentialite', title: 'Politique de confidentialité — MediumIA', description: 'Comment MediumIA collecte, utilise et protège vos données personnelles, et comment exercer vos droits.' },
+  { path: '/cgv-oracle', title: 'Conditions générales de vente — Oracle | MediumIA', description: 'Conditions générales de vente de l’Oracle Au-delà de l’Âme et des tirages MediumIA.' },
+  { path: '/cgv-chronosphere', title: 'Conditions générales de vente — ChronoSphère | MediumIA', description: 'Conditions générales de vente des lectures ChronoSphère 999 et ChronoSphère MAX.' },
+  { path: '/retractation', title: 'Droit de rétractation — MediumIA', description: 'Exercer votre droit de rétractation auprès de MediumIA : délais, conditions et formulaire en ligne.' },
+  { path: '/formation/parcours', title: 'Mon parcours Formation — MediumIA', description: 'Suivez et gérez votre parcours progressif de la Formation MediumIA.', robots: 'noindex,nofollow' },
+  { path: '/rdv', title: 'Agenda — MediumIA', description: 'Espace de gestion des rendez-vous MediumIA.', robots: 'noindex,nofollow' },
+]
+
+export function buildStaticPages(shell) {
+  return STATIC_PAGES.map(({ path: routePath, ...meta }) => ({
+    file: `${routePath.slice(1)}/index.html`,
+    html: withMeta(shell, { ...meta, url: SITE + routePath }),
+  }))
 }
 
 export function buildPages(shell, routeMeta, practitioners) {
@@ -100,7 +121,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const shell = fs.readFileSync(path.join(dist, 'index.html'), 'utf8')
   const routeMeta = readRouteMeta(fs.readFileSync(path.join(root, 'src/App.jsx'), 'utf8'))
   const { reseauPractitioners } = await import(pathToFileURL(path.join(root, 'src/data/reseauPractitioners.js')).href)
-  const pages = buildPages(shell, routeMeta, reseauPractitioners)
+  const pages = [...buildPages(shell, routeMeta, reseauPractitioners), ...buildStaticPages(shell)]
   for (const { file, html } of pages) {
     const target = path.join(dist, file)
     fs.mkdirSync(path.dirname(target), { recursive: true })

@@ -41,7 +41,7 @@ test('home hero has no dock anymore and offers booking directly', () => {
 test('floating account button stays compact on phones', () => {
   const account = read('src/components/GlobalAccount.jsx')
   assert.match(account, /<span className="hidden sm:inline">/)
-  assert.match(read('src/index.css'), /#root::after \{ content: ''; display: block; height: 84px; \}/)
+  assert.match(read('src/index.css'), /#root:not\(:empty\)::after \{ content: ''; display: block; height: 84px; \}/)
 })
 
 test('booking flow helps on mobile and after confirmation', () => {

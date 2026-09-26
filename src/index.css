@@ -127,3 +127,13 @@ input[type='radio']:not(.sr-only) {
   width: 22px;
   height: 22px;
 }
+
+/* Or lisible pour les petits textes (9 à 14 px) sur fond clair : l'or de
+   marque #C9A84C n'atteint que 2,3:1 de contraste sur fond clair, l'or foncé
+   du site #9b640b 4,97:1 (WCAG AA). Les grands titres dorés ne changent pas.
+   Jamais sur fond sombre (bleu nuit), où l'or clair reste le bon choix :
+   ces blocs sont exclus par leur classe, ou marqués « on-dark » quand leur
+   fond vient d'un style en ligne. */
+:is(.text-gold, .text-gold\/80, .text-gold\/90):is(.text-\[9px\], .text-\[10px\], .text-\[11px\], .text-xs, .text-sm):not(:is(.bg-deep, .bg-deep\/90, .bg-deep\/65, .bg-deep\/60, .bg-deep\/55, .bg-deep\/50, .bg-\[\#1a1535\], .bg-\[\#101938\]\/75, .from-deep, .on-dark) *):not(:is(.bg-deep, .bg-deep\/90, .bg-\[\#1a1535\], .on-dark)) {
+  color: #9b640b;
+}

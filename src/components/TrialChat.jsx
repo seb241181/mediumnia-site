@@ -84,7 +84,7 @@ export default function TrialChat() {
 
   return (
     <div className="border-2 border-gold/30 rounded-2xl overflow-hidden bg-white/70">
-      <div className="px-5 py-4 border-b border-gold/20 flex items-center gap-3" style={{ background: 'linear-gradient(135deg,#1A1535,#292443)' }}>
+      <div className="on-dark px-5 py-4 border-b border-gold/20 flex items-center gap-3" style={{ background: 'linear-gradient(135deg,#1A1535,#292443)' }}>
         <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-7 w-auto opacity-90" />
         <div className="flex-1">
           <p className="font-georgia text-cream text-sm font-medium">MediumIA</p>

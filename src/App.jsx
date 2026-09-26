@@ -44,7 +44,7 @@ function FeaturedAccompagnement({ onOpen }) {
   ]
   return (
     <article
-      className="cosmic-card-lift rounded-3xl border border-gold/25 p-8 md:p-12 shadow-lg flex flex-col md:flex-row md:items-center gap-8 md:gap-12"
+      className="on-dark cosmic-card-lift rounded-3xl border border-gold/25 p-8 md:p-12 shadow-lg flex flex-col md:flex-row md:items-center gap-8 md:gap-12"
       style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
     >
       <div className="flex-1 min-w-0">

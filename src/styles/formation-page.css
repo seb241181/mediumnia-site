@@ -25,3 +25,36 @@
 @media (min-width: 1360px) {
   .formation-main [id] { scroll-margin-top: 110px; }
 }
+
+/* Blocs dépliables : « + » fermé, « − » ouvert (jamais « × »). La règle ne vise
+   que le résumé du bloc lui-même : ouvrir un bloc parent ne change pas
+   l'indicateur (ou le libellé) des blocs internes encore fermés. */
+.details-mark__open { display: none; }
+details[open] > summary .details-mark__open { display: inline; }
+details[open] > summary .details-mark__closed { display: none; }
+
+/* Cases de consentement (CGV, fourniture immédiate) : case visible de 24 px,
+   ligne cliquable d'au moins 44 px de haut, case alignée sur la première ligne. */
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.5rem 0.5rem;
+  margin: 0 -0.5rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+.consent-row:hover { background: rgba(201, 168, 76, 0.07); }
+.consent-check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: #1a1535;
+  cursor: pointer;
+}
+.consent-check:focus-visible {
+  outline: 2px solid #c9a84c;
+  outline-offset: 3px;
+}

@@ -50,6 +50,18 @@ const POUR_QUI = [
   "Vous cherchez l'autonomie, pas la dépendance à un enseignant.",
 ]
 
+// Indicateur des blocs dépliables : « + » fermé, « − » ouvert (jamais « × »).
+// Piloté par details[open] > summary (formation-page.css) : un bloc parent ouvert
+// ne change pas l'indicateur des blocs internes encore fermés.
+function DetailsMark({ className = '' }) {
+  return (
+    <span className={`details-mark shrink-0 w-5 text-center ${className}`} aria-hidden="true">
+      <span className="details-mark__closed">+</span>
+      <span className="details-mark__open">−</span>
+    </span>
+  )
+}
+
 function NiveauxAccordion() {
   const [open, setOpen] = useState(null)
   return (
@@ -62,7 +74,7 @@ function NiveauxAccordion() {
               <p className="font-georgia text-deep font-medium">{n.titre}</p>
               <p className="font-georgia text-mist text-xs mt-0.5">{n.modules}</p>
             </div>
-            <span className="text-gold/60 text-xl shrink-0 transition-transform duration-300 select-none" style={{ transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
+            <span className="text-gold/60 text-xl shrink-0 select-none w-4 text-center" aria-hidden="true">{open === i ? '−' : '+'}</span>
           </div>
           {open === i && (
             <div className="px-6 pb-5 border-t border-gold/10">
@@ -85,7 +97,7 @@ function FAQAccordion() {
         <div key={i} className="border-2 border-gold/20 rounded-xl overflow-hidden bg-white/50 hover:border-gold/40 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
           <div className="flex items-center gap-5 px-6 py-5">
             <div className="flex-1 font-georgia text-deep font-medium text-base">{item.q}</div>
-            <span className="text-gold/60 text-xl shrink-0 transition-transform duration-300 select-none" style={{ transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
+            <span className="text-gold/60 text-xl shrink-0 select-none w-4 text-center" aria-hidden="true">{open === i ? '−' : '+'}</span>
           </div>
           {open === i && (
             <div className="px-6 pb-5 border-t border-gold/10">
@@ -261,14 +273,14 @@ function FormationCheckout() {
 
       {!success && (
         <div className="space-y-4 text-left mb-5">
-          <label className="flex gap-3 items-start cursor-pointer">
-            <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-1 h-4 w-4" />
+          <label className="consent-row">
+            <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="consent-check" />
             <span className="font-georgia text-sm text-mist leading-relaxed">
               J’ai lu et j’accepte les <a href="/cgv-formation.html" target="_blank" rel="noopener noreferrer" className="text-gold underline">conditions générales de vente de l’accompagnement MediumIA</a>.
             </span>
           </label>
-          <label className="flex gap-3 items-start cursor-pointer">
-            <input type="checkbox" checked={immediateAccessAccepted} onChange={(e) => setImmediateAccessAccepted(e.target.checked)} className="mt-1 h-4 w-4" />
+          <label className="consent-row">
+            <input type="checkbox" checked={immediateAccessAccepted} onChange={(e) => setImmediateAccessAccepted(e.target.checked)} className="consent-check" />
             <span className="font-georgia text-sm text-mist leading-relaxed">
               Je demande la fourniture immédiate des contenus numériques et reconnais qu’après le début de leur exécution, je perds mon droit de rétractation pour ces contenus numériques.
             </span>
@@ -372,7 +384,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               <details className="group mb-5 rounded-xl border border-gold/20 bg-cream/60">
                 <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 font-georgia text-sm font-bold text-deep [&::-webkit-details-marker]:hidden">
                   <span className="flex-1">Voir ce que contient la Découverte</span>
-                  <span className="text-gold text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                  <DetailsMark className="text-gold text-xl" />
                 </summary>
                 <ul className="border-t border-gold/15 px-4 py-4 font-georgia text-sm text-deep/85 space-y-2">
                   {['Introduction complète','Module 1 — L’Intention comme Porte','Exercices du Module 1','Carnet de pratique intégré','MediumIA pendant 30 jours','PDF Découverte personnel'].map((item) => (
@@ -393,7 +405,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                   <p className="font-georgia text-lg font-bold text-deep">Tout débloquer maintenant · 597 € TTC</p>
                   <p className="font-georgia text-xs text-mist mt-1">Carte bancaire ou PayPal · ouvrez pour afficher le paiement.</p>
                 </div>
-                <span className="text-gold/70 text-2xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                <DetailsMark className="text-gold/70 text-2xl" />
               </summary>
               <div className="border-t border-gold/15 px-6 py-6 md:px-8">
                 <ul className="font-georgia text-sm text-deep space-y-2 mb-7">
@@ -427,7 +439,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               <p className="font-georgia text-lg md:text-xl font-bold text-deep">Programme · 25 modules en 4 niveaux</p>
               <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour voir le contenu, les 84 exercices et le détail des niveaux.</p>
             </div>
-            <span className="text-gold/70 text-2xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+            <DetailsMark className="text-gold/70 text-2xl" />
           </summary>
           <div className="px-6 py-16">
 <div className="max-w-3xl mx-auto">
@@ -442,7 +454,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                   <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 font-georgia text-deep font-medium [&::-webkit-details-marker]:hidden">
                     <span className="text-gold text-lg shrink-0" aria-hidden="true">{item.icon}</span>
                     <span className="flex-1">{item.titre}</span>
-                    <span className="text-gold/70 text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                    <DetailsMark className="text-gold/70 text-xl" />
                   </summary>
                   <p className="px-5 pb-5 pl-14 font-georgia text-sm text-mist leading-relaxed">{item.texte}</p>
                 </details>
@@ -466,7 +478,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               <p className="font-georgia text-lg md:text-xl font-bold text-deep">Aperçu réel · Module 1</p>
               <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour lire un extrait de la pédagogie MediumIA.</p>
             </div>
-            <span className="text-gold/70 text-2xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+            <DetailsMark className="text-gold/70 text-2xl" />
           </summary>
           <div className="px-6 py-16 md:py-20">
 <div className="max-w-4xl mx-auto">
@@ -521,7 +533,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               <p className="font-georgia text-lg md:text-xl font-bold text-deep">Tester MediumIA gratuitement</p>
               <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour essayer l’assistant et découvrir les exercices offerts.</p>
             </div>
-            <span className="text-gold/70 text-2xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+            <DetailsMark className="text-gold/70 text-2xl" />
           </summary>
           <div className="pt-2">
 {/* ── Essayer gratuitement : l'assistant et 3 exercices par e-mail ── */}
@@ -553,7 +565,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               <p className="font-georgia text-lg md:text-xl font-bold text-deep">Sébastien & l’approche MediumIA</p>
               <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour découvrir le formateur et ce qui rend la méthode différente.</p>
             </div>
-            <span className="text-gold/70 text-2xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+            <DetailsMark className="text-gold/70 text-2xl" />
           </summary>
           <div className="px-6 py-16">
 <div className="max-w-5xl mx-auto">
@@ -564,7 +576,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                 <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
                 <p>Ce parcours a été construit à partir de cette pratique réelle, quotidienne : des milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles. <strong className="text-deep">MediumIA n'est pas un parcours théorique. C'est une transmission.</strong></p>
                 <details className="group">
-                  <summary className="cursor-pointer list-none font-georgia text-sm font-bold text-gold [&::-webkit-details-marker]:hidden"><span className="group-open:hidden">Lire la suite →</span><span className="hidden group-open:inline">Réduire ↑</span></summary>
+                  <summary className="cursor-pointer list-none font-georgia text-sm font-bold text-gold [&::-webkit-details-marker]:hidden"><span className="details-mark__closed">Lire la suite →</span><span className="details-mark__open">Réduire ↑</span></summary>
                   <div className="space-y-4 pt-4">
                     <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
                     <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies. Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer.</p>
@@ -582,7 +594,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                     <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 font-georgia text-deep font-medium [&::-webkit-details-marker]:hidden">
                       <span className="text-gold shrink-0" aria-hidden="true">✦</span>
                       <span className="flex-1">{p.titre}</span>
-                      <span className="text-gold/70 text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                      <DetailsMark className="text-gold/70 text-xl" />
                     </summary>
                     <p className="px-5 pb-5 pl-12 font-georgia text-sm text-mist leading-relaxed">{p.texte}</p>
                   </details>
@@ -602,7 +614,7 @@ export default function FormationPage({ onBack, onNavigate }) {
               <p className="font-georgia text-lg md:text-xl font-bold text-deep">Questions fréquentes</p>
               <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir les réponses sur l’accès, la durée, le paiement et le fonctionnement.</p>
             </div>
-            <span className="text-gold/70 text-2xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+            <DetailsMark className="text-gold/70 text-2xl" />
           </summary>
           <div className="px-6 pb-16 max-w-3xl mx-auto">
 <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Questions fréquentes</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">FAQ</h2></div>

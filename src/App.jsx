@@ -28,12 +28,14 @@ import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
 import DiscoverSection from './components/DiscoverSection'
 import PractitionersBand from './components/PractitionersBand'
+import { money, useParcoursOffer } from './lib/parcoursOffer.js'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir, onOpenConferences }) {
   return <SiteNav current="home" onOpenFormation={onOpenFormation} onOpenConferences={onOpenConferences} onOpenReseauDir={onOpenReseauDir} />
 }
 
 function FeaturedAccompagnement({ onOpen }) {
+  const offer = useParcoursOffer()
   const features = [
     { icon: '◇', label: '25 modules PDF', sub: '4 niveaux · 269 pages' },
     { icon: '◌', label: '84 exercices guidés', sub: 'Progressifs et pratiques' },
@@ -55,14 +57,28 @@ function FeaturedAccompagnement({ onOpen }) {
           25 modules en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès.
           Une transmission née de plus de douze ans de pratique réelle.
         </p>
-        <p className="font-georgia text-cream text-3xl font-medium mb-1">597 € TTC</p>
-        <p className="font-georgia text-cream/60 text-sm mb-7">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
+        {offer ? (
+          <div className="mb-7 rounded-2xl border border-gold/30 bg-white/[0.06] p-5 max-w-xl">
+            <p className="font-georgia text-gold tracking-[0.18em] text-[10px] uppercase mb-2">Paiement progressif</p>
+            <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+              <p className="font-georgia text-cream text-4xl font-medium">{money(offer.discoveryCents)}</p>
+              <p className="font-georgia text-cream/75 text-sm pb-1">pour commencer</p>
+            </div>
+            <p className="font-georgia text-cream/75 text-sm mt-2">puis {offer.regularCount} × {money(offer.stepCents)} · dernière étape {money(offer.finalCents)}</p>
+            <p className="font-georgia text-cream/55 text-xs mt-2">Total maximum {money(offer.capCents)} · arrêt et reprise possibles · ou {money(offer.capCents)} en une fois</p>
+          </div>
+        ) : (
+          <>
+            <p className="font-georgia text-cream text-3xl font-medium mb-1">597 € TTC</p>
+            <p className="font-georgia text-cream/60 text-sm mb-7">Paiement sécurisé par carte bancaire ou PayPal.</p>
+          </>
+        )}
         <a
           href="/formation"
           onClick={(event) => { event.preventDefault(); onOpen() }}
           className="inline-block font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold text-base hover:bg-gold/90 transition-colors"
         >
-          Découvrir la formation →
+          Voir la formation et les paiements →
         </a>
       </div>
       <div className="shrink-0 md:w-72">

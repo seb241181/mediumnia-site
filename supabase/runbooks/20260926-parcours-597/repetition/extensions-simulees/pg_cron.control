@@ -1,0 +1,4 @@
+comment = 'stand-in pg_cron (Supabase)'
+default_version = '1.0'
+relocatable = false
+schema = cron

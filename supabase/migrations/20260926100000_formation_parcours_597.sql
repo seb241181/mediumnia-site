@@ -1,11 +1,19 @@
--- Parcours MediumIA au mois (étape 1) : registre des paiements encaissés,
--- abonnements PayPal, plans PayPal, et accès progressif (module maximum 1 à 25).
+-- Parcours MediumIA au mois, modèle définitif 597 € TTC :
+--   Découverte 29 € → 11 × 48 € (2 modules à chaque fois) → dernière mensualité 40 €
+--   = 597 €, le prix de la Formation complète, jamais plus.
 --
--- Migration préparée, à appliquer manuellement par le propriétaire (SQL Editor Supabase).
+-- Remplace l'ancienne 20260925120000 (modèle 34 €), jamais appliquée et archivée
+-- dans supabase/archive/ : crée les mêmes tables, colonnes, index, droits et
+-- fonction, avec les règles 597 €. Si ces tables existaient déjà (cas imprévu),
+-- seules les règles de montant sont remplacées.
+-- Idempotente : peut être relancée sans effet de bord. Tout ou rien (transaction).
+-- Aucun paiement enregistré n'est modifié ni supprimé.
+--
+-- Migration préparée, à appliquer manuellement par le propriétaire (SQL Editor
+-- Supabase), après le runbook supabase/runbooks/20260926-parcours-597/.
 -- Accès serveur uniquement (clé service_role) : RLS activée sans aucune policy.
--- Aucune donnée existante n'est modifiée, hormis la copie des achats déjà
--- provisionnés (Découverte, complet) dans le registre, pour que les 29 € déjà
--- payés comptent dans le plafond de 397 €.
+
+begin;
 
 -- 1. Registre des paiements encaissés pour la formation (source de vérité du plafond).
 create table if not exists public.mediumia_formation_payments (
@@ -29,15 +37,16 @@ create table if not exists public.mediumia_formation_payments (
 create index if not exists mediumia_formation_payments_user_idx
   on public.mediumia_formation_payments (user_id, paypal_env);
 
--- 2. Abonnements mensuels (un palier à 34 € répété, puis l'échéance finale).
+-- 2. Abonnements mensuels (48 € répétés, puis la dernière mensualité).
+--    Les règles de montant sont posées au point 5.
 create table if not exists public.mediumia_formation_subscriptions (
   paypal_subscription_id text primary key,
   user_id uuid not null references auth.users(id) on delete restrict,
   paypal_env text not null check (paypal_env in ('sandbox', 'live')),
   paypal_plan_id text not null,
-  regular_count integer not null check (regular_count between 1 and 11),
-  step_cents integer not null check (step_cents = 3400),
-  final_cents integer not null check (final_cents between 1 and 3400),
+  regular_count integer not null,
+  step_cents integer not null,
+  final_cents integer not null,
   status text not null default 'approval_pending'
     check (status in ('approval_pending', 'active', 'suspended', 'cancelled', 'expired', 'completed')),
   terms_version text not null,
@@ -53,12 +62,12 @@ create unique index if not exists mediumia_formation_subscriptions_one_live
   on public.mediumia_formation_subscriptions (user_id, paypal_env)
   where status in ('approval_pending', 'active');
 
--- 3. Paiement « Tout débloquer » / échéance finale unique (commande PayPal).
+-- 3. Paiement « Tout débloquer » / dernière mensualité en une fois (commande PayPal).
 create table if not exists public.mediumia_formation_unlock_orders (
   paypal_order_id text primary key,
   user_id uuid not null references auth.users(id) on delete restrict,
   paypal_env text not null check (paypal_env in ('sandbox', 'live')),
-  amount_cents integer not null check (amount_cents between 1 and 36800),
+  amount_cents integer not null,
   status text not null default 'created' check (status in ('created', 'captured', 'refused')),
   terms_version text not null,
   terms_accepted_at timestamptz not null,
@@ -66,7 +75,7 @@ create table if not exists public.mediumia_formation_unlock_orders (
   captured_at timestamptz
 );
 
--- 4. Plans PayPal créés automatiquement (un par environnement).
+-- 4. Plans PayPal créés automatiquement (un par environnement et par modèle).
 create table if not exists public.mediumia_paypal_plans (
   paypal_env text not null check (paypal_env in ('sandbox', 'live')),
   code text not null,
@@ -85,7 +94,50 @@ revoke all on table public.mediumia_formation_subscriptions from public, anon, a
 revoke all on table public.mediumia_formation_unlock_orders from public, anon, authenticated;
 revoke all on table public.mediumia_paypal_plans from public, anon, authenticated;
 
--- 5. Les achats déjà provisionnés comptent dans le parcours (idempotent).
+-- 5. Règles de montant 597 €. Les anciennes règles (34 €, 368 €), quel que soit
+--    leur nom, sont retirées d'après leur définition, puis remplacées.
+do $$
+declare
+  r record;
+begin
+  for r in
+    select c.conname, c.conrelid::regclass as tbl
+    from pg_constraint c
+    where c.contype = 'c'
+      and (
+        (c.conrelid = 'public.mediumia_formation_subscriptions'::regclass
+          and pg_get_constraintdef(c.oid) ~ '(step_cents|final_cents|regular_count)')
+        or (c.conrelid = 'public.mediumia_formation_unlock_orders'::regclass
+          and pg_get_constraintdef(c.oid) ~ 'amount_cents')
+      )
+  loop
+    execute format('alter table %s drop constraint %I', r.tbl, r.conname);
+  end loop;
+end
+$$;
+
+-- Au plus 11 × 48 € puis une dernière mensualité de 48 € au plus, et jamais plus
+-- de 568 € prélevés par un abonnement (597 € − la Découverte). Seule exception :
+-- d'éventuels essais Sandbox de l'ancien modèle 34 € (argent fictif), conservés tels quels.
+alter table public.mediumia_formation_subscriptions
+  add constraint mediumia_formation_subscriptions_amounts_597_check check (
+    (step_cents = 4800
+      and regular_count between 1 and 11
+      and final_cents between 1 and 4800
+      and regular_count * step_cents + final_cents <= 56800)
+    or (paypal_env = 'sandbox'
+      and step_cents = 3400
+      and regular_count between 1 and 11
+      and final_cents between 1 and 3400)
+  );
+
+-- « Tout débloquer » : au plus 568 € (597 € − la Découverte).
+alter table public.mediumia_formation_unlock_orders
+  add constraint mediumia_formation_unlock_orders_amount_597_check check (amount_cents between 1 and 56800);
+
+-- 6. Les achats déjà provisionnés comptent dans le parcours (idempotent).
+--    Achat complet live à 568 € (crédit Découverte) : valeur 568 €, et la
+--    Découverte 29 € déjà enregistrée complète les 597 €.
 insert into public.mediumia_formation_payments (user_id, paypal_env, kind, amount_cents, value_cents, paypal_ref, paid_at)
 select p.user_id,
        p.paypal_env,
@@ -103,8 +155,8 @@ where p.status = 'provisioned'
   and p.product_code in ('discovery', 'full')
 on conflict (paypal_ref) do nothing;
 
--- 6. Accès progressif : un accès « full » peut désormais couvrir 1 à 25 modules
--- (le parcours au mois monte de 2 en 2). Découverte inchangée (module 1).
+-- 7. Accès progressif : un accès « full » peut couvrir 1 à 25 modules (le
+--    parcours monte de 2 en 2). Découverte inchangée (module 1).
 alter table public.mediumia_entitlements drop constraint if exists mediumia_entitlements_level_scope_check;
 alter table public.mediumia_entitlements add constraint mediumia_entitlements_level_scope_check
   check ((access_level = 'discovery' and max_module = 1) or (access_level = 'full' and max_module between 1 and 25));
@@ -155,3 +207,5 @@ $$;
 
 revoke all on function public.mediumia_set_path_entitlement(uuid, text, integer, timestamptz) from public, anon, authenticated;
 grant execute on function public.mediumia_set_path_entitlement(uuid, text, integer, timestamptz) to service_role;
+
+commit;

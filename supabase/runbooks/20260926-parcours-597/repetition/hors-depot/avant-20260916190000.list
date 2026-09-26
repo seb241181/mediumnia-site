@@ -1,0 +1,6 @@
+# Schéma RDV tenu dans docs/ (appliqué à la main, hors supabase/migrations), rejoué avant 20260916190000
+docs/rdv-schema.sql
+docs/rdv-migration-v2.sql
+docs/rdv-requests-migration.sql
+docs/rdv-cancellation-migration.sql
+docs/rdv-confirm-request-migration.sql

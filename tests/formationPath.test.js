@@ -323,7 +323,7 @@ test('former Discoveries stay as sold (30 days); only a Discovery bought once th
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../lib/paypalSandbox.js', import.meta.url), 'utf8')
   assert.match(src, /if \(cfg\.product === 'discovery' && pathEnv\(\)\) \{\s*await supabase\.rpc\('mediumia_set_path_entitlement'/)
-  for (const file of ['20260925120000_formation_parcours_mensuel.sql', '20261001090000_formation_parcours_597.sql']) {
+  for (const file of ['20260925120000_formation_parcours_mensuel.sql', '20260926100000_formation_parcours_597.sql']) {
     const migration = readFileSync(new URL(`../supabase/migrations/${file}`, import.meta.url), 'utf8')
     assert.doesNotMatch(migration, /update public\.mediumia_entitlements[^;]*discovery[^;]*where[^;]*paypal:/i, 'no update of existing Discovery rows')
     assert.match(migration, /case when p_max_module = 1 then 'discovery' else 'full' end/)
@@ -483,7 +483,7 @@ test('the abandoned 397 / 368 / 34 € amounts appear nowhere in the parcours co
     const src = code(f)
     assert.doesNotMatch(src, /\b(397|368|39700|36800|3400)\b|34 €|28\.00|34\.00/, f)
   }
-  const migration = readFileSync(new URL('../supabase/migrations/20261001090000_formation_parcours_597.sql', import.meta.url), 'utf8').replace(/--.*$/gm, '')
+  const migration = readFileSync(new URL('../supabase/migrations/20260926100000_formation_parcours_597.sql', import.meta.url), 'utf8').replace(/--.*$/gm, '')
   assert.doesNotMatch(migration, /\b(397|368|39700|36800)\b/)
   assert.match(migration, /step_cents = 4800\s+and regular_count between 1 and 11\s+and final_cents between 1 and 4800\s+and regular_count \* step_cents \+ final_cents <= 56800/)
   assert.match(migration, /paypal_env = 'sandbox'\s+and step_cents = 3400/, 'the former 34 € rule survives only for Sandbox tests')
@@ -500,4 +500,15 @@ test('a Découverte refunded mid-parcours: the student keeps going, its 29 € j
   assert.equal(3 * 4800 + planned, 59700)
   const status = await call(db, 'status')
   assert.deepEqual([status.body.maxModule, status.body.remainingCents], [7, 59700 - 3 * 4800])
+})
+
+test('the 597 € migration is dated 26 September 2026, after the credit migration, and no version is used twice', async () => {
+  const { readdirSync } = await import('node:fs')
+  const files = readdirSync(new URL('../supabase/migrations/', import.meta.url)).filter((f) => f.endsWith('.sql')).sort()
+  const versions = files.map((f) => f.slice(0, 14))
+  assert.equal(new Set(versions).size, versions.length, 'unique versions')
+  assert.ok(files.includes('20260926100000_formation_parcours_597.sql'))
+  assert.ok(!files.some((f) => f.startsWith('20261001')), 'no migration dated in the future')
+  assert.equal(versions.indexOf('20260926100000'), versions.indexOf('20260926090000') + 1, 'right after the 568 € credit migration')
+  assert.equal(versions.at(-1), '20260926100000', 'the latest migration')
 })

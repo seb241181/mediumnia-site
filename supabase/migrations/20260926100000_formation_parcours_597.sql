@@ -10,7 +10,7 @@
 -- Aucun paiement enregistré n'est modifié ni supprimé.
 --
 -- Migration préparée, à appliquer manuellement par le propriétaire (SQL Editor
--- Supabase), après le runbook supabase/runbooks/20261001-parcours-597/.
+-- Supabase), après le runbook supabase/runbooks/20260926-parcours-597/.
 -- Accès serveur uniquement (clé service_role) : RLS activée sans aucune policy.
 
 begin;
@@ -184,7 +184,7 @@ begin
 
   insert into public.mediumia_students (user_id) values (p_user_id) on conflict (user_id) do nothing;
 
-  -- A path row at module 1 (Discovery bought with the parcours open) keeps the
+  -- A path row at module 1 (Discovery bought with the new parcours) keeps the
   -- Discovery level, so the coach uses the Discovery frame.
   update public.mediumia_entitlements
   set max_module = p_max_module,

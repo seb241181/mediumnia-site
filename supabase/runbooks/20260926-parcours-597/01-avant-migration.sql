@@ -1,5 +1,5 @@
 -- MediumIA · Parcours 597 € · 01. CONTRÔLE AVANT MIGRATION (lecture seule)
--- À lancer juste avant 20261001090000_formation_parcours_597.sql.
+-- À lancer juste avant 20260926100000_formation_parcours_597.sql.
 -- Lancer chaque bloc séparément (le SQL Editor n'affiche que le dernier résultat).
 
 -- A. Tables du parcours déjà présentes ? (attendu aujourd'hui : 4 × null)

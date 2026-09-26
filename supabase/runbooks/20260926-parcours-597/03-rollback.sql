@@ -1,8 +1,11 @@
--- MediumIA · Parcours 597 € · 03. ROLLBACK de 20261001090000
+-- MediumIA · Parcours 597 € · 03. ROLLBACK de 20260926100000
 -- À n'utiliser que si le contrôle 02 n'est pas conforme, AVANT l'ouverture du
 -- parcours (interrupteur PAYPAL_FORMATION_PATH_ENABLED toujours absent / false).
 -- Cas prévu : les tables du parcours n'existaient pas avant (bloc A du 01 = 4 × null).
 -- Si elles existaient avant (ancienne migration 34 €), NE PAS lancer : me demander.
+-- Si 20260926100000 a déjà été inscrite dans l'historique (étape 4 du runbook 00),
+-- retirer ensuite l'inscription, depuis le dépôt site :
+--   supabase migration repair --status reverted 20260926100000 --linked
 --
 -- Retire ce que la migration a créé : les 4 tables du parcours (dont le registre,
 -- qui n'est qu'une copie des achats), la fonction d'accès progressif, et remet la

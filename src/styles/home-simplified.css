@@ -16,3 +16,29 @@
     padding-bottom: 2.5rem;
   }
 }
+
+/* Phrase de présentation du héros : trop petite (≈ 11 px sur téléphone) et
+   grisée sur un fond chargé. Plus grande, bleu profond plein, sur un voile
+   ivoire léger pour se détacher de l'image. */
+.cosmic-library--simple .cosmic-library__message p {
+  max-width: 720px;
+  margin-top: 0.9rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: 18px;
+  background: rgba(255, 254, 250, 0.74);
+  box-shadow: 0 8px 26px rgba(16, 25, 56, 0.08);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #101938;
+  font-size: clamp(0.98rem, 1.2vw, 1.12rem);
+  line-height: 1.6;
+  text-shadow: none;
+}
+@media (max-width: 760px) {
+  .cosmic-library--simple .cosmic-library__message p {
+    max-width: 360px;
+    padding: 0.65rem 0.95rem;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+}

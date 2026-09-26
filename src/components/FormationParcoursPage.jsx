@@ -122,7 +122,8 @@ export default function FormationParcoursPage({ onBack, onNavigate }) {
   useEffect(() => { refresh() }, [refresh])
 
   const hasLiveSub = state?.subscription?.status === 'active' || state?.subscription?.status === 'approval_pending'
-  const canSubscribe = state && !state.complete && (state.hasDiscovery || state.maxModule > 0) && state.schedule?.mode === 'subscription' && !hasLiveSub
+  // Closed to new entries: an engaged parcours keeps its page, its exits and « Tout débloquer », but no new subscription.
+  const canSubscribe = state && state.open !== false && !state.complete && (state.hasDiscovery || state.maxModule > 0) && state.schedule?.mode === 'subscription' && !hasLiveSub
 
   // Monthly progression buttons (PayPal subscription).
   useEffect(() => {
@@ -268,6 +269,7 @@ export default function FormationParcoursPage({ onBack, onNavigate }) {
               </>
             )}
 
+            {state.open === false && !state.complete && !hasLiveSub && <p className="font-georgia text-xs text-mist">Les nouvelles inscriptions au parcours au mois sont fermées pour le moment. Vos modules restent à vous et vous pouvez toujours tout débloquer.</p>}
             {state.env === 'sandbox' && <p className="font-georgia text-[11px] text-mist">Préversion : paiements PayPal Sandbox (argent fictif) aux montants réels, pour tester le plafond de {money(state.capCents)}.</p>}
           </>
         )}

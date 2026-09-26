@@ -306,9 +306,11 @@ test('an open parcours subscription (even before its first instalment) also bloc
   assert.equal((await call('credit', { method: 'GET', headers: as('jwt-claire') })).body.displayAmount, '568.00')
 })
 
-test('a complete purchase made outside « Mon parcours » stops the subscription and reports any overpayment', async () => {
+test('a complete purchase made outside « Mon parcours » stops the subscription and reports any overpayment, switch ON or OFF', async () => {
+  for (const open of [true, false]) {
   live()
-  process.env.PAYPAL_FORMATION_PATH_ENABLED = 'true'
+  if (open) process.env.PAYPAL_FORMATION_PATH_ENABLED = 'true'
+  else delete process.env.PAYPAL_FORMATION_PATH_ENABLED
   try {
     const db = makeDb({
       discoveries: [{ user_id: CLAIRE, paypal_capture_id: 'DISC1' }],
@@ -322,11 +324,12 @@ test('a complete purchase made outside « Mon parcours » stops the subscription
     const pp = makePayPal({ captures: paidDiscovery('DISC1'), payer: 'claire@example.com' })
     const { captured } = await buy(db, pp, {})
     assert.equal(captured.statusCode, 200, JSON.stringify(captured.body))
-    assert.equal(pp.subscriptions['I-SUB1'], 'CANCELLED', 'no further instalment can be taken')
+    assert.equal(pp.subscriptions['I-SUB1'], 'CANCELLED', `no further instalment can be taken (switch ${open ? 'ON' : 'OFF'})`)
     assert.equal(db.t.mediumia_formation_subscriptions[0].status, 'completed')
     assert.ok(pp.emails.includes('contact@mediumia.fr'), 'the owner is warned: 29 + 48 + 597 > 597, refund the excess')
   } finally {
     delete process.env.PAYPAL_FORMATION_PATH_ENABLED
+  }
   }
 })
 

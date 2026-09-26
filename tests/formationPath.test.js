@@ -9,7 +9,7 @@ process.env.PAYPAL_CLIENT_SECRET = 'secret'
 delete process.env.VERCEL_ENV
 delete process.env.RESEND_API_KEY
 
-const { handleFormationPath, syncLiveSubscriptions, ownsCompleteFormation, settlePathAfterFullPurchase, publicOffer } = await import('../lib/formationPath.js')
+const { handleFormationPath, syncLiveSubscriptions, ownsCompleteFormation, settlePathAfterFullPurchase, publicOffer, pathEnv, pathOpen } = await import('../lib/formationPath.js')
 
 const USER = '11111111-1111-4111-8111-111111111111'
 
@@ -322,7 +322,7 @@ test('only permanent complete origins count as "already complete"; temporary or 
 test('former Discoveries stay as sold (30 days); only a Discovery bought once the parcours is open gets its module 1 for good', async () => {
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../lib/paypalSandbox.js', import.meta.url), 'utf8')
-  assert.match(src, /if \(cfg\.product === 'discovery' && pathEnv\(\)\) \{\s*await supabase\.rpc\('mediumia_set_path_entitlement'/)
+  assert.match(src, /if \(cfg\.product === 'discovery' && pathOpen\(\)\) \{\s*await supabase\.rpc\('mediumia_set_path_entitlement'/, 'only while the parcours is open')
   for (const file of ['archive/20260925120000_formation_parcours_mensuel.sql', 'migrations/20260926100000_formation_parcours_597.sql']) {
     const migration = readFileSync(new URL(`../supabase/${file}`, import.meta.url), 'utf8')
     assert.doesNotMatch(migration, /update public\.mediumia_entitlements[^;]*discovery[^;]*where[^;]*paypal:/i, 'no update of existing Discovery rows')
@@ -549,4 +549,170 @@ test('the abandoned 34 € migration is archived: out of the active chain, kept 
   assert.ok(existsSync(archived))
   assert.match(readFileSync(archived, 'utf8'), /^-- ARCHIVE — NE PAS APPLIQUER/)
   assert.match(readFileSync(new URL('../supabase/archive/README.md', import.meta.url), 'utf8'), /Ne jamais remettre un fichier d'ici dans `supabase\/migrations\/`/)
+})
+
+// ── Fermeture commerciale (interrupteur OFF) : en production, paiements live ─
+
+function production(open) {
+  process.env.VERCEL_ENV = 'production'
+  if (open) process.env.PAYPAL_FORMATION_PATH_ENABLED = 'true'
+  else delete process.env.PAYPAL_FORMATION_PATH_ENABLED
+}
+function preview() {
+  delete process.env.VERCEL_ENV
+  delete process.env.PAYPAL_FORMATION_PATH_ENABLED
+}
+// Live state: real 29 € Découverte, optional instalments, optional subscription.
+function setupLive({ discovery = true, monthlyPaid = 0, subStatus = null } = {}) {
+  const payments = discovery ? [{ user_id: USER, paypal_env: 'live', kind: 'discovery', amount_cents: 2900, value_cents: 2900, paypal_ref: 'CAP-DISC', paid_at: '2026-10-01T10:00:00Z' }] : []
+  for (let i = 0; i < monthlyPaid; i += 1) payments.push({ user_id: USER, paypal_env: 'live', kind: 'monthly', amount_cents: 4800, value_cents: 4800, paypal_ref: `LIVE${i}`, paid_at: new Date(Date.UTC(2026, 10 + i, 1, 10)).toISOString() })
+  const db = makeDb({
+    mediumia_formation_payments: payments,
+    mediumia_paypal_purchases: discovery ? [discoveryPurchase({ paypal_env: 'live', amount_cents: 2900 })] : [],
+  })
+  const pp = makePayPal()
+  pp.state.captures['CAP-DISC'] = { id: 'CAP-DISC', status: 'COMPLETED', amount: { value: '29.00', currency_code: 'EUR' } }
+  globalThis.fetch = pp.fetchImpl
+  if (subStatus) {
+    db.t.mediumia_formation_subscriptions.push({ paypal_subscription_id: 'I-LIVE00001', user_id: USER, paypal_env: 'live', status: subStatus, regular_count: 11 - monthlyPaid, step_cents: 4800, final_cents: 4000, created_at: '2026-10-01T09:00:00Z' })
+    pp.state.subs['I-LIVE00001'] = { id: 'I-LIVE00001', status: subStatus === 'approval_pending' ? 'APPROVAL_PENDING' : subStatus.toUpperCase(), custom_id: USER, transactions: [] }
+  }
+  return { db, pp }
+}
+const paypalMoneyCalls = (pp) => pp.state.calls.filter(([method, path]) => method === 'POST' && (path === '/v1/billing/subscriptions' || path === '/v2/checkout/orders' || path.endsWith('/capture')))
+
+test('the switch never decides the payment environment: production is live, open or closed; preview is sandbox and open', () => {
+  try {
+    production(false); assert.deepEqual([pathEnv(), pathOpen()], ['live', false])
+    production(true); assert.deepEqual([pathEnv(), pathOpen()], ['live', true])
+    preview(); assert.deepEqual([pathEnv(), pathOpen()], ['sandbox', true])
+  } finally { preview() }
+})
+
+test('OFF + no parcours: impossible to start (no offer, no page, no subscription, no order, no PayPal call)', async () => {
+  production(false)
+  try {
+    const { db, pp } = setupLive({ discovery: false })
+    assert.equal((await call(db, 'offer', null, { auth: 'nobody' })).statusCode, 404)
+    assert.equal((await call(db, 'status')).statusCode, 404)
+    assert.deepEqual([(await call(db, 'subscribe', { consent: true })).statusCode, (await call(db, 'subscribe', { consent: true })).body.error], [403, 'path_closed'])
+    assert.deepEqual([(await call(db, 'unlock-create', { consent: true })).statusCode], [403])
+    assert.equal(paypalMoneyCalls(pp).length, 0)
+    assert.equal(db.t.mediumia_formation_subscriptions.length + db.t.mediumia_formation_unlock_orders.length, 0)
+  } finally { preview() }
+})
+
+test('OFF + a Découverte alone: no start of the parcours, and « Tout débloquer » cannot be used as a back door', async () => {
+  production(false)
+  try {
+    const { db, pp } = setupLive()
+    assert.equal((await call(db, 'status')).statusCode, 404, 'the page stays « ouvre très bientôt »')
+    const sub = await call(db, 'subscribe', { consent: true })
+    const unlock = await call(db, 'unlock-create', { consent: true })
+    assert.deepEqual([sub.statusCode, sub.body.error, unlock.statusCode, unlock.body.error], [403, 'path_closed', 403, 'path_closed'])
+    assert.equal(pp.state.calls.length, 0, 'not even a PayPal call')
+    assert.equal(db.t.mediumia_formation_subscriptions.length + db.t.mediumia_formation_unlock_orders.length, 0)
+    assert.equal(db.entitlements.length, 0)
+  } finally { preview() }
+})
+
+test('OFF + active subscription: status, webhook, daily sync and stopping keep working; no resumption', async () => {
+  production(false)
+  try {
+    const { db, pp } = setupLive({ monthlyPaid: 2, subStatus: 'active' })
+    const status = await call(db, 'status')
+    assert.deepEqual([status.statusCode, status.body.env, status.body.open, status.body.maxModule, status.body.subscription.status], [200, 'live', false, 5, 'active'])
+    pp.state.charge('I-LIVE00001', 4800)
+    const hook = await webhook(db, 'I-LIVE00001')
+    assert.deepEqual([hook.statusCode, hook.body.status], [200, 'active'])
+    assert.equal(db.entitlements[0].max_module, 7, 'the instalment collected while closed opens its modules')
+    pp.state.charge('I-LIVE00001', 4800)
+    assert.equal((await syncLiveSubscriptions(db)).synced, 1)
+    assert.equal(db.entitlements[0].max_module, 9)
+    const stop = await call(db, 'cancel', {})
+    assert.deepEqual([stop.statusCode, pp.state.subs['I-LIVE00001'].status, db.t.mediumia_formation_subscriptions[0].status], [200, 'CANCELLED', 'cancelled'])
+    const again = await call(db, 'subscribe', { consent: true })
+    assert.deepEqual([again.statusCode, again.body.error], [403, 'path_closed'], 'no new or resumed subscription while closed')
+    assert.equal(pp.state.calls.filter(([m, p]) => m === 'POST' && p === '/v1/billing/subscriptions').length, 0)
+  } finally { preview() }
+})
+
+test('OFF + subscription approved just before closing (approval_pending): activate still works', async () => {
+  production(false)
+  try {
+    const { db, pp } = setupLive({ subStatus: 'approval_pending' })
+    pp.state.subs['I-LIVE00001'].status = 'ACTIVE'
+    pp.state.charge('I-LIVE00001', 4800)
+    const act = await call(db, 'activate', { subscriptionId: 'I-LIVE00001' })
+    assert.deepEqual([act.statusCode, act.body.status, act.body.maxModule, act.body.paidCents], [200, 'active', 3, 7700])
+  } finally { preview() }
+})
+
+test('OFF + parcours already under way: « Tout débloquer » stays possible and ends exactly at 597 €', async () => {
+  production(false)
+  try {
+    const { db, pp } = setupLive({ monthlyPaid: 3, subStatus: 'cancelled' })
+    const status = await call(db, 'status')
+    assert.deepEqual([status.statusCode, status.body.open, status.body.remainingCents], [200, false, 59700 - 2900 - 3 * 4800])
+    const order = await call(db, 'unlock-create', { consent: true })
+    assert.deepEqual([order.statusCode, order.body.amountCents], [201, 42400])
+    const done = await call(db, 'unlock-capture', { orderId: order.body.id })
+    assert.deepEqual([done.statusCode, done.body.paidCents, done.body.maxModule, done.body.complete], [200, 59700, 25, true])
+    assert.equal(paypalMoneyCalls(pp).filter(([, p]) => p === '/v1/billing/subscriptions').length, 0)
+  } finally { preview() }
+})
+
+test('OFF + « Tout débloquer » order created before closing: its capture still completes', async () => {
+  production(true)
+  try {
+    const { db } = setupLive({ monthlyPaid: 1 })
+    const order = await call(db, 'unlock-create', { consent: true })
+    assert.equal(order.statusCode, 201)
+    production(false)
+    const done = await call(db, 'unlock-capture', { orderId: order.body.id })
+    assert.deepEqual([done.statusCode, done.body.paidCents, done.body.complete], [200, 59700, true])
+  } finally { preview() }
+})
+
+test('OFF + complete purchase: the running subscription is stopped at PayPal and closed', async () => {
+  production(false)
+  try {
+    const { db, pp } = setupLive({ monthlyPaid: 2, subStatus: 'active' })
+    const out = await settlePathAfterFullPurchase(db, 'live', USER)
+    assert.equal(out.stopped, 1)
+    assert.deepEqual([pp.state.subs['I-LIVE00001'].status, db.t.mediumia_formation_subscriptions[0].status], ['CANCELLED', 'completed'])
+  } finally { preview() }
+})
+
+test('OFF: the 597 € guard still stops a subscription that would bill beyond the cap', async () => {
+  production(false)
+  try {
+    const { db, pp } = setupLive({ monthlyPaid: 11, subStatus: 'active' })
+    pp.state.charge('I-LIVE00001', 4800)
+    const r = await webhook(db, 'I-LIVE00001')
+    assert.equal(r.statusCode, 200)
+    assert.equal(pp.state.subs['I-LIVE00001'].status, 'CANCELLED')
+  } finally { preview() }
+})
+
+test('ON in production: the 597 € behaviour is unchanged (offer, 11 × 48 € then 40 €, live)', async () => {
+  production(true)
+  try {
+    const { db, pp } = setupLive()
+    const offer = await call(db, 'offer', null, { auth: 'nobody' })
+    assert.deepEqual([offer.statusCode, offer.body], [200, { enabled: true, ...publicOffer() }])
+    const status = await call(db, 'status')
+    assert.deepEqual([status.statusCode, status.body.env, status.body.open, status.body.remainingCents], [200, 'live', true, 56800])
+    const sub = await call(db, 'subscribe', { consent: true })
+    assert.equal(sub.statusCode, 201)
+    assert.deepEqual(pp.state.subs[sub.body.id].plan.billing_cycles.map((c) => [c.total_cycles, c.pricing_scheme.fixed_price.value]), [[11, '48.00'], [1, '40.00']])
+    assert.equal(db.t.mediumia_formation_subscriptions[0].paypal_env, 'live')
+  } finally { preview() }
+})
+
+test('« Mon parcours » page: no subscribe block when closed, an explanation instead', async () => {
+  const { readFileSync } = await import('node:fs')
+  const page = readFileSync(new URL('../src/components/FormationParcoursPage.jsx', import.meta.url), 'utf8')
+  assert.match(page, /const canSubscribe = state && state\.open !== false &&/)
+  assert.match(page, /Les nouvelles inscriptions au parcours au mois sont fermées pour le moment/)
 })

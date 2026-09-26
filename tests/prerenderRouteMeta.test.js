@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readRouteMeta, withMeta, buildPages } from '../scripts/prerender-route-meta.mjs'
+import { readRouteMeta, withMeta, buildPages, buildStaticPages, STATIC_PAGES } from '../scripts/prerender-route-meta.mjs'
 
 const shell = `<!doctype html><html><head>
     <meta name="description" content="old" />
@@ -42,4 +42,18 @@ test('practitioner pages use their portrait; routes without meta are skipped', (
   const gilda = pages.find((p) => p.file === 'reseau/gilda/index.html').html
   assert.match(gilda, /<title>Gilda — Voyante \| Réseau MediumIA<\/title>/)
   assert.match(gilda, /og:image" content="https:\/\/mediumia\.fr\/images\/reseau\/gilda\.jpg"/)
+})
+
+test('legal and private pages get their own head instead of the home page one', () => {
+  const pages = buildStaticPages(shell + '<meta name="robots" content="index,follow" />'.replace(/^/, ''))
+  const byFile = Object.fromEntries(pages.map((p) => [p.file, p.html]))
+  assert.equal(pages.length, STATIC_PAGES.length)
+  assert.match(byFile['mentions/index.html'], /<title>Mentions légales — MediumIA<\/title>/)
+  assert.match(byFile['mentions/index.html'], /<link rel="canonical" href="https:\/\/mediumia\.fr\/mentions" \/>/)
+  assert.match(byFile['retractation/index.html'], /og:url" content="https:\/\/mediumia\.fr\/retractation"/)
+  assert.match(byFile['formation/parcours/index.html'], /<meta name="robots" content="noindex,nofollow" \/>/)
+  assert.match(byFile['rdv/index.html'], /<meta name="robots" content="noindex,nofollow" \/>/)
+  assert.doesNotMatch(byFile['mentions/index.html'], /noindex/)
+  const titles = pages.map((p) => p.html.match(/<title>(.*?)<\/title>/)[1])
+  assert.equal(new Set(titles).size, titles.length, 'titres uniques')
 })

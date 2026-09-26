@@ -79,6 +79,13 @@ function Progress({ state }) {
       </div>
       <p className="mt-4 font-georgia text-sm text-cream/80">Déjà investi : {money(state.paidCents)} · votre parcours complet ne dépassera jamais {money(state.capCents)}.</p>
       {state.coachUntil && <p className="mt-1 font-georgia text-xs text-cream/60">Coach MediumIA ouvert jusqu’au {longDate(state.coachUntil)}.</p>}
+      {state.coachUntil && !state.complete && (
+        <p className="mt-1 font-georgia text-xs text-cream/60">
+          {state.paidCents > (state.discoveryCents || 2900)
+            ? 'Le coach reste ouvert 12 mois après votre dernier paiement : chaque étape payée repousse cette date, et si vous arrêtez, vous le gardez jusqu’à cette date.'
+            : 'Avec la Découverte, le coach est ouvert 30 jours ; ensuite, il reste ouvert 12 mois après chaque étape payée.'}
+        </p>
+      )}
     </section>
   )
 }
@@ -225,7 +232,7 @@ export default function FormationParcoursPage({ onBack, onNavigate }) {
                       <button type="button" onClick={() => setConfirmStop(true)} className="mt-4 w-full rounded-xl border border-gold/40 bg-white px-5 py-3 font-georgia text-sm text-deep">Arrêter mon parcours</button>
                     ) : (
                       <div className="mt-4 rounded-2xl border border-gold/30 bg-cream/70 p-4">
-                        <p className="font-georgia text-sm text-deep">Arrêter maintenant ? Plus aucun prélèvement ni nouveau module. Vos {state.maxModule} modules, vos PDF et votre carnet restent à vous, et vous pourrez reprendre quand vous voudrez.</p>
+                        <p className="font-georgia text-sm text-deep">Arrêter maintenant ? Plus aucun prélèvement ni nouveau module. Vos {state.maxModule} modules, vos PDF et votre carnet restent à vous{state.coachUntil ? `, votre coach reste ouvert jusqu’au ${longDate(state.coachUntil)}` : ''}, et vous pourrez reprendre quand vous voudrez.</p>
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           <button type="button" disabled={busy} onClick={stop} className="rounded-xl bg-[#1a1535] px-4 py-3 font-georgia text-sm font-bold text-gold disabled:opacity-50">Oui, arrêter</button>
                           <button type="button" onClick={() => setConfirmStop(false)} className="rounded-xl border border-gold/40 bg-white px-4 py-3 font-georgia text-sm text-deep">Continuer</button>

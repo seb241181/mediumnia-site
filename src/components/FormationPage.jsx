@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import LegalFooter from './LegalFooter'
 import FormationCreditNotice from './FormationCreditNotice'
 import ParcoursOffer from './ParcoursOffer'
+import { parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'
 import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
 import SiteNav from './SiteNav'
@@ -31,13 +32,15 @@ const POINTS = [
   { titre: "Un assistant formé par le créateur", texte: "MediumIA n'est pas un assistant générique. Il a été formé spécifiquement sur le contenu des 25 modules et la vision de Sébastien. Il parle avec la voix du parcours." },
 ]
 
+// Once the parcours is open, this answer describes it (closed: unchanged).
+const FAQ_PAY_QUESTION = 'Puis-je payer en plusieurs fois ?'
 const FAQ = [
   { q: 'Faut-il déjà avoir des capacités médiumniques ?', r: "Non, et c'est même tout le sens de cet accompagnement. La médiumnité n'est pas un don réservé à quelques élus. Le parcours est conçu pour les débutants comme pour celles et ceux qui pratiquent déjà et veulent structurer ce qu'ils ressentent." },
   { q: 'Combien de temps dure le parcours ?', r: "Il n'y a pas de durée imposée. Certains traversent un module par semaine, d'autres prennent le temps de vivre chaque exercice sur plusieurs jours. Vous disposez de 12 mois d'accès à l'application pour cheminer librement, et les modules téléchargés restent à vous pour toujours." },
   { q: 'Est-ce que MediumIA remplace un vrai accompagnement humain ?', r: "Non. MediumIA, l'assistant intégré, est un soutien disponible jour et nuit, mais il ne remplace pas la relation humaine. Il vous aide à découvrir votre propre canal et à gagner en autonomie. C'est un compagnon de route, pas un substitut." },
   { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. MediumIA n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin." },
   { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, l'assistant intégré et les modules PDF sont accessibles en ligne. Après confirmation du paiement, votre accès est activé sur l'adresse e-mail utilisée avec PayPal." },
-  { q: 'Puis-je payer en plusieurs fois ?', r: "Oui. La Formation MediumIA est à 597 € TTC. Paiement en plusieurs fois disponible avec PayPal selon éligibilité." },
+  { q: FAQ_PAY_QUESTION, r: "Oui. La Formation MediumIA est à 597 € TTC. Paiement en plusieurs fois disponible avec PayPal selon éligibilité." },
 ]
 
 const POUR_QUI = [
@@ -74,9 +77,11 @@ function NiveauxAccordion() {
 
 function FAQAccordion() {
   const [open, setOpen] = useState(null)
+  const offer = useParcoursOffer()
+  const items = offer ? FAQ.map((item) => (item.q === FAQ_PAY_QUESTION ? { ...item, r: parcoursFaqAnswer(offer) } : item)) : FAQ
   return (
     <div className="space-y-2">
-      {FAQ.map((item, i) => (
+      {items.map((item, i) => (
         <div key={i} className="border-2 border-gold/20 rounded-xl overflow-hidden bg-white/50 hover:border-gold/40 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
           <div className="flex items-center gap-5 px-6 py-5">
             <div className="flex-1 font-georgia text-deep font-medium text-base">{item.q}</div>

@@ -479,7 +479,7 @@ test('complete students (597 € or 568 € after the Découverte) are never cha
 test('the abandoned 397 / 368 / 34 € amounts appear nowhere in the parcours code, page or migration', async () => {
   const { readFileSync } = await import('node:fs')
   const code = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '')
-  for (const f of ['lib/formationProgression.js', 'lib/formationPath.js', 'lib/discoveryEligibility.js', 'src/components/FormationParcoursPage.jsx', 'src/components/ParcoursOffer.jsx']) {
+  for (const f of ['lib/formationProgression.js', 'lib/formationPath.js', 'lib/discoveryEligibility.js', 'src/components/FormationParcoursPage.jsx', 'src/components/ParcoursOffer.jsx', 'src/lib/parcoursOffer.js']) {
     const src = code(f)
     assert.doesNotMatch(src, /\b(397|368|39700|36800|3400)\b|34 €|28\.00|34\.00/, f)
   }
@@ -511,4 +511,32 @@ test('the 597 € migration is dated 26 September 2026, after the credit migrati
   assert.ok(!files.some((f) => f.startsWith('20261001')), 'no migration dated in the future')
   assert.equal(versions.indexOf('20260926100000'), versions.indexOf('20260926090000') + 1, 'right after the 568 € credit migration')
   assert.equal(versions.at(-1), '20260926100000', 'the latest migration')
+})
+
+test('FAQ « payer en plusieurs fois » once the parcours is open: 29 €, 48 €/mois, 40 €, 597 € maximum, coach 12 months', async () => {
+  const { parcoursFaqAnswer } = await import('../src/lib/parcoursOffer.js')
+  const text = parcoursFaqAnswer(publicOffer()).replace(/\u00a0/g, ' ')
+  for (const part of ['29 € pour commencer', '48 € par mois', 'dernière mensualité 40 €', '597 € TTC au total au maximum', 'le même prix que la Formation complète', 'arrêter à tout moment', 'ne payant que le reste', '12 mois après votre dernier paiement']) {
+    assert.ok(text.includes(part), part)
+  }
+  const { readFileSync } = await import('node:fs')
+  const page = readFileSync(new URL('../src/components/FormationPage.jsx', import.meta.url), 'utf8')
+  assert.match(page, /const items = offer \? FAQ\.map/, 'the new answer only replaces the current one when the offer is open')
+  assert.match(page, /r: "Oui\. La Formation MediumIA est à 597 € TTC\. Paiement en plusieurs fois disponible avec PayPal selon éligibilité\." \}/, 'current answer kept while closed')
+})
+
+test('CGV « Parcours au mois »: draft only (not published), points to settle clearly marked', async () => {
+  const { readFileSync, existsSync } = await import('node:fs')
+  const draft = readFileSync(new URL('../docs/legal/cgv-formation-parcours-au-mois.draft.html', import.meta.url), 'utf8')
+  assert.ok(!existsSync(new URL('../public/cgv-formation-parcours-au-mois.draft.html', import.meta.url)))
+  assert.match(draft, /noindex,nofollow/)
+  assert.doesNotMatch(readFileSync(new URL('../public/cgv-formation.html', import.meta.url), 'utf8'), /Parcours au mois|4 bis/, 'published CGV unchanged until opening')
+  assert.match(draft, /11 mensualités de 48 € TTC/)
+  assert.match(draft, /dernière mensualité de 40 € TTC/)
+  assert.match(draft, /597 € TTC au maximum/)
+  assert.match(draft, /dans les meilleurs délais, et au plus tard sous 14 jours[^<]*<span class="a-valider">clause à valider juridiquement/)
+  assert.match(draft, /prélevée au démarrage du parcours[^<]*<span class="a-valider">à confirmer en test PayPal Sandbox/)
+  assert.match(draft, /12 mois à compter du dernier paiement encaissé/)
+  assert.match(draft, /formation-parcours-597-2026-09-26/)
+  assert.doesNotMatch(draft.replace(/<!--[\s\S]*?-->/g, ''), /\b(397|368)\b/)
 })

@@ -1,29 +1,12 @@
-import { useEffect, useState } from 'react'
+import { money, useParcoursOffer } from '../lib/parcoursOffer.js'
 
 // Page Formation, section « Tarif » : la seconde façon de rejoindre la formation,
 // le parcours progressif. Affiché seulement quand le serveur l'annonce ouvert
 // (formationPathAction=offer répond 404 tant que le parcours est fermé).
 // Les montants viennent du serveur : 29 € puis 48 €/mois, dernière 40 €, 597 € maximum.
 
-const money = (cents) => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',').replace(',00', '')}\u00a0€`
-
 export default function ParcoursOffer() {
-  const [offer, setOffer] = useState(null)
-
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/rdv-config?formationPathAction=offer', { headers: { Accept: 'application/json' } })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || !data?.enabled) return
-        const { capCents, discoveryCents, stepCents, regularCount, finalCents } = data
-        // Shown only if the amounts add up to the Formation price, never more.
-        if (discoveryCents + regularCount * stepCents + finalCents !== capCents) return
-        setOffer({ capCents, discoveryCents, stepCents, regularCount, finalCents })
-      })
-      .catch(() => null)
-    return () => { cancelled = true }
-  }, [])
+  const offer = useParcoursOffer()
 
   if (!offer) return null
 

@@ -9,7 +9,7 @@
     BROUILLON — NON PUBLIÉ. Ce fichier est hors de public/ : il n'est pas déployé.
     Le jour de l'ouverture du parcours (avec le GO du propriétaire), son contenu
     remplace public/cgv-formation.html, AVANT d'activer PAYPAL_FORMATION_PATH_ENABLED.
-    Version des conditions côté serveur : formation-parcours-2026-10-01-v2
+    Version des conditions côté serveur : formation-parcours-597-2026-09-26
     (lib/formationPath.js, PATH_TERMS_VERSION). Changements par rapport aux CGV
     publiées du 26 septembre 2026 : articles 2, 3, 5, 6, 7 ajustés ; article 4 bis ajouté.
   -->
@@ -36,15 +36,16 @@
     td.num, th.num { text-align: right; white-space: nowrap; }
     tr.total td { color: #1a1535; font-weight: 600; border-bottom: 0; }
     .new { border-left: 3px solid #9b7629; padding-left: 14px; }
+    .a-valider { display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: 999px; background: #fff0c2; border: 1px solid #9b7629; color: #1a1535; font-size: 12px; font-weight: 600; }
   </style>
 </head>
 <body>
   <header><a href="/formation">← Retour à l’accompagnement MediumIA</a></header>
   <main>
-    <p class="draft"><strong>Brouillon — non publié.</strong> Texte préparé pour l’ouverture du parcours au mois. Les passages nouveaux ou modifiés sont signalés par un filet doré à gauche. À relire (et, si possible, à faire valider par un conseil) avant publication.</p>
+    <p class="draft"><strong>Brouillon — non publié.</strong> Texte préparé pour l’ouverture du parcours au mois. Les passages nouveaux ou modifiés sont signalés par un filet doré à gauche. Les points marqués <span class="a-valider">à valider</span> doivent être tranchés avant publication : relecture juridique (trop-perçu, rétractation) et test PayPal Sandbox (premier prélèvement). Retirer ces marques et ce bandeau avant de publier.</p>
 
     <h1>Conditions générales de vente — Accompagnement MediumIA</h1>
-    <p class="meta">Version du [date d’ouverture du parcours au mois] — référence formation-parcours-2026-10-01-v2</p>
+    <p class="meta">Version du [date d’ouverture du parcours au mois] — référence formation-parcours-597-2026-09-26</p>
 
     <h2>1. Vendeur</h2>
     <p>Sébastien Seguin, entrepreneur individuel — nom commercial MediumIA — SIRET 81918584400027 — 1 Chemin des Capucines, 59143 Lederzeele, France — contact@mediumia.fr — 06 29 97 38 78.</p>
@@ -92,8 +93,8 @@
       <p>Un client qui possède déjà la Formation complète n’a rien à payer : aucun parcours ni prélèvement ne lui est proposé.</p>
 
       <h3>Paiement</h3>
-      <p>Le parcours prend la forme d’un abonnement PayPal souscrit par le client depuis la page « Mon parcours » (<a href="/formation/parcours">mediumia.fr/formation/parcours</a>). La première mensualité est prélevée à la souscription, puis chaque mois à la même date, jusqu’à la dernière mensualité. L’abonnement s’arrête ensuite de lui-même : aucun prélèvement n’a lieu au-delà de 597 € au total. MediumIA ne reçoit ni ne conserve les données bancaires du client.</p>
-      <p>Chaque montant est vérifié auprès de PayPal par le serveur de MediumIA avant l’ouverture des modules correspondants, et n’est comptabilisé qu’une seule fois. Si, par erreur, un montant dépassant le total de 597 € était encaissé, l’excédent serait remboursé au client dans un délai de 14 jours à compter de sa détection.</p>
+      <p>Le parcours prend la forme d’un abonnement PayPal souscrit par le client depuis la page « Mon parcours » (<a href="/formation/parcours">mediumia.fr/formation/parcours</a>). La première mensualité est prélevée au démarrage du parcours, à la souscription, puis chaque mois à la même date, jusqu’à la dernière mensualité.<span class="a-valider">à confirmer en test PayPal Sandbox</span> L’abonnement s’arrête ensuite de lui-même : aucun prélèvement n’a lieu au-delà de 597 € au total. MediumIA ne reçoit ni ne conserve les données bancaires du client.</p>
+      <p>Chaque montant est vérifié auprès de PayPal par le serveur de MediumIA avant l’ouverture des modules correspondants, et n’est comptabilisé qu’une seule fois. Si, par erreur, un montant dépassant le total de 597 € était encaissé, l’excédent serait remboursé au client dans les meilleurs délais, et au plus tard sous 14 jours à compter de sa détection.<span class="a-valider">clause à valider juridiquement</span></p>
 
       <h3>Paiement refusé</h3>
       <p>Si une mensualité n’est pas encaissée, aucun nouveau module ne s’ouvre. PayPal peut effectuer une nouvelle tentative ; après deux échecs, l’abonnement est suspendu, sans frais ni pénalité. Le client peut reprendre son parcours à tout moment depuis « Mon parcours ».</p>
@@ -108,10 +109,12 @@
       <p>À tout moment, le client peut ouvrir tous les modules restants en réglant en une fois le solde exact : 597 € moins les sommes déjà payées dans le parcours (par exemple 568 € juste après la Découverte). L’abonnement en cours est arrêté avant ce paiement. Si une mensualité est encaissée entre-temps, le paiement du solde n’est pas effectué et le nouveau solde est affiché.</p>
 
       <h3>Achat de la Formation complète pendant un parcours</h3>
-      <p>Si la Formation complète est achetée en une fois alors qu’un parcours est en cours, l’abonnement du parcours est arrêté. Tout montant payé au-delà de 597 € au total (parcours et achat réunis) est remboursé au client dans un délai de 14 jours.</p>
+      <p>Si la Formation complète est achetée en une fois alors qu’un parcours est en cours, l’abonnement du parcours est arrêté. Tout montant payé au-delà de 597 € au total (parcours et achat réunis) est remboursé au client dans les meilleurs délais, et au plus tard sous 14 jours.<span class="a-valider">clause à valider juridiquement</span></p>
 
-      <h3>Durée d’accès à l’application</h3>
-      <p>Chaque mensualité encaissée ouvre, en plus de ses modules, l’accès à l’application MediumIA et à son assistant pour <strong>12 mois à compter de ce paiement</strong>. Avec la seule Découverte, l’accès est de 30 jours. Les PDF déjà téléchargés restent utilisables à titre personnel après la fin de l’accès à l’application.</p>
+      <h3>Coach MediumIA et application : 12 mois après le dernier paiement</h3>
+      <p>L’accès à l’application MediumIA et à son coach dure <strong>12 mois à compter du dernier paiement encaissé</strong> dans le parcours. Chaque nouvelle mensualité repousse donc cette date de 12 mois. Par exemple, pour une mensualité payée le 5 mars 2027, l’accès court jusqu’au 5 mars 2028 ; si la mensualité suivante est payée le 5 avril 2027, il court jusqu’au 5 avril 2028.</p>
+      <p>Si le client arrête son parcours, il garde le coach jusqu’à 12 mois après son dernier paiement. Il travaille alors sur les modules déjà ouverts ; le coach ne traite que ces modules. Une fois le parcours complet (597 €), l’accès court 12 mois après le paiement qui l’a terminé.</p>
+      <p>Avec la seule Découverte, l’accès est de 30 jours. La date de fin est toujours affichée dans « Mon parcours » et dans l’espace élève. Les PDF déjà téléchargés restent utilisables à titre personnel après la fin de l’accès à l’application.</p>
     </div>
 
     <h2>5. Commande et paiement</h2>
@@ -123,7 +126,7 @@
     <h2>6. Activation et durée d’accès</h2>
     <p>Après confirmation du paiement, l’accès est activé sur l’adresse e-mail associée au paiement PayPal : <strong>30 jours</strong> et jusqu’au Module 1 pour Découverte MediumIA ; <strong>365 jours</strong> et jusqu’au Module 25 pour la Formation complète.</p>
     <div class="new">
-      <p>Pour le parcours au mois, l’accès est rattaché au compte élève du client : chaque mensualité encaissée ouvre deux modules supplémentaires et prolonge l’accès à l’application de 12 mois à compter de ce paiement (article 4 bis).</p>
+      <p>Pour le parcours au mois, l’accès est rattaché au compte élève du client : chaque mensualité encaissée ouvre deux modules supplémentaires, et l’application et son coach restent accessibles 12 mois après le dernier paiement encaissé (article 4 bis).</p>
     </div>
     <p>Le client se connecte à son espace sur <a href="https://espace.mediumia.fr">espace.mediumia.fr</a> avec cette même adresse. Les PDF déjà téléchargés restent utilisables à titre personnel après la fin de l’accès à l’application.</p>
 
@@ -131,7 +134,7 @@
     <div class="notice">
       <p>Avant la création de la commande, le client doit demander expressément l’accès immédiat aux contenus numériques. Pour les contenus numériques non fournis sur un support matériel dont l’exécution commence immédiatement, le client reconnaît qu’après son accord préalable exprès et sa renonciation expresse, le droit de rétractation ne s’applique plus à ces contenus conformément à l’article L. 221-28 du Code de la consommation.</p>
       <div class="new">
-        <p>Pour le parcours au mois, cet accord et cette renonciation sont recueillis à la souscription de l’abonnement et avant chaque paiement « Tout débloquer ». Ils portent sur chaque étape payée, dont les modules sont ouverts immédiatement à l’encaissement. Le client reste libre d’arrêter le parcours à tout moment pour les étapes à venir (article 4 bis).</p>
+        <p>Pour le parcours au mois, cet accord et cette renonciation sont recueillis à la souscription de l’abonnement et avant chaque paiement « Tout débloquer ».<span class="a-valider">à valider juridiquement : rétractation d’un abonnement de contenus numériques</span> Ils portent sur chaque étape payée, dont les modules sont ouverts immédiatement à l’encaissement. Le client reste libre d’arrêter le parcours à tout moment pour les étapes à venir (article 4 bis).</p>
       </div>
       <p>Cette renonciation est recueillie séparément des CGV et son acceptation est horodatée côté serveur. Les éventuels droits applicables à des éléments de service distincts restent régis par les dispositions légales en vigueur.</p>
     </div>

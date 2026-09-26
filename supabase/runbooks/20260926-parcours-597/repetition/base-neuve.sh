@@ -8,7 +8,8 @@
 #   bash supabase/runbooks/20260926-parcours-597/repetition/base-neuve.sh
 #
 # Avant les migrations : plateforme-supabase.sql (ce que Supabase fournit : rôles,
-# auth, storage, extensions ; pg_cron et pg_net doivent exister sur le serveur).
+# auth, storage, extensions). pg_cron et pg_net (extensions Supabase) : copier
+# extensions-simulees/* dans « $(pg_config --sharedir)/extension/ » du serveur local.
 # hors-depot/ : manques constatés, objets présents en production mais créés par
 # aucune migration des dépôts, rejoués juste avant la première migration qui en a besoin.
 set -euo pipefail

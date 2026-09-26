@@ -437,13 +437,13 @@
 .cosmic-library__eyelid--upper {
   transform: translateY(-240%);
   transform-origin: center bottom;
-  animation: cosmic-blink-upper 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  animation: cosmic-blink-upper 15s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
 .cosmic-library__eyelid--lower {
   transform: translateY(240%);
   transform-origin: center top;
-  animation: cosmic-blink-lower 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  animation: cosmic-blink-lower 15s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
 .cosmic-library__blink-seam {
@@ -452,7 +452,7 @@
   stroke-linecap: round;
   stroke-width: 2;
   opacity: 0;
-  animation: cosmic-blink-seam 31.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  animation: cosmic-blink-seam 15s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
 .cosmic-library__message {
@@ -769,19 +769,21 @@
   to { transform: translate(-50%, -50%) rotate(377deg); }
 }
 
+/* Un seul clignement, à la fin de chaque cycle de 15 s (le premier 15 s après
+   l'arrivée sur la page) : fermeture ≈ 90 ms, pause ≈ 20 ms, réouverture ≈ 80 ms. */
 @keyframes cosmic-blink-upper {
-  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { transform: translateY(-240%); }
-  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { transform: translateY(0); }
+  0%, 98.5%, 99.8%, 100% { transform: translateY(-240%); }
+  99.1%, 99.25% { transform: translateY(0); }
 }
 
 @keyframes cosmic-blink-lower {
-  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { transform: translateY(240%); }
-  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { transform: translateY(0); }
+  0%, 98.5%, 99.8%, 100% { transform: translateY(240%); }
+  99.1%, 99.25% { transform: translateY(0); }
 }
 
 @keyframes cosmic-blink-seam {
-  0%, 27.5%, 28.08%, 72.72%, 73.3%, 74%, 74.47%, 100% { opacity: 0; }
-  27.78%, 27.84%, 72.98%, 73.04%, 74.22%, 74.28% { opacity: 0.68; }
+  0%, 98.5%, 99.8%, 100% { opacity: 0; }
+  99.1%, 99.25% { opacity: 0.68; }
 }
 
 @media (max-width: 1040px) {

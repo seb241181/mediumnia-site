@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import oracleCards from '../data/oracleCards.json'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 export default function OracleTest() {
   const [email, setEmail]     = useState('')
@@ -63,7 +64,7 @@ export default function OracleTest() {
     } catch (err) {
       console.error(err)
       setIsError(true)
-      setMessage("Une erreur est survenue. Veuillez réessayer plus tard.")
+      setMessage(userErrorMessage(err, 'Le tirage n’a pas pu être interprété. Réessayez dans quelques instants.'))
     } finally {
       setLoading(false)
     }

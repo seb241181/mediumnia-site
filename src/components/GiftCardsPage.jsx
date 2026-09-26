@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import PublicPageNav from './PublicPageNav'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const API = '/api/rdv-config?giftCardAction='
 const PAY_LATER_MIN_CENTS = 3000
@@ -88,7 +89,7 @@ function Purchase() {
           if (result.status === 'COMPLETED') setDone(result)
           else setNotice('Le paiement n’a pas pu être confirmé. Ne repayez pas : écrivez-nous à contact@mediumia.fr.')
         },
-        onError: (err) => setNotice(err?.message || 'Le paiement a échoué. Réessayez.'),
+        onError: (err) => setNotice(userErrorMessage(err, 'Le paiement n’a pas abouti. Aucun montant n’a été prélevé : vous pouvez réessayer.')),
       }).render(container)
     }).catch(() => setNotice('Le paiement sécurisé est momentanément indisponible.'))
     return () => { disposed = true; container.innerHTML = '' }

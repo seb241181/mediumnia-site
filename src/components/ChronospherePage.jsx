@@ -10,6 +10,7 @@ import {
 import { getChronosphereReading } from '../../lib/chronosphereReading.js'
 import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 import PublicPageNav from './PublicPageNav'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const THEMES = [
   { value: 'amour', label: 'Amour' },
@@ -535,7 +536,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     } catch (err) {
-      setError(err?.message || 'Une erreur est survenue.')
+      setError(userErrorMessage(err, 'La lecture n’a pas pu être générée. Réessayez dans quelques instants.'))
     } finally {
       setLoading(false)
     }
@@ -685,7 +686,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
       setPaymentMessage('')
       if (token && launchRef.current) launchRef.current(token, usesDrawToken)
     } catch (err) {
-      setError(err?.message || 'Une erreur est survenue.')
+      setError(userErrorMessage(err, 'La vérification du paiement n’a pas abouti. Réessayez dans quelques instants.'))
       setPaymentMessage('')
     } finally {
       setLoading(false)

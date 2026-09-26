@@ -6,6 +6,7 @@ import { getSolarTemperament } from '../../lib/chronosphereSolarTemperament.js'
 import { summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
 import { useAuth } from '../lib/useAuth.js'
 import PublicPageNav from './PublicPageNav'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 function formatDate(value) {
   if (!value) return ''
@@ -429,7 +430,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     const action = mode === 'signup' ? signUp : signIn
     const { data, error } = await action(email, authPassword)
     if (error) {
-      setAuthMessage(error.message || 'Connexion impossible.')
+      setAuthMessage(userErrorMessage(error, 'Connexion impossible. Vérifiez votre e-mail et votre mot de passe, puis réessayez.'))
       return
     }
     if (mode === 'signup' && !data?.session) {
@@ -574,7 +575,7 @@ async function captureMaxOrder(orderId, token) {
       setForm((current) => ({ ...current, number1: '', number2: '', number3: '' }))
       await refreshMaxStatus(packToken, true)
     } catch (error) {
-      setDrawError(error?.message || 'La lecture MAX n’a pas pu être générée.')
+      setDrawError(userErrorMessage(error, 'La lecture MAX n’a pas pu être générée. Réessayez dans quelques instants.'))
     } finally {
       setDrawBusy(false)
     }

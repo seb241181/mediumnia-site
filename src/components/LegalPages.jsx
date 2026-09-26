@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import LegalFooter from './LegalFooter'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 function LegalShell({ onBack, onNavigate, title, children }) {
   return (
@@ -657,7 +658,7 @@ export function Retractation({ onBack, onNavigate }) {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setApiError(data.error || 'Une erreur est survenue. Veuillez réessayer.')
+        setApiError(userErrorMessage(data.error, 'Votre demande n’a pas pu être envoyée. Réessayez, ou écrivez à contact@mediumia.fr.'))
         setLoading(false)
         return
       }

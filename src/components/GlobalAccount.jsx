@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const EMPTY_PROFILE = {
   full_name: '',
@@ -277,7 +278,7 @@ export default function GlobalAccount() {
     const { data, error } = await action(email.trim(), password)
     setAuthBusy(false)
     if (error) {
-      setAuthError(error.message || 'Une erreur est survenue.')
+      setAuthError(userErrorMessage(error, 'Connexion impossible. Vérifiez votre e-mail, puis réessayez.'))
       return
     }
     if (mode === 'signup' && !data?.session) {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const API = '/api/rdv-config?conferencePassAction='
 const PAYPAL_SCRIPT_ID = 'mediumia-paypal-sdk'
@@ -56,7 +57,7 @@ function messageForState(state, error) {
   if (state === 'already_redeemed') return 'Ce Pass a déjà été utilisé pour activer un accès MediumIA.'
   if (state === 'invalid') return 'Ce Pass est introuvable ou invalide.'
   if (state === 'offer_disabled') return 'L’offre spéciale conférence n’est pas encore configurée.'
-  if (error) return 'Une erreur récupérable est survenue. Vous pouvez réessayer sans perdre votre Pass.'
+  if (error) return `${userErrorMessage(error, 'Le paiement n’a pas abouti.')} Votre Pass reste valable : vous pouvez réessayer.`
   return ''
 }
 

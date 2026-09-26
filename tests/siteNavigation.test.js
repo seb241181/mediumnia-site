@@ -39,7 +39,7 @@ test('long pages get a discreet « Sur cette page » rail on wide screens only',
   assert.match(app, /<PageRail items=\{HOME_RAIL\} \/>/)
 })
 
-test('home order: hero, Formation (597 €), Consulter, avis, Découvrir, boutique, praticiens', async () => {
+test('home order: hero, Formation with progressive payment, Consulter, avis, Découvrir, boutique, praticiens', async () => {
   const app = await read('src/App.jsx')
   const home = app.slice(app.indexOf('function PublicPlatformHome('))
   const order = ['<CosmicLibraryHero', '<section id="formation"', '<ConsultationSection id="consulter" compact', '<ReviewsHighlight />', '<DiscoverSection id="decouvrir"', '<section id="boutique"', '<PractitionersBand']
@@ -47,8 +47,10 @@ test('home order: hero, Formation (597 €), Consulter, avis, Découvrir, boutiq
   assert.ok(positions.every((p) => p > 0), JSON.stringify(positions))
   assert.deepEqual([...positions].sort((a, b) => a - b), positions)
   assert.doesNotMatch(app, /function FeaturedChronosphere|function OracleChronosphereBridge|Pour éviter toute confusion|Le socle arrive/)
-  assert.match(app, /597 € TTC<\/p>/)
-  assert.match(app, /Paiement en plusieurs fois disponible avec PayPal selon éligibilité\./)
+  assert.match(app, /Paiement progressif/)
+  assert.match(app, /pour commencer/)
+  assert.match(app, /offer\.regularCount/)
+  assert.match(app, /Total maximum/)
   const band = await read('src/components/PractitionersBand.jsx')
   assert.match(band, /label: 'Espace Pro', href: '\/pro'/)
 })
@@ -71,15 +73,17 @@ test('shop: Formation MediumIA first, as the lead offer, at 597 € TTC; other p
   assert.match(shop, /\{spotlight && <SpotlightCard product=\{spotlight\}/)
 })
 
-test('Formation first screen: promise, audience, benefits, 597 € TTC, payment phrase and CTA', async () => {
+test('Formation first screen: promise, audience, benefits and progressive payment are immediately visible', async () => {
   const page = await read('src/components/FormationPage.jsx')
   const top = page.slice(page.indexOf('id="formation-top"'), page.indexOf('Ce parcours est pour vous si'))
   assert.match(top, /<h1[^>]*>Développer sa médiumnité, pas à pas<\/h1>/)
   assert.match(top, /Pour qui :/)
   assert.match(top, /HERO_APPORTS\.map/)
-  assert.match(top, /597 €<\/span> <span className="text-lg text-mist">TTC/)
-  assert.match(top, /Paiement en plusieurs fois disponible avec PayPal selon éligibilité\./)
-  assert.match(top, /Rejoindre la formation →/)
+  assert.match(top, /Paiement progressif/)
+  assert.match(top, /money\(offer\.discoveryCents\)/)
+  assert.match(top, /offer\.regularCount/)
+  assert.match(top, /Total maximum/)
+  assert.match(top, /Voir les options de paiement →/)
   // Only the validated installment phrase, nowhere the old detail.
   assert.doesNotMatch(page, /4X|6X|12X|24X/)
   // Details kept but folded.

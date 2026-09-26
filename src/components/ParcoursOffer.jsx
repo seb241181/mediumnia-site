@@ -14,12 +14,9 @@ export default function ParcoursOffer() {
     <div className="max-w-2xl mx-auto mt-10">
       <div className="rounded-2xl border-2 border-gold/35 bg-white/75 p-7 md:p-8 text-left shadow-[0_16px_46px_rgba(26,21,53,0.07)]">
         <div className="text-center mb-6">
-          <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">Ou à votre rythme</p>
-          <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep">Parcours progressif</h3>
-          <p className="font-georgia text-deep mt-3 leading-relaxed">
-            <span className="text-2xl font-medium">{money(offer.discoveryCents)}</span> pour commencer, puis{' '}
-            <span className="text-2xl font-medium">{money(offer.stepCents)}</span>/mois
-          </p>
+          <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">Le plus souple</p>
+          <h3 className="font-georgia text-deep"><span className="text-4xl md:text-5xl font-medium">{money(offer.stepCents)}</span> <span className="text-xl text-mist">/ mois</span></h3>
+          <p className="font-georgia text-deep mt-3 leading-relaxed">après une Découverte à {money(offer.discoveryCents)} pour commencer</p>
           <p className="font-georgia text-sm text-mist mt-1">dernière mensualité {money(offer.finalCents)} · total maximum {money(offer.capCents)} TTC</p>
         </div>
 
@@ -45,7 +42,7 @@ export default function ParcoursOffer() {
         </ul>
 
         <p className="font-georgia text-xs text-mist text-center">
-          Le parcours commence par la Découverte ci-dessus. Déjà inscrit ?{' '}
+          La Découverte à {money(offer.discoveryCents)} est la première étape du parcours. Déjà inscrit ?{' '}
           <a href="/formation/parcours" className="text-gold underline">Continuer dans Mon parcours →</a>
         </p>
       </div>

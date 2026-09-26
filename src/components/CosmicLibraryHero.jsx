@@ -7,7 +7,7 @@ export const COSMIC_HOME_CONFIG = Object.freeze({
   title: 'Se former à la médiumnité.',
   emphasis: 'Consulter un médium.',
   description: 'MediumIA, c’est la Formation MediumIA de Sébastien Seguin, médium depuis plus de douze ans, et ses consultations : un chemin clair pour comprendre et développer votre sensibilité.',
-  primaryAction: 'Découvrir la Formation · 597 €',
+  primaryAction: 'Découvrir la Formation',
 })
 
 const LIGHT_PARTICLES = [
@@ -112,6 +112,13 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
               fetchPriority="high"
               decoding="async"
             />
+            <span className="cosmic-library__eye-blink" aria-hidden="true">
+              <svg viewBox="0 0 220 108" focusable="false">
+                <path className="cosmic-library__eyelid cosmic-library__eyelid--upper" d="M4 54 Q110 -3 216 54 Q110 55 4 54Z" />
+                <path className="cosmic-library__eyelid cosmic-library__eyelid--lower" d="M4 54 Q110 111 216 54 Q110 53 4 54Z" />
+                <path className="cosmic-library__blink-seam" d="M5 54 Q110 49 215 54" />
+              </svg>
+            </span>
           </div>
 
           <div className="cosmic-library__message cosmic-reveal cosmic-reveal--message">

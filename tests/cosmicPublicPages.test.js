@@ -47,7 +47,7 @@ test('the homepage hero says what MediumIA is and where to click', async () => {
   for (const wording of [
     'Se former à la médiumnité.',
     'Consulter un médium.',
-    'Découvrir la Formation · 597 €',
+    'Découvrir la Formation',
   ]) {
     assert.match(component, new RegExp(wording.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }

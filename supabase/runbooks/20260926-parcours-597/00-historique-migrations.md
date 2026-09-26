@@ -100,5 +100,6 @@ Elle a cependant révélé des objets présents en production mais créés par *
 - la table `mediumia_paypal_purchases`, avec son déclencheur `mediumia_paypal_purchase_set_updated_at` ;
 - les colonnes `display_name` et `license_number` de `mediumia_students` ;
 - le schéma des rendez-vous (`booking_*`), tenu dans `docs/rdv-*.sql` et appliqué à la main.
+- le coffre `mediumia-personal-pdfs` (privé, PDF uniquement, 20 Mo) et ses règles `mediumia_personal_pdfs_insert_by_token` / `mediumia_personal_pdfs_select_by_token`, créés le 01/09/2026 par la migration `mediumia_private_pdf_delivery`, absente des deux dépôts. Depuis la correction de `20260925150000`, une base neuve recrée le coffre avec les mêmes propriétés, mais pas encore ses règles par jeton.
 
 Pour qu'un environnement neuf se reconstruise **sans** ce complément, il faudra une migration de rattrapage idempotente, écrite à partir du schéma réel de production (`supabase db dump --schema public`, en lecture seule). C'est un chantier séparé, avec son propre GO. Il faudra aussi comparer les 97 versions inscrites aux fichiers des deux dépôts.

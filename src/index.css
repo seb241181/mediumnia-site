@@ -115,3 +115,13 @@ button, a, input, select, textarea { min-width: 0; }
   @keyframes heroFadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
   @media (prefers-reduced-motion: reduce) { .hero-fade-in { animation: none; } }
 }
+
+/* Cases à cocher et boutons radio : jamais écrasés par un conteneur flex
+   (une case de consentement tombait à 4 px de large sur mobile) et taille
+   lisible sur tout le site, ~22 px. */
+input[type='checkbox']:not(.sr-only),
+input[type='radio']:not(.sr-only) {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}

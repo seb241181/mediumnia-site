@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import '../styles/formation-page.css'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
 
@@ -36,8 +37,8 @@ function Header({ onBack }) {
 
 function Consent({ id, checked, onChange }) {
   return (
-    <label htmlFor={id} className="mt-4 flex cursor-pointer items-start gap-3">
-      <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-gold" />
+    <label htmlFor={id} className="consent-row mt-4">
+      <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="consent-check" />
       <span className="font-georgia text-xs leading-relaxed text-deep/80">
         J’ai lu et j’accepte les <a href="/cgv-formation.html" target="_blank" rel="noopener noreferrer" className="text-gold underline">conditions générales de vente</a>. Je demande l’ouverture immédiate de chaque étape payée et reconnais qu’une fois ce contenu numérique fourni, je ne peux plus exercer mon droit de rétractation pour cette étape. Je peux arrêter mon parcours à tout moment ; ce que j’ai débloqué reste à moi.
       </span>

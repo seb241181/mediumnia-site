@@ -367,10 +367,21 @@ export default function FormationPage({ onBack, onNavigate }) {
                 <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">Première étape</p>
                 <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep">Découverte MediumIA</h3>
                 <p className="font-georgia text-4xl text-deep font-medium mt-3">29 €</p>
-                <p className="font-georgia text-sm text-mist mt-2">Introduction + Module 1 + exercices + MediumIA pendant 30 jours</p>
+                <p className="font-georgia text-sm text-mist mt-2">Votre première étape avant de poursuivre à votre rythme.</p>
               </div>
+              <details className="group mb-5 rounded-xl border border-gold/20 bg-cream/60">
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 font-georgia text-sm font-bold text-deep [&::-webkit-details-marker]:hidden">
+                  <span className="flex-1">Voir ce que contient la Découverte</span>
+                  <span className="text-gold text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                </summary>
+                <ul className="border-t border-gold/15 px-4 py-4 font-georgia text-sm text-deep/85 space-y-2">
+                  {['Introduction complète','Module 1 — L’Intention comme Porte','Exercices du Module 1','Carnet de pratique intégré','MediumIA pendant 30 jours','PDF Découverte personnel'].map((item) => (
+                    <li key={item} className="flex gap-3 items-start"><span className="text-gold shrink-0">✓</span><span>{item}</span></li>
+                  ))}
+                </ul>
+              </details>
               <p className="rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-center font-georgia text-sm font-semibold leading-relaxed text-deep mb-6">
-                Ces 29 € comptent dans le total de 597 € si vous poursuivez ensuite le parcours.
+                Vos 29 € comptent dans le total de 597 € et sont déduits si vous choisissez ensuite le paiement complet.
               </p>
               <FormationCheckout product="discovery" />
             </div>

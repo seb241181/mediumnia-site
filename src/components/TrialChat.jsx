@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const MAX_MESSAGES = 5
 const STORAGE_KEY = 'mediumia_trial_count'
@@ -73,7 +74,7 @@ export default function TrialChat() {
       }
 
       const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply || data.error || 'Une erreur est survenue.' }])
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply || userErrorMessage(data.error, 'Je n’ai pas pu répondre cette fois. Reformulez ou réessayez dans quelques instants.') }])
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Je suis momentanément indisponible. Réessayez dans quelques instants.' }])
     } finally {

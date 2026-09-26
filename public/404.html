@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#fbfaf5" />
+    <title>Page introuvable · MediumIA</title>
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      /* Page servie par Vercel pour toute adresse inconnue (statut 404).
+         Autonome : aucune dépendance au bundle de l'application. Couleurs du
+         système « Bibliothèque Cosmique » (cosmic-design-system.css). */
+      :root {
+        --paper: #fbfaf5;
+        --white: #fffefa;
+        --deep: #101938;
+        --mist: #555669;
+        --gold: #b77a12;
+        --gold-text: #9b640b;
+        --line: rgba(188, 137, 43, 0.28);
+      }
+      * { box-sizing: border-box; }
+      html { color-scheme: light; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        color: var(--deep);
+        font-family: Georgia, 'Times New Roman', serif;
+        background:
+          radial-gradient(circle at 50% 7rem, rgba(227, 195, 124, 0.24), transparent 30rem),
+          linear-gradient(180deg, #fffefa 0%, var(--paper) 44%, #f4f1e9 100%);
+        -webkit-font-smoothing: antialiased;
+      }
+      body::after {
+        position: fixed;
+        z-index: -1;
+        top: 4.5rem;
+        left: 50%;
+        width: min(74rem, 124vw);
+        aspect-ratio: 2.25;
+        border: 1px solid rgba(183, 122, 18, 0.24);
+        border-radius: 50%;
+        content: '';
+        -webkit-mask-image: linear-gradient(90deg, transparent, #000 18% 82%, transparent);
+        mask-image: linear-gradient(90deg, transparent, #000 18% 82%, transparent);
+        pointer-events: none;
+        transform: translate(-50%) rotate(-3deg);
+      }
+      a { color: inherit; }
+      a:focus-visible { outline: 2px solid rgba(183, 122, 18, 0.62); outline-offset: 3px; }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: min(calc(100% - 1.25rem), 1280px);
+        min-height: 58px;
+        margin: 0.65rem auto 0;
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: linear-gradient(115deg, rgba(255, 255, 255, 0.91), rgba(250, 247, 238, 0.76));
+        box-shadow: 0 16px 50px rgba(16, 25, 56, 0.1), inset 0 1px rgba(255, 255, 255, 0.94);
+        -webkit-backdrop-filter: blur(22px);
+        backdrop-filter: blur(22px);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; padding: 4px 8px 4px 4px; border-radius: 999px; }
+      .brand img { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+      .brand-name { display: block; font-size: 13px; font-weight: 600; letter-spacing: 0.23em; }
+      .brand-sub { display: block; font-size: 9px; letter-spacing: 0.18em; color: var(--gold); }
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border: 1px solid rgba(183, 122, 18, 0.38);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.42);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.045em;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .cta:hover { border-color: rgba(183, 122, 18, 0.68); background: rgba(255, 255, 255, 0.78); }
+
+      main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 20px 56px;
+      }
+      .panel {
+        width: 100%;
+        max-width: 640px;
+        padding: 40px 28px;
+        border: 1px solid var(--line);
+        border-radius: 32px;
+        background: rgba(255, 254, 250, 0.86);
+        box-shadow: 0 18px 54px rgba(16, 25, 56, 0.09);
+        text-align: center;
+      }
+      .eyebrow { margin: 0; font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-text); }
+      h1 { margin: 14px 0 0; font-size: clamp(1.75rem, 5vw, 2.4rem); font-weight: 500; line-height: 1.2; text-wrap: balance; }
+      .lead { max-width: 30rem; margin: 14px auto 0; color: var(--mist); font-size: 1rem; line-height: 1.65; }
+      .links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin: 28px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .links a {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 64px;
+        padding: 12px 16px;
+        border: 1px solid rgba(183, 122, 18, 0.22);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.7);
+        text-align: left;
+        text-decoration: none;
+        transition: border-color 0.25s ease, transform 0.25s ease;
+      }
+      .links a:hover { border-color: rgba(183, 122, 18, 0.55); transform: translateY(-2px); }
+      .links strong { font-size: 0.95rem; font-weight: 500; }
+      .links span { margin-top: 2px; font-size: 0.75rem; color: var(--mist); }
+      .home {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        margin-top: 28px;
+        padding: 0 28px;
+        border: 1px solid #aa6e0c;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #c98d22, #aa6d0d);
+        box-shadow: 0 11px 28px rgba(132, 83, 8, 0.2);
+        color: var(--white);
+        font-size: 0.95rem;
+        text-decoration: none;
+      }
+      .contact { margin: 22px 0 0; font-size: 0.8rem; color: var(--mist); }
+      .contact a { color: var(--gold-text); text-underline-offset: 3px; }
+
+      @media (max-width: 520px) {
+        .header { border-radius: 22px; }
+        .brand-text { display: none; }
+        .links { grid-template-columns: 1fr; }
+        .panel { padding: 32px 20px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .links a { transition: none; }
+        .links a:hover { transform: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="/" aria-label="MediumIA — accueil">
+        <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="" aria-hidden="true" width="36" height="36" />
+        <span class="brand-text">
+          <span class="brand-name">MEDIUMIA</span>
+          <span class="brand-sub">MÉDIUMNITÉ CONSCIENTE</span>
+        </span>
+      </a>
+      <a class="cta" href="https://espace.mediumia.fr/">Espace élève</a>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="titre">
+        <p class="eyebrow">✦ Page introuvable</p>
+        <h1 id="titre">Cette page n’existe pas</h1>
+        <p class="lead">Le lien est peut-être ancien ou incomplet. Voici où reprendre votre chemin.</p>
+
+        <ul class="links">
+          <li><a href="/formation"><strong>La Formation</strong><span>25 modules de médiumnité consciente</span></a></li>
+          <li><a href="/oracle"><strong>L’Oracle</strong><span>Tirer une carte et l’explorer</span></a></li>
+          <li><a href="/chronosphere"><strong>ChronoSphère</strong><span>Cycles et lignes de temps</span></a></li>
+          <li><a href="/reseau"><strong>Le Réseau</strong><span>Trouver un praticien</span></a></li>
+        </ul>
+
+        <a class="home" href="/">Retour à l’accueil</a>
+        <p class="contact">Une question ? <a href="mailto:contact@mediumia.fr">contact@mediumia.fr</a></p>
+      </section>
+    </main>
+  </body>
+</html>

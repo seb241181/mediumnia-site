@@ -2,10 +2,10 @@
 --   Découverte 29 € → 11 × 48 € (2 modules à chaque fois) → dernière mensualité 40 €
 --   = 597 €, le prix de la Formation complète, jamais plus.
 --
--- Remplace, pour les montants, la migration 20260925120000 (ancien modèle 34 €) :
---   - si ses tables n'existent pas encore, elles sont créées ici directement
---     avec les règles 597 € (20260925120000 ne doit alors PAS être lancée) ;
---   - si elles existent déjà, seules les règles de montant sont remplacées.
+-- Remplace l'ancienne 20260925120000 (modèle 34 €), jamais appliquée et archivée
+-- dans supabase/archive/ : crée les mêmes tables, colonnes, index, droits et
+-- fonction, avec les règles 597 €. Si ces tables existaient déjà (cas imprévu),
+-- seules les règles de montant sont remplacées.
 -- Idempotente : peut être relancée sans effet de bord. Tout ou rien (transaction).
 -- Aucun paiement enregistré n'est modifié ni supprimé.
 --

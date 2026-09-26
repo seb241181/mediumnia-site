@@ -4,22 +4,22 @@
 -- Lancer chaque bloc séparément (le SQL Editor n'affiche que le dernier résultat).
 -- Aucune écriture ici. Résultats attendus aujourd'hui indiqués pour chaque bloc.
 
--- A. La table d'historique existe-t-elle ?
---    Attendu : null (le SQL Editor n'enregistre rien ; aucune migration n'a été
---    poussée par le CLI). Si ce n'est pas null, les blocs B et C disent ce qu'elle contient.
-select to_regclass('supabase_migrations.schema_migrations') as table_historique;
+-- A. L'historique existe et contient déjà des migrations antérieures.
+--    Constaté le 26/09/2026 : la table existe, 97 versions inscrites.
+--    Ce nombre peut évoluer : il ne sert jamais de critère.
+select to_regclass('supabase_migrations.schema_migrations') as table_historique,
+       (select count(*) from supabase_migrations.schema_migrations) as versions_inscrites;
 
--- B. Contenu de l'historique (toutes les versions, des deux dépôts site et espace élève).
---    Si le bloc A a renvoyé null, ce bloc échoue (table inconnue) : c'est normal.
+-- B. Contenu de l'historique (lecture seule, pour mémoire).
 select version, name, coalesce(array_length(statements, 1), 0) as nb_instructions
 from supabase_migrations.schema_migrations
 order by version;
 
 -- C. Les versions concernées par le parcours : présentes dans l'historique ?
---    Attendu : false partout (ou erreur si A = null).
+--    Attendu avant l'opération (constaté le 26/09/2026) : false partout.
 select v.version, v.depot,
        exists (select 1 from supabase_migrations.schema_migrations m where m.version = v.version) as dans_historique
-from (values ('20260925120000', 'site'), ('20260925150000', 'espace élève'),
+from (values ('20260925120000', 'site (archivée)'), ('20260925150000', 'espace élève'),
              ('20260926090000', 'site'), ('20260926100000', 'site')) as v(version, depot)
 order by 1;
 
@@ -70,3 +70,12 @@ select
   (select count(*) > 0 from pg_proc where proname = 'mediumia_grant_founder') as fonction_fondatrice,
   (select count(*) > 0 from pg_proc where proname = 'mediumia_parcours_opening_transition') as fonction_transition,
   (select count(*) > 0 from storage.buckets where id = 'mediumia-personal-pdfs') as coffre_pdf_personnels;
+
+-- H. EMPREINTE DE L'HISTORIQUE EXISTANT, à noter AVANT toute réparation.
+--    Garder les trois valeurs : la liste des versions sera recollée dans le
+--    contrôle final (04, bloc 2), qui doit retrouver exactement la même empreinte
+--    pour ces versions-là, quelles que soient les migrations ajoutées entre-temps.
+select count(*) as versions_existantes,
+       string_agg(version, ',' order by version) as liste_versions,
+       md5(coalesce(string_agg(version || '|' || coalesce(name, '') || '|' || coalesce(array_to_string(statements, E'\n'), ''), E'\n' order by version), '')) as empreinte_historique
+from supabase_migrations.schema_migrations;

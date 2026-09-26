@@ -323,8 +323,8 @@ test('former Discoveries stay as sold (30 days); only a Discovery bought once th
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../lib/paypalSandbox.js', import.meta.url), 'utf8')
   assert.match(src, /if \(cfg\.product === 'discovery' && pathEnv\(\)\) \{\s*await supabase\.rpc\('mediumia_set_path_entitlement'/)
-  for (const file of ['20260925120000_formation_parcours_mensuel.sql', '20260926100000_formation_parcours_597.sql']) {
-    const migration = readFileSync(new URL(`../supabase/migrations/${file}`, import.meta.url), 'utf8')
+  for (const file of ['archive/20260925120000_formation_parcours_mensuel.sql', 'migrations/20260926100000_formation_parcours_597.sql']) {
+    const migration = readFileSync(new URL(`../supabase/${file}`, import.meta.url), 'utf8')
     assert.doesNotMatch(migration, /update public\.mediumia_entitlements[^;]*discovery[^;]*where[^;]*paypal:/i, 'no update of existing Discovery rows')
     assert.match(migration, /case when p_max_module = 1 then 'discovery' else 'full' end/)
   }
@@ -539,4 +539,14 @@ test('CGV « Parcours au mois »: draft only (not published), points to settle c
   assert.match(draft, /12 mois à compter du dernier paiement encaissé/)
   assert.match(draft, /formation-parcours-597-2026-09-26/)
   assert.doesNotMatch(draft.replace(/<!--[\s\S]*?-->/g, ''), /\b(397|368)\b/)
+})
+
+test('the abandoned 34 € migration is archived: out of the active chain, kept for reference, clearly marked', async () => {
+  const { readdirSync, readFileSync, existsSync } = await import('node:fs')
+  const active = readdirSync(new URL('../supabase/migrations/', import.meta.url))
+  assert.ok(!active.some((f) => f.startsWith('20260925120000')), 'no longer in supabase/migrations (never run by db push / db reset)')
+  const archived = new URL('../supabase/archive/20260925120000_formation_parcours_mensuel.sql', import.meta.url)
+  assert.ok(existsSync(archived))
+  assert.match(readFileSync(archived, 'utf8'), /^-- ARCHIVE — NE PAS APPLIQUER/)
+  assert.match(readFileSync(new URL('../supabase/archive/README.md', import.meta.url), 'utf8'), /Ne jamais remettre un fichier d'ici dans `supabase\/migrations\/`/)
 })

@@ -14,7 +14,7 @@ const HERE = new URL('./', import.meta.url)
 const SUPA = new URL('../../../', HERE)
 const read = (rel) => readFileSync(new URL(rel, SUPA), 'utf8')
 const MIG = read('migrations/20260926100000_formation_parcours_597.sql')
-const OLD = read('migrations/20260925120000_formation_parcours_mensuel.sql')
+const OLD = read('archive/20260925120000_formation_parcours_mensuel.sql')
 const CREDIT = read('migrations/20260926090000_decouverte_credit_568.sql')
 const INTENTS = read('migrations/20260909133000_mediumia_paypal_order_intents.sql')
 const RB = 'runbooks/20260926-parcours-597/'

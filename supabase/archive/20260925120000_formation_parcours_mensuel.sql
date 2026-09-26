@@ -1,3 +1,8 @@
+-- ARCHIVE — NE PAS APPLIQUER. Migration jamais appliquée en production (ancien modèle 34 € / 397 €).
+-- Remplacée par supabase/migrations/20260926100000_formation_parcours_597.sql, qui crée
+-- les mêmes objets avec les règles 597 € (équivalence démontrée : voir
+-- supabase/runbooks/20260926-parcours-597/). Conservée pour mémoire ; voir supabase/archive/README.md.
+
 -- Parcours MediumIA au mois (étape 1) : registre des paiements encaissés,
 -- abonnements PayPal, plans PayPal, et accès progressif (module maximum 1 à 25).
 --

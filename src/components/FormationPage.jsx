@@ -401,7 +401,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                     <li key={i} className="flex gap-3 items-start"><span className="text-gold shrink-0 mt-0.5">✓</span><span>{item}</span></li>
                   ))}
                 </ul>
-                <p className="font-georgia text-mist text-xs text-center mb-5">Paiement sécurisé par carte bancaire ou PayPal. Le paiement fractionné proposé directement par PayPal dépend de son éligibilité.</p>
+                <p className="font-georgia text-mist text-xs text-center mb-5">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte. Le paiement fractionné proposé directement par PayPal dépend de son éligibilité.</p>
                 <FormationCreditNotice />
                 <FormationCheckout />
               </div>

@@ -4,6 +4,10 @@ import ProductDetail from './ProductDetail'
 import BoutiqueProductArt from './BoutiqueProductArt'
 import '../styles/boutique.css'
 
+// Or foncé pour les petits textes sur fond clair : l'or de marque #C9A84C
+// n'atteint que 2,3:1 de contraste, celui-ci 4,97:1 (WCAG AA).
+const TEXT_GOLD = '#9b640b'
+
 function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   const isOracle = product.id === 'oracle-au-dela-ame'
   const isFormation = product.id === 'formation-mediumia'
@@ -59,7 +63,7 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
 
       {/* Info */}
       <div className="px-4 py-4">
-        <p className="font-georgia text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: '#C9A84C' }}>
+        <p className="font-georgia text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: TEXT_GOLD }}>
           {product.categoryLabel}
         </p>
         <h3 className="font-georgia text-sm font-medium text-deep leading-snug mb-3" style={{ minHeight: 38 }}>
@@ -67,7 +71,7 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
         </h3>
         <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'rgba(201,168,76,.18)' }}>
           <span className="font-georgia text-sm font-semibold text-deep">{product.priceLabel}</span>
-          <span className="font-georgia text-xs text-gold group-hover:translate-x-1 transition-transform inline-block">
+          <span className="font-georgia text-xs group-hover:translate-x-1 transition-transform inline-block" style={{ color: TEXT_GOLD }}>
             {external ? '→' : 'Voir →'}
           </span>
         </div>
@@ -89,7 +93,7 @@ function SpotlightCard({ product, onOpenFormation }) {
         <img src={product.coverImage} alt="Couverture de la Formation MediumIA : 25 modules, 4 niveaux, Sébastien Seguin" loading="lazy" decoding="async" className="h-full max-h-[340px] w-full object-cover md:max-h-none" />
       </a>
       <div className="flex flex-col p-7 md:p-9">
-        <p className="font-georgia text-[10px] uppercase tracking-[0.2em]" style={{ color: '#C9A84C' }}>{product.eyebrow}</p>
+        <p className="font-georgia text-[10px] uppercase tracking-[0.2em]" style={{ color: TEXT_GOLD }}>{product.eyebrow}</p>
         <h3 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">{product.name}</h3>
         <p className="mt-3 font-georgia leading-relaxed text-mist">{product.summary}</p>
         <ul className="mt-4 grid grid-cols-1 gap-1.5 font-georgia text-sm text-deep sm:grid-cols-2">

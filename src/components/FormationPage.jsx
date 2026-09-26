@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import LegalFooter from './LegalFooter'
 import FormationCreditNotice from './FormationCreditNotice'
 import ParcoursOffer from './ParcoursOffer'
-import { parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'
+import { money, parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'
 import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
 import SiteNav from './SiteNav'
@@ -354,13 +354,26 @@ export default function FormationPage({ onBack, onNavigate }) {
           </div>
         </section>
 
-        <section id="offre" className="px-6 py-14 scroll-mt-40">
+        <section id="offre" data-formation-ux="progressive-first" className="px-6 py-14 scroll-mt-40">
           <div className="max-w-4xl mx-auto text-center">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Choisir votre rythme</p>
             <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-3">Commencer progressivement ou tout débloquer</h2>
             <p className="font-georgia text-mist text-base leading-relaxed max-w-2xl mx-auto mb-4">Le contenu est le même. Vous choisissez simplement la façon d’avancer et de régler votre formation.</p>
 
             <ParcoursOffer />
+
+            <div className="max-w-2xl mx-auto mt-5 rounded-2xl border-2 border-gold/45 bg-white/85 p-6 md:p-8 text-left shadow-[0_16px_46px_rgba(26,21,53,0.07)]">
+              <div className="text-center mb-6">
+                <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">Première étape</p>
+                <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep">Découverte MediumIA</h3>
+                <p className="font-georgia text-4xl text-deep font-medium mt-3">29 €</p>
+                <p className="font-georgia text-sm text-mist mt-2">Introduction + Module 1 + exercices + MediumIA pendant 30 jours</p>
+              </div>
+              <p className="rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-center font-georgia text-sm font-semibold leading-relaxed text-deep mb-6">
+                Ces 29 € comptent dans le total de 597 € si vous poursuivez ensuite le parcours.
+              </p>
+              <FormationCheckout product="discovery" />
+            </div>
 
             <details className="group max-w-2xl mx-auto mt-5 rounded-2xl border-2 border-gold/25 bg-white/70 text-left open:border-gold/45">
               <summary className="flex cursor-pointer list-none items-center gap-4 px-6 py-5 [&::-webkit-details-marker]:hidden">

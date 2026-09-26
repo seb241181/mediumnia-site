@@ -2,7 +2,7 @@
 
 Tout se passe sur les **préversions Vercel** des deux branches, en **argent fictif** (PayPal Sandbox). Aucun paiement live, aucun merge, interrupteur de production inchangé (OFF).
 
-Les préversions utilisent la base de production, mais uniquement des lignes marquées `sandbox`, et uniquement pour des comptes de test (`…+parcours…`). Ces lignes sont retirées à la fin par `90-nettoyage.sql`. Tout le parcours live filtre par environnement : il ne voit jamais ces lignes.
+Les préversions utilisent la base de production, mais uniquement des lignes marquées `sandbox`, et uniquement pour des comptes de test (`…+parcours…`). Ces lignes sont retirées à la fin par `90-nettoyage.sql`, limité aux 4 adresses de cette campagne. Tout le parcours live filtre par environnement : il ne voit jamais ces lignes.
 
 ## Où
 
@@ -89,5 +89,5 @@ Ne pas relancer `20-mensualites-simulees.sql` après un vrai prélèvement : le 
 ## Fin des tests
 
 1. Arrêter dans « Mon parcours » tout abonnement Sandbox encore actif (sinon le nettoyage refuse).
-2. **GO requis** : `90-nettoyage.sql`. Il supprime seulement les lignes Sandbox des comptes `+parcours`, puis liste les PDF de modules à supprimer dans Storage (tableau de bord). Les achats Sandbox restent, pour mémoire. Les comptes eux-mêmes ne sont pas supprimés.
+2. **GO requis** : `90-nettoyage.sql`, après avoir inscrit en tête du script les **4 adresses exactes de cette campagne** (`ADRESSE_1` à `ADRESSE_4`). Il ne touche qu'à ces 4 comptes : aucun autre compte, même en `+parcours`, présent ou futur. Il refuse de s'exécuter si la liste n'est pas exactement 4 adresses `+parcours` distinctes. Il supprime seulement leurs lignes Sandbox, puis indique dans son résultat les PDF de modules à supprimer dans Storage (tableau de bord). Les achats Sandbox restent, pour mémoire. Les comptes eux-mêmes ne sont pas supprimés.
 3. Me transmettre : pour chaque scénario, résultat conforme ou écart, et **la constatation du premier prélèvement (S2)** pour les CGV.

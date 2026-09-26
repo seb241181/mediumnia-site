@@ -50,22 +50,37 @@ const POUR_QUI = [
   "Vous cherchez l'autonomie, pas la dépendance à un enseignant.",
 ]
 
+// Indicateur des blocs <details> : « + » fermé, « − » ouvert (jamais « × »).
+function DetailsMark({ className = '' }) {
+  return (
+    <span className={`details-mark shrink-0 select-none ${className}`} aria-hidden="true">
+      <span className="details-mark__closed">+</span>
+      <span className="details-mark__open">−</span>
+    </span>
+  )
+}
+
+// Indicateur des accordéons pilotés en JavaScript.
+function AccordionMark({ open }) {
+  return <span className="text-gold/70 text-xl shrink-0 select-none" aria-hidden="true">{open ? '−' : '+'}</span>
+}
+
 function NiveauxAccordion() {
   const [open, setOpen] = useState(null)
   return (
     <div className="space-y-3">
       {NIVEAUX.map((n, i) => (
-        <div key={i} className="border-2 border-gold/25 rounded-xl overflow-hidden bg-white/50 hover:border-gold/50 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
-          <div className="flex items-center gap-5 px-6 py-5">
+        <div key={i} className="border-2 border-gold/25 rounded-xl overflow-hidden bg-white/50 hover:border-gold/50 transition-colors">
+          <button type="button" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i} aria-controls={`niveau-${i}`} className="flex w-full items-center gap-5 px-6 py-5 text-left">
             <span className="font-georgia text-gold text-sm tracking-widest shrink-0">{n.num}</span>
-            <div className="flex-1">
-              <p className="font-georgia text-deep font-medium">{n.titre}</p>
-              <p className="font-georgia text-mist text-xs mt-0.5">{n.modules}</p>
-            </div>
-            <span className="text-gold/60 text-xl shrink-0 transition-transform duration-300 select-none" style={{ transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
-          </div>
+            <span className="flex-1">
+              <span className="block font-georgia text-deep font-medium">{n.titre}</span>
+              <span className="block font-georgia text-mist text-xs mt-0.5">{n.modules}</span>
+            </span>
+            <AccordionMark open={open === i} />
+          </button>
           {open === i && (
-            <div className="px-6 pb-5 border-t border-gold/10">
+            <div id={`niveau-${i}`} className="px-6 pb-5 border-t border-gold/10">
               <p className="font-georgia text-deep text-sm leading-relaxed pt-4">{n.texte}</p>
             </div>
           )}
@@ -82,13 +97,13 @@ function FAQAccordion() {
   return (
     <div className="space-y-2">
       {items.map((item, i) => (
-        <div key={i} className="border-2 border-gold/20 rounded-xl overflow-hidden bg-white/50 hover:border-gold/40 transition-colors cursor-pointer" onClick={() => setOpen(open === i ? null : i)}>
-          <div className="flex items-center gap-5 px-6 py-5">
-            <div className="flex-1 font-georgia text-deep font-medium text-base">{item.q}</div>
-            <span className="text-gold/60 text-xl shrink-0 transition-transform duration-300 select-none" style={{ transform: open === i ? 'rotate(45deg)' : 'none' }}>+</span>
-          </div>
+        <div key={i} className="border-2 border-gold/20 rounded-xl overflow-hidden bg-white/50 hover:border-gold/40 transition-colors">
+          <button type="button" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i} aria-controls={`faq-${i}`} className="flex w-full items-center gap-5 px-6 py-5 text-left">
+            <span className="flex-1 font-georgia text-deep font-medium text-base">{item.q}</span>
+            <AccordionMark open={open === i} />
+          </button>
           {open === i && (
-            <div className="px-6 pb-5 border-t border-gold/10">
+            <div id={`faq-${i}`} className="px-6 pb-5 border-t border-gold/10">
               <p className="font-georgia text-mist text-base leading-relaxed pt-4">{item.r}</p>
             </div>
           )}
@@ -261,14 +276,14 @@ function FormationCheckout() {
 
       {!success && (
         <div className="space-y-4 text-left mb-5">
-          <label className="flex gap-3 items-start cursor-pointer">
-            <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-1 h-4 w-4" />
+          <label className="consent-row">
+            <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="consent-check" />
             <span className="font-georgia text-sm text-mist leading-relaxed">
               J’ai lu et j’accepte les <a href="/cgv-formation.html" target="_blank" rel="noopener noreferrer" className="text-gold underline">conditions générales de vente de l’accompagnement MediumIA</a>.
             </span>
           </label>
-          <label className="flex gap-3 items-start cursor-pointer">
-            <input type="checkbox" checked={immediateAccessAccepted} onChange={(e) => setImmediateAccessAccepted(e.target.checked)} className="mt-1 h-4 w-4" />
+          <label className="consent-row">
+            <input type="checkbox" checked={immediateAccessAccepted} onChange={(e) => setImmediateAccessAccepted(e.target.checked)} className="consent-check" />
             <span className="font-georgia text-sm text-mist leading-relaxed">
               Je demande la fourniture immédiate des contenus numériques et reconnais qu’après le début de leur exécution, je perds mon droit de rétractation pour ces contenus numériques.
             </span>
@@ -362,7 +377,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                   <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 font-georgia text-deep font-medium [&::-webkit-details-marker]:hidden">
                     <span className="text-gold text-lg shrink-0" aria-hidden="true">{item.icon}</span>
                     <span className="flex-1">{item.titre}</span>
-                    <span className="text-gold/70 text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                    <DetailsMark className="text-gold/70 text-xl" />
                   </summary>
                   <p className="px-5 pb-5 pl-14 font-georgia text-sm text-mist leading-relaxed">{item.texte}</p>
                 </details>
@@ -488,7 +503,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                     <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 font-georgia text-deep font-medium [&::-webkit-details-marker]:hidden">
                       <span className="text-gold shrink-0" aria-hidden="true">✦</span>
                       <span className="flex-1">{p.titre}</span>
-                      <span className="text-gold/70 text-xl transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+                      <DetailsMark className="text-gold/70 text-xl" />
                     </summary>
                     <p className="px-5 pb-5 pl-12 font-georgia text-sm text-mist leading-relaxed">{p.texte}</p>
                   </details>

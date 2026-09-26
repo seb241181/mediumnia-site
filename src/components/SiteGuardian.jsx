@@ -159,7 +159,7 @@ export default function SiteGuardian() {
         <div className="fixed bottom-4 right-4 z-[60] w-[calc(100vw-2rem)] sm:w-96 max-h-[80vh] flex flex-col rounded-2xl shadow-2xl border border-gold/25 overflow-hidden"
           style={{ background: '#FBFAF5' }}
         >
-          <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-gold/20"
+          <div className="on-dark px-4 py-3 flex items-center justify-between gap-3 border-b border-gold/20"
             style={{ background: 'linear-gradient(135deg, #1c2b55, #0d1737)' }}
           >
             <div className="flex items-center gap-3 min-w-0">

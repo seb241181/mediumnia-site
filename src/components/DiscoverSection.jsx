@@ -50,7 +50,7 @@ function ChronosphereFeature({ onOpen }) {
           ))}
         </ol>
         <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <a href="/chronosphere" onClick={openWith(onOpen)} className="inline-flex min-h-[48px] items-center rounded-full bg-gold px-7 font-georgia text-base font-medium text-white">
+          <a href="/chronosphere" onClick={openWith(onOpen)} className="inline-flex min-h-[48px] items-center rounded-full bg-gold px-7 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90">
             Entrer dans ChronoSphère →
           </a>
           <a href="/chronosphere/exemple" className="font-georgia text-sm text-mist underline decoration-gold/40 underline-offset-4 hover:text-deep">Voir un exemple de lecture</a>

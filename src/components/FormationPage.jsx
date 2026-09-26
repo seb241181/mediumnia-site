@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import LegalFooter from './LegalFooter'
 import FormationCreditNotice from './FormationCreditNotice'
 import ParcoursOffer from './ParcoursOffer'
-import { parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'
+import { money, parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'
 import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
 import SiteNav from './SiteNav'
@@ -143,7 +143,7 @@ function FormationSectionBar() {
             <li key={item.id} className="shrink-0"><a href={`#${item.id}`} onClick={go(item.id)} className="block rounded-full border border-gold/30 bg-white/80 px-3 py-1.5 font-georgia text-xs text-deep">{item.label}</a></li>
           ))}
         </ul>
-        <a href="#offre" onClick={go('offre')} className="shrink-0 rounded-lg bg-deep px-3 py-2 font-georgia text-xs font-bold text-gold">597 € · Rejoindre</a>
+        <a href="#offre" onClick={go('offre')} className="shrink-0 rounded-lg bg-deep px-3 py-2 font-georgia text-xs font-bold text-gold">Rejoindre</a>
       </div>
     </nav>
   )
@@ -312,6 +312,8 @@ function FormationCheckout() {
 }
 
 export default function FormationPage({ onBack, onNavigate }) {
+  const offer = useParcoursOffer()
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [])
@@ -321,7 +323,7 @@ export default function FormationPage({ onBack, onNavigate }) {
   return (
     <div className="cosmic-page cosmic-page--formation bg-cream min-h-screen text-deep">
       <SiteNav current="formation" onHome={onBack} onOpenFormation={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
-      <PageRail items={FORMATION_SECTIONS} cta={{ label: '597 € · Rejoindre', target: 'offre' }} />
+      <PageRail items={FORMATION_SECTIONS} cta={{ label: 'Rejoindre la formation', target: 'offre' }} />
       <FormationSectionBar />
 
       <main className="formation-main">
@@ -339,16 +341,86 @@ export default function FormationPage({ onBack, onNavigate }) {
                 ))}
               </ul>
             </div>
-            <aside className="rounded-2xl border-2 border-gold/45 bg-white/85 p-6 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="Tarif de la Formation MediumIA">
-              <p className="font-georgia text-xs uppercase tracking-[0.18em] text-mist mb-2">Formation complète</p>
-              <p className="font-georgia text-deep"><span className="text-5xl font-medium">597 €</span> <span className="text-lg text-mist">TTC</span></p>
-              <p className="font-georgia text-sm text-mist mt-2 mb-6">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
+            <aside className="rounded-2xl border-2 border-gold/55 bg-white/90 p-6 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="Tarifs de la Formation MediumIA">
+              {offer ? (
+                <>
+                  <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold mb-3">Paiement progressif</p>
+                  <div className="rounded-2xl border border-gold/35 bg-gold/10 p-5 mb-4">
+                    <p className="font-georgia text-deep leading-none"><span className="text-5xl font-medium">{money(offer.stepCents)}</span> <span className="text-xl text-mist">/ mois</span></p>
+                    <p className="font-georgia text-sm font-bold text-deep mt-2">après une Découverte à {money(offer.discoveryCents)} pour commencer</p>
+                    <p className="font-georgia text-sm text-mist mt-3">{offer.regularCount} mensualités, puis une dernière étape de {money(offer.finalCents)}</p>
+                    <p className="font-georgia text-xs text-mist mt-2">Total maximum {money(offer.capCents)} · arrêt et reprise possibles</p>
+                  </div>
+                  <p className="font-georgia text-sm text-mist mb-6">Ou <strong className="text-deep">{money(offer.capCents)} TTC en une fois</strong>.</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-georgia text-xs uppercase tracking-[0.18em] text-mist mb-2">Formation complète</p>
+                  <p className="font-georgia text-deep"><span className="text-5xl font-medium">597 €</span> <span className="text-lg text-mist">TTC</span></p>
+                  <p className="font-georgia text-sm text-mist mt-2 mb-6">Paiement sécurisé par carte bancaire ou PayPal.</p>
+                </>
+              )}
               <div className="flex flex-col gap-3">
-                <button onClick={() => goTo('offre')} className="font-georgia px-7 py-4 rounded-lg bg-deep text-gold font-bold">Rejoindre la formation →</button>
-                <button onClick={() => goTo('programme')} className="font-georgia px-7 py-3.5 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">Voir le programme</button>
+                <button onClick={() => goTo('offre')} className="font-georgia px-7 py-4 rounded-lg bg-deep text-gold font-bold">Voir les options de paiement →</button>
+                <button onClick={() => goTo('programme')} className="font-georgia px-7 py-3.5 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">Explorer le programme</button>
               </div>
               <p className="font-georgia text-xs text-mist mt-5">Par Sébastien Seguin, médium depuis plus de douze ans. 12 mois d’accès, PDF à vous pour votre usage personnel.</p>
             </aside>
+          </div>
+        </section>
+
+        <section id="offre" data-formation-ux="progressive-first" className="px-6 py-14 scroll-mt-40">
+          <div className="max-w-4xl mx-auto text-center">
+            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Choisir votre rythme</p>
+            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-3">Commencer progressivement ou tout débloquer</h2>
+            <p className="font-georgia text-mist text-base leading-relaxed max-w-2xl mx-auto mb-4">Le contenu est le même. Vous choisissez simplement la façon d’avancer et de régler votre formation.</p>
+
+            <ParcoursOffer />
+
+            <div className="max-w-2xl mx-auto mt-5 rounded-2xl border-2 border-gold/45 bg-white/85 p-6 md:p-8 text-left shadow-[0_16px_46px_rgba(26,21,53,0.07)]">
+              <div className="text-center mb-6">
+                <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">Première étape</p>
+                <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep">Découverte MediumIA</h3>
+                <p className="font-georgia text-4xl text-deep font-medium mt-3">29 €</p>
+                <p className="font-georgia text-sm text-mist mt-2">Votre première étape avant de poursuivre à votre rythme.</p>
+              </div>
+              <details className="group mb-5 rounded-xl border border-gold/20 bg-cream/60">
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 font-georgia text-sm font-bold text-deep [&::-webkit-details-marker]:hidden">
+                  <span className="flex-1">Voir ce que contient la Découverte</span>
+                  <DetailsMark className="text-gold text-xl" />
+                </summary>
+                <ul className="border-t border-gold/15 px-4 py-4 font-georgia text-sm text-deep/85 space-y-2">
+                  {['Introduction complète','Module 1 — L’Intention comme Porte','Exercices du Module 1','Carnet de pratique intégré','MediumIA pendant 30 jours','PDF Découverte personnel'].map((item) => (
+                    <li key={item} className="flex gap-3 items-start"><span className="text-gold shrink-0">✓</span><span>{item}</span></li>
+                  ))}
+                </ul>
+              </details>
+              <p className="rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-center font-georgia text-sm font-semibold leading-relaxed text-deep mb-6">
+                Vos 29 € comptent dans le total de 597 € et sont déduits si vous choisissez ensuite le paiement complet.
+              </p>
+              <FormationCheckout product="discovery" />
+            </div>
+
+            <details className="group max-w-2xl mx-auto mt-5 rounded-2xl border-2 border-gold/25 bg-white/70 text-left open:border-gold/45">
+              <summary className="flex cursor-pointer list-none items-center gap-4 px-6 py-5 [&::-webkit-details-marker]:hidden">
+                <div className="flex-1">
+                  <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold mb-1">Autre option</p>
+                  <p className="font-georgia text-lg font-bold text-deep">Tout débloquer maintenant · 597 € TTC</p>
+                  <p className="font-georgia text-xs text-mist mt-1">Carte bancaire ou PayPal · ouvrez pour afficher le paiement.</p>
+                </div>
+                <DetailsMark className="text-gold/70 text-2xl" />
+              </summary>
+              <div className="border-t border-gold/15 px-6 py-6 md:px-8">
+                <ul className="font-georgia text-sm text-deep space-y-2 mb-7">
+                  {['25 modules PDF téléchargeables (269 pages)','Application MediumIA sur mobile et ordinateur','MediumIA, votre assistant personnel','84 exercices guidés','Carnet de pratique intégré',"12 mois d'accès à l'application"].map((item, i) => (
+                    <li key={i} className="flex gap-3 items-start"><span className="text-gold shrink-0 mt-0.5">✓</span><span>{item}</span></li>
+                  ))}
+                </ul>
+                <p className="font-georgia text-mist text-xs text-center mb-5">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte. Le paiement fractionné proposé directement par PayPal dépend de son éligibilité.</p>
+                <FormationCreditNotice />
+                <FormationCheckout />
+              </div>
+            </details>
           </div>
         </section>
 
@@ -364,8 +436,16 @@ export default function FormationPage({ onBack, onNavigate }) {
         </section>
 
         {/* ── Programme : contenu et 4 niveaux, détails repliés ── */}
-        <section id="programme" className="px-6 py-16 scroll-mt-40">
-          <div className="max-w-3xl mx-auto">
+        <details id="programme" className="group mx-auto max-w-5xl scroll-mt-40 px-6 py-2">
+          <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">
+            <div className="flex-1 text-left">
+              <p className="font-georgia text-lg md:text-xl font-bold text-deep">Programme · 25 modules en 4 niveaux</p>
+              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour voir le contenu, les 84 exercices et le détail des niveaux.</p>
+            </div>
+            <DetailsMark className="text-gold/70 text-2xl" />
+          </summary>
+          <div className="px-6 py-16">
+<div className="max-w-3xl mx-auto">
             <div className="text-center mb-10">
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Programme</p>
               <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-3">Ce que contient la formation</h2>
@@ -389,10 +469,22 @@ export default function FormationPage({ onBack, onNavigate }) {
               <NiveauxAccordion />
             </div>
           </div>
-        </section>
+        
 
-        <section id="formation-apercu-reel" className="px-6 py-16 md:py-20">
-          <div className="max-w-4xl mx-auto">
+
+          </div>
+        </details>
+
+        <details id="formation-apercu-reel" className="group mx-auto max-w-5xl scroll-mt-40 px-6 py-2">
+          <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">
+            <div className="flex-1 text-left">
+              <p className="font-georgia text-lg md:text-xl font-bold text-deep">Aperçu réel · Module 1</p>
+              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour lire un extrait de la pédagogie MediumIA.</p>
+            </div>
+            <DetailsMark className="text-gold/70 text-2xl" />
+          </summary>
+          <div className="px-6 py-16 md:py-20">
+<div className="max-w-4xl mx-auto">
             <div className="text-center max-w-2xl mx-auto mb-10">
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Aperçu réel · Module 1</p>
               <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">L'Intention comme Porte</h2>
@@ -432,33 +524,23 @@ export default function FormationPage({ onBack, onNavigate }) {
               </div>
             </article>
           </div>
-        </section>
+        
 
-        <section id="offre" className="px-6 py-16 scroll-mt-40">
-          <div className="max-w-2xl mx-auto text-center">
-            <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Tarif</p>
-            <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-8">Rejoindre la Formation MediumIA</h2>
-            <div className="border-2 border-gold/40 rounded-2xl p-8 md:p-10 bg-white/70 text-left mb-6">
-              <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-6 text-center">Le parcours complet comprend</p>
-              <ul className="font-georgia text-base text-deep space-y-3 mb-8">
-                {['25 modules PDF téléchargeables (269 pages)','Application MediumIA sur mobile et ordinateur','MediumIA, votre assistant personnel','84 exercices guidés','Carnet de pratique intégré',"12 mois d'accès à l'application"].map((item, i) => (
-                  <li key={i} className="flex gap-3 items-start"><span className="text-gold shrink-0 mt-1">—</span><span>{item}</span></li>
-                ))}
-              </ul>
-              <div className="text-center">
-                <div className="mb-1"><span className="font-georgia text-5xl text-deep font-medium">597 €</span> <span className="font-georgia text-lg text-mist">TTC</span></div>
-                <p className="font-georgia text-mist text-sm italic mb-2">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte</p>
-                <p className="font-georgia text-mist text-xs mb-7">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
-                <FormationCreditNotice />
-                <FormationCheckout />
-              </div>
-            </div>
+
           </div>
-          <ParcoursOffer />
-        </section>
+        </details>
 
-        {/* ── Essayer gratuitement : l'assistant et 3 exercices par e-mail ── */}
-        <section id="essayer" className="bg-deep/[0.04] px-6 pt-16 scroll-mt-40">
+        <details id="essayer" className="group mx-auto max-w-5xl scroll-mt-40 px-6 py-2">
+          <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">
+            <div className="flex-1 text-left">
+              <p className="font-georgia text-lg md:text-xl font-bold text-deep">Tester MediumIA gratuitement</p>
+              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour essayer l’assistant et découvrir les exercices offerts.</p>
+            </div>
+            <DetailsMark className="text-gold/70 text-2xl" />
+          </summary>
+          <div className="pt-2">
+{/* ── Essayer gratuitement : l'assistant et 3 exercices par e-mail ── */}
+        <section className="bg-deep/[0.04] px-6 pt-16 scroll-mt-40">
           <div className="max-w-3xl mx-auto text-center">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Essayer gratuitement</p>
             <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-3">Avant de vous décider</h2>
@@ -475,9 +557,21 @@ export default function FormationPage({ onBack, onNavigate }) {
 
         <FormationExerciseLead />
 
+
+          </div>
+        </details>
+
         {/* ── Le formateur et l'approche : l'essentiel visible, le reste replié ── */}
-        <section id="formateur" className="px-6 py-16 scroll-mt-40">
-          <div className="max-w-5xl mx-auto">
+        <details id="formateur" className="group mx-auto max-w-5xl scroll-mt-40 px-6 py-2">
+          <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">
+            <div className="flex-1 text-left">
+              <p className="font-georgia text-lg md:text-xl font-bold text-deep">Sébastien & l’approche MediumIA</p>
+              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour découvrir le formateur et ce qui rend la méthode différente.</p>
+            </div>
+            <DetailsMark className="text-gold/70 text-2xl" />
+          </summary>
+          <div className="px-6 py-16">
+<div className="max-w-5xl mx-auto">
             <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le formateur</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Sébastien Seguin</h2></div>
             <div className="flex flex-col md:flex-row gap-10 items-start">
               <div className="shrink-0 flex justify-center md:justify-start w-full md:w-auto"><img src="/sebastien.jpg" alt="Sébastien Seguin, médium et fondateur de MediumIA" loading="lazy" decoding="async" className="w-44 h-60 md:w-52 md:h-72 object-cover object-top rounded-2xl border-2 shadow-md" style={{ borderColor: '#C9A84C' }} /></div>
@@ -485,7 +579,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                 <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
                 <p>Ce parcours a été construit à partir de cette pratique réelle, quotidienne : des milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles. <strong className="text-deep">MediumIA n'est pas un parcours théorique. C'est une transmission.</strong></p>
                 <details className="group">
-                  <summary className="cursor-pointer list-none font-georgia text-sm font-bold text-gold [&::-webkit-details-marker]:hidden"><span className="group-open:hidden">Lire la suite →</span><span className="hidden group-open:inline">Réduire ↑</span></summary>
+                  <summary className="cursor-pointer list-none font-georgia text-sm font-bold text-gold [&::-webkit-details-marker]:hidden"><span className="details-mark__closed">Lire la suite →</span><span className="details-mark__open">Réduire ↑</span></summary>
                   <div className="space-y-4 pt-4">
                     <p>Pendant toutes ces années, j'ai accompagné des milliers de personnes en consultation individuelle : des personnes venues chercher des réponses, des familles en lien avec un proche disparu, des êtres traversant un moment de doute, de deuil, de bascule ou d'éveil.</p>
                     <p>Mon parcours m'a appris une chose essentielle : la médiumnité n'est pas un don réservé à quelques élus. C'est une dimension naturelle de l'être humain, qui se réveille lorsque les bonnes conditions sont réunies. Ces conditions, c'est exactement ce que cet accompagnement vous propose de créer.</p>
@@ -511,16 +605,32 @@ export default function FormationPage({ onBack, onNavigate }) {
               </div>
             </div>
           </div>
-        </section>
+        
 
-        <section id="faq" className="px-6 pb-16 max-w-3xl mx-auto scroll-mt-40">
-          <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Questions fréquentes</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">FAQ</h2></div>
+
+          </div>
+        </details>
+
+        <details id="faq" className="group mx-auto max-w-5xl scroll-mt-40 px-6 py-2">
+          <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">
+            <div className="flex-1 text-left">
+              <p className="font-georgia text-lg md:text-xl font-bold text-deep">Questions fréquentes</p>
+              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir les réponses sur l’accès, la durée, le paiement et le fonctionnement.</p>
+            </div>
+            <DetailsMark className="text-gold/70 text-2xl" />
+          </summary>
+          <div className="px-6 pb-16 max-w-3xl mx-auto">
+<div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Questions fréquentes</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">FAQ</h2></div>
           <FAQAccordion />
-        </section>
+        
+
+
+          </div>
+        </details>
 
         <section className="px-6 py-14 text-center border-t border-gold/20">
-          <p className="font-georgia text-2xl text-deep mb-1">Formation MediumIA · 597 € TTC</p>
-          <p className="font-georgia text-sm text-mist mb-6">Paiement en plusieurs fois disponible avec PayPal selon éligibilité.</p>
+          <p className="font-georgia text-2xl text-deep mb-1">{offer ? `${money(offer.stepCents)} par mois, à votre rythme` : 'Formation MediumIA · 597 € TTC'}</p>
+          <p className="font-georgia text-sm text-mist mb-6">{offer ? `Après une Découverte à ${money(offer.discoveryCents)} · ${offer.regularCount} mensualités puis ${money(offer.finalCents)} · ${money(offer.capCents)} maximum au total, ou en une fois` : 'Paiement sécurisé par carte bancaire ou PayPal.'}</p>
           <button onClick={() => goTo('offre')} className="font-georgia px-8 py-4 rounded-lg bg-deep text-gold font-bold">Rejoindre la formation →</button>
           <div className="mt-8"><button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">← Retour à MediumIA</button></div>
         </section>

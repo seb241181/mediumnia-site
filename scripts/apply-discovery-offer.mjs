@@ -74,12 +74,14 @@ formation = replaceRequired(
   'product success copy',
 )
 
-formation = replaceRequired(
-  formation,
-  '<div className="border-2 border-gold/40 rounded-2xl p-8 md:p-10 bg-white/70 text-left mb-6">\n              <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-6 text-center">Le parcours complet comprend</p>',
-  '<div className="relative border-2 border-gold/55 rounded-2xl p-8 md:p-10 bg-white/80 text-left mb-10 shadow-[0_20px_60px_rgba(26,21,53,0.08)]">\n              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-deep px-4 py-1.5 font-georgia text-[10px] font-bold uppercase tracking-[0.16em] text-gold">Offre principale</span>\n              <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-6 text-center">Le parcours complet comprend</p>',
-  'primary full offer',
-)
+if (!formation.includes('data-formation-ux="progressive-first"')) {
+  formation = replaceRequired(
+    formation,
+    '<div className="border-2 border-gold/40 rounded-2xl p-8 md:p-10 bg-white/70 text-left mb-6">\n              <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-6 text-center">Le parcours complet comprend</p>',
+    '<div className="relative border-2 border-gold/55 rounded-2xl p-8 md:p-10 bg-white/80 text-left mb-10 shadow-[0_20px_60px_rgba(26,21,53,0.08)]">\n              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-deep px-4 py-1.5 font-georgia text-[10px] font-bold uppercase tracking-[0.16em] text-gold">Offre principale</span>\n              <p className="font-georgia text-xs text-mist tracking-widest uppercase mb-6 text-center">Le parcours complet comprend</p>',
+    'primary full offer',
+  )
+}
 
 const discoveryCard = `
 
@@ -101,18 +103,20 @@ const discoveryCard = `
               <FormationCheckout product="discovery" />
             </div>`
 
-formation = replaceRequired(
-  formation,
-  `                <FormationCheckout />
+if (!formation.includes('data-formation-ux="progressive-first"')) {
+  formation = replaceRequired(
+    formation,
+    `                <FormationCheckout />
               </div>
             </div>
           </div>`,
-  `                <FormationCheckout />
+    `                <FormationCheckout />
               </div>
             </div>${discoveryCard}
           </div>`,
-  'discovery offer card',
-)
+    'discovery offer card',
+  )
+}
 
 await writeFile(formationPath, formation)
 

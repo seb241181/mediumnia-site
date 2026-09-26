@@ -3,6 +3,7 @@ import { boutiqueCategories, boutiqueProducts } from '../data/boutiqueProducts'
 import ProductDetail from './ProductDetail'
 import BoutiqueProductArt from './BoutiqueProductArt'
 import '../styles/boutique.css'
+import { money, useParcoursOffer } from '../lib/parcoursOffer.js'
 
 // Or foncé pour les petits textes sur fond clair : l'or de marque #C9A84C
 // n'atteint que 2,3:1 de contraste, celui-ci 4,97:1 (WCAG AA).
@@ -82,6 +83,7 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
 
 // Offre phare (Formation MediumIA) : en grand, en tête de la boutique.
 function SpotlightCard({ product, onOpenFormation }) {
+  const offer = useParcoursOffer()
   const open = (event) => {
     if (!onOpenFormation || event.metaKey || event.ctrlKey || event.shiftKey) return
     event.preventDefault()
@@ -101,8 +103,18 @@ function SpotlightCard({ product, onOpenFormation }) {
             <li key={item} className="flex gap-2"><span className="text-gold" aria-hidden="true">✓</span>{item}</li>
           ))}
         </ul>
-        <p className="mt-6 font-georgia text-3xl font-medium text-deep">{product.priceLabel}</p>
-        {product.paymentNote && <p className="mt-1 font-georgia text-xs text-mist">{product.paymentNote}</p>}
+        {offer ? (
+          <>
+            <p className="mt-6 font-georgia text-deep"><span className="text-3xl font-medium">{money(offer.stepCents)}</span> <span className="text-base text-mist">/ mois</span></p>
+            <p className="mt-1 font-georgia text-sm text-mist">après une Découverte à {money(offer.discoveryCents)} pour commencer</p>
+            <p className="mt-1 font-georgia text-xs text-mist">Total maximum {money(offer.capCents)} · arrêt et reprise possibles · ou en une fois</p>
+          </>
+        ) : (
+          <>
+            <p className="mt-6 font-georgia text-3xl font-medium text-deep">{product.priceLabel}</p>
+            {product.paymentNote && <p className="mt-1 font-georgia text-xs text-mist">{product.paymentNote}</p>}
+          </>
+        )}
         <div className="mt-6">
           <a href={product.href} onClick={open} className="inline-block rounded-lg bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90">
             Découvrir la formation →

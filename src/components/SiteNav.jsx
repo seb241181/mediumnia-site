@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import '../styles/site-nav.css'
 
 // Navigation principale de la vitrine, identique sur l'accueil et les pages clés.
-// Ordre validé : Se former · Consulter · Découvrir · Conférences · Boutique ·
+// Ordre validé : Se former · Consulter · Tirages & ChronoSphère · Conférences · Boutique ·
 // Trouver un praticien. « Espace élèves » reste à droite ; « Espace Pro » n'est
 // plus dans la navigation principale (bande praticiens et pied de page).
 // Sur téléphone : un vrai menu (bouton « Menu »), pas de barre latérale.
@@ -10,7 +10,7 @@ import '../styles/site-nav.css'
 export const SITE_NAV_ITEMS = [
   { id: 'formation', label: 'Se former', href: '/formation' },
   { id: 'consulter', label: 'Consulter', href: '/#consulter' },
-  { id: 'decouvrir', label: 'Découvrir', href: '/#decouvrir' },
+  { id: 'decouvrir', label: 'Tirages & ChronoSphère', href: '/#decouvrir' },
   { id: 'conferences', label: 'Conférences', href: '/conferences' },
   { id: 'boutique', label: 'Boutique', href: '/#boutique' },
   { id: 'reseau', label: 'Trouver un praticien', href: '/reseau' },

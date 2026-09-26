@@ -19,7 +19,9 @@ body {
    au-dessus du contenu. Une marge en fin de page laisse le pied de page et les
    derniers boutons accessibles au lieu d'être recouverts. */
 @media (max-width: 639px) {
-  #root::after { content: ''; display: block; height: 84px; }
+  /* :not(:empty) : pendant le chargement, #root est vide ; l'espace se
+     trouvait alors en haut de page puis sautait en bas (décalage CLS 0,1). */
+  #root:not(:empty)::after { content: ''; display: block; height: 84px; }
 }
 img, video, svg, canvas { max-width: 100%; }
 button, a, input, select, textarea { min-width: 0; }

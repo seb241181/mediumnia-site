@@ -61,7 +61,7 @@ returns table(result text, invitation_reseau_slug text)
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_membership public.pro_memberships%rowtype;
   v_invitation public.pro_invitations%rowtype;
@@ -125,7 +125,7 @@ begin
 
   return query select 'activated'::text, v_invitation.reseau_slug;
 end;
-$;
+$$;
 
 revoke all on function public.claim_mediumia_pro_invitation(uuid, text)
   from public, anon, authenticated;

@@ -71,7 +71,9 @@ function fakeDb({ users = {}, tables = {} } = {}) {
         then(resolve, reject) {
           let result
           if (q.op === 'insert') {
-            const row = { id: `id-${++seq}`, created_at: new Date().toISOString(), ...q.values }
+            // Comme la vraie table : une invitation est « pending » par défaut.
+            const defaults = table === 'pro_invitations' ? { status: 'pending' } : {}
+            const row = { id: `id-${++seq}`, created_at: new Date().toISOString(), ...defaults, ...q.values }
             if (table === 'agents' && row.reseau_slug && data.agents.some((a) => a.reseau_slug === row.reseau_slug && a.status !== 'archived')) {
               result = { data: null, error: { code: '23505' } }
             } else {
@@ -201,4 +203,16 @@ test('the Pro invitation migration keeps claiming atomic and one live invitation
   assert.match(migration, /security definer/)
   assert.match(migration, /revoke all on function public\.claim_mediumia_pro_invitation\(uuid, text\)[\s\S]*authenticated/)
   assert.match(migration, /grant execute on function public\.claim_mediumia_pro_invitation\(uuid, text\)[\s\S]*service_role/)
+})
+
+// Un corps de fonction délimité par « $ » au lieu de « $$ » fait échouer tout
+// le script dans Supabase (syntax error at or near "$"), constaté le 27/09.
+test('every PL/pgSQL body in the Pro invitation migration uses valid dollar quoting', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20260927150000_mediumia_pro_reseau_invitations.sql', import.meta.url), 'utf8')
+  const openers = migration.match(/^as \$[A-Za-z_]*\$$/gm) || []
+  const closers = migration.match(/^\$[A-Za-z_]*\$;$/gm) || []
+  assert.equal(openers.length, 1)
+  assert.equal(closers.length, 1)
+  assert.doesNotMatch(migration, /^as \$\s*$/m)
+  assert.doesNotMatch(migration, /^\$;\s*$/m)
 })

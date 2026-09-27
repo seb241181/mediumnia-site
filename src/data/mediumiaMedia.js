@@ -21,6 +21,7 @@ export const FEATURED_INTERVIEW = {
 export const SOCIAL_LINKS = [
   { id: 'facebook', label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=100089857152685' },
   { id: 'instagram', label: 'Instagram', href: 'https://www.instagram.com/seguinmedium/' },
+  { id: 'tiktok', label: 'TikTok', href: 'https://www.tiktok.com/@sebastien.medium' },
 ]
 
 export function youtubeWatchUrl(id, start = 0) {

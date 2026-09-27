@@ -22,8 +22,8 @@ test('chapters and view count stay truthful', () => {
   assert.match(FEATURED_INTERVIEW.viewsLabel, /Plus de 95 000 vues/)
 })
 
-test('social shortcuts: Facebook and Instagram, in the footer of every page', () => {
-  assert.deepEqual(SOCIAL_LINKS.map((l) => l.id), ['facebook', 'instagram'])
+test('social shortcuts: Facebook, Instagram and TikTok, in the footer of every page', () => {
+  assert.deepEqual(SOCIAL_LINKS.map((l) => l.id), ['facebook', 'instagram', 'tiktok'])
   assert.ok(SOCIAL_LINKS.every((l) => l.href.startsWith('https://www.')))
   const footer = read('src/components/LegalFooter.jsx')
   assert.match(footer, /SOCIAL_LINKS\.map/)

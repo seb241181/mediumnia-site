@@ -40,7 +40,8 @@ function previewAnalytics(days) {
     const wave = 9 + ((offset * 7 + days) % 11)
     daily.push({ date: date.toISOString().slice(0, 10), total: wave })
   }
-  return { preview: true, days, totals, home_doors, daily }
+  const conference = { total: 21, capacity: null }
+  return { preview: true, days, totals, home_doors, daily, conference }
 }
 
 async function handleAnalytics(req, res, supabase, userId) {
@@ -100,7 +101,33 @@ async function handleAnalytics(req, res, supabase, userId) {
     daily.push({ date: key, total: dailyMap.get(key) || 0 })
   }
 
-  return res.status(200).json({ preview: false, days, totals, home_doors, daily })
+  let conference = { total: 0, capacity: null, remaining: null, fill_rate: null }
+  const { data: conferenceEvent, error: conferenceEventError } = await supabase
+    .from('conference_events')
+    .select('id, capacity')
+    .eq('slug', 'premiere-conference-mediumia')
+    .maybeSingle()
+
+  if (!conferenceEventError && conferenceEvent?.id) {
+    const { count: conferenceTotal, error: conferenceCountError } = await supabase
+      .from('conference_registrations')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', conferenceEvent.id)
+      .neq('status', 'cancelled')
+
+    if (!conferenceCountError) {
+      const total = Number(conferenceTotal || 0)
+      const capacity = conferenceEvent.capacity ? Number(conferenceEvent.capacity) : null
+      conference = {
+        total,
+        capacity,
+        remaining: capacity ? Math.max(0, capacity - total) : null,
+        fill_rate: capacity ? Math.round((total / capacity) * 100) : null,
+      }
+    }
+  }
+
+  return res.status(200).json({ preview: false, days, totals, home_doors, daily, conference })
 }
 
 `

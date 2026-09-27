@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('main navigation: validated order, real links, Espace élèves only, Espace Pro out', async () => {
+test('main navigation: validated order, real links, Espace pro and Espace élèves on the right', async () => {
   const nav = await read('src/components/SiteNav.jsx')
   const labels = [...nav.matchAll(/\{ id: '[a-z]+', label: '([^']+)', href: '([^']+)' \}/g)].map((m) => [m[1], m[2]])
   assert.deepEqual(labels, [
@@ -16,7 +16,10 @@ test('main navigation: validated order, real links, Espace élèves only, Espace
     ['Trouver un praticien', '/reseau'],
   ])
   assert.match(nav, /href="https:\/\/espace\.mediumia\.fr"[\s\S]*Espace élèves/)
-  assert.doesNotMatch(nav.replace(/^\s*\/\/.*$/gm, ''), /Espace Pro|onOpenPro/)
+  // 27/09/2026 : les professionnels invités entrent par « Espace pro » (/agents),
+  // à côté d'« Espace élèves » ; il ne fait pas partie des rubriques.
+  assert.match(nav, /href="\/agents"[\s\S]*Espace pro[\s\S]*href="https:\/\/espace\.mediumia\.fr"/)
+  assert.doesNotMatch(nav.replace(/^\s*\/\/.*$/gm, ''), /onOpenPro/)
 })
 
 test('phones get a real menu, not a sidebar; keyboard can close it', async () => {

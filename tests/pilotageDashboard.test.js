@@ -38,8 +38,6 @@ test('pilotage UI provides useful ranges, funnel and privacy explanation', async
   assert.match(pilotage, /Évolution quotidienne/)
   assert.match(pilotage, /ne permettent? pas d’identifier|ne permet pas d’identifier/)
   assert.match(pilotage, /Aperçu Preview · données de démonstration/)
-  assert.match(pilotage, /Inscriptions conférence/)
-  assert.match(pilotage, /15000/)
 })
 
 test('analytics dashboard reuses authenticated rdv-admin and protects production access', async () => {

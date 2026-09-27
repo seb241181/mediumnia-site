@@ -143,6 +143,15 @@ test('admin invitations: validated e-mail and fiche, e-mail sent, revocation sus
   assert.equal(sent[0].to, 'gilda@exemple.fr')
   assert.match(sent[0].text, /mediumia\.fr\/agents/)
 
+  const duplicateProfile = await inviteProMember({
+    db,
+    userId: 'admin',
+    input: { email: 'autre@exemple.fr', reseauSlug: 'gilda' },
+    send: async () => ({ status: 'sent' }),
+  })
+  assert.equal(duplicateProfile.status, 409)
+  assert.equal(duplicateProfile.body.error, 'reseau_profile_already_invited')
+
   db.data.pro_invitations.push({ id: '00000000-0000-4000-8000-000000000001', email: 'x@y.fr', status: 'accepted', accepted_user_id: 'u1' })
   const revoked = await revokeProInvitation({ db, input: { id: '00000000-0000-4000-8000-000000000001' } })
   assert.equal(revoked.status, 200)

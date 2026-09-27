@@ -186,7 +186,8 @@
 }
 
 .cosmic-page :where(button, a):is([class~='bg-gold'], [class~='bg-gold/90']),
-.cosmic-page .site-nav__students {
+.cosmic-page .site-nav__students,
+.cosmic-page .site-nav__pro {
   border: 1px solid #aa6e0c;
   border-radius: 999px !important;
   background: linear-gradient(135deg, #c98d22, #aa6d0d) !important;

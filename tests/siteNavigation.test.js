@@ -20,6 +20,8 @@ test('main navigation: validated order, real links, Espace pro and Espace élèv
   // à côté d'« Espace élèves » ; il ne fait pas partie des rubriques.
   assert.match(nav, /href="\/agents"[\s\S]*Espace pro[\s\S]*href="https:\/\/espace\.mediumia\.fr"/)
   assert.doesNotMatch(nav.replace(/^\s*\/\/.*$/gm, ''), /onOpenPro/)
+  // Même doré pour les deux boutons de l'en-tête.
+  assert.match(await read('src/styles/cosmic-design-system.css'), /\.cosmic-page \.site-nav__students,\n\.cosmic-page \.site-nav__pro \{/)
 })
 
 test('phones get a real menu, not a sidebar; keyboard can close it', async () => {

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import AgentChat from './AgentChat.jsx'
 import ProAssistantCreator from './ProAssistantCreator.jsx'
 import { isSupabaseConfigured } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
 import { buildAssistantDraft } from '../lib/proAssistantDraft.js'
 import { reseauPractitioners } from '../data/reseauPractitioners.js'
+import { clearProOnboarding, markProOnboarding, proConfirmationRedirectUrl } from '../lib/proOnboarding.js'
 
 // Espace MediumIA Pro (/agents). L'accès se fait sur invitation : le compte
 // seul ne donne aucun droit, le serveur vérifie l'invitation et l'adresse
@@ -14,7 +15,8 @@ import { reseauPractitioners } from '../data/reseauPractitioners.js'
 const API = '/api/agent-chat'
 
 function SignInOrUp({ signIn, signUp }) {
-  const [mode, setMode] = useState('signin')
+  // Arrivée depuis l'e-mail d'invitation : création du compte en premier.
+  const [mode, setMode] = useState(() => (new URLSearchParams(window.location.search).has('invitation') ? 'signup' : 'signin'))
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -34,9 +36,12 @@ function SignInOrUp({ signIn, signUp }) {
       if (password.length < 8) {
         setError('Choisissez un mot de passe d’au moins 8 caractères.')
       } else {
-        const { data, error: signUpError } = await signUp(email.trim(), password)
+        const { data, error: signUpError } = await signUp(email.trim(), password, { emailRedirectTo: proConfirmationRedirectUrl() })
         if (signUpError) setError('Création du compte impossible. Si vous avez déjà un compte, connectez-vous.')
-        else if (!data?.session) setInfo('Votre compte est créé. Confirmez votre adresse grâce à l’e-mail que vous venez de recevoir, puis revenez ici pour vous connecter.')
+        else if (!data?.session) {
+          markProOnboarding()
+          setInfo('Dernière étape : ouvrez l’e-mail de confirmation que vous venez de recevoir et cliquez sur le lien. Vous reviendrez directement ici, dans votre espace pro.')
+        }
       }
     }
     setBusy(false)
@@ -111,14 +116,27 @@ export default function FounderCopilotAccess({ onBack }) {
     return data
   }, [session?.access_token])
 
+  const autoClaimTried = useRef(false)
+
   const load = useCallback(async () => {
     setState('loading')
     setError('')
     try {
-      const data = await call('workspace')
+      let data = await call('workspace')
+      // Invitation en attente et adresse confirmée : l'espace s'active tout
+      // seul (le serveur refait toutes les vérifications), puis Lumi démarre.
+      if (!data.membership?.live && data.invitation && data.emailConfirmed && !autoClaimTried.current) {
+        autoClaimTried.current = true
+        try {
+          await call('claim', {})
+          data = await call('workspace')
+        } catch { /* le bouton « Activer mon espace pro » reste proposé */ }
+      }
       setWorkspace(data)
-      if (data.membership?.live) setState(data.agent ? 'ready' : 'create')
-      else setState('no-access')
+      if (data.membership?.live) {
+        clearProOnboarding()
+        setState(data.agent ? 'ready' : 'create')
+      } else setState('no-access')
     } catch {
       setState('error')
     }
@@ -201,6 +219,13 @@ export default function FounderCopilotAccess({ onBack }) {
             </Panel>
           )
         ) : state === 'create' || (state === 'ready' && editing) ? (
+          <>
+          {state === 'create' && (
+            <div className="mx-auto mb-6 max-w-2xl text-center">
+              <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Bienvenue dans MediumIA Pro</p>
+              <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">Votre espace est activé. Lumi vous pose 6 questions pour créer votre assistant ; vous pourrez tout modifier ensuite. Il reste privé jusqu’à ce que vous décidiez de l’afficher.</p>
+            </div>
+          )}
           <ProAssistantCreator
             key={editing ? 'edit' : 'create'}
             mode={editing ? 'edit' : 'create'}
@@ -213,6 +238,7 @@ export default function FounderCopilotAccess({ onBack }) {
             onSave={saveAssistant}
             onCancel={editing ? () => { setEditing(false); setError('') } : undefined}
           />
+          </>
         ) : state === 'ready' && agent ? (
           <>
             <section className="mx-auto mb-5 max-w-5xl rounded-2xl border border-gold/25 bg-white/70 px-5 py-4">

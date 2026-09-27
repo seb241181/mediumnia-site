@@ -7,11 +7,16 @@ import ConferenceCockpitPage from './components/ConferenceCockpitPage.jsx'
 import ConferenceRehearsalTokenPage from './components/ConferenceRehearsalTokenPage.jsx'
 import GlobalAccount from './components/GlobalAccount.jsx'
 import AppErrorBoundary from './components/AppErrorBoundary.jsx'
+import { supabase } from './lib/supabase.js'
+import { installProOnboardingRedirect } from './lib/proOnboarding.js'
 
 const pathname = window.location.pathname
 const isConferenceLiveRoute = pathname.startsWith('/live/')
 const isConferenceCockpitRoute = pathname.startsWith('/pro/conference/')
 const isConferenceRehearsalRoute = pathname.startsWith('/pro/conference-rehearsal/')
+
+// Confirmation d'e-mail pendant le parcours Pro : retour vers /agents.
+installProOnboardingRedirect(supabase)
 
 let page = <App />
 if (isConferenceLiveRoute) page = <ConferenceLivePage />

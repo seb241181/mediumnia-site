@@ -27,6 +27,7 @@ import FormationParcoursPage from './components/FormationParcoursPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
 import DiscoverSection from './components/DiscoverSection'
+import VideoInterview from './components/VideoInterview'
 import PractitionersBand from './components/PractitionersBand'
 import { money, useParcoursOffer } from './lib/parcoursOffer.js'
 
@@ -142,6 +143,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
 
         {/* ── Avis clients (uniquement ceux validés) ── */}
         <ReviewsHighlight />
+
+        {/* ── Sébastien en interview (vidéo chargée au clic) ── */}
+        <VideoInterview id="interview" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin') : undefined} />
 
         {/* ── Découvrir et expérimenter ── */}
         <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />

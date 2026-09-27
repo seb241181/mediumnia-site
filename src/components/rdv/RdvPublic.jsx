@@ -3,6 +3,7 @@ import LegalFooter from '../LegalFooter'
 import RdvDepositCheckout from './RdvDepositCheckout'
 import { GoogleReviewCard, Stars, useGoogleReviews } from '../ReviewsPage'
 import { commonDepositCents, descriptionParagraphs, groupServices } from '../../lib/rdvServiceGroups.js'
+import VideoInterview from '../VideoInterview'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1327,6 +1328,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
         </div>
 
         {step === 0 && <RdvReviews google={google} />}
+        {step === 0 && slug === 'sebastien-seguin' && <div className="-mx-6"><VideoInterview id="interview-rdv" compact /></div>}
       </main>
       <LegalFooter onNavigate={onNavigate} />
     </div>

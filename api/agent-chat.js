@@ -250,7 +250,7 @@ export default async function handler(req, res) {
 
   const { data: agent } = await db
     .from('agents')
-    .select('id, owner_id, membership_id, name, status, provider, model, mission, audience, tone, knowledge_summary, limits')
+    .select('id, owner_id, membership_id, name, status, provider, model, mission, audience, tone, knowledge_summary')
     .eq('id', agentId)
     .eq('owner_id', auth.userId)
     .eq('membership_id', membership.id)

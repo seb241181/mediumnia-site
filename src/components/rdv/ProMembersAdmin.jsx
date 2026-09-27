@@ -10,6 +10,7 @@ const ERROR_LABELS = {
   invalid_email: 'Adresse e-mail à vérifier.',
   unknown_reseau_profile: 'Fiche du Réseau inconnue.',
   pilotage_forbidden: 'Réservé à l’administration MediumIA.',
+  reseau_profile_already_invited: 'Cette fiche du Réseau possède déjà une invitation ou un espace actif.',
 }
 
 const DEMO = {

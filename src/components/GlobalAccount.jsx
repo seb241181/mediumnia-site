@@ -357,8 +357,12 @@ export default function GlobalAccount() {
     setOpen(true)
   }
 
+  // Page de réservation : pas de bulle « Connexion » par-dessus le parcours.
+  const hideLauncher = pathname.startsWith('/rdv/')
+
   return (
     <>
+      {!hideLauncher && (
       <button
         type="button"
         onClick={() => openAuth(user ? 'profile' : 'signin')}
@@ -368,6 +372,7 @@ export default function GlobalAccount() {
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-deep text-gold">◈</span>
         <span className="hidden sm:inline">{authLoading ? 'Compte…' : accountLabel}</span>
       </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6" onClick={() => setOpen(false)}>

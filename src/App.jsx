@@ -220,7 +220,8 @@ export default function App() {
     else backHome()
   }
 
-  const showGuardian = view !== 'rdv-dashboard'
+  // Sur la réservation, les bulles flottantes masquaient titres et récapitulatif.
+  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public'
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 

@@ -34,7 +34,7 @@ function dayLabel(value) {
   return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
 
-function Stars({ value, size = 'text-base' }) {
+export function Stars({ value, size = 'text-base' }) {
   return (
     <span className={`${size} tracking-[0.12em] text-gold`} role="img" aria-label={`${value} sur 5`}>
       {'★'.repeat(value)}<span className="text-gold/25">{'★'.repeat(5 - value)}</span>
@@ -92,7 +92,7 @@ export function useGoogleReviews() {
   return state
 }
 
-function GoogleReviewCard({ review }) {
+export function GoogleReviewCard({ review }) {
   return (
     <article className="rounded-2xl border border-gold/25 bg-white/80 p-5 shadow-[0_8px_24px_rgba(26,21,53,.04)]">
       <div className="flex items-center justify-between gap-2">

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import LegalFooter from '../LegalFooter'
 import RdvDepositCheckout from './RdvDepositCheckout'
+import { GoogleReviewCard, Stars, useGoogleReviews } from '../ReviewsPage'
+import { commonDepositCents, descriptionParagraphs, groupServices } from '../../lib/rdvServiceGroups.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -115,39 +117,136 @@ function RequestStepBar() {
   )
 }
 
-// ── Service card ──────────────────────────────────────────────────────────────
+// ── Service card (une carte par prestation, déclinaisons au choix) ──────────
 
-function ServiceCard({ service, selected, onSelect }) {
+const euros = (cents) => `${(cents / 100).toFixed(2).replace('.', ',').replace(',00', '')} €`
+
+function ServiceGroupCard({ group, depositShownOnce, onSelect }) {
+  const [variantId, setVariantId] = useState(group.variants[0].id)
+  const [expanded, setExpanded] = useState(false)
+  const variant = group.variants.find(v => v.id === variantId) || group.variants[0]
+  const paragraphs = descriptionParagraphs(variant.description)
+  const hasMore = paragraphs.length > 1 || (paragraphs[0] || '').length > 220
+  const isRequest = variant.bookingMode === 'request'
+  const hasDeposit = variant.bookingMode === 'instant' && variant.reservationPaymentCents > 0
+
   return (
-    <button
-      onClick={() => onSelect(service)}
-      className={`w-full text-left rounded-2xl border-2 p-5 transition-all ${
-        selected ? 'border-gold bg-gold/10' : 'border-gold/20 bg-white/60 hover:border-gold/50 hover:bg-white/80'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <h3 className="font-georgia text-base font-semibold text-deep leading-snug">{service.title}</h3>
-        {service.bookingMode === 'request' && (
-          <span className="font-georgia text-[10px] uppercase tracking-wide bg-gold/10 text-gold border border-gold/30 rounded-full px-2.5 py-0.5 shrink-0 mt-0.5">Sur demande</span>
-        )}
+    <article className="rounded-2xl border border-gold/25 bg-white/75 p-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-georgia text-lg font-semibold leading-snug text-deep">{group.title}</h3>
+        <p className="shrink-0 font-georgia text-lg font-semibold text-deep">{variant.priceLabel}</p>
       </div>
-      <p className="font-georgia text-sm text-mist leading-relaxed mb-3">{service.description}</p>
-      <div className="flex flex-wrap gap-4 font-georgia text-xs text-mist">
-        <span>⏱ {service.durationLabel}</span>
-        <span>◈ {service.priceLabel}</span>
-        <span>{service.modalityLabel}</span>
-        {service.bookingMode === 'request' && (
-          <span className="text-gold/70 italic">→ Réservation sur demande</span>
-        )}
-        {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
-          <span className="text-gold font-semibold">
-            → {service.price_cents > service.reservationPaymentCents
-              ? `${service.reservationPaymentLabel} d’arrhes ou totalité en ligne — carte bancaire ou PayPal, paiement en plusieurs fois possible`
-              : `${service.reservationPaymentLabel} d’arrhes à la réservation`}
-          </span>
-        )}
+
+      {group.variants.length > 1 && (
+        <div className="mt-4 inline-flex rounded-full border border-gold/30 bg-cream/70 p-1" role="radiogroup" aria-label={`Format de la séance ${group.title}`}>
+          {group.variants.map(v => (
+            <button
+              key={v.id}
+              type="button"
+              role="radio"
+              aria-checked={v.id === variant.id}
+              onClick={() => { setVariantId(v.id); setExpanded(false) }}
+              className={`min-h-[40px] rounded-full px-4 font-georgia text-sm transition-colors ${v.id === variant.id ? 'bg-deep text-gold' : 'text-mist hover:text-deep'}`}
+            >
+              {v.variantLabel}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className={`mt-4 font-georgia text-sm leading-relaxed text-mist ${expanded ? 'space-y-3' : ''}`}>
+        {expanded
+          ? paragraphs.map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)
+          : <p className="line-clamp-3">{paragraphs[0]}</p>}
       </div>
-    </button>
+      {hasMore && (
+        <button type="button" onClick={() => setExpanded(e => !e)} aria-expanded={expanded} className="mt-2 font-georgia text-xs font-semibold text-deep underline decoration-gold/50 underline-offset-4 hover:decoration-gold">
+          {expanded ? 'Réduire' : 'Lire la suite'}
+        </button>
+      )}
+
+      <div className="mt-5 flex flex-col gap-4 border-t border-gold/15 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="font-georgia text-xs text-mist">
+          {variant.durationLabel} · {variant.variantLabel}
+          {isRequest && ' · date fixée ensemble, devis confirmé avant'}
+          {hasDeposit && !depositShownOnce && ` · ${variant.reservationPaymentLabel} d’arrhes en ligne`}
+        </p>
+        <button
+          type="button"
+          onClick={() => onSelect(variant)}
+          className="min-h-[46px] shrink-0 rounded-xl bg-deep px-5 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90"
+        >
+          {isRequest ? 'Faire une demande →' : 'Voir les disponibilités →'}
+        </button>
+      </div>
+    </article>
+  )
+}
+
+// ── Comment ça se passe ──────────────────────────────────────────────────────
+
+function HowItWorks({ depositCents }) {
+  const steps = [
+    ['Choisissez votre séance et l’horaire', 'L’agenda est à jour en temps réel : un créneau affiché est un créneau libre.'],
+    [depositCents ? `Réservez avec ${euros(depositCents)} d’arrhes` : 'Confirmez en ligne',
+      depositCents
+        ? 'Ou réglez la totalité, par carte bancaire ou PayPal (paiement en plusieurs fois possible). L’e-mail de confirmation arrive aussitôt.'
+        : 'L’e-mail de confirmation arrive aussitôt.'],
+    ['Le jour venu, en présence ou en visio', 'En visio, par WhatsApp ou FaceTime selon votre préférence. Besoin d’annuler ? Vous le faites vous-même jusqu’à 48 h avant, grâce au lien de l’e-mail.'],
+  ]
+  return (
+    <section className="rounded-2xl border border-gold/25 bg-white/60 p-5" aria-labelledby="rdv-how-title">
+      <p id="rdv-how-title" className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold">Comment ça se passe</p>
+      <ol className="mt-4 space-y-4">
+        {steps.map(([title, text], i) => (
+          <li key={title} className="flex gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gold/40 font-georgia text-xs font-bold text-deep" aria-hidden="true">{i + 1}</span>
+            <div>
+              <p className="font-georgia text-sm font-semibold leading-snug text-deep">{title}</p>
+              <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">{text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
+// ── Avis Google (mêmes avis que la page /avis, jamais inventés) ──────────────
+
+function RatingChip({ google }) {
+  if (!google.available || !google.count) return null
+  return (
+    <a href="#avis-rdv" className="mt-3 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-white/70 px-3 py-1.5 font-georgia text-xs text-deep hover:bg-white">
+      <Stars value={Math.round(google.rating || 0)} size="text-sm" />
+      <strong>{String(google.rating?.toFixed?.(1) || '').replace('.', ',')} / 5</strong>
+      <span className="text-mist">· {google.count} avis Google</span>
+    </a>
+  )
+}
+
+function RdvReviews({ google }) {
+  if (!google.available || !google.count || !google.reviews?.length) return null
+  return (
+    <section id="avis-rdv" className="mt-14 scroll-mt-24" aria-labelledby="avis-rdv-title">
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Avis clients</p>
+          <h2 id="avis-rdv-title" className="mt-1 font-georgia text-2xl font-medium text-deep">Ils ont consulté Sébastien</h2>
+        </div>
+        <p className="font-georgia text-sm text-mist">
+          <Stars value={Math.round(google.rating || 0)} size="text-sm" />{' '}
+          <strong className="text-deep">{String(google.rating?.toFixed?.(1) || '').replace('.', ',')} / 5</strong> · {google.count} avis sur Google
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {google.reviews.slice(0, 3).map((review, i) => <GoogleReviewCard key={`${review.author}-${i}`} review={review} />)}
+      </div>
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
+        <a href={google.mapsUrl} target="_blank" rel="noopener noreferrer" className="font-georgia text-sm font-semibold text-deep underline decoration-gold/50 underline-offset-4 hover:decoration-gold">Lire tous les avis sur Google →</a>
+        <a href="/avis" className="font-georgia text-sm text-mist underline decoration-gold/30 underline-offset-4 hover:text-deep">Laisser un avis</a>
+      </div>
+    </section>
   )
 }
 
@@ -724,7 +823,7 @@ function Summary({ practitioner, service, date, time }) {
       {service && (
         <div className="py-3 border-b border-gold/10">
           <p className="font-georgia text-[10px] uppercase tracking-wide text-mist mb-1">Prestation</p>
-          <p className="font-georgia text-sm font-semibold">{service.title}</p>
+          <p className="font-georgia text-sm font-semibold">{service.displayTitle || service.title}</p>
           <p className="font-georgia text-xs text-mist mt-0.5">{service.durationLabel} · {service.priceLabel}</p>
           <p className="font-georgia text-xs text-mist">{service.modalityLabel}</p>
           {service.bookingMode === 'instant' && service.reservationPaymentCents > 0 && (
@@ -766,6 +865,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const [bookingError, setBookingError]     = useState(null)
 
   const [dayAvail, setDayAvail] = useState({})
+  const google = useGoogleReviews()
 
   const flowRef = useRef(null)
   const slotsRef = useRef(null)
@@ -808,6 +908,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   const practitioner = configData.practitioner
   const services     = (configData.services || []).map(formatService)
+  const serviceGroups = groupServices(services)
+  const depositCents  = commonDepositCents(configData.services || [])
 
   const fmt = (d) => d ? new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d) : null
   const requiresDeposit = service?.bookingMode === 'instant'
@@ -953,7 +1055,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
             </p>
             {service && (
               <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
-                <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.title}</strong></p>
+                <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.displayTitle || service.title}</strong></p>
                 <p className="font-georgia text-sm"><span className="text-mist">Tarif de base :</span> <strong>{service.priceLabel}</strong></p>
               </div>
             )}
@@ -995,7 +1097,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
             <p className="font-georgia text-mist text-base mb-8">{confirmationCopy}</p>
             <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
               {practitioner && <p className="font-georgia text-sm"><span className="text-mist">Praticien :</span> <strong>{practitioner.name}</strong></p>}
-              <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.title}</strong></p>
+              <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.displayTitle || service.title}</strong></p>
               <p className="font-georgia text-sm capitalize"><span className="text-mist">Date :</span> <strong>{fmt(date)}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Heure :</span> <strong>{time}</strong></p>
               <p className="font-georgia text-sm"><span className="text-mist">Modalité :</span> <strong>{service.modalityLabel}</strong></p>
@@ -1009,11 +1111,11 @@ export default function RdvPublic({ onBack, onNavigate }) {
             </div>
             {(() => {
               const links = calendarLinks({
-                title: `Rendez-vous MediumIA — ${service.title}`,
+                title: `Rendez-vous MediumIA — ${service.displayTitle || service.title}`,
                 date,
                 time,
                 durationMin: service.duration_min,
-                details: `${service.title}${practitioner ? ` avec ${practitioner.name}` : ''} (${service.modalityLabel}). Toutes les informations figurent dans votre e-mail de confirmation.`,
+                details: `${service.displayTitle || service.title}${practitioner ? ` avec ${practitioner.name}` : ''} (${service.modalityLabel}). Toutes les informations figurent dans votre e-mail de confirmation.`,
               })
               return (
                 <div className="mb-8">
@@ -1058,6 +1160,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
             <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-1">Prendre rendez-vous</p>
             <h1 className="font-georgia font-medium text-2xl md:text-3xl text-deep leading-tight">{practitioner?.name || slug}</h1>
             <p className="font-georgia text-mist text-sm">{practitioner?.tagline || ''}</p>
+            <RatingChip google={google} />
           </div>
         </div>
 
@@ -1079,15 +1182,21 @@ export default function RdvPublic({ onBack, onNavigate }) {
             {/* Step 0 — Service */}
             {step === 0 && (
               <div>
-                <h2 className="font-georgia font-medium text-xl mb-5">Choisissez une prestation</h2>
+                <h2 className="font-georgia font-medium text-xl">Choisissez une prestation</h2>
+                {depositCents && (
+                  <p className="mt-2 mb-5 font-georgia text-sm text-mist">
+                    Réservation en ligne avec {euros(depositCents)} d’arrhes, ou la totalité, par carte bancaire ou PayPal.
+                  </p>
+                )}
+                {!depositCents && <div className="mb-5" />}
                 {services.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-gold/25 px-6 py-10 text-center">
                     <p className="font-georgia text-sm text-mist">Aucune prestation disponible pour le moment.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {services.map(svc => (
-                      <ServiceCard key={svc.id} service={svc} selected={service?.id === svc.id} onSelect={selectService} />
+                  <div className="space-y-4">
+                    {serviceGroups.map(group => (
+                      <ServiceGroupCard key={group.key} group={group} depositShownOnce={Boolean(depositCents)} onSelect={selectService} />
                     ))}
                   </div>
                 )}
@@ -1208,10 +1317,16 @@ export default function RdvPublic({ onBack, onNavigate }) {
           </div>
 
           {/* Sidebar summary */}
-          <div>
-            <Summary practitioner={practitioner} service={service} date={date} time={time} />
+          <div className="space-y-5 md:sticky md:top-24 md:self-start">
+            {/* Sur mobile, un récapitulatif vide n'apporte rien avant le choix. */}
+            <div className={service ? '' : 'hidden md:block'}>
+              <Summary practitioner={practitioner} service={service} date={date} time={time} />
+            </div>
+            {(step === 0 || step === 1) && <HowItWorks depositCents={depositCents} />}
           </div>
         </div>
+
+        {step === 0 && <RdvReviews google={google} />}
       </main>
       <LegalFooter onNavigate={onNavigate} />
     </div>

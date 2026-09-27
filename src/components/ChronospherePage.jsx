@@ -1104,7 +1104,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                     onClick={() => setSelectedProduct('pack3')}
                     disabled={!paypalConfig || loading}
                     className={`relative rounded-2xl border-2 p-5 text-left transition-colors disabled:opacity-50 ${
-                      selectedProduct === 'pack3' ? 'border-deep bg-deep text-cream' : 'border-gold/45 bg-gold/[.08] text-deep hover:border-gold/80'
+                      selectedProduct === 'pack3' ? 'border-deep bg-deep text-cream' : 'border-gold/30 bg-white/75 text-deep hover:border-gold/70'
                     }`}
                   >
                     <span className="absolute right-3 top-3 rounded-full bg-gold px-2.5 py-1 font-georgia text-[9px] uppercase tracking-[0.1em] text-deep">Le plus avantageux</span>

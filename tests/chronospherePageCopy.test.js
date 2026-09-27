@@ -40,3 +40,11 @@ test('only ChronoSphère reviews appear, and the free Oracle draw is offered', (
   assert.match(read('src/components/GiftChronosphereRedeem.jsx'), /underline decoration-gold\/40[\s\S]*J’ai une carte cadeau/)
   assert.match(read('src/App.jsx'), /view !== 'chronosphere'/)
 })
+
+test('before any click, the single draw and the pack look the same', () => {
+  const page = read('src/components/ChronospherePage.jsx')
+  const unselected = "'border-gold/30 bg-white/75 text-deep hover:border-gold/70'"
+  assert.equal(page.split(unselected).length - 1, 2)
+  // Un fond doré sur un bouton est rendu comme un bouton actif par le thème cosmique.
+  assert.doesNotMatch(page, /selectedProduct === 'pack3' \? 'border-deep bg-deep text-cream' : '[^']*bg-gold/)
+})

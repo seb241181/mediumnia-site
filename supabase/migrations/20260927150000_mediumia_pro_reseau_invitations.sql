@@ -6,8 +6,9 @@
 -- 2. Chaque assistant peut être rattaché à une fiche du Réseau (reseau_slug) et
 --    être affiché publiquement sur cette fiche (public_enabled, étape 2).
 --
--- Additif : aucune donnée existante n'est modifiée. Rien n'est ouvert au
--- navigateur en écriture ; toutes les écritures passent par le serveur.
+-- Additif : aucune donnée existante n'est modifiée. Les invitations et
+-- activations restent serveur-only. Les droits RLS historiques sur quelques
+-- champs de profil sûrs de l'agent ne sont pas élargis par cette migration.
 
 create table if not exists public.pro_invitations (
   id uuid primary key default gen_random_uuid(),
@@ -26,6 +27,12 @@ create table if not exists public.pro_invitations (
 create unique index if not exists pro_invitations_one_pending_per_email_idx
   on public.pro_invitations(email_normalized)
   where status = 'pending';
+
+-- Une fiche du Réseau ne peut avoir qu'une invitation active à la fois.
+-- Une nouvelle invitation redevient possible après révocation.
+create unique index if not exists pro_invitations_one_live_per_reseau_slug_idx
+  on public.pro_invitations(reseau_slug)
+  where reseau_slug is not null and status in ('pending', 'accepted');
 
 create index if not exists pro_invitations_accepted_user_idx
   on public.pro_invitations(accepted_user_id)

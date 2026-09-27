@@ -449,7 +449,7 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
         <button
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
           disabled={!canPrev}
-          className="w-10 h-10 flex items-center justify-center rounded-xl text-mist hover:text-deep hover:bg-gold/10 disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gold text-mist disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           aria-label="Mois précédent"
         >
           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
@@ -457,7 +457,7 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
         <p className="font-georgia text-base font-semibold capitalize text-deep">{monthLabel}</p>
         <button
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="w-10 h-10 flex items-center justify-center rounded-xl text-mist hover:text-deep hover:bg-gold/10 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gold text-mist transition-colors"
           aria-label="Mois suivant"
         >
           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>

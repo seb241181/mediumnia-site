@@ -18,4 +18,6 @@ test('intentional gold buttons keep their look, the Réseau filter shows its sta
   assert.match(read('src/styles/cosmic-design-system.css'), /\.cosmic-page \.site-nav__students/)
   assert.match(read('src/components/rdv/RdvPublic.jsx'), /border border-gold\/40 bg-gold px-4 py-3/)
   assert.match(read('src/components/ReseauDirectory.jsx'), /\? 'border-deep bg-deep text-gold font-semibold'/)
+  assert.equal((read('src/components/rdv/RdvPublic.jsx').match(/rounded-xl bg-gold text-mist/g) || []).length, 2)
+  assert.match(read('src/components/ReseauJoindre.jsx'), /form\.distance === v \? 'border-deep bg-deep text-gold font-bold'/)
 })

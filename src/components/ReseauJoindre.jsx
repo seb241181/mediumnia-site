@@ -297,7 +297,7 @@ export default function ReseauJoindre({ onBack, onNavigate }) {
                       key={v}
                       type="button"
                       onClick={() => set('distance', v)}
-                      className={`font-georgia text-sm px-6 py-3 rounded-xl border-2 flex-1 transition-all ${form.distance === v ? 'border-gold bg-gold/10 text-deep font-bold' : 'border-gold/25 text-mist hover:border-gold/50'}`}
+                      className={`font-georgia text-sm px-6 py-3 rounded-xl border-2 flex-1 transition-all ${form.distance === v ? 'border-deep bg-deep text-gold font-bold' : 'border-gold/25 text-mist hover:border-gold/50'}`}
                     >
                       {v}
                     </button>

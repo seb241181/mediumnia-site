@@ -63,8 +63,11 @@ test('shop: Formation MediumIA first, as the lead offer, at 597 € TTC; other p
   assert.equal(visible[0].priceLabel, '597 € TTC')
   assert.equal(visible[0].spotlight, true)
   assert.equal(visible[0].paymentNote, 'Paiement en plusieurs fois disponible avec PayPal selon éligibilité.')
+  // 27/09/2026 : ChronoSphère rejoint la boutique et la carte Oracle annonce la
+  // livraison (le prix du jeu reste 29,90 €, 34,69 € livraison comprise).
   assert.deepEqual(visible.map((p) => [p.id, p.priceLabel]).slice(1), [
-    ['oracle-au-dela-ame', '29,90 €'],
+    ['oracle-au-dela-ame', '29,90 € + livraison'],
+    ['chronosphere-999', 'Dès 5 €'],
     ['cartes-cadeaux', 'Dès 9,90 €'],
     ['le-codex', 'Disponible sur Amazon'],
   ])

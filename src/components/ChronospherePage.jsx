@@ -10,13 +10,14 @@ import {
 import { getChronosphereReading } from '../../lib/chronosphereReading.js'
 import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 import PublicPageNav from './PublicPageNav'
+import { ReviewCard, useApprovedReviews } from './ReviewsPage'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const THEMES = [
   { value: 'amour', label: 'Amour' },
   { value: 'travail', label: 'Travail' },
   { value: 'finances', label: 'Finances' },
-  { value: 'energie', label: 'Energie' },
+  { value: 'energie', label: 'Énergie' },
   { value: 'direction de vie', label: 'Direction de vie' },
   { value: 'projet', label: 'Projet' },
   { value: 'autre', label: 'Autre — question personnelle' },
@@ -276,6 +277,60 @@ const PENDING_PAYMENT_KEY = 'chronosphere_packPendingPayment'
 const PACK_TOKEN_KEY = 'chronosphere_packToken'
 const LEGACY_PENDING_PAYMENT_KEY = 'chronosphere_drawToken'
 
+// ── Avis ChronoSphère (uniquement ceux déposés pour ChronoSphère) ──────────
+
+function ChronosphereReviews() {
+  const site = useApprovedReviews()
+  if (site.loading) return null
+  const reviews = site.reviews.filter((review) => review.offering === 'chronosphere').slice(0, 3)
+  if (!reviews.length) return null
+  return (
+    <section className="mt-14" aria-labelledby="avis-chronosphere-title">
+      <p className="text-center font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Avis clients</p>
+      <h2 id="avis-chronosphere-title" className="mt-1 text-center font-georgia text-2xl font-medium text-deep">Ils ont fait leur tirage ChronoSphère</h2>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        {reviews.map((review) => <ReviewCard key={review.id} review={review} />)}
+      </div>
+    </section>
+  )
+}
+
+// ── Oracle offert : l'autre tirage de la rubrique « Tirages & ChronoSphère » ─
+
+function OracleInvite({ onOpenOracle }) {
+  return (
+    <section className="mt-14 overflow-hidden rounded-3xl border border-gold/35 bg-white/75 shadow-[0_14px_36px_rgba(26,21,53,.06)]" aria-labelledby="oracle-invite-title">
+      <div className="grid items-center gap-6 p-6 sm:grid-cols-[auto_1fr] md:p-8">
+        <img
+          src="/images/oracle/cover.jpg"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="mx-auto h-40 w-auto rounded-xl shadow-md sm:mx-0"
+        />
+        <div className="text-center sm:text-left">
+          <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Oracle Au-delà de l’Âme · offert</p>
+          <h2 id="oracle-invite-title" className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep">Envie d’un premier tirage, sans rien payer ?</h2>
+          <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
+            Tirez une carte de l’Oracle et recevez une première lecture guidée par Lumïa, gratuitement.
+          </p>
+          <a
+            href="/oracle"
+            onClick={(event) => {
+              if (!onOpenOracle || event.metaKey || event.ctrlKey || event.shiftKey) return
+              event.preventDefault()
+              onOpenOracle()
+            }}
+            className="mt-4 inline-flex min-h-[46px] items-center rounded-full bg-deep px-6 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90"
+          >
+            Faire un tirage offert →
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onOpenFormation, onOpenReseau }) {
   const [fullName, setFullName] = useState('')
   const [birthDate, setBirthDate] = useState('')
@@ -331,6 +386,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
   const drawTokenRef = useRef(pendingPayment?.drawToken || pendingPayment?.packToken || drawToken)
   const paymentProductRef = useRef(pendingPayment?.product || null)
   const resumeValidatedTokenRef = useRef(null)
+  const offersRef = useRef(null)
   const launchRef = useRef(null)
 
   useEffect(() => {
@@ -755,6 +811,14 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
   const chargedPrice = formatChronospherePrice(selectedOffer?.amount)
   const singlePrice = formatChronospherePrice(paypalConfig?.products?.single?.displayAmount || paypalConfig?.products?.single?.amount)
   const packPrice = formatChronospherePrice(paypalConfig?.products?.pack3?.displayAmount || paypalConfig?.products?.pack3?.amount)
+  const maxPrice = formatChronospherePrice(paypalConfig?.products?.max3?.displayAmount || paypalConfig?.products?.max3?.amount)
+  const offersVisible = !result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken
+  // L'encadré « Pack conseillé » mène directement aux offres, pack présélectionné.
+  function choosePack() {
+    if (offersVisible && paypalConfig) setSelectedProduct('pack3')
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    offersRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+  }
   const creditsLabel = creditState?.creditsRemaining === 1 ? '1 tirage disponible' : `${creditState?.creditsRemaining || 0} tirages disponibles`
 
   return (
@@ -775,19 +839,24 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
             Cycles · lignes de temps · thème astral
           </p>
           <h1 className="mb-5 font-georgia text-4xl font-medium leading-tight md:text-6xl">
-            CHRONOSPHERE 999
+            ChronoSphère 999
           </h1>
           <p className="mx-auto max-w-2xl font-bodoni text-lg italic leading-relaxed text-deep/80 md:text-xl">
             « Votre naissance pose le socle ; le moment présent ouvre la fenêtre. »
           </p>
-          <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gold/40 bg-white/70 px-5 py-4 shadow-[0_10px_30px_rgba(26,21,53,.06)]">
-            <p className="font-georgia text-lg font-medium text-deep">
+          <button
+            type="button"
+            onClick={choosePack}
+            className="mx-auto mt-6 block w-full max-w-md rounded-2xl border border-gold/40 bg-white/70 px-5 py-4 text-center shadow-[0_10px_30px_rgba(26,21,53,.06)] transition-colors hover:border-gold hover:bg-white"
+          >
+            <span className="block font-georgia text-lg font-medium text-deep">
               Pack conseillé : {packPrice || '9,90 € TTC'}
-            </p>
-            <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
-              3 tirages ChronoSphère pour explorer plusieurs passages. Le thème astral complet arrive dans une prochaine étape.
-            </p>
-          </div>
+            </span>
+            <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">
+              3 lectures complètes, à faire maintenant ou plus tard (dans les 6 mois).
+            </span>
+            <span className="mt-2 inline-block font-georgia text-xs font-bold text-deep underline decoration-gold/60 underline-offset-4">Choisir ce pack →</span>
+          </button>
 
           <div className="mx-auto mt-8 grid max-w-3xl gap-3 text-left md:grid-cols-3">
             <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
@@ -803,8 +872,18 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
             <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
               <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">3 · Oracle</p>
               <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Résonances chiffrées</h2>
-              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Les trois nombres ouvrent une lecture symbolique sans remplacer le thème natal complet.</p>
+              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Trois nombres choisis spontanément ouvrent la lecture symbolique de votre situation.</p>
             </article>
+          </div>
+
+          <div className="mx-auto mt-5 max-w-3xl rounded-2xl border border-gold/30 bg-white/70 p-5 text-left md:p-6">
+            <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">Ce que vous recevez</p>
+            <p className="mt-2 font-georgia text-sm leading-relaxed text-deep">
+              Votre lecture s’affiche à l’écran juste après le paiement, et une copie vous est envoyée par e-mail.
+            </p>
+            <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">
+              Elle réunit une synthèse en 30 secondes, votre socle calculé (Ascendant, Milieu du Ciel), la photographie du moment, vos trois fréquences, votre ligne de temps, deux chemins possibles, trois leviers concrets et une question miroir.
+            </p>
           </div>
         </section>
 
@@ -839,23 +918,8 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               Empreinte de naissance
             </p>
             <p className="mb-5 font-georgia text-xs leading-relaxed text-mist">
-              Ces informations servent au tirage actuel — ciel, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles — et préparent le futur thème astral complet. Le rapport natal premium sera activé seulement après branchement d’un moteur astrologique fiable : aucune heure approximative n’est inventée.
+              Date, heure et lieu exacts permettent de calculer votre ciel de naissance : Ascendant, Milieu du Ciel, maisons et fenêtres temporelles. Rien n’est estimé : aucune heure approximative n’est inventée.
             </p>
-
-            <label className="mb-5 block">
-              <span className="mb-2 block font-georgia text-sm text-deep">Adresse e-mail</span>
-              <input
-                type="email"
-                autoComplete="email"
-                value={deliveryEmail}
-                onChange={(event) => setDeliveryEmail(event.target.value)}
-                required
-                maxLength={254}
-                disabled={loading}
-                className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3 font-georgia text-base text-deep outline-none focus:border-gold/70 disabled:opacity-60"
-              />
-              <span className="mt-2 block font-georgia text-xs text-mist">Votre ligne de temps complète sera envoyée à cette adresse.</span>
-            </label>
 
             <div className="mb-6 grid gap-x-4 gap-y-4 md:grid-cols-2">
               <div className="md:col-span-2">
@@ -995,8 +1059,26 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               ))}
             </div>
 
+            <label className="mb-7 block">
+              <span className="mb-2 block font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">Où recevoir votre lecture</span>
+              <input
+                type="email"
+                autoComplete="email"
+                inputMode="email"
+                value={deliveryEmail}
+                onChange={(event) => setDeliveryEmail(event.target.value)}
+                required
+                maxLength={254}
+                placeholder="vous@exemple.fr"
+                aria-label="Adresse e-mail"
+                disabled={loading}
+                className="w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3 font-georgia text-base text-deep outline-none focus:border-gold/70 disabled:opacity-60"
+              />
+              <span className="mt-2 block font-georgia text-xs text-mist">Votre lecture s’affiche à l’écran et une copie complète vous est envoyée à cette adresse.</span>
+            </label>
+
             {!result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken && (
-              <fieldset className="mb-6">
+              <fieldset ref={offersRef} className="mb-6 scroll-mt-28">
                 <legend className="mb-3 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">
                   Choisissez votre offre
                 </legend>
@@ -1022,7 +1104,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                     onClick={() => setSelectedProduct('pack3')}
                     disabled={!paypalConfig || loading}
                     className={`relative rounded-2xl border-2 p-5 text-left transition-colors disabled:opacity-50 ${
-                      selectedProduct === 'pack3' ? 'border-deep bg-deep text-cream' : 'border-gold/45 bg-gold/[.08] text-deep hover:border-gold/80'
+                      selectedProduct === 'pack3' ? 'border-deep bg-deep text-cream' : 'border-gold/30 bg-white/75 text-deep hover:border-gold/70'
                     }`}
                   >
                     <span className="absolute right-3 top-3 rounded-full bg-gold px-2.5 py-1 font-georgia text-[9px] uppercase tracking-[0.1em] text-deep">Le plus avantageux</span>
@@ -1033,6 +1115,20 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                     <span className={`mt-1 block font-georgia text-xs ${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}`}>3 tirages · les suivants quand vous voulez</span>
                   </button>
                 </div>
+                <a
+                  href="/chronosphere-max"
+                  className="mt-3 flex flex-col gap-3 rounded-2xl border-2 border-gold/30 bg-white/75 p-5 text-left text-deep transition-colors hover:border-gold/70 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+                >
+                  <span className="min-w-0">
+                    <span className="block font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">ChronoSphère MAX</span>
+                    <span className="mt-1 block font-georgia text-lg font-medium">Suivre une situation dans le temps</span>
+                    <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">3 lectures reliées : chacune est comparée aux précédentes pour voir ce qui persiste, ce qui se déplace et ce qui s’ouvre. Avec votre compte MediumIA.</span>
+                  </span>
+                  <span className="shrink-0 sm:text-right">
+                    <span className="block font-georgia text-2xl text-deep">{maxPrice || '19,90 € TTC'}</span>
+                    <span className="mt-1 block font-georgia text-xs font-bold text-deep underline decoration-gold/60 underline-offset-4">Découvrir MAX →</span>
+                  </span>
+                </a>
               </fieldset>
             )}
 
@@ -1056,13 +1152,15 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                     <p className="font-georgia text-base font-medium text-deep">
                       {selectedProduct
                         ? `${selectedProduct === 'single' ? 'Tirage unique' : 'Pack de 3 tirages'} : ${formattedPrice}`
-                        : 'Sélectionnez une offre avant le paiement'}
+                        : 'Choisissez une offre ci-dessus pour continuer'}
                     </p>
-                    <p className="mt-1 font-georgia text-xs text-mist">
-                      {selectedProduct === 'pack3'
-                        ? 'Votre achat comprend 3 tirages Chronosphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'
-                        : 'Le tirage unique donne accès à une lecture Chronosphère complète.'}
-                    </p>
+                    {selectedProduct && (
+                      <p className="mt-1 font-georgia text-xs text-mist">
+                        {selectedProduct === 'pack3'
+                          ? 'Votre achat comprend 3 tirages ChronoSphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'
+                          : 'Le tirage unique donne accès à une lecture ChronoSphère complète.'}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="submit"
@@ -1110,7 +1208,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                 Tirage payant
               </p>
               <p className="mb-5 font-georgia text-sm leading-relaxed text-deep/80">
-                Chaque tirage CHRONOSPHERE 999 comprend le calcul de votre ciel natal, vos fenêtres temporelles personnalisées et une interprétation approfondie par intelligence artificielle.
+                Chaque tirage ChronoSphère 999 comprend le calcul de votre ciel natal, vos fenêtres temporelles personnalisées et une interprétation approfondie par intelligence artificielle.
               </p>
               <p className="mb-6 text-center font-georgia text-2xl font-medium text-deep">
                 {formattedPrice ? formattedPrice.replace(' TTC', '') : '...'}
@@ -1189,9 +1287,12 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
           )}
 
           <p className="mt-6 text-center font-georgia text-xs leading-relaxed text-mist/70">
-            Chronosphere propose une lecture symbolique et introspective.
-            Il n'établit pas de certitude sur l'avenir et ne remplace aucun conseil médical, juridique ou financier.
+            ChronoSphère propose une lecture symbolique et introspective.
+            Elle n’établit pas de certitude sur l’avenir et ne remplace aucun conseil médical, juridique ou financier.
           </p>
+
+          {!result && <ChronosphereReviews />}
+          {!result && <OracleInvite onOpenOracle={onOpenOracle} />}
 
           {/* Results */}
           {result && parts && (

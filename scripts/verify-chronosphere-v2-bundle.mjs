@@ -34,8 +34,15 @@ const v2OfferBundle = scriptSources
   .map((item) => item.source)
   .join('\n')
 
-if ((v2OfferBundle || bundle).includes('ChronoSphère MAX')) {
-  throw new Error('Chronosphere V2 bundle check failed. Reserved premium label "ChronoSphère MAX" must not ship in this offer.')
+// Depuis le 27/09/2026, la page ChronoSphère présente MAX, mais seulement
+// comme un lien vers sa page dédiée (/chronosphere-max, compte obligatoire) :
+// le formulaire V2 ne vend toujours que le tirage unique et le pack de 3.
+const v2Offer = v2OfferBundle || bundle
+if (v2Offer.includes('ChronoSphère MAX') && !v2Offer.includes('/chronosphere-max')) {
+  throw new Error('Chronosphere V2 bundle check failed. "ChronoSphère MAX" may only appear as a link to /chronosphere-max.')
+}
+if (/setSelectedProduct\(["']max3["']\)/.test(v2OfferBundle)) {
+  throw new Error('Chronosphere V2 bundle check failed. The V2 form must not sell the MAX product.')
 }
 
 console.log('Chronosphere V2 bundle check passed')

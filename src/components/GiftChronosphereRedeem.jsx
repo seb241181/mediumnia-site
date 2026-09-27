@@ -61,9 +61,11 @@ export default function GiftChronosphereRedeem({ product, consentAccepted, conse
     return (
       <div className="gift-redeem-peer" data-open="false">
         <style>{'.gift-redeem-peer[data-open="true"] ~ .chronosphere-standard-payment { display: none; }'}</style>
-        <button type="button" onClick={() => setOpenState(true)} className="mt-4 w-full rounded-xl border border-gold/40 bg-white/70 px-5 py-3 font-georgia text-sm text-deep hover:bg-gold/10">
-          🎁 J’ai une carte cadeau
-        </button>
+        <p className="mt-3 text-center">
+          <button type="button" onClick={() => setOpenState(true)} className="font-georgia text-sm text-mist underline decoration-gold/40 underline-offset-4 hover:text-deep">
+            🎁 J’ai une carte cadeau
+          </button>
+        </p>
       </div>
     )
   }

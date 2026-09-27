@@ -176,7 +176,7 @@ let chronosphere = await readFile(chronospherePath, 'utf8')
 chronosphere = replaceRequired(
   chronosphere,
   `              Ces informations servent aux calculs astrologiques du tirage : ciel natal, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles.`,
-  `              Ces informations servent au tirage actuel — ciel, Ascendant, Milieu du Ciel, maisons et fenêtres temporelles — et préparent le futur thème astral complet. Le rapport natal premium sera activé seulement après branchement d’un moteur astrologique fiable : aucune heure approximative n’est inventée.`,
+  `              Date, heure et lieu exacts permettent de calculer votre ciel de naissance : Ascendant, Milieu du Ciel, maisons et fenêtres temporelles. Rien n’est estimé : aucune heure approximative n’est inventée.`,
   'Chronosphere birth-data explanation',
 )
 
@@ -211,7 +211,7 @@ chronosphere = replaceRequired(
 chronosphere = replaceRequired(
   chronosphere,
   `                      ? 'Votre achat comprend 3 tirages Chronosphère, utilisables maintenant ou plus tard.'`,
-  `                      ? 'Votre achat comprend 3 tirages Chronosphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'`,
+  `                          ? 'Votre achat comprend 3 tirages ChronoSphère. Après chaque lecture, l’e-mail contient votre lien personnel pour reprendre les tirages restants quand vous le souhaitez.'`,
   'Chronosphere pack resume value before payment',
 )
 

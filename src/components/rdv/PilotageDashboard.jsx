@@ -39,7 +39,8 @@ function makePreviewData(days) {
     date.setUTCDate(date.getUTCDate() - offset)
     daily.push({ date: date.toISOString().slice(0, 10), total: 9 + ((offset * 7 + days) % 11) })
   }
-  return { preview: true, days, totals, home_doors, daily }
+  const conference = { total: 21, capacity: null }
+  return { preview: true, days, totals, home_doors, daily, conference }
 }
 
 function pct(value, total) {
@@ -138,6 +139,21 @@ export default function PilotageDashboard({ session, demoMode = false }) {
     return () => { cancelled = true }
   }, [session, days, demoMode])
 
+  useEffect(() => {
+    if (demoMode || !session) return undefined
+    const timer = window.setInterval(() => {
+      fetch(`/api/rdv-admin?action=analytics&days=${days}`, { headers: authHeader(session) })
+        .then(async res => {
+          const body = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(body.error || 'pilotage_indisponible')
+          return body
+        })
+        .then(body => setData(body))
+        .catch(() => {})
+    }, 15000)
+    return () => window.clearInterval(timer)
+  }, [session, days, demoMode])
+
   const totals = data?.totals || {}
   const homeDoors = data?.home_doors || {}
   const daily = data?.daily || []
@@ -148,6 +164,12 @@ export default function PilotageDashboard({ session, demoMode = false }) {
   const exampleCta = Number(totals.chronosphere_example_cta || 0)
   const paymentOpened = Number(totals.chronosphere_payment_opened || 0)
   const homeViews = Number(totals.home_view || 0)
+  const conference = data?.conference || {}
+  const conferenceTotal = Number(conference.total || 0)
+  const conferenceCapacity = Number(conference.capacity || 0)
+  const conferenceNote = conferenceCapacity > 0
+    ? `${conferenceTotal.toLocaleString('fr-FR')} / ${conferenceCapacity.toLocaleString('fr-FR')} · ${Math.max(0, conferenceCapacity - conferenceTotal).toLocaleString('fr-FR')} places restantes · actualisation ~15 s`
+    : 'Conférence du 22 octobre · actualisation automatique ~15 s'
 
   const keyRows = useMemo(() => (
     Object.entries(totals)
@@ -205,8 +227,9 @@ export default function PilotageDashboard({ session, demoMode = false }) {
         )}
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard eyebrow="Accueil" value={homeViews} note={`Sur les ${days} derniers jours`} />
+        <MetricCard eyebrow="Inscriptions conférence" value={conferenceTotal} note={conferenceNote} />
         <MetricCard eyebrow="Chronosphère" value={chronoClicks} note={`${pct(chronoClicks, homeClicks)} des clics guidés de l’accueil`} />
         <MetricCard eyebrow="Exemple Chronosphère" value={exampleViews} note={`${exampleCta.toLocaleString('fr-FR')} clics vers le tirage`} />
         <MetricCard eyebrow="Paiement ouvert" value={paymentOpened} note={`${pct(paymentOpened, exampleCta || chronoClicks)} après l’étape précédente`} />

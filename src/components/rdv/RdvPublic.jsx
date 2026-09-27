@@ -1219,7 +1219,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   <button
                     type="button"
                     onClick={() => selectDate(nextAvailableDate)}
-                    className="mb-4 w-full rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-left font-georgia text-sm text-deep hover:bg-gold/15 transition-colors"
+                    className="mb-4 w-full rounded-xl border border-gold/40 bg-gold px-4 py-3 text-left font-georgia text-sm text-deep transition-colors"
                   >
                     <span className="block text-[10px] uppercase tracking-[0.16em] text-mist">Prochaine disponibilité</span>
                     <span className="font-semibold capitalize">{fmt(nextAvailableDate)}</span> — voir les horaires →

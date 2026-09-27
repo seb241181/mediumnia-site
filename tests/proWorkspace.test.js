@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import {
   claimInvitation,
   cleanAssistantFields,
@@ -190,4 +191,14 @@ test('admin invitations: validated e-mail and fiche, e-mail sent, revocation sus
   assert.equal(revoked.status, 200)
   assert.equal(db.data.pro_memberships.find((m) => m.id === 'm1').status, 'suspended')
   assert.equal(db.data.pro_memberships.find((m) => m.id === 'm0').status, 'active')
+})
+
+
+test('the Pro invitation migration keeps claiming atomic and one live invitation per Network profile', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20260927150000_mediumia_pro_reseau_invitations.sql', import.meta.url), 'utf8')
+  assert.match(migration, /create unique index if not exists pro_invitations_one_live_per_reseau_slug_idx/)
+  assert.match(migration, /create or replace function public\.claim_mediumia_pro_invitation/)
+  assert.match(migration, /security definer/)
+  assert.match(migration, /revoke all on function public\.claim_mediumia_pro_invitation\(uuid, text\)[\s\S]*authenticated/)
+  assert.match(migration, /grant execute on function public\.claim_mediumia_pro_invitation\(uuid, text\)[\s\S]*service_role/)
 })

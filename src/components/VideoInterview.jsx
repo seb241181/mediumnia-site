@@ -111,9 +111,9 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, compact = 
                 Prendre rendez-vous avec Sébastien →
               </button>
             )}
-            <p className="font-georgia text-xs text-mist">Suivre Sébastien :</p>
+            <a href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" className="self-start font-georgia text-xs text-mist underline decoration-gold/40 underline-offset-4 hover:text-deep">Voir l’interview sur YouTube ↗</a>
+            <p className="border-t border-gold/15 pt-3 font-georgia text-xs text-mist">Suivre Sébastien :</p>
             <div className="-mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 font-georgia text-xs text-mist">
-              <a href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" className="underline decoration-gold/40 underline-offset-4 hover:text-deep">Voir sur YouTube ↗</a>
               {SOCIAL_LINKS.map((link) => (
                 <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 underline decoration-gold/40 underline-offset-4 hover:text-deep">
                   <SocialIcon id={link.id} className="h-3.5 w-3.5" />{link.label} ↗

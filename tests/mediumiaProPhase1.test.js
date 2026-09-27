@@ -23,7 +23,9 @@ test('/agents access is decided by the server from an active membership, never b
   assert.match(server, /membership\.expires_at/)
   // Un compte créé sur /agents ne donne rien sans invitation et adresse confirmée.
   assert.match(server, /if \(!user\.confirmed\) return \{ status: 403, body: \{ error: 'email_not_confirmed' \} \}/)
-  assert.match(server, /if \(!invitation\) return \{ status: 403, body: \{ error: 'invitation_not_found' \} \}/)
+  // L'activation passe par la fonction SQL atomique (service_role uniquement).
+  assert.match(server, /db\.rpc\('claim_mediumia_pro_invitation'/)
+  assert.match(server, /outcome\?\.result === 'invitation_not_found'\) return \{ status: 403, body: \{ error: 'invitation_not_found' \} \}/)
 })
 
 test('assistants are created and edited only through the server, one live assistant per member', () => {

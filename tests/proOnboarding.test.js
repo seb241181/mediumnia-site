@@ -69,3 +69,8 @@ test('pro parcours: invitation link opens the sign-up, sign-up returns to /agent
   assert.match(read('src/main.jsx'), /installProOnboardingRedirect\(supabase\)/)
   assert.match(read('src/components/ProWaitlistPublic.jsx'), /href="\/agents"[\s\S]*mon espace pro/)
 })
+
+test('Pilotage and /agents show which account is signed in', () => {
+  assert.match(read('src/components/rdv/RdvDashboard.jsx'), /Connecté avec : <strong[^>]*>\{session\.user\.email\}/)
+  assert.match(read('src/components/FounderCopilotAccess.jsx'), /Connecté avec : <strong[^>]*>\{user\.email\}/)
+})

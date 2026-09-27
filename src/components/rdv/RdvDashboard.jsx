@@ -1242,6 +1242,11 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                 Voir ma page publique →
               </button>
             )}
+            {session?.user?.email && (
+              <span className="hidden max-w-[16rem] truncate font-georgia text-[11px] text-mist sm:inline" title={session.user.email}>
+                Connecté avec : <strong className="font-semibold text-deep">{session.user.email}</strong>
+              </span>
+            )}
             <button
               onClick={signOut}
               className="font-georgia text-xs text-mist hover:text-deep border border-gold/20 px-3 py-2 rounded-lg"
@@ -1250,6 +1255,9 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
             </button>
           </div>
         </div>
+        {session?.user?.email && (
+          <p className="truncate px-6 pb-2 text-center font-georgia text-[11px] text-mist sm:hidden">Connecté avec : <strong className="font-semibold text-deep">{session.user.email}</strong></p>
+        )}
       </header>
 
       <main className="max-w-5xl mx-auto px-6 pt-10 pb-24">

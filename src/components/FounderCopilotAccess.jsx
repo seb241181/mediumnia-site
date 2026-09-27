@@ -188,6 +188,9 @@ export default function FounderCopilotAccess({ onBack }) {
             {user && <button onClick={handleSignOut} className="rounded-lg border border-gold/35 px-3 py-2 font-georgia text-xs text-deep md:text-sm">Déconnexion</button>}
           </div>
         </div>
+        {user?.email && (
+          <p className="mx-auto max-w-6xl truncate px-5 pb-2 text-right font-georgia text-[11px] text-mist md:px-6">Connecté avec : <strong className="font-semibold text-deep">{user.email}</strong></p>
+        )}
       </header>
 
       <main className="px-4 py-10 md:px-6">

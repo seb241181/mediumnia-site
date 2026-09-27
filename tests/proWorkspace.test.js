@@ -18,6 +18,39 @@ function fakeDb({ users = {}, tables = {} } = {}) {
   const db = {
     data,
     auth: { admin: { getUserById: async (id) => ({ data: { user: users[id] || null }, error: users[id] ? null : { message: 'nope' } }) } },
+    async rpc(name, args = {}) {
+      if (name !== 'claim_mediumia_pro_invitation') return { data: null, error: { message: 'unknown rpc' } }
+
+      const membership = data.pro_memberships.find((m) => m.user_id === args.p_user_id)
+      if (membership?.status === 'active' && (!membership.expires_at || new Date(membership.expires_at) > new Date())) {
+        return { data: [{ result: 'already_active', invitation_reseau_slug: null }], error: null }
+      }
+      if (membership && membership.status !== 'invited') {
+        return { data: [{ result: 'membership_locked', invitation_reseau_slug: null }], error: null }
+      }
+
+      const email = String(args.p_email_normalized || '').trim().toLowerCase()
+      const invitation = data.pro_invitations.find((i) => String(i.email || '').trim().toLowerCase() === email && i.status === 'pending')
+      if (!invitation) return { data: [{ result: 'invitation_not_found', invitation_reseau_slug: null }], error: null }
+
+      if (membership) {
+        Object.assign(membership, { status: 'active', access_level: 'pro', activated_at: new Date().toISOString() })
+      } else {
+        data.pro_memberships.push({
+          id: `id-${++seq}`,
+          user_id: args.p_user_id,
+          access_level: 'pro',
+          status: 'active',
+          activated_at: new Date().toISOString(),
+        })
+      }
+      Object.assign(invitation, {
+        status: 'accepted',
+        accepted_user_id: args.p_user_id,
+        accepted_at: new Date().toISOString(),
+      })
+      return { data: [{ result: 'activated', invitation_reseau_slug: invitation.reseau_slug || null }], error: null }
+    },
     from(table) {
       const q = { table, filters: [], op: 'select', values: null, limit: null, single: false }
       const rows = () => data[table].filter((r) => q.filters.every(([k, op, v]) => {

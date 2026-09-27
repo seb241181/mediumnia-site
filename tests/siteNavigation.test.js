@@ -55,7 +55,9 @@ test('home order: hero, Formation with progressive payment, Consulter, avis, Dé
   assert.match(app, /offer\.regularCount/)
   assert.match(app, /Total maximum/)
   const band = await read('src/components/PractitionersBand.jsx')
-  assert.match(band, /label: 'Espace Pro', href: '\/pro'/)
+  // L'Espace pro a rejoint l'en-tête (27/09/2026) : plus de doublon en bas de page.
+  assert.doesNotMatch(band, /Espace Pro/)
+  assert.match(band, /label: 'Trouver un praticien'[\s\S]*label: 'Rejoindre le réseau'/)
 })
 
 test('shop: Formation MediumIA first, as the lead offer, at 597 € TTC; other prices unchanged', async () => {

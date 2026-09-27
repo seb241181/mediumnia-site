@@ -1,10 +1,9 @@
-// Bande « praticiens » en bas de l'accueil : trouver un praticien, rejoindre le
-// réseau, et l'Espace Pro (sorti de la navigation principale).
-export default function PractitionersBand({ onOpenReseauDir, onOpenReseauForm, onOpenPro }) {
+// Bande « praticiens » en bas de l'accueil : trouver un praticien et rejoindre
+// le réseau. L'Espace pro est dans l'en-tête, à côté d'« Espace élèves ».
+export default function PractitionersBand({ onOpenReseauDir, onOpenReseauForm }) {
   const links = [
     { label: 'Trouver un praticien', href: '/reseau', onOpen: onOpenReseauDir },
     { label: 'Rejoindre le réseau', href: '/reseau/rejoindre', onOpen: onOpenReseauForm },
-    { label: 'Espace Pro', href: '/pro', onOpen: onOpenPro },
   ]
   const follow = (onOpen) => (event) => {
     if (!onOpen || event.metaKey || event.ctrlKey || event.shiftKey) return

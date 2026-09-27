@@ -207,7 +207,7 @@ export default function ChronosphereExamplePage({ onBack, onOpenChronosphere, on
           </article>
 
           <p className="text-center font-georgia text-xs leading-relaxed text-mist/70">
-            Chronosphère propose une lecture symbolique et introspective. Il n’établit pas de certitude sur l’avenir et ne remplace aucun conseil médical, juridique ou financier.
+            ChronoSphère propose une lecture symbolique et introspective. Elle n’établit pas de certitude sur l’avenir et ne remplace aucun conseil médical, juridique ou financier.
           </p>
         </section>
       </main>

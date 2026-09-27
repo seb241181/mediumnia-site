@@ -6,6 +6,7 @@ import {
   buildAgentInstructions,
   resolveAgentRuntimePolicy,
 } from '../lib/agentRuntimePolicy.js'
+import { claimInvitation, getWorkspaceState, saveAssistant } from '../lib/proWorkspace.js'
 
 const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
 
@@ -155,7 +156,30 @@ async function resolveRehearsalAuth(db, token) {
   return { userId: data.owner_id, rehearsal: true }
 }
 
+// Espace pro (/agents) : état, activation d'une invitation, création et
+// réglages de l'assistant. Même authentification que le chat ; toutes les
+// écritures passent par le serveur.
+async function handleProWorkspace(req, res) {
+  res.setHeader('Cache-Control', 'no-store')
+  const action = String(req.query.action || '')
+  const auth = await requireAuth(req)
+  if (auth.error) return res.status(auth.status).json({ error: auth.error })
+  const db = getSupabaseAdmin()
+  try {
+    let result
+    if (action === 'workspace' && req.method === 'GET') result = await getWorkspaceState({ db, userId: auth.userId })
+    else if (action === 'claim' && req.method === 'POST') result = await claimInvitation({ db, userId: auth.userId })
+    else if (action === 'assistant' && req.method === 'POST') result = await saveAssistant({ db, userId: auth.userId, input: req.body?.assistant })
+    else result = { status: 404, body: { error: 'unknown_action' } }
+    return res.status(result.status).json(result.body)
+  } catch {
+    return res.status(500).json({ error: 'pro_workspace_unavailable' })
+  }
+}
+
 export default async function handler(req, res) {
+  if (req.query?.action) return handleProWorkspace(req, res)
+
   const requestId = randomUUID()
   const startedAt = Date.now()
 
@@ -226,7 +250,7 @@ export default async function handler(req, res) {
 
   const { data: agent } = await db
     .from('agents')
-    .select('id, owner_id, membership_id, name, status, provider, model, mission, audience, tone, knowledge_summary')
+    .select('id, owner_id, membership_id, name, status, provider, model, mission, audience, tone, knowledge_summary, limits')
     .eq('id', agentId)
     .eq('owner_id', auth.userId)
     .eq('membership_id', membership.id)

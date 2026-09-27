@@ -28,10 +28,19 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
     }
   }
 
+  // Un vrai lien partout (clavier, nouvel onglet) ; l'Oracle et la Formation
+  // s'ouvrent sans recharger la page quand l'application le permet.
+  const openInApp = (event) => {
+    const inApp = (isOracle && onOpenOracle) || (isFormation && onOpenFormation)
+    if (!inApp || event.metaKey || event.ctrlKey || event.shiftKey) return
+    event.preventDefault()
+    handleClick()
+  }
+
   const Card = external || internalLink ? 'a' : 'article'
   const cardProps = external
     ? { href: product.purchaseUrl, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `${product.name} — ${product.purchaseLabel || 'voir chez le vendeur'}` }
-    : internalLink ? { href: product.href } : { onClick: handleClick }
+    : internalLink ? { href: product.href, onClick: openInApp } : { onClick: handleClick }
 
   return (
     <Card
@@ -48,7 +57,7 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
               className={`w-full h-full ${product.imageFit === 'contain' ? 'object-contain p-3' : 'object-cover'}`}
               style={product.imageFit === 'contain' ? { background: '#0a0910' } : undefined}
             />
-          : <BoutiqueProductArt type={product.artwork} />
+          : <BoutiqueProductArt variant={product.artwork} />
         }
         {product.availability === 'coming-soon' && (
           <span className="absolute top-3 left-3 bg-white/90 text-xs font-georgia px-2 py-1 tracking-wide" style={{ color: '#4A3F6B', letterSpacing: '0.12em', fontSize: 9, textTransform: 'uppercase' }}>
@@ -56,7 +65,7 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
           </span>
         )}
         {product.featured && (
-          <span className="absolute top-3 right-3 bg-white/90 text-xs font-georgia px-2 py-1 tracking-wide" style={{ color: '#C9A84C', letterSpacing: '0.12em', fontSize: 9, textTransform: 'uppercase' }}>
+          <span className="absolute top-3 right-3 bg-white/90 text-xs font-georgia px-2 py-1 tracking-wide" style={{ color: TEXT_GOLD, letterSpacing: '0.12em', fontSize: 9, textTransform: 'uppercase' }}>
             ✦ Nouveauté
           </span>
         )}
@@ -161,6 +170,9 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpe
   const spotlight = inCategory.find(p => p.spotlight)
   const visibleProducts = inCategory.filter(p => !p.spotlight)
 
+  // Les filtres n'aident qu'à partir d'un vrai catalogue.
+  const showFilters = publicProducts.length >= 6 && publicCategories.length > 2
+
   const showEchoBanner = activeCategoryIds.has('echo-des-fees') && (
     activeCategory === 'echo-des-fees' ||
     activeCategory === 'all'
@@ -180,6 +192,7 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpe
     <section id={id} className="px-6 py-14 max-w-6xl mx-auto">
 
       {/* Filtres */}
+      {showFilters && (
       <div className="flex gap-2 flex-wrap mb-8">
         {publicCategories.map(cat => (
           <button
@@ -195,6 +208,7 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpe
           </button>
         ))}
       </div>
+      )}
 
       {/* Bannière L'Écho des Fées */}
       {showEchoBanner && <EchoFeesBanner />}
@@ -203,7 +217,7 @@ export default function BoutiqueEcommerce({ id = 'boutique', onOpenOracle, onOpe
       {spotlight && <SpotlightCard product={spotlight} onOpenFormation={onOpenFormation} />}
 
       {/* Grille produits */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {visibleProducts.map(product => (
           <ProductCard
             key={product.id}

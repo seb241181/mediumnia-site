@@ -88,7 +88,7 @@ export default function SiteNav({ current = 'home', onOpenFormation, onOpenConfe
         <div className="shrink-0 flex items-center gap-2">
           <a
             href="/agents"
-            className="site-nav__pro font-georgia text-xs md:text-sm tracking-wide px-3 py-2.5 md:px-4 rounded-lg border border-gold/40 text-deep font-bold whitespace-nowrap transition-colors"
+            className="site-nav__pro font-georgia text-xs md:text-sm tracking-wide px-3 py-2.5 md:px-4 rounded-lg border border-gold/60 text-deep font-bold whitespace-nowrap transition-colors"
           >
             Espace pro
           </a>

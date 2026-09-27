@@ -20,6 +20,8 @@ test('main navigation: validated order, real links, Espace pro and Espace élèv
   // à côté d'« Espace élèves » ; il ne fait pas partie des rubriques.
   assert.match(nav, /href="\/agents"[\s\S]*Espace pro[\s\S]*href="https:\/\/espace\.mediumia\.fr"/)
   assert.doesNotMatch(nav.replace(/^\s*\/\/.*$/gm, ''), /onOpenPro/)
+  // « Espace pro » a le même contour doré qu'« Espace élèves ».
+  assert.match(nav, /site-nav__pro [^"]*rounded-lg border border-gold\/60 text-deep/)
   // Même doré pour les deux boutons de l'en-tête.
   assert.match(await read('src/styles/cosmic-design-system.css'), /\.cosmic-page \.site-nav__students,\n\.cosmic-page \.site-nav__pro \{/)
 })

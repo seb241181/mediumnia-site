@@ -174,7 +174,10 @@
   backdrop-filter: blur(12px) saturate(1.08);
 }
 
-.cosmic-page :where(button, a)[class*='bg-deep'] {
+/* Boutons pleins uniquement : la classe exacte bg-gold / bg-deep (ou /90, /95).
+   Un survol (hover:bg-gold/10), une teinte légère (bg-gold/10) ou un bouton
+   désactivé (bg-deep/20) ne deviennent plus des boutons pleins. */
+.cosmic-page :where(button, a):is([class~='bg-deep'], [class~='bg-deep/90'], [class~='bg-deep/95']) {
   border: 1px solid rgba(227, 195, 124, 0.48);
   border-radius: 999px !important;
   background: linear-gradient(140deg, #1c2b55, #0d1737) !important;
@@ -182,7 +185,8 @@
   box-shadow: 0 10px 26px rgba(16, 25, 56, 0.19);
 }
 
-.cosmic-page :where(button, a)[class*='bg-gold'] {
+.cosmic-page :where(button, a):is([class~='bg-gold'], [class~='bg-gold/90']),
+.cosmic-page .site-nav__students {
   border: 1px solid #aa6e0c;
   border-radius: 999px !important;
   background: linear-gradient(135deg, #c98d22, #aa6d0d) !important;
@@ -196,14 +200,14 @@
   backdrop-filter: blur(10px);
 }
 
-.cosmic-page :where(button, a)[class*='bg-deep'],
-.cosmic-page :where(button, a)[class*='bg-gold'],
+.cosmic-page :where(button, a):is([class~='bg-deep'], [class~='bg-deep/90'], [class~='bg-deep/95']),
+.cosmic-page :where(button, a):is([class~='bg-gold'], [class~='bg-gold/90']),
 .cosmic-page :where(button, a)[class*='border-gold'][class*='rounded-lg'] {
   transition: transform 0.3s var(--cosmic-ease), box-shadow 0.3s ease, background 0.3s ease;
 }
 
-.cosmic-page :where(button, a)[class*='bg-deep']:hover,
-.cosmic-page :where(button, a)[class*='bg-gold']:hover,
+.cosmic-page :where(button, a):is([class~='bg-deep'], [class~='bg-deep/90'], [class~='bg-deep/95']):hover,
+.cosmic-page :where(button, a):is([class~='bg-gold'], [class~='bg-gold/90']):hover,
 .cosmic-page :where(button, a)[class*='border-gold'][class*='rounded-lg']:hover {
   transform: translateY(-2px);
 }

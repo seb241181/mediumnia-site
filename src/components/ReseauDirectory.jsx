@@ -76,7 +76,7 @@ export default function ReseauDirectory({ onBack, onNavigate, onOpenProfile }) {
                 aria-pressed={activeFilter === filter}
                 className={`font-georgia text-xs tracking-wide px-4 py-2 rounded-full border transition-colors ${
                   activeFilter === filter
-                    ? 'border-gold bg-gold/10 text-deep font-semibold'
+                    ? 'border-deep bg-deep text-gold font-semibold'
                     : 'border-gold/25 text-mist hover:border-gold/60 hover:text-deep'
                 }`}
               >

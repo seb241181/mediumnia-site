@@ -1,6 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import ConferenceRegistrationsCard from './ConferenceRegistrationsCard'
 
 const RANGE_OPTIONS = [7, 30, 90]
+// Les compteurs sont incrémentés en continu : on les relit toutes les 5 minutes
+// tant que l'onglet est visible, et au retour sur l'onglet.
+const ANALYTICS_REFRESH_MS = 5 * 60 * 1000
+
+const ERROR_LABELS = {
+  pilotage_forbidden: 'Cet espace est réservé à l’administration de la plateforme MediumIA.',
+  pilotage_access_error: 'La vérification de votre accès a échoué. Réessayez dans un instant.',
+  pilotage_data_error: 'Les compteurs n’ont pas pu être lus. Réessayez dans un instant.',
+}
 
 const LABELS = {
   home_view: 'Visites accueil',
@@ -42,9 +52,12 @@ function makePreviewData(days) {
   return { preview: true, days, totals, home_doors, daily }
 }
 
+// Une décimale sous 10 % : « 0 % » ne masque plus 3 paiements sur 400 visites.
 function pct(value, total) {
   if (!total) return '—'
-  return `${Math.round((value / total) * 100)} %`
+  const ratio = (value / total) * 100
+  const rounded = ratio > 0 && ratio < 10 ? Math.round(ratio * 10) / 10 : Math.round(ratio)
+  return `${rounded.toLocaleString('fr-FR')} %`
 }
 
 function MetricCard({ eyebrow, value, note }) {
@@ -77,9 +90,11 @@ function FunnelRow({ label, value, reference, detail }) {
 
 function MiniBars({ daily }) {
   const max = Math.max(1, ...daily.map(d => d.total || 0))
+  // Une date sur `step` : 30 ou 90 dates côte à côte écrasaient la colonne voisine.
+  const step = Math.max(1, Math.ceil(daily.length / 8))
   return (
     <div className="flex h-36 items-end gap-1.5 overflow-hidden pt-4">
-      {daily.map(day => {
+      {daily.map((day, index) => {
         const height = Math.max(4, Math.round(((day.total || 0) / max) * 112))
         const label = new Date(`${day.date}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
         return (
@@ -90,7 +105,7 @@ function MiniBars({ daily }) {
                 {day.total || 0}
               </span>
             </div>
-            <span className="hidden font-georgia text-[9px] text-mist sm:block">{label}</span>
+            <span className="hidden h-3 whitespace-nowrap font-georgia text-[9px] text-mist sm:block">{(daily.length - 1 - index) % step === 0 ? label : ''}</span>
           </div>
         )
       })}
@@ -104,39 +119,52 @@ export default function PilotageDashboard({ session, demoMode = false }) {
   const [loading, setLoading] = useState(!demoMode)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
+  const [updatedAt, setUpdatedAt] = useState(() => demoMode ? new Date() : null)
+
+  const load = useCallback((signal) => {
     if (demoMode) {
       setData(makePreviewData(days))
       setLoading(false)
       setError(null)
+      setUpdatedAt(new Date())
       return
     }
     if (!session) return
-    let cancelled = false
     setLoading(true)
-    setError(null)
 
-    fetch(`/api/rdv-admin?action=analytics&days=${days}`, { headers: authHeader(session) })
+    fetch(`/api/rdv-admin?action=analytics&days=${days}`, { headers: authHeader(session), cache: 'no-store', signal })
       .then(async res => {
         const body = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(body.error || 'pilotage_indisponible')
         return body
       })
       .then(body => {
-        if (!cancelled) {
-          setData(body)
-          setLoading(false)
-        }
+        setData(body)
+        setError(null)
+        setUpdatedAt(new Date())
+        setLoading(false)
       })
       .catch(err => {
-        if (!cancelled) {
-          setError(err.message || 'pilotage_indisponible')
-          setLoading(false)
-        }
+        if (err?.name === 'AbortError') return
+        setError(err.message || 'pilotage_indisponible')
+        setLoading(false)
       })
-
-    return () => { cancelled = true }
   }, [session, days, demoMode])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    load(controller.signal)
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') load(controller.signal)
+    }, ANALYTICS_REFRESH_MS)
+    const onVisible = () => { if (document.visibilityState === 'visible') load(controller.signal) }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      controller.abort()
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [load])
 
   const totals = data?.totals || {}
   const homeDoors = data?.home_doors || {}
@@ -155,22 +183,31 @@ export default function PilotageDashboard({ session, demoMode = false }) {
       .sort((a, b) => Number(b[1]) - Number(a[1]))
   ), [totals])
 
-  if (loading) {
+  const conferenceCard = <ConferenceRegistrationsCard session={session} demoMode={demoMode} />
+
+  // Au changement de période, les chiffres restent affichés pendant la relecture.
+  if (loading && !data) {
     return (
+      <div className="space-y-6">
+      {conferenceCard}
       <div className="rounded-2xl border border-gold/20 bg-white/60 px-6 py-16 text-center">
         <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-gold/25 border-t-gold" />
         <p className="mt-4 font-georgia text-sm text-mist">Chargement du pilotage MediumIA…</p>
       </div>
+      </div>
     )
   }
 
-  if (error) {
+  if (error && !data) {
     return (
+      <div className="space-y-6">
+      {error !== 'pilotage_forbidden' && conferenceCard}
       <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-8">
         <p className="font-georgia text-sm font-semibold text-red-800">Pilotage indisponible</p>
         <p className="mt-2 font-georgia text-xs leading-relaxed text-red-700">
-          Cet espace est réservé à l’administration de la plateforme MediumIA. ({error})
+          {ERROR_LABELS[error] || 'Le pilotage est momentanément indisponible. Réessayez dans un instant.'}
         </p>
+      </div>
       </div>
     )
   }
@@ -198,12 +235,23 @@ export default function PilotageDashboard({ session, demoMode = false }) {
             ))}
           </div>
         </div>
+        <p className="mt-4 font-georgia text-[11px] text-cream/55" aria-live="polite">
+          {error
+            ? 'Mise à jour impossible : chiffres de la dernière lecture réussie.'
+            : loading
+              ? 'Mise à jour…'
+              : updatedAt
+                ? `Compteurs lus à ${updatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })} · relus toutes les 5 min · journées comptées en heure UTC`
+                : null}
+        </p>
         {data?.preview && (
           <div className="mt-5 rounded-xl border border-gold/30 bg-gold/[.08] px-4 py-3">
             <p className="font-georgia text-xs text-gold">Aperçu Preview · données de démonstration uniquement. La production affichera les vrais compteurs MediumIA.</p>
           </div>
         )}
       </section>
+
+      {conferenceCard}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard eyebrow="Accueil" value={homeViews} note={`Sur les ${days} derniers jours`} />

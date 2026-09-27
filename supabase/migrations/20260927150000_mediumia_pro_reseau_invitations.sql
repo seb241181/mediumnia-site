@@ -51,6 +51,87 @@ grant select, insert, update on table public.pro_invitations to service_role;
 comment on table public.pro_invitations is
   'Invitations MediumIA Pro (Réseau). Lecture et écriture réservées au serveur.';
 
+-- Activation atomique : l'adhésion et l'acceptation de l'invitation sont
+-- validées dans la même transaction. Exécution réservée au service_role.
+create or replace function public.claim_mediumia_pro_invitation(
+  p_user_id uuid,
+  p_email_normalized text
+)
+returns table(result text, invitation_reseau_slug text)
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_membership public.pro_memberships%rowtype;
+  v_invitation public.pro_invitations%rowtype;
+  v_now timestamptz := now();
+begin
+  select *
+    into v_membership
+  from public.pro_memberships
+  where user_id = p_user_id
+  for update;
+
+  if found then
+    if v_membership.status = 'active'
+       and (v_membership.expires_at is null or v_membership.expires_at > v_now) then
+      return query select 'already_active'::text, null::text;
+      return;
+    end if;
+
+    if v_membership.status <> 'invited' then
+      return query select 'membership_locked'::text, null::text;
+      return;
+    end if;
+  end if;
+
+  select *
+    into v_invitation
+  from public.pro_invitations
+  where email_normalized = lower(trim(p_email_normalized))
+    and status = 'pending'
+  order by created_at
+  limit 1
+  for update;
+
+  if not found then
+    return query select 'invitation_not_found'::text, null::text;
+    return;
+  end if;
+
+  if v_membership.id is null then
+    insert into public.pro_memberships(user_id, access_level, status, activated_at)
+    values (p_user_id, 'pro', 'active', v_now)
+    returning * into v_membership;
+  else
+    update public.pro_memberships
+    set status = 'active',
+        access_level = 'pro',
+        activated_at = v_now
+    where id = v_membership.id;
+  end if;
+
+  update public.pro_invitations
+  set status = 'accepted',
+      accepted_user_id = p_user_id,
+      accepted_at = v_now
+  where id = v_invitation.id
+    and status = 'pending';
+
+  if not found then
+    raise exception 'invitation_claim_race';
+  end if;
+
+  return query select 'activated'::text, v_invitation.reseau_slug;
+end;
+$;
+
+revoke all on function public.claim_mediumia_pro_invitation(uuid, text)
+  from public, anon, authenticated;
+grant execute on function public.claim_mediumia_pro_invitation(uuid, text)
+  to service_role;
+
 alter table public.agents
   add column if not exists reseau_slug text
     check (reseau_slug is null or reseau_slug ~ '^[a-z0-9-]{2,80}$'),

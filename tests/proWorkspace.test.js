@@ -197,7 +197,7 @@ test('admin invitations: validated e-mail and fiche, e-mail sent, revocation sus
 
 
 test('the Pro invitation migration keeps claiming atomic and one live invitation per Network profile', async () => {
-  const migration = await readFile(new URL('../supabase/migrations/20260927150000_mediumia_pro_reseau_invitations.sql', import.meta.url), 'utf8')
+  const migration = await readFile(new URL('../supabase/migrations/20260927150800_mediumia_pro_reseau_invitations.sql', import.meta.url), 'utf8')
   assert.match(migration, /create unique index if not exists pro_invitations_one_live_per_reseau_slug_idx/)
   assert.match(migration, /create or replace function public\.claim_mediumia_pro_invitation/)
   assert.match(migration, /security definer/)
@@ -208,7 +208,7 @@ test('the Pro invitation migration keeps claiming atomic and one live invitation
 // Un corps de fonction délimité par « $ » au lieu de « $$ » fait échouer tout
 // le script dans Supabase (syntax error at or near "$"), constaté le 27/09.
 test('every PL/pgSQL body in the Pro invitation migration uses valid dollar quoting', async () => {
-  const migration = await readFile(new URL('../supabase/migrations/20260927150000_mediumia_pro_reseau_invitations.sql', import.meta.url), 'utf8')
+  const migration = await readFile(new URL('../supabase/migrations/20260927150800_mediumia_pro_reseau_invitations.sql', import.meta.url), 'utf8')
   const openers = migration.match(/^as \$[A-Za-z_]*\$$/gm) || []
   const closers = migration.match(/^\$[A-Za-z_]*\$;$/gm) || []
   assert.equal(openers.length, 1)

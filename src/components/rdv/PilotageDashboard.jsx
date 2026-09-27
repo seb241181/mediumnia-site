@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ConferenceRegistrationsCard from './ConferenceRegistrationsCard'
+import ProMembersAdmin from './ProMembersAdmin'
 
 const RANGE_OPTIONS = [7, 30, 90]
 // Les compteurs sont incrémentés en continu : on les relit toutes les 5 minutes
@@ -324,6 +325,8 @@ export default function PilotageDashboard({ session, demoMode = false }) {
           </div>
         </article>
       </section>
+
+      <ProMembersAdmin session={session} demoMode={demoMode} />
 
       <p className="font-georgia text-[10px] leading-relaxed text-mist/70">
         MediumIA conserve ici uniquement des compteurs agrégés par jour, type d’action et origine. Ce tableau ne permet pas d’identifier ni de suivre un visiteur individuel.

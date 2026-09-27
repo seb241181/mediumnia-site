@@ -7,24 +7,36 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
 
-test('Founder pilot requires an existing authenticated founder membership', () => {
+// 27/09/2026 : l'espace /agents s'ouvre aux professionnels invités du Réseau
+// (plus seulement au Founder). Les garanties restent les mêmes : aucun droit
+// ne vient du navigateur, le serveur décide de l'accès et écrit seul.
+test('/agents access is decided by the server from an active membership, never by the browser', () => {
   const source = read('src/components/FounderCopilotAccess.jsx')
+  const server = read('lib/proWorkspace.js')
 
-  assert.match(source, /from\('pro_memberships'\)/)
-  assert.match(source, /membership\.access_level !== 'founder'/)
-  assert.match(source, /membership\.status !== 'active'/)
-  assert.match(source, /membership\?\.expires_at/)
-  assert.doesNotMatch(source, /signUp/)
+  assert.match(source, /\?action=\$\{action\}/)
+  assert.match(source, /data\.membership\?\.live/)
+  assert.doesNotMatch(source, /from\('pro_memberships'\)/)
+  assert.doesNotMatch(source, /from\('pro_invitations'\)/)
   assert.match(source, /documentsEnabled=\{true\}/)
+  assert.match(server, /membership\.status !== 'active'/)
+  assert.match(server, /membership\.expires_at/)
+  // Un compte créé sur /agents ne donne rien sans invitation et adresse confirmée.
+  assert.match(server, /if \(!user\.confirmed\) return \{ status: 403, body: \{ error: 'email_not_confirmed' \} \}/)
+  // L'activation passe par la fonction SQL atomique (service_role uniquement).
+  assert.match(server, /db\.rpc\('claim_mediumia_pro_invitation'/)
+  assert.match(server, /outcome\?\.result === 'invitation_not_found'\) return \{ status: 403, body: \{ error: 'invitation_not_found' \} \}/)
 })
 
-test('Founder pilot opens only the existing non-archived copilot', () => {
+test('assistants are created and edited only through the server, one live assistant per member', () => {
   const source = read('src/components/FounderCopilotAccess.jsx')
+  const server = read('lib/proWorkspace.js')
 
-  assert.match(source, /from\('agents'\)/)
-  assert.match(source, /neq\('status', 'archived'\)/)
-  assert.match(source, /limit\(1\)/)
-  assert.doesNotMatch(source, /from\('agents'\)[\s\S]*\.insert\(/)
+  assert.doesNotMatch(source, /from\('agents'\)/)
+  assert.match(server, /from\('agents'\)[\s\S]*neq\('status', 'archived'\)[\s\S]*limit\(1\)/)
+  // Fournisseur, statut et fiche Réseau sont fixés par le serveur.
+  assert.match(server, /provider: 'anthropic',\n\s+reseau_slug: reseauSlug,\n\s+public_enabled: false/)
+  assert.doesNotMatch(server, /input\??\.(provider|model|system_prompt|permissions|public_enabled|reseau_slug)/)
 })
 
 test('Founder chat stays inside client-readable columns and sends mutations through server API', () => {

@@ -503,14 +503,19 @@ test('a Découverte refunded mid-parcours: the student keeps going, its 29 € j
 })
 
 test('the 597 € migration is dated 26 September 2026, after the credit migration, and no version is used twice', async () => {
-  const { readdirSync } = await import('node:fs')
+  const { readdirSync, readFileSync } = await import('node:fs')
   const files = readdirSync(new URL('../supabase/migrations/', import.meta.url)).filter((f) => f.endsWith('.sql')).sort()
   const versions = files.map((f) => f.slice(0, 14))
   assert.equal(new Set(versions).size, versions.length, 'unique versions')
   assert.ok(files.includes('20260926100000_formation_parcours_597.sql'))
   assert.ok(!files.some((f) => f.startsWith('20261001')), 'no migration dated in the future')
   assert.equal(versions.indexOf('20260926100000'), versions.indexOf('20260926090000') + 1, 'right after the 568 € credit migration')
-  assert.equal(versions.at(-1), '20260926100000', 'the latest migration')
+  // Les migrations plus récentes (ex. MediumIA Pro du 27/09) ne touchent
+  // jamais au parcours Formation.
+  for (const later of files.filter((f) => f > '20260926100000_formation_parcours_597.sql')) {
+    const sql = readFileSync(new URL(`../supabase/migrations/${later}`, import.meta.url), 'utf8')
+    assert.doesNotMatch(sql, /\b(mediumia_entitlements|formation_[a-z_]+|parcours_[a-z_]+)\b/i, `${later} must not touch the Formation path`)
+  }
 })
 
 test('FAQ « payer en plusieurs fois » once the parcours is open: 29 €, 48 €/mois, 40 €, 597 € maximum, coach 12 months', async () => {

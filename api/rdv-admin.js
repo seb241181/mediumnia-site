@@ -1,5 +1,6 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
+import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
  * /api/rdv-admin?action=<action>
  * En-tête requis : Authorization: Bearer <supabase_access_token>
@@ -810,6 +811,18 @@ export default async function handler(req, res) {
     case 'day-payments': {
       if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
       const result = await getDayPayments({ supabase, userId, practitionerId: req.query.practitioner_id, day: req.query.day })
+      return res.status(result.status).json(result.body)
+    }
+    case 'pro-members': {
+      // Invitations MediumIA Pro (Réseau) : réservé à l'administration.
+      const access = await isProPlatformAdmin(supabase, userId)
+      if (access.error) return res.status(500).json({ error: access.error })
+      if (!access.allowed) return res.status(403).json({ error: 'pilotage_forbidden' })
+      let result
+      if (req.method === 'GET') result = await listProMembers({ db: supabase })
+      else if (req.method === 'POST' && req.body?.op === 'invite') result = await inviteProMember({ db: supabase, userId, input: req.body })
+      else if (req.method === 'POST' && req.body?.op === 'revoke') result = await revokeProInvitation({ db: supabase, input: req.body })
+      else result = { status: 400, body: { error: 'invalid_request' } }
       return res.status(result.status).json(result.body)
     }
     case 'conference-stats': {

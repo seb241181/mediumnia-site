@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('main navigation: validated order, real links, Espace élèves only, Espace Pro out', async () => {
+test('main navigation: validated order, real links, Espace pro and Espace élèves on the right', async () => {
   const nav = await read('src/components/SiteNav.jsx')
   const labels = [...nav.matchAll(/\{ id: '[a-z]+', label: '([^']+)', href: '([^']+)' \}/g)].map((m) => [m[1], m[2]])
   assert.deepEqual(labels, [
@@ -16,7 +16,12 @@ test('main navigation: validated order, real links, Espace élèves only, Espace
     ['Trouver un praticien', '/reseau'],
   ])
   assert.match(nav, /href="https:\/\/espace\.mediumia\.fr"[\s\S]*Espace élèves/)
-  assert.doesNotMatch(nav.replace(/^\s*\/\/.*$/gm, ''), /Espace Pro|onOpenPro/)
+  // 27/09/2026 : les professionnels invités entrent par « Espace pro » (/agents),
+  // à côté d'« Espace élèves » ; il ne fait pas partie des rubriques.
+  assert.match(nav, /href="\/agents"[\s\S]*Espace pro[\s\S]*href="https:\/\/espace\.mediumia\.fr"/)
+  assert.doesNotMatch(nav.replace(/^\s*\/\/.*$/gm, ''), /onOpenPro/)
+  // « Espace pro » a le même contour doré qu'« Espace élèves ».
+  assert.match(nav, /site-nav__pro [^"]*rounded-lg border border-gold\/60 text-deep/)
 })
 
 test('phones get a real menu, not a sidebar; keyboard can close it', async () => {
@@ -52,7 +57,9 @@ test('home order: hero, Formation with progressive payment, Consulter, avis, Dé
   assert.match(app, /offer\.regularCount/)
   assert.match(app, /Total maximum/)
   const band = await read('src/components/PractitionersBand.jsx')
-  assert.match(band, /label: 'Espace Pro', href: '\/pro'/)
+  // L'Espace pro a rejoint l'en-tête (27/09/2026) : plus de doublon en bas de page.
+  assert.doesNotMatch(band, /Espace Pro/)
+  assert.match(band, /label: 'Trouver un praticien'[\s\S]*label: 'Rejoindre le réseau'/)
 })
 
 test('shop: Formation MediumIA first, as the lead offer, at 597 € TTC; other prices unchanged', async () => {

@@ -30,10 +30,13 @@ test('MAX is offered next to the single draw and the pack, legal consent unchang
   assert.match(page, /onClick=\{choosePack\}/)
 })
 
-test('reviews are real and labelled for what they are', () => {
+test('only ChronoSphère reviews appear, and the free Oracle draw is offered', () => {
   const page = read('src/components/ChronospherePage.jsx')
   assert.match(page, /review\.offering === 'chronosphere'/)
-  assert.match(page, /avis sur Google, pour ses consultations/)
+  // Les avis Google portent sur les consultations de Sébastien : pas ici.
+  assert.doesNotMatch(page, /useGoogleReviews|GoogleReviewCard/)
+  assert.match(page, /<OracleInvite onOpenOracle=\{onOpenOracle\} \/>/)
+  assert.match(page, /href="\/oracle"[\s\S]*Faire un tirage offert →/)
   assert.match(read('src/components/GiftChronosphereRedeem.jsx'), /underline decoration-gold\/40[\s\S]*J’ai une carte cadeau/)
   assert.match(read('src/App.jsx'), /view !== 'chronosphere'/)
 })

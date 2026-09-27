@@ -10,7 +10,7 @@ import {
 import { getChronosphereReading } from '../../lib/chronosphereReading.js'
 import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 import PublicPageNav from './PublicPageNav'
-import { GoogleReviewCard, ReviewCard, Stars, useApprovedReviews, useGoogleReviews } from './ReviewsPage'
+import { ReviewCard, useApprovedReviews } from './ReviewsPage'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const THEMES = [
@@ -277,52 +277,56 @@ const PENDING_PAYMENT_KEY = 'chronosphere_packPendingPayment'
 const PACK_TOKEN_KEY = 'chronosphere_packToken'
 const LEGACY_PENDING_PAYMENT_KEY = 'chronosphere_drawToken'
 
-// ── Avis (réels uniquement) ─────────────────────────────────────────────────
+// ── Avis ChronoSphère (uniquement ceux déposés pour ChronoSphère) ──────────
 
-function formatRating(rating) {
-  return String(rating?.toFixed?.(1) || '').replace('.', ',')
-}
-
-function GoogleRatingChip() {
-  const google = useGoogleReviews()
-  if (google.loading || !google.available || !google.count) return null
+function ChronosphereReviews() {
+  const site = useApprovedReviews()
+  if (site.loading) return null
+  const reviews = site.reviews.filter((review) => review.offering === 'chronosphere').slice(0, 3)
+  if (!reviews.length) return null
   return (
-    <a href="#avis-chronosphere" className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-white/70 px-3 py-1.5 font-georgia text-xs text-deep hover:bg-white">
-      <Stars value={Math.round(google.rating || 0)} size="text-sm" />
-      <strong>{formatRating(google.rating)} / 5</strong>
-      <span className="text-mist">· {google.count} avis Google sur Sébastien Seguin</span>
-    </a>
+    <section className="mt-14" aria-labelledby="avis-chronosphere-title">
+      <p className="text-center font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Avis clients</p>
+      <h2 id="avis-chronosphere-title" className="mt-1 text-center font-georgia text-2xl font-medium text-deep">Ils ont fait leur tirage ChronoSphère</h2>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        {reviews.map((review) => <ReviewCard key={review.id} review={review} />)}
+      </div>
+    </section>
   )
 }
 
-// Les avis déposés sur le site pour ChronoSphère d'abord ; les avis Google,
-// qui portent sur les consultations de Sébastien, sont présentés comme tels.
-function ChronosphereReviews() {
-  const site = useApprovedReviews()
-  const google = useGoogleReviews()
-  if (site.loading || google.loading) return null
-  const chronoReviews = site.reviews.filter((review) => review.offering === 'chronosphere').slice(0, 3)
-  const googleReviews = google.available && google.count ? (google.reviews || []).slice(0, chronoReviews.length ? 0 : 3) : []
-  if (!chronoReviews.length && !googleReviews.length) return null
+// ── Oracle offert : l'autre tirage de la rubrique « Tirages & ChronoSphère » ─
+
+function OracleInvite({ onOpenOracle }) {
   return (
-    <section id="avis-chronosphere" className="mt-14 scroll-mt-28" aria-labelledby="avis-chronosphere-title">
-      <p className="text-center font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Avis clients</p>
-      <h2 id="avis-chronosphere-title" className="mt-1 text-center font-georgia text-2xl font-medium text-deep">
-        {chronoReviews.length ? 'Ils ont fait leur tirage ChronoSphère' : 'Ils ont consulté Sébastien Seguin'}
-      </h2>
-      {!chronoReviews.length && (
-        <p className="mt-2 text-center font-georgia text-sm text-mist">
-          <Stars value={Math.round(google.rating || 0)} size="text-sm" />{' '}
-          <strong className="text-deep">{formatRating(google.rating)} / 5</strong> · {google.count} avis sur Google, pour ses consultations
-        </p>
-      )}
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {chronoReviews.map((review) => <ReviewCard key={review.id} review={review} />)}
-        {googleReviews.map((review, i) => <GoogleReviewCard key={`${review.author}-${i}`} review={review} />)}
+    <section className="mt-14 overflow-hidden rounded-3xl border border-gold/35 bg-white/75 shadow-[0_14px_36px_rgba(26,21,53,.06)]" aria-labelledby="oracle-invite-title">
+      <div className="grid items-center gap-6 p-6 sm:grid-cols-[auto_1fr] md:p-8">
+        <img
+          src="/images/oracle/cover.jpg"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="mx-auto h-40 w-auto rounded-xl shadow-md sm:mx-0"
+        />
+        <div className="text-center sm:text-left">
+          <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Oracle Au-delà de l’Âme · offert</p>
+          <h2 id="oracle-invite-title" className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep">Envie d’un premier tirage, sans rien payer ?</h2>
+          <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
+            Tirez une carte de l’Oracle et recevez une première lecture guidée par Lumïa, gratuitement.
+          </p>
+          <a
+            href="/oracle"
+            onClick={(event) => {
+              if (!onOpenOracle || event.metaKey || event.ctrlKey || event.shiftKey) return
+              event.preventDefault()
+              onOpenOracle()
+            }}
+            className="mt-4 inline-flex min-h-[46px] items-center rounded-full bg-deep px-6 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90"
+          >
+            Faire un tirage offert →
+          </a>
+        </div>
       </div>
-      <p className="mt-5 text-center font-georgia text-sm">
-        <a href="/avis" className="text-deep underline decoration-gold/50 underline-offset-4 hover:decoration-gold">Vous avez fait un tirage ? Laissez votre avis</a>
-      </p>
     </section>
   )
 }
@@ -840,7 +844,6 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
           <p className="mx-auto max-w-2xl font-bodoni text-lg italic leading-relaxed text-deep/80 md:text-xl">
             « Votre naissance pose le socle ; le moment présent ouvre la fenêtre. »
           </p>
-          <GoogleRatingChip />
           <button
             type="button"
             onClick={choosePack}
@@ -1289,6 +1292,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
           </p>
 
           {!result && <ChronosphereReviews />}
+          {!result && <OracleInvite onOpenOracle={onOpenOracle} />}
 
           {/* Results */}
           {result && parts && (

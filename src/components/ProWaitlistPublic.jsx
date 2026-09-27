@@ -120,7 +120,7 @@ export default function ProWaitlistPublic({ onBack, onNavigate }) {
       <main>
         <section className="min-h-[80vh] flex flex-col items-center justify-center text-center px-6 pt-28 pb-16">
           <span className="inline-block font-georgia text-[10px] uppercase tracking-[0.22em] rounded-full px-4 py-1.5 mb-6 border border-gold/40 text-gold bg-gold/5">
-            Accès prioritaire · bientôt disponible
+            Ouverture progressive · sur invitation
           </span>
           <p className="font-georgia text-gold tracking-[0.3em] text-xs uppercase mb-4">MediumIA Pro</p>
           <h1 className="font-bodoni text-deep text-3xl md:text-5xl lg:text-6xl leading-tight max-w-4xl mx-auto mb-6">
@@ -130,9 +130,14 @@ export default function ProWaitlistPublic({ onBack, onNavigate }) {
           <p className="font-georgia text-mist text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10">
             MediumIA Pro prépare des assistants IA et des outils pensés pour les professionnels de l'accompagnement, du bien-être, de la médiumnité, de la formation et des métiers fondés sur la relation humaine.
           </p>
-          <a href="#waitlist" className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold hover:bg-gold/90 transition-colors">
-            Rejoindre la liste prioritaire →
-          </a>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <a href="#waitlist" className="font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold hover:bg-gold/90 transition-colors">
+              Rejoindre la liste prioritaire →
+            </a>
+            <a href="/agents" className="font-georgia rounded-full border border-gold/50 bg-white/70 px-7 py-4 font-bold text-deep transition-colors hover:border-gold">
+              J’ai été invité·e : mon espace pro →
+            </a>
+          </div>
         </section>
 
         <section className="px-6 py-16 max-w-6xl mx-auto">

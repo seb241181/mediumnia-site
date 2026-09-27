@@ -33,9 +33,9 @@ export function useAuth() {
     }
   }, [])
 
-  const signUp = useCallback(async (email, password) => {
+  const signUp = useCallback(async (email, password, options) => {
     if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
-    return supabase.auth.signUp({ email, password })
+    return supabase.auth.signUp(options ? { email, password, options } : { email, password })
   }, [])
 
   const signIn = useCallback(async (email, password) => {

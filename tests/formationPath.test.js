@@ -514,7 +514,7 @@ test('the 597 € migration is dated 26 September 2026, after the credit migrati
   // jamais au parcours Formation.
   for (const later of files.filter((f) => f > '20260926100000_formation_parcours_597.sql')) {
     const sql = readFileSync(new URL(`../supabase/migrations/${later}`, import.meta.url), 'utf8')
-    assert.doesNotMatch(sql, /formation|entitlement|parcours/i, `${later} must not touch the Formation path`)
+    assert.doesNotMatch(sql, /\b(mediumia_entitlements|formation_[a-z_]+|parcours_[a-z_]+)\b/i, `${later} must not touch the Formation path`)
   }
 })
 

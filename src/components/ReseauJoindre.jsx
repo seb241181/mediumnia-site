@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import LegalFooter from './LegalFooter'
 import PublicPageNav from './PublicPageNav'
+import SiteVisitsCounter from './SiteVisitsCounter.jsx'
 
 const FORM_INIT = {
   prenom: '', nom: '', nom_pro: '', email: '', telephone: '',
@@ -222,6 +223,8 @@ export default function ReseauJoindre({ onBack, onNavigate }) {
             Mediumia n'est pas un annuaire automatique. Les profils sont étudiés avant publication afin de construire un réseau cohérent, humain et identifiable.
           </p>
         </div>
+
+        <SiteVisitsCounter />
 
         <FounderBlock />
 

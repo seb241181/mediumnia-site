@@ -9,6 +9,7 @@ import GlobalAccount from './components/GlobalAccount.jsx'
 import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 import { supabase } from './lib/supabase.js'
 import { installProOnboardingRedirect } from './lib/proOnboarding.js'
+import { countSiteVisitOnce } from './lib/siteVisit.js'
 
 const pathname = window.location.pathname
 const isConferenceLiveRoute = pathname.startsWith('/live/')
@@ -17,6 +18,9 @@ const isConferenceRehearsalRoute = pathname.startsWith('/pro/conference-rehearsa
 
 // Confirmation d'e-mail pendant le parcours Pro : retour vers /agents.
 installProOnboardingRedirect(supabase)
+
+// Compteur de visites du site (une fois par visite, sans cookie).
+countSiteVisitOnce()
 
 let page = <App />
 if (isConferenceLiveRoute) page = <ConferenceLivePage />

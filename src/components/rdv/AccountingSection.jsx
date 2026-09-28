@@ -95,11 +95,11 @@ const ARTIST_AUTHOR_EFFECTIVE_RATE =
   ARTIST_AUTHOR_SOCIAL_BASE_MULTIPLIER *
   ARTIST_AUTHOR_URSSAF_RATE
 
-function SummaryCard({ label, value, note }) {
+function SummaryCard({ label, value, note, wide = false }) {
   return (
-    <div className="rounded-xl border border-gold/20 bg-white/55 px-4 py-4">
+    <div className={`rounded-xl border border-gold/20 bg-white/55 px-4 py-4${wide ? ' col-span-2' : ''}`}>
       <p className="font-georgia text-[10px] uppercase tracking-[0.15em] text-gold">{label}</p>
-      <p className="mt-1 font-georgia text-2xl font-medium text-deep">{value}</p>
+      <p className="mt-1 whitespace-nowrap font-georgia text-2xl font-medium text-deep" style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</p>
       {note && <p className="mt-1 font-georgia text-[11px] text-mist">{note}</p>}
     </div>
   )
@@ -251,17 +251,17 @@ export default function AccountingSection({ practitionerId, session }) {
 
       {!loading && !error && (
         <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-3">
             <SummaryCard label="TTC encaissé" value={money(totals.gross_cents)} note={`${totals.income_count || 0} encaissement(s) RDV`} />
             <SummaryCard label="HT" value={money(totals.net_cents)} />
             <SummaryCard label="TVA" value={money(totals.vat_cents)} note="TVA calculée sur les écritures RDV" />
             <SummaryCard label="KDP généré" value={money(kdp.royalty_cents)} note={`${kdp.total_units || 0} livre(s) / ebook(s)`} />
-            <SummaryCard label="Activité générée" value={money(activityGeneratedCents)} note={chronosphereCents ? 'RDV + redevances KDP + ChronoSphère du mois' : 'RDV encaissés + redevances KDP du mois'} />
+            <SummaryCard wide label="Activité générée" value={money(activityGeneratedCents)} note={chronosphereCents ? 'RDV + redevances KDP + ChronoSphère du mois' : 'RDV encaissés + redevances KDP du mois'} />
           </div>
 
           {(kdp.total_units || kdp.royalty_cents) ? (
             <div className="mt-5 rounded-2xl border border-gold/25 bg-gold/[.06] p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4">
                 <div>
                   <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Livres · Amazon KDP</p>
                   <h3 className="mt-1 font-georgia text-lg font-medium text-deep">CODEX — {kdp.total_units || 0} exemplaire(s) vendu(s)</h3>
@@ -274,22 +274,22 @@ export default function AccountingSection({ practitionerId, session }) {
                     </p>
                   ) : null}
                 </div>
-                <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:min-w-[300px]">
+                <div className="grid w-full grid-cols-2 gap-2 lg:grid-cols-4">
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Redevances générées</p>
+                    <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">Redevances générées</p>
                     <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdpRoyaltyCents)}</p>
                   </div>
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Cotisations Urssaf AA</p>
+                    <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">Cotisations Urssaf AA</p>
                     <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdpEstimatedSocialCents)}</p>
-                    <p className="mt-1 font-georgia text-[9px] text-mist">estimation ≈ 12,30 %</p>
+                    <p className="mt-1 font-georgia text-[10px] text-mist">estimation ≈ 12,30 %</p>
                   </div>
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Net après cotisations</p>
+                    <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">Net après cotisations</p>
                     <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdpEstimatedAfterSocialCents)}</p>
                   </div>
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-                    <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">À recevoir Amazon</p>
+                    <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">À recevoir Amazon</p>
                     <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdp.pending_royalty_cents)}</p>
                   </div>
                 </div>

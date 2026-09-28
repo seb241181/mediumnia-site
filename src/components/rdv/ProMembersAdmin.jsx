@@ -11,6 +11,7 @@ const ERROR_LABELS = {
   unknown_reseau_profile: 'Fiche du Réseau inconnue.',
   pilotage_forbidden: 'Réservé à l’administration MediumIA.',
   reseau_profile_already_invited: 'Cette fiche du Réseau possède déjà une invitation ou un espace actif.',
+  assistant_not_found: 'Aucun assistant actif sur cette fiche.',
 }
 
 const DEMO = {
@@ -92,6 +93,24 @@ export default function ProMembersAdmin({ session, demoMode = false }) {
     }
   }
 
+  // Validation par l'administrateur : l'assistant n'apparaît aux visiteurs de
+  // la fiche qu'après cette mise en ligne (aperçu possible avant).
+  async function publish(member, enabled) {
+    if (demoMode) return
+    const who = nameOf(member.reseauSlug) || member.email
+    const confirmText = enabled
+      ? `Mettre en ligne « ${member.assistant?.name} » sur la fiche de ${who} ? Les visiteurs pourront lui poser leurs questions.`
+      : `Retirer « ${member.assistant?.name} » de la fiche de ${who} ?`
+    if (!window.confirm(confirmText)) return
+    try {
+      await call({ op: 'publish', reseauSlug: member.reseauSlug, enabled })
+      setMessage(enabled ? `Assistant en ligne sur la fiche de ${who}.` : `Assistant retiré de la fiche de ${who}.`)
+      await load()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
   const nameOf = (id) => reseauPractitioners.find((p) => p.id === id)?.name
   const field = 'rounded-xl border border-gold/30 bg-white px-3 py-2.5 font-georgia text-sm text-deep outline-none focus:border-gold/70'
 
@@ -128,11 +147,23 @@ export default function ProMembersAdmin({ session, demoMode = false }) {
                 {m.assistant ? ` · Assistant « ${m.assistant.name} » (${m.assistant.publicEnabled ? 'visible sur la fiche' : 'privé'})` : m.status === 'accepted' ? ' · Assistant pas encore créé' : ''}
               </p>
             </div>
-            {m.status !== 'revoked' && (
-              <button type="button" onClick={() => revoke(m)} className="shrink-0 self-start rounded-lg border border-gold/30 px-3 py-1.5 font-georgia text-xs text-deep sm:self-auto">
-                {m.status === 'accepted' ? 'Retirer l’accès' : 'Annuler'}
-              </button>
-            )}
+            <div className="flex shrink-0 flex-wrap gap-2 self-start sm:self-auto">
+              {m.status === 'accepted' && m.assistant?.status === 'active' && m.reseauSlug && (
+                <>
+                  <a href={`/reseau/${m.reseauSlug}`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-gold/30 px-3 py-1.5 font-georgia text-xs text-mist hover:text-deep">
+                    {m.assistant.publicEnabled ? 'Voir la fiche' : 'Aperçu sur la fiche'}
+                  </a>
+                  <button type="button" onClick={() => publish(m, !m.assistant.publicEnabled)} className={`rounded-lg px-3 py-1.5 font-georgia text-xs font-semibold ${m.assistant.publicEnabled ? 'border border-gold/30 text-deep' : 'bg-deep text-gold'}`}>
+                    {m.assistant.publicEnabled ? 'Retirer de la fiche' : 'Mettre en ligne'}
+                  </button>
+                </>
+              )}
+              {m.status !== 'revoked' && (
+                <button type="button" onClick={() => revoke(m)} className="rounded-lg border border-gold/30 px-3 py-1.5 font-georgia text-xs text-deep">
+                  {m.status === 'accepted' ? 'Retirer l’accès' : 'Annuler'}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

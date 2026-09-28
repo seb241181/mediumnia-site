@@ -251,8 +251,16 @@ export default function FounderCopilotAccess({ onBack }) {
                   <p className="font-georgia text-lg font-medium text-deep">{agent.name}</p>
                   <p className="font-georgia text-xs text-mist">
                     {practitioner ? `Rattaché à votre fiche « ${practitioner.name} »` : 'Non rattaché à une fiche du Réseau'}
-                    {' · '}{agent.public_enabled ? 'Visible sur votre fiche' : 'Privé : testez-le ici avant sa mise en ligne sur votre fiche'}
+                    {' · '}{agent.public_enabled ? 'En ligne sur votre fiche' : 'En attente de mise en ligne par MediumIA'}
                   </p>
+                  {practitioner && (
+                    <p className="mt-1 font-georgia text-xs text-mist">
+                      <a href={`/reseau/${practitioner.id}`} target="_blank" rel="noopener noreferrer" className="text-deep underline decoration-gold/50 underline-offset-4">
+                        {agent.public_enabled ? 'Voir votre fiche' : 'Essayer l’aperçu sur votre fiche'}
+                      </a>
+                      {' · '}Sur la fiche, il répond seulement à partir de ses réglages, jamais de vos documents.
+                    </p>
+                  )}
                 </div>
                 <button onClick={() => { setEditing(true); setError('') }} className="shrink-0 rounded-xl border border-gold/40 px-4 py-2.5 font-georgia text-sm font-semibold text-deep">Modifier ses réglages</button>
               </div>

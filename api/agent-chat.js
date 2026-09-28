@@ -7,6 +7,7 @@ import {
   resolveAgentRuntimePolicy,
 } from '../lib/agentRuntimePolicy.js'
 import { claimInvitation, getWorkspaceState, saveAssistant } from '../lib/proWorkspace.js'
+import { answerFicheVisitor, getFicheAssistantInfo } from '../lib/publicAssistant.js'
 
 const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
 
@@ -177,7 +178,32 @@ async function handleProWorkspace(req, res) {
   }
 }
 
+// Fiche du Réseau (public) : l'assistant du praticien répond aux visiteurs.
+// Sans compte ; une session éventuelle ne sert qu'à l'aperçu avant mise en ligne.
+async function handleFicheAssistant(req, res, action) {
+  res.setHeader('Cache-Control', 'no-store')
+  const db = getSupabaseAdmin()
+  let userId = null
+  if (req.headers.authorization) {
+    const auth = await requireAuth(req)
+    if (!auth.error) userId = auth.userId
+  }
+  try {
+    const slug = String((req.method === 'GET' ? req.query.slug : req.body?.slug) || '')
+    let result
+    if (action === 'fiche-assistant' && req.method === 'GET') result = await getFicheAssistantInfo({ db, slug, userId })
+    else if (action === 'fiche-chat' && req.method === 'POST') {
+      result = await answerFicheVisitor({ db, req, slug, message: req.body?.message, history: req.body?.history, userId })
+    } else result = { status: 405, body: { error: 'Method not allowed' } }
+    return res.status(result.status).json(result.body)
+  } catch {
+    return res.status(500).json({ error: 'assistant_unavailable' })
+  }
+}
+
 export default async function handler(req, res) {
+  const action = String(req.query?.action || '')
+  if (action === 'fiche-assistant' || action === 'fiche-chat') return handleFicheAssistant(req, res, action)
   if (req.query?.action) return handleProWorkspace(req, res)
 
   const requestId = randomUUID()

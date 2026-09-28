@@ -1,6 +1,7 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
 import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
+import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
  * /api/rdv-admin?action=<action>
@@ -823,6 +824,7 @@ export default async function handler(req, res) {
       if (req.method === 'GET') result = await listProMembers({ db: supabase })
       else if (req.method === 'POST' && req.body?.op === 'invite') result = await inviteProMember({ db: supabase, userId, input: req.body })
       else if (req.method === 'POST' && req.body?.op === 'revoke') result = await revokeProInvitation({ db: supabase, input: req.body })
+      else if (req.method === 'POST' && req.body?.op === 'publish') result = await setFicheAssistantPublic({ db: supabase, userId, input: req.body })
       else result = { status: 400, body: { error: 'invalid_request' } }
       return res.status(result.status).json(result.body)
     }

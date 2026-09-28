@@ -73,7 +73,7 @@ test('only live PayPal payments are read, and only the platform admin sees them'
 
 test('the accounting shows ChronoSphère next to appointments and books', () => {
   const section = read('src/components/rdv/AccountingSection.jsx')
-  assert.match(section, /<ChronosphereIncome session=\{session\} from=\{monthRange\.from\} to=\{monthRange\.to\} onTotal=\{setChronosphereCents\} \/>/)
+  assert.match(section, /<ChronosphereIncome session=\{session\} from=\{monthRange\.from\} to=\{monthRange\.to\} onTotal=\{\(cents, body\) => \{ setChronosphereCents\(cents\); setChronosphereData\(body\) \}\} \/>/)
   assert.match(section, /Number\(data\?\.activity_generated_cents \|\| 0\) \+ chronosphereCents/)
   assert.match(read('api/rdv-admin.js'), /case 'chronosphere-finance':[\s\S]*getChronosphereIncome/)
 })

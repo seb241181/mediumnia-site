@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import DailyPayments from './DailyPayments.jsx'
+import ChronosphereIncome from './ChronosphereIncome.jsx'
 
 function authHeader(session) {
   return session ? { Authorization: `Bearer ${session.access_token}` } : {}
@@ -130,7 +131,10 @@ export default function AccountingSection({ practitionerId, session }) {
   const entries = data?.entries || []
   const totals = data?.totals || {}
   const kdp = data?.kdp || {}
-  const activityGeneratedCents = Number(data?.activity_generated_cents || 0)
+  // ChronoSphère (tirages, packs, MAX) s'ajoute à l'activité du mois.
+  const [chronosphereCents, setChronosphereCents] = useState(0)
+  const monthRange = useMemo(() => monthBounds(month), [month])
+  const activityGeneratedCents = Number(data?.activity_generated_cents || 0) + chronosphereCents
   const kdpRoyaltyCents = Number(kdp.royalty_cents || 0)
   const kdpEstimatedSocialCents = Math.round(kdpRoyaltyCents * ARTIST_AUTHOR_EFFECTIVE_RATE)
   const kdpEstimatedAfterSocialCents = Math.max(0, kdpRoyaltyCents - kdpEstimatedSocialCents)
@@ -221,7 +225,7 @@ export default function AccountingSection({ practitionerId, session }) {
             <SummaryCard label="HT" value={money(totals.net_cents)} />
             <SummaryCard label="TVA" value={money(totals.vat_cents)} note="TVA calculée sur les écritures RDV" />
             <SummaryCard label="KDP généré" value={money(kdp.royalty_cents)} note={`${kdp.total_units || 0} livre(s) / ebook(s)`} />
-            <SummaryCard label="Activité générée" value={money(activityGeneratedCents)} note="RDV encaissés + redevances KDP du mois" />
+            <SummaryCard label="Activité générée" value={money(activityGeneratedCents)} note={chronosphereCents ? 'RDV + redevances KDP + ChronoSphère du mois' : 'RDV encaissés + redevances KDP du mois'} />
           </div>
 
           {(kdp.total_units || kdp.royalty_cents) ? (
@@ -264,6 +268,8 @@ export default function AccountingSection({ practitionerId, session }) {
               </p>
             </div>
           ) : null}
+
+          <ChronosphereIncome session={session} from={monthRange.from} to={monthRange.to} onTotal={setChronosphereCents} />
 
           {entries.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-gold/25 px-6 py-8 text-center">

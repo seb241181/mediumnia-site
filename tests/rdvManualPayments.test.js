@@ -68,3 +68,16 @@ test('manual payment patches run after accounting dashboard in every lifecycle',
     assert.ok(accounting >= 0 && manual > accounting && context > manual && ui > context)
   }
 })
+
+test('the caisse "Ajouter un encaissement" POST reaches createManualPayment (no more 405)', () => {
+  // Lu après les patchs de prebuild/pretest : c'est le fichier réellement déployé.
+  const api = fs.readFileSync('api/rdv-admin.js', 'utf8')
+  const start = api.indexOf('async function handleFinance(')
+  assert.ok(start >= 0)
+  const head = api.slice(start, start + 400)
+  const postIndex = head.indexOf("if (req.method === 'POST')")
+  const rejectIndex = head.indexOf("if (req.method !== 'GET') return res.status(405)")
+  assert.ok(postIndex >= 0 && rejectIndex > postIndex)
+  assert.match(head, /await createManualPayment\(\{ supabase, userId, body: req\.body \|\| \{\} \}\)/)
+  assert.doesNotMatch(serverPatch, /source\.includes\("if \(req\.method === 'POST'\)"\)/)
+})

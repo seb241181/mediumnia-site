@@ -1,6 +1,7 @@
 import LegalFooter from './LegalFooter'
 import { reseauPractitioners } from '../data/reseauPractitioners'
 import PublicPageNav from './PublicPageNav'
+import FicheAssistant from './FicheAssistant.jsx'
 
 function withPreviewShareToken(src) {
   if (typeof window === 'undefined' || !src?.startsWith('/')) return src
@@ -289,6 +290,8 @@ export default function PractitionerProfile({ practitionerId, onBack, onNavigate
             </div>
           </section>
         )}
+
+        <FicheAssistant practitioner={practitioner} />
 
         <section className="mx-auto max-w-5xl px-6 pb-16 md:pb-20">
           <div className="rounded-3xl border border-gold/25 bg-deep px-7 py-9 text-cream md:px-10 md:py-10">

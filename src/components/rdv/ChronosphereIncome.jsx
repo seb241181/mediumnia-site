@@ -58,7 +58,7 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
 
   return (
     <div className="mt-5 rounded-2xl border border-gold/25 bg-gold/[.06] p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4">
         <div>
           <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Tirages · ChronoSphère</p>
           <h3 className="mt-1 font-georgia text-lg font-medium text-deep">{data.count} achat{data.count > 1 ? 's' : ''} ce mois-ci</h3>
@@ -68,26 +68,26 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
             ))}
           </ul>
         </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:min-w-[300px] sm:grid-cols-3">
+        <div className="grid w-full grid-cols-2 gap-2 lg:grid-cols-3">
           <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">TTC encaissé</p>
+            <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">TTC encaissé</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(data.gross_cents)}</p>
           </div>
           <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">HT</p>
+            <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">HT</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(data.net_cents)}</p>
           </div>
           <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">TVA 20 %</p>
+            <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">TVA 20 %</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(data.vat_cents)}</p>
           </div>
           <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Urssaf 24,6 %</p>
+            <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">Urssaf 24,6 %</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(urssafCents)}</p>
-            <p className="mt-1 font-georgia text-[9px] text-mist">estimation sur le HT</p>
+            <p className="mt-1 font-georgia text-[10px] text-mist">estimation sur le HT</p>
           </div>
           <div className="col-span-2 rounded-xl border border-gold/30 bg-white/80 px-3 py-3">
-            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Net après TVA et Urssaf</p>
+            <p className="font-georgia text-[10px] uppercase tracking-wide text-mist">Net après TVA et Urssaf</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(afterUrssafCents)}</p>
           </div>
         </div>

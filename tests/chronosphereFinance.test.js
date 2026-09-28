@@ -77,3 +77,10 @@ test('the accounting shows ChronoSphère next to appointments and books', () => 
   assert.match(section, /Number\(data\?\.activity_generated_cents \|\| 0\) \+ chronosphereCents/)
   assert.match(read('api/rdv-admin.js'), /case 'chronosphere-finance':[\s\S]*getChronosphereIncome/)
 })
+
+test('Urssaf is estimated at 24 % of the amount before VAT', () => {
+  const ui = read('src/components/rdv/ChronosphereIncome.jsx')
+  assert.match(ui, /export const URSSAF_RATE = 0\.24/)
+  assert.match(ui, /Math\.round\(Number\(data\.net_cents \|\| 0\) \* URSSAF_RATE\)/)
+  assert.match(ui, /Net après TVA et Urssaf/)
+})

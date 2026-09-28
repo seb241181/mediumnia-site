@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 // Caisse : bloc « ChronoSphère » du mois, à côté des rendez-vous et des livres.
 // N'apparaît que pour l'administrateur de la plateforme (réponse 403 sinon).
 
+// Taux de cotisations Urssaf indiqué par Sébastien (27/09/2026), appliqué au HT.
+export const URSSAF_RATE = 0.24
+
 const PRODUCTS = [
   ['single', 'Tirage unique', '5 €'],
   ['pack3', 'Pack 3 tirages', '9,90 €'],
@@ -50,6 +53,9 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
   }
   if (!data) return null
 
+  const urssafCents = Math.round(Number(data.net_cents || 0) * URSSAF_RATE)
+  const afterUrssafCents = Math.max(0, Number(data.net_cents || 0) - urssafCents)
+
   return (
     <div className="mt-5 rounded-2xl border border-gold/25 bg-gold/[.06] p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -75,10 +81,19 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
             <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">TVA 20 %</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(data.vat_cents)}</p>
           </div>
+          <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
+            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Urssaf 24 %</p>
+            <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(urssafCents)}</p>
+            <p className="mt-1 font-georgia text-[9px] text-mist">estimation sur le HT</p>
+          </div>
+          <div className="col-span-2 rounded-xl border border-gold/30 bg-white/80 px-3 py-3">
+            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Net après TVA et Urssaf</p>
+            <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(afterUrssafCents)}</p>
+          </div>
         </div>
       </div>
       <p className="mt-4 font-georgia text-[10px] leading-relaxed text-mist/75">
-        Paiements PayPal réels du mois, à la date d’encaissement. Frais PayPal non déduits.
+        Paiements PayPal réels du mois, à la date d’encaissement. Urssaf estimée à 24 % du HT ; frais PayPal non déduits.
         {data.gift_activations_excluded ? ` ${data.gift_activations_excluded} pack(s) activé(s) par carte cadeau non compté(s) ici : la carte est déjà comptée à sa vente.` : ' Les packs activés par carte cadeau ne sont pas comptés ici : la carte est déjà comptée à sa vente.'}
       </p>
     </div>

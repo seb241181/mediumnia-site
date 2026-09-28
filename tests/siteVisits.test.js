@@ -13,7 +13,15 @@ test('public total: site visits, plus home visits only before the site counter e
     { event_date: '2026-09-29', event_name: 'home_view', event_count: 50 },
     { event_date: '2026-09-29', event_name: 'site_visit', event_count: 80 },
   ]
+  // Jour de bascule (29/09) : le plus grand des deux (80), puis seulement le compteur du site.
   assert.deepEqual(summarizeSiteVisits(rows), { visits: 100 + 40 + 80, since: '2026-09-06' })
+  const launchDay = [
+    { event_date: '2026-09-28', event_name: 'home_view', event_count: 109 },
+    { event_date: '2026-09-28', event_name: 'site_visit', event_count: 3 },
+    { event_date: '2026-09-29', event_name: 'home_view', event_count: 90 },
+    { event_date: '2026-09-29', event_name: 'site_visit', event_count: 120 },
+  ]
+  assert.deepEqual(summarizeSiteVisits(launchDay), { visits: 109 + 120, since: '2026-09-28' })
   assert.deepEqual(summarizeSiteVisits(rows.filter((r) => r.event_name === 'home_view')), { visits: 190, since: '2026-09-06' })
   assert.deepEqual(summarizeSiteVisits([]), { visits: 0, since: null })
 })

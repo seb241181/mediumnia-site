@@ -90,3 +90,9 @@ test('phone shortcut /rdv#encaisser opens the manual payment window after its li
   assert.ok(listenerIndex >= 0 && shortcutIndex > listenerIndex)
   assert.match(section, /history\.replaceState/)
 })
+
+test('the caisse always shows the "+ Ajouter un encaissement" button', () => {
+  const section = fs.readFileSync('src/components/rdv/AccountingSection.jsx', 'utf8')
+  assert.match(section, /onClick=\{\(\) => setManualPayment\(\{ bookingId: null \}\)\}[\s\S]{0,300}\+ Ajouter un encaissement/)
+  assert.doesNotMatch(uiPatch, /source\.includes\('Ajouter un encaissement'\)/)
+})

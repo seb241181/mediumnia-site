@@ -68,7 +68,7 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
             ))}
           </ul>
         </div>
-        <div className="grid min-w-[300px] grid-cols-3 gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:min-w-[300px] sm:grid-cols-3">
           <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
             <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">TTC encaissé</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(data.gross_cents)}</p>

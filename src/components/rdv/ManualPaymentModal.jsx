@@ -155,8 +155,8 @@ export default function ManualPaymentModal({ practitionerId, session, services =
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-deep/55 px-4 py-6">
-      <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-gold/25 bg-cream p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[70] flex items-end justify-center overflow-x-hidden bg-deep/55 px-2 pt-6 sm:items-center sm:px-4 sm:py-6">
+      <div className="w-full min-w-0 max-w-2xl max-h-[92dvh] overflow-y-auto overflow-x-hidden rounded-t-2xl border border-gold/25 bg-cream p-4 shadow-2xl sm:rounded-2xl sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Comptabilité</p>
@@ -176,7 +176,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
               key={value}
               type="button"
               onClick={() => resetExternalFields(value)}
-              className={`rounded-lg px-3 py-2 font-georgia text-xs transition-colors ${mode === value ? 'bg-deep text-gold' : 'text-mist hover:bg-gold/10 hover:text-deep'}`}
+              className={`rounded-lg px-1 py-2.5 font-georgia text-xs transition-colors sm:px-3 sm:py-2 ${mode === value ? 'bg-deep text-gold' : 'text-mist hover:bg-gold/10 hover:text-deep'}`}
             >
               {label}
             </button>
@@ -187,7 +187,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
           {mode === 'booking' ? (
             <div>
               <label className="mb-1.5 block font-georgia text-xs text-mist">Rendez-vous</label>
-              <select value={bookingId} onChange={e => setBookingId(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm text-deep focus:outline-none focus:border-gold/60">
+              <select value={bookingId} onChange={e => setBookingId(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm text-deep focus:outline-none focus:border-gold/60">
                 <option value="">Choisir un rendez-vous…</option>
                 {upcomingBookings.map(booking => (
                   <option key={booking.id} value={booking.id}>
@@ -207,7 +207,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
             <>
               <div>
                 <label className="mb-1.5 block font-georgia text-xs text-mist">Prestation</label>
-                <select value={serviceId} onChange={e => setServiceId(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm text-deep focus:outline-none focus:border-gold/60">
+                <select value={serviceId} onChange={e => setServiceId(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm text-deep focus:outline-none focus:border-gold/60">
                   <option value="">Choisir une prestation…</option>
                   {services.map(service => <option key={service.id} value={service.id}>{service.title}</option>)}
                 </select>
@@ -215,16 +215,16 @@ export default function ManualPaymentModal({ practitionerId, session, services =
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block font-georgia text-xs text-mist">Client</label>
-                  <input value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm focus:outline-none focus:border-gold/60" placeholder="Prénom Nom" />
+                  <input value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm focus:outline-none focus:border-gold/60" placeholder="Prénom Nom" />
                 </div>
                 <div>
                   <label className="mb-1.5 block font-georgia text-xs text-mist">E-mail <span className="opacity-60">optionnel</span></label>
-                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm focus:outline-none focus:border-gold/60" placeholder="client@email.fr" />
+                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm focus:outline-none focus:border-gold/60" placeholder="client@email.fr" />
                 </div>
               </div>
               <div>
                 <label className="mb-1.5 block font-georgia text-xs text-mist">Date du rendez-vous <span className="opacity-60">optionnelle</span></label>
-                <input type="datetime-local" value={appointmentAt} onChange={e => setAppointmentAt(e.target.value)} className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm focus:outline-none focus:border-gold/60" />
+                <input type="datetime-local" value={appointmentAt} onChange={e => setAppointmentAt(e.target.value)} className="block w-full min-w-0 max-w-full appearance-none rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm focus:outline-none focus:border-gold/60" />
               </div>
             </>
           )}
@@ -232,23 +232,23 @@ export default function ManualPaymentModal({ practitionerId, session, services =
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
               <label className="mb-1.5 block font-georgia text-xs text-mist">Montant encaissé (€)</label>
-              <input type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm focus:outline-none focus:border-gold/60" placeholder="50.00" />
+              <input type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm focus:outline-none focus:border-gold/60" placeholder="50.00" />
             </div>
             <div>
               <label className="mb-1.5 block font-georgia text-xs text-mist">Règlement</label>
-              <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm focus:outline-none focus:border-gold/60">
+              <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm focus:outline-none focus:border-gold/60">
                 {PAYMENT_METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </div>
             <div>
               <label className="mb-1.5 block font-georgia text-xs text-mist">Date d'encaissement</label>
-              <input type="datetime-local" value={occurredAt} onChange={e => setOccurredAt(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm focus:outline-none focus:border-gold/60" />
+              <input type="datetime-local" value={occurredAt} onChange={e => setOccurredAt(e.target.value)} required className="block w-full min-w-0 max-w-full appearance-none rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm focus:outline-none focus:border-gold/60" />
             </div>
           </div>
 
           <div>
             <label className="mb-1.5 block font-georgia text-xs text-mist">Note <span className="opacity-60">optionnelle</span></label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} className="w-full resize-none rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-sm focus:outline-none focus:border-gold/60" placeholder="Ex. règlement du solde en espèces" />
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} className="w-full resize-none rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm focus:outline-none focus:border-gold/60" placeholder="Ex. règlement du solde en espèces" />
           </div>
 
           {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">{error}</div>}

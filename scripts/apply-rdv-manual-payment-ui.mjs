@@ -52,7 +52,9 @@ if (source.includes('<section className="rounded-2xl border border-gold/25 bg-wh
   changed = true
 }
 
-if (!source.includes('Ajouter un encaissement')) {
+// Garde sur le bouton lui-même : un simple texte « Ajouter un encaissement »
+// (commentaire…) ne doit pas faire croire que le bouton existe déjà.
+if (!source.includes('onClick={() => setManualPayment({ bookingId: null })}')) {
   const marker = `        <div className="flex flex-wrap gap-2 sm:justify-end">\n          <input`
   if (!source.includes(marker)) throw new Error('rdv_manual_ui_button_marker_missing')
   source = source.replace(marker, `        <div className="flex flex-wrap gap-2 sm:justify-end">\n          <button\n            type="button"\n            onClick={() => setManualPayment({ bookingId: null })}\n            className="rounded-xl border border-gold/35 bg-gold/10 px-4 py-2 font-georgia text-xs font-semibold text-deep transition-colors hover:bg-gold/20"\n          >\n            + Ajouter un encaissement\n          </button>\n          <input`)

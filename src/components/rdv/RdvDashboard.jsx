@@ -1227,19 +1227,19 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button onClick={onBack} className="font-georgia text-xs text-mist hover:text-deep transition-colors">← Espace Pro</button>
-            <span className="text-gold/30">·</span>
-            <span className="font-georgia text-sm font-semibold text-deep">MediumIA Rendez-vous</span>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 sm:gap-4">
+          <div className="flex shrink-0 items-center gap-3">
+            <button onClick={onBack} className="whitespace-nowrap font-georgia text-xs text-mist hover:text-deep transition-colors">← Espace Pro</button>
+            <span className="hidden text-gold/30 sm:inline">·</span>
+            <span className="hidden font-georgia text-sm font-semibold text-deep sm:inline">MediumIA Rendez-vous</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {activeSlug && (
               <button
                 onClick={() => onOpenPublic(activeSlug)}
-                className="font-georgia text-xs text-gold border border-gold/40 px-4 py-2 rounded-lg hover:bg-gold/10 transition-colors"
+                className="whitespace-nowrap font-georgia text-xs text-gold border border-gold/40 px-3 sm:px-4 py-2 rounded-lg hover:bg-gold/10 transition-colors"
               >
-                Voir ma page publique →
+                <span className="sm:hidden">Ma page →</span><span className="hidden sm:inline">Voir ma page publique →</span>
               </button>
             )}
             {session?.user?.email && (
@@ -1249,7 +1249,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
             )}
             <button
               onClick={signOut}
-              className="font-georgia text-xs text-mist hover:text-deep border border-gold/20 px-3 py-2 rounded-lg"
+              className="whitespace-nowrap font-georgia text-xs text-mist hover:text-deep border border-gold/20 px-3 py-2 rounded-lg"
             >
               Déconnexion
             </button>
@@ -1309,10 +1309,10 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
             )}
 
             {activePractitioner && (
-              <div className="grid md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
                 {/* Main column */}
-                <div className="md:col-span-2 space-y-5">
+                <div className="md:col-span-2 space-y-5 min-w-0">
 
                   {/* Google Calendar */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
@@ -1528,8 +1528,8 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                           const svc = activePractitioner.services.find(s => s.id === b.service_id)
                           const date = new Date(b.starts_at)
                           return (
-                            <div key={b.id} className="rounded-xl border border-gold/15 bg-white/40 px-4 py-3 flex items-center justify-between gap-4">
-                              <div>
+                            <div key={b.id} className="rounded-xl border border-gold/15 bg-white/40 px-4 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                              <div className="min-w-0">
                                 <p className="font-georgia text-sm font-semibold text-deep">{b.customer_first_name} {b.customer_last_name}</p>
                                 <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
                               </div>
@@ -1570,7 +1570,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                 </div>
 
                 {/* Side column */}
-                <div className="space-y-5">
+                <div className="space-y-5 min-w-0">
 
                   {/* Settings */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-5">

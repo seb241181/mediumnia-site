@@ -96,3 +96,11 @@ test('the caisse always shows the "+ Ajouter un encaissement" button', () => {
   assert.match(section, /onClick=\{\(\) => setManualPayment\(\{ bookingId: null \}\)\}[\s\S]{0,300}\+ Ajouter un encaissement/)
   assert.doesNotMatch(uiPatch, /source\.includes\('Ajouter un encaissement'\)/)
 })
+
+test('RDV dashboard columns can shrink to the phone width (wide caisse table scrolls inside)', () => {
+  const dashboard = fs.readFileSync('src/components/rdv/RdvDashboard.jsx', 'utf8')
+  assert.match(dashboard, /className="grid grid-cols-1 md:grid-cols-3 gap-5"/)
+  assert.match(dashboard, /className="md:col-span-2 space-y-5 min-w-0"/)
+  const day = fs.readFileSync('src/components/rdv/DailyPayments.jsx', 'utf8')
+  assert.match(day, /aria-label="Montant encaissé en euros" className="[^"]*text-base[^"]*sm:text-sm/)
+})

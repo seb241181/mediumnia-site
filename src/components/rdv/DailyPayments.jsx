@@ -127,12 +127,12 @@ function BookingRow({ booking, practitionerId, session, onSaved }) {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <label className="flex items-center gap-2 font-georgia text-xs text-mist">
               Montant
-              <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Montant encaissé en euros" className="w-24 rounded-lg border border-gold/30 bg-white px-2 py-2 text-right font-georgia text-sm text-deep" />
+              <input inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Montant encaissé en euros" className="w-24 rounded-lg border border-gold/30 bg-white px-2 py-2 text-right font-georgia text-base text-deep sm:text-sm" />
               €
             </label>
             <label className="flex items-center gap-2 font-georgia text-xs text-mist">
               le
-              <input type="datetime-local" value={paidAt} onChange={e => setPaidAt(e.target.value)} aria-label="Date du règlement" className="rounded-lg border border-gold/30 bg-white px-2 py-2 font-georgia text-xs text-deep" />
+              <input type="datetime-local" value={paidAt} onChange={e => setPaidAt(e.target.value)} aria-label="Date du règlement" className="min-w-0 max-w-full rounded-lg border border-gold/30 bg-white px-2 py-2 font-georgia text-base text-deep sm:text-xs" />
             </label>
             <button type="button" onClick={collect} disabled={saving || !method} className="min-h-11 rounded-lg bg-deep px-4 py-2 font-georgia text-xs font-bold text-gold disabled:opacity-40 sm:ml-auto">
               {saving ? 'Enregistrement…' : 'Encaisser'}

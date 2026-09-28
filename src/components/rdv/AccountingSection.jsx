@@ -129,6 +129,15 @@ export default function AccountingSection({ practitionerId, session }) {
   }, [practitionerId, session, month, dayNonce])
 
   const entries = data?.entries || []
+
+  // Raccourci téléphone : mediumia.fr/rdv#encaisser ouvre directement
+  // la fenêtre de saisie manuelle (son écouteur est déclaré juste avant).
+  useEffect(() => {
+    if (window.location.hash !== '#encaisser') return
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    document.getElementById('mediumia-accounting')?.scrollIntoView({ block: 'start' })
+    window.dispatchEvent(new CustomEvent('mediumia:manual-payment', { detail: { bookingId: null } }))
+  }, [])
   const totals = data?.totals || {}
   const kdp = data?.kdp || {}
   // ChronoSphère (tirages, packs, MAX) s'ajoute à l'activité du mois.
@@ -243,7 +252,7 @@ export default function AccountingSection({ practitionerId, session }) {
                     </p>
                   ) : null}
                 </div>
-                <div className="grid min-w-[300px] grid-cols-2 gap-2">
+                <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:min-w-[300px]">
                   <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
                     <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Redevances générées</p>
                     <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(kdpRoyaltyCents)}</p>

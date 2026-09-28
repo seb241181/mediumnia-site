@@ -81,3 +81,18 @@ test('the caisse "Ajouter un encaissement" POST reaches createManualPayment (no 
   assert.match(head, /await createManualPayment\(\{ supabase, userId, body: req\.body \|\| \{\} \}\)/)
   assert.doesNotMatch(serverPatch, /source\.includes\("if \(req\.method === 'POST'\)"\)/)
 })
+
+test('phone shortcut /rdv#encaisser opens the manual payment window after its listener', () => {
+  // Lu après les patchs : l'écouteur doit être déclaré avant l'effet qui l'appelle.
+  const section = fs.readFileSync('src/components/rdv/AccountingSection.jsx', 'utf8')
+  const listenerIndex = section.indexOf("window.addEventListener('mediumia:manual-payment'")
+  const shortcutIndex = section.indexOf("window.location.hash !== '#encaisser'")
+  assert.ok(listenerIndex >= 0 && shortcutIndex > listenerIndex)
+  assert.match(section, /history\.replaceState/)
+})
+
+test('the caisse always shows the "+ Ajouter un encaissement" button', () => {
+  const section = fs.readFileSync('src/components/rdv/AccountingSection.jsx', 'utf8')
+  assert.match(section, /onClick=\{\(\) => setManualPayment\(\{ bookingId: null \}\)\}[\s\S]{0,300}\+ Ajouter un encaissement/)
+  assert.doesNotMatch(uiPatch, /source\.includes\('Ajouter un encaissement'\)/)
+})

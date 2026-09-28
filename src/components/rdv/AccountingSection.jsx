@@ -129,6 +129,15 @@ export default function AccountingSection({ practitionerId, session }) {
   }, [practitionerId, session, month, dayNonce])
 
   const entries = data?.entries || []
+
+  // Raccourci téléphone : mediumia.fr/rdv#encaisser ouvre directement
+  // « Ajouter un encaissement » (l'écouteur de la fenêtre est déclaré juste avant).
+  useEffect(() => {
+    if (window.location.hash !== '#encaisser') return
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    document.getElementById('mediumia-accounting')?.scrollIntoView({ block: 'start' })
+    window.dispatchEvent(new CustomEvent('mediumia:manual-payment', { detail: { bookingId: null } }))
+  }, [])
   const totals = data?.totals || {}
   const kdp = data?.kdp || {}
   // ChronoSphère (tirages, packs, MAX) s'ajoute à l'activité du mois.

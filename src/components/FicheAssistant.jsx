@@ -97,8 +97,8 @@ export default function FicheAssistant({ practitioner }) {
         )}
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Une question ?</p>
-            <h2 id="fiche-assistant-title" className="mt-2 font-georgia text-2xl font-medium">Posez-la à {info.name}</h2>
+            <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Une question ? Posez-la ici</p>
+            <h2 id="fiche-assistant-title" className="mt-2 font-georgia text-2xl font-medium">{info.name}</h2>
           </div>
           <p className="font-georgia text-xs text-mist">Assistant IA · répond à partir des informations de {firstName}</p>
         </div>
@@ -132,7 +132,7 @@ export default function FicheAssistant({ practitioner }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             maxLength={MAX_CHARS}
-            placeholder={`Votre question pour ${firstName}…`}
+            placeholder="Votre question…"
             className="min-w-0 flex-1 rounded-xl border border-gold/30 bg-white px-4 py-3 font-georgia text-base text-deep outline-none focus:border-gold/70 sm:text-sm"
           />
           <button type="submit" disabled={busy || !draft.trim()} className="shrink-0 rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-bold text-gold disabled:opacity-50">

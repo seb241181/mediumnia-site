@@ -1,5 +1,6 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
+import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
  * /api/rdv-admin?action=<action>
@@ -823,6 +824,11 @@ export default async function handler(req, res) {
       else if (req.method === 'POST' && req.body?.op === 'invite') result = await inviteProMember({ db: supabase, userId, input: req.body })
       else if (req.method === 'POST' && req.body?.op === 'revoke') result = await revokeProInvitation({ db: supabase, input: req.body })
       else result = { status: 400, body: { error: 'invalid_request' } }
+      return res.status(result.status).json(result.body)
+    }
+    case 'chronosphere-finance': {
+      if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+      const result = await getChronosphereIncome({ supabase, userId, query: req.query })
       return res.status(result.status).json(result.body)
     }
     case 'conference-stats': {

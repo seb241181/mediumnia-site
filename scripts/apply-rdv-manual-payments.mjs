@@ -50,7 +50,10 @@ function patchApi() {
     changed = true
   }
 
-  if (!source.includes("if (req.method === 'POST')")) {
+  // Garde précise : d'autres actions (services…) contiennent déjà un
+  // « if (req.method === 'POST') », ce qui faisait croire le patch appliqué et
+  // laissait « Ajouter un encaissement » répondre 405.
+  if (!source.includes('await createManualPayment({ supabase, userId, body: req.body || {} })')) {
     const marker = `async function handleFinance(req, res, supabase, userId) {\n  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })`
     if (!source.includes(marker)) throw new Error('rdv_manual_payment_handle_finance_marker_missing')
     source = source.replace(marker, `async function handleFinance(req, res, supabase, userId) {\n  if (req.method === 'POST') {\n    const result = await createManualPayment({ supabase, userId, body: req.body || {} })\n    return res.status(result.status).json(result.body)\n  }\n  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })`)

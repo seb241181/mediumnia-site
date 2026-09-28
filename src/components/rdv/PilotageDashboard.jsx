@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ConferenceRegistrationsCard from './ConferenceRegistrationsCard'
 import ProMembersAdmin from './ProMembersAdmin'
+import { SiteVisitsPilotageCard } from '../SiteVisitsCounter.jsx'
 
 const RANGE_OPTIONS = [7, 30, 90]
 // Les compteurs sont incrémentés en continu : on les relit toutes les 5 minutes
@@ -15,6 +16,7 @@ const ERROR_LABELS = {
 
 const LABELS = {
   home_view: 'Visites accueil',
+  site_visit: 'Visites du site',
   home_door_click: 'Clics depuis l’accueil',
   ecosystem_door_click: 'Passerelles internes',
   chronosphere_example_view: 'Vues exemple Chronosphère',
@@ -325,6 +327,8 @@ export default function PilotageDashboard({ session, demoMode = false }) {
           </div>
         </article>
       </section>
+
+      <SiteVisitsPilotageCard />
 
       <ProMembersAdmin session={session} demoMode={demoMode} />
 

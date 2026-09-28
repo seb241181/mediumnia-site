@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 // Caisse : bloc « ChronoSphère » du mois, à côté des rendez-vous et des livres.
 // N'apparaît que pour l'administrateur de la plateforme (réponse 403 sinon).
 
-// Taux de cotisations Urssaf indiqué par Sébastien (27/09/2026), appliqué au HT.
-export const URSSAF_RATE = 0.24
+// Taux de cotisations Urssaf indiqué par Sébastien (28/09/2026) : 24,6 %, appliqué au HT.
+export const URSSAF_RATE = 0.246
 
 const PRODUCTS = [
   ['single', 'Tirage unique', '5 €'],
@@ -82,7 +82,7 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(data.vat_cents)}</p>
           </div>
           <div className="rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
-            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Urssaf 24 %</p>
+            <p className="font-georgia text-[9px] uppercase tracking-wide text-mist">Urssaf 24,6 %</p>
             <p className="mt-1 font-georgia text-lg font-semibold text-deep">{money(urssafCents)}</p>
             <p className="mt-1 font-georgia text-[9px] text-mist">estimation sur le HT</p>
           </div>
@@ -93,7 +93,7 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
         </div>
       </div>
       <p className="mt-4 font-georgia text-[10px] leading-relaxed text-mist/75">
-        Paiements PayPal réels du mois, à la date d’encaissement. Urssaf estimée à 24 % du HT ; frais PayPal non déduits.
+        Paiements PayPal réels du mois, à la date d’encaissement. Urssaf estimée à 24,6 % du HT ; frais PayPal non déduits.
         {data.gift_activations_excluded ? ` ${data.gift_activations_excluded} pack(s) activé(s) par carte cadeau non compté(s) ici : la carte est déjà comptée à sa vente.` : ' Les packs activés par carte cadeau ne sont pas comptés ici : la carte est déjà comptée à sa vente.'}
       </p>
     </div>

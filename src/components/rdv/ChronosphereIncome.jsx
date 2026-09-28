@@ -29,7 +29,7 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
     fetch(`/api/rdv-admin?${params}`, { headers: { Authorization: `Bearer ${session.access_token}` }, cache: 'no-store' })
       .then(async (res) => {
         const body = await res.json().catch(() => ({}))
-        if (res.status === 403) { if (!cancelled) { setHidden(true); onTotal?.(0) } return null }
+        if (res.status === 403) { if (!cancelled) { setHidden(true); onTotal?.(0, null) } return null }
         if (!res.ok) throw new Error(body.error || 'chronosphere_finance_error')
         return body
       })
@@ -37,9 +37,9 @@ export default function ChronosphereIncome({ session, from, to, onTotal }) {
         if (cancelled || !body) return
         setHidden(false)
         setData(body)
-        onTotal?.(Number(body.gross_cents || 0))
+        onTotal?.(Number(body.gross_cents || 0), body)
       })
-      .catch((err) => { if (!cancelled) { setError(err.message); onTotal?.(0) } })
+      .catch((err) => { if (!cancelled) { setError(err.message); onTotal?.(0, null) } })
     return () => { cancelled = true }
   }, [session?.access_token, from, to]) // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -73,7 +73,7 @@ test('only live PayPal payments are read, and only the platform admin sees them'
 
 test('the accounting shows ChronoSphère next to appointments and books', () => {
   const section = read('src/components/rdv/AccountingSection.jsx')
-  assert.match(section, /<ChronosphereIncome session=\{session\} from=\{monthRange\.from\} to=\{monthRange\.to\} onTotal=\{setChronosphereCents\} \/>/)
+  assert.match(section, /<ChronosphereIncome session=\{session\} from=\{monthRange\.from\} to=\{monthRange\.to\} onTotal=\{\(cents, body\) => \{ setChronosphereCents\(cents\); setChronosphereData\(body\) \}\} \/>/)
   assert.match(section, /Number\(data\?\.activity_generated_cents \|\| 0\) \+ chronosphereCents/)
   assert.match(read('api/rdv-admin.js'), /case 'chronosphere-finance':[\s\S]*getChronosphereIncome/)
 })
@@ -83,4 +83,26 @@ test('Urssaf is estimated at 24,6 % of the amount before VAT', () => {
   assert.match(ui, /export const URSSAF_RATE = 0\.246/)
   assert.match(ui, /Math\.round\(Number\(data\.net_cents \|\| 0\) \* URSSAF_RATE\)/)
   assert.match(ui, /Net après TVA et Urssaf/)
+})
+
+test('CSV export: one ChronoSphère line per Paris day and offer, VAT per line, no customer data', () => {
+  const summary = summarizeChronosphereIncome({
+    draws: [
+      { paypal_capture_id: 'CAP1', amount_cents: 500, captured_at: '2026-09-03T10:00:00Z' },
+      { paypal_capture_id: 'CAP2', amount_cents: 500, captured_at: '2026-09-03T15:00:00Z' },
+    ],
+    packs: [
+      // 22 h 30 UTC = 0 h 30 à Paris le lendemain.
+      { paypal_capture_id: 'CAP3', amount_cents: 990, captured_at: '2026-09-10T22:30:00Z', product_type: 'pack3' },
+      { paypal_capture_id: 'GIFT-x', amount_cents: 990, captured_at: '2026-09-10T09:00:00Z', product_type: 'pack3' },
+    ],
+  })
+  assert.deepEqual(summary.daily_products, [
+    { date: '2026-09-03', product: 'single', label: 'Tirage unique', count: 2, gross_cents: 1000, net_cents: 833, vat_cents: 167 },
+    { date: '2026-09-11', product: 'pack3', label: 'Pack 3 tirages', count: 1, gross_cents: 990, net_cents: 825, vat_cents: 165 },
+  ])
+  const ui = read('src/components/rdv/AccountingSection.jsx')
+  assert.match(ui, /rows\.push\(\.\.\.chronosphereCsvRows\(rows\[0\], chronosphereData\)\)/)
+  assert.match(ui, /'Source': 'ChronoSphère'/)
+  assert.match(ui, /setChronosphereData\(body\)/)
 })

@@ -67,6 +67,26 @@ function decimalCsv(cents) {
   return (Number(cents || 0) / 100).toFixed(2).replace('.', ',')
 }
 
+// ChronoSphère dans l'export : une ligne par jour et par offre (totaux, aucune
+// donnée client), placée selon le nom des colonnes de l'en-tête.
+function chronosphereCsvRows(header, data) {
+  return (data?.daily_products || []).map(line => {
+    const values = {
+      'Date encaissement': dateOnly(`${line.date}T12:00:00Z`),
+      'Client': `${line.count} achat(s) en ligne`,
+      'Prestation': `ChronoSphère — ${line.label}`,
+      'Source': 'ChronoSphère',
+      'Type': 'Vente en ligne',
+      'Moyen de paiement': 'PayPal',
+      'TTC': decimalCsv(line.gross_cents),
+      'HT': decimalCsv(line.net_cents),
+      'TVA': decimalCsv(line.vat_cents),
+      'Référence paiement': 'Total du jour',
+    }
+    return header.map(column => values[column] ?? '')
+  })
+}
+
 const ARTIST_AUTHOR_MICRO_BNC_ABATEMENT = 0.34
 const ARTIST_AUTHOR_SOCIAL_BASE_MULTIPLIER = 1.15
 const ARTIST_AUTHOR_URSSAF_RATE = 0.162
@@ -142,6 +162,7 @@ export default function AccountingSection({ practitionerId, session }) {
   const kdp = data?.kdp || {}
   // ChronoSphère (tirages, packs, MAX) s'ajoute à l'activité du mois.
   const [chronosphereCents, setChronosphereCents] = useState(0)
+  const [chronosphereData, setChronosphereData] = useState(null)
   const monthRange = useMemo(() => monthBounds(month), [month])
   const activityGeneratedCents = Number(data?.activity_generated_cents || 0) + chronosphereCents
   const kdpRoyaltyCents = Number(kdp.royalty_cents || 0)
@@ -154,7 +175,7 @@ export default function AccountingSection({ practitionerId, session }) {
   }, [month])
 
   function exportCsv() {
-    if (!entries.length) return
+    if (!entries.length && !chronosphereData?.daily_products?.length) return
     const rows = [
       ['Date encaissement', 'Client', 'Prestation', 'Type', 'Moyen de paiement', 'TTC', 'HT', 'TVA', 'Date rendez-vous', 'Référence paiement'],
       ...entries.map(entry => [
@@ -170,6 +191,7 @@ export default function AccountingSection({ practitionerId, session }) {
         entry.external_payment_ref || '',
       ]),
     ]
+    rows.push(...chronosphereCsvRows(rows[0], chronosphereData))
     const csv = '\uFEFF' + rows.map(row => row.map(csvCell).join(';')).join('\r\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -202,7 +224,7 @@ export default function AccountingSection({ practitionerId, session }) {
           <button
             type="button"
             onClick={exportCsv}
-            disabled={!entries.length || loading}
+            disabled={(!entries.length && !chronosphereData?.daily_products?.length) || loading}
             className="rounded-xl bg-deep px-4 py-2 font-georgia text-xs text-gold transition-colors hover:bg-deep/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Télécharger CSV (Excel)
@@ -278,7 +300,7 @@ export default function AccountingSection({ practitionerId, session }) {
             </div>
           ) : null}
 
-          <ChronosphereIncome session={session} from={monthRange.from} to={monthRange.to} onTotal={setChronosphereCents} />
+          <ChronosphereIncome session={session} from={monthRange.from} to={monthRange.to} onTotal={(cents, body) => { setChronosphereCents(cents); setChronosphereData(body) }} />
 
           {entries.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-gold/25 px-6 py-8 text-center">

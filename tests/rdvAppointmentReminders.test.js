@@ -172,11 +172,15 @@ test('J-3 means the Paris calendar day: Friday 14 h and Friday 8 h are both remi
   assert.equal(result.sent, 2)
 })
 
-function balanceDb({ bookings, paid = {}, services = SERVICES }) {
+function balanceDb({ bookings, paid = {}, services = SERVICES, finalize = () => ({ data: true, error: null }) }) {
   const rpcCalls = []
   const db = fakeDb({ bookings, paid, services })
   db.rpcCalls = rpcCalls
-  db.rpc = (name, args) => { rpcCalls.push({ name, args }); return Promise.resolve({ data: name === 'claim_rdv_balance_reminder' ? true : { ok: true }, error: null }) }
+  db.rpc = (name, args) => {
+    rpcCalls.push({ name, args })
+    if (name === 'finalize_rdv_balance_reminder') return Promise.resolve(finalize(rpcCalls.filter((c) => c.name === name).length))
+    return Promise.resolve({ data: name === 'claim_rdv_balance_reminder' ? true : null, error: null })
+  }
   return db
 }
 
@@ -214,4 +218,23 @@ test('never both: a visio with a balance gets the balance email only, even when 
   assert.equal(toVisio.length, 1)
   assert.match(toVisio[0].subject, /solde/)
   assert.deepEqual(sent.filter((m) => m.to === 'cab14@exemple.fr').length, 1)
+})
+
+test('balance email accepted but finalize fails once: finalize is retried at once, the email is never re-sent', async () => {
+  const visio = booking('ven14', { service_id: 'vis', starts_at: '2026-10-02T12:00:00Z', booked_price_cents: 7000, reservation_payment_cents: 2000 })
+  let emails = 0
+  const flaky = balanceDb({ bookings: [visio], paid: { ven14: 2000 }, finalize: (n) => (n === 1 ? { data: null, error: { message: 'db down' } } : { data: true, error: null }) })
+  const result = await withResend(async () => { emails += 1; return { ok: true, json: async () => ({ id: 'e1' }) } }, () => runDailySweep(flaky, NOW))
+  assert.deepEqual(result.counts, { reminder_sent: 1 })
+  assert.equal(emails, 1)
+  const names = flaky.rpcCalls.map((c) => c.name)
+  assert.deepEqual(names, ['claim_rdv_balance_reminder', 'finalize_rdv_balance_reminder', 'finalize_rdv_balance_reminder'])
+  const [first, second] = flaky.rpcCalls.filter((c) => c.name === 'finalize_rdv_balance_reminder')
+  assert.deepEqual(first.args, second.args) // même jeton, même e-mail, même heure d'envoi
+
+  // Finalisation impossible : signalée, mais jamais de libération du jeton (le lien envoyé reste valable).
+  const down = balanceDb({ bookings: [visio], paid: { ven14: 2000 }, finalize: () => ({ data: null, error: { message: 'db down' } }) })
+  const stuck = await withResend(async () => ({ ok: true, json: async () => ({ id: 'e2' }) }), () => runDailySweep(down, NOW))
+  assert.deepEqual(stuck.counts, { reminder_sent_unfinalized: 1 })
+  assert.ok(!down.rpcCalls.some((c) => c.name === 'release_rdv_balance_reminder'))
 })

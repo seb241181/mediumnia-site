@@ -36,7 +36,7 @@ test('a video with a balance due is left to the existing balance reminder (same 
   }
 })
 
-function fakeDb({ bookings = [], paid = {}, services = [], claimable = () => true, lookupError = null } = {}) {
+function fakeDb({ bookings = [], paid = {}, services = [], claimable = () => true, lookupError = null, markError = false } = {}) {
   const calls = { updates: [], windows: {} }
   return {
     calls,
@@ -57,6 +57,7 @@ function fakeDb({ bookings = [], paid = {}, services = [], claimable = () => tru
         maybeSingle() { return Promise.resolve({ data: claimable(filters.id) ? { id: filters.id } : null, error: null }) },
         then(resolve) {
           if (table === 'bookings' && !update) return resolve({ data: lookupError ? null : bookings, error: lookupError })
+          if (table === 'bookings' && update) return resolve({ data: null, error: markError && update.appointment_reminder_sent_at ? { message: 'db down' } : null })
           if (table === 'booking_services') return resolve({ data: services, error: null })
           if (table === 'rdv_financial_entries') return resolve({ data: Object.entries(paid).map(([booking_id, gross_cents]) => ({ booking_id, gross_cents, direction: 'income' })), error: null })
           return resolve({ data: null, error: null })
@@ -173,9 +174,9 @@ test('J-3 means the Paris calendar day: Friday 14 h and Friday 8 h are both remi
   assert.equal(result.sent, 2)
 })
 
-function balanceDb({ bookings, paid = {}, services = SERVICES, finalize = () => ({ data: true, error: null }) }) {
+function balanceDb({ bookings, paid = {}, services = SERVICES, finalize = () => ({ data: true, error: null }), markError = false }) {
   const rpcCalls = []
-  const db = fakeDb({ bookings, paid, services })
+  const db = fakeDb({ bookings, paid, services, markError })
   db.rpcCalls = rpcCalls
   db.rpc = (name, args) => {
     rpcCalls.push({ name, args })
@@ -321,4 +322,52 @@ test('SMS first names are transliterated to plain ASCII (Éléa → Elea)', () =
   const sms = buildAppointmentSms({ firstName: 'Éléa', startsAt: '2026-09-30T12:00:00Z' })
   assert.match(sms, /^Bonjour Elea, /)
   assert.match(sms, /^[\x20-\x7E]+$/) // uniquement de l'ASCII imprimable
+})
+
+test('marking the J-3 as covered fails, the client pays, then the general reminder runs → 0 email (balance_reminder_sent_at)', async () => {
+  const visio = booking('ven14', { service_id: 'vis', starts_at: '2026-10-02T12:00:00Z', booked_price_cents: 7000, reservation_payment_cents: 2000 })
+  // Rappel de solde envoyé et finalisé, mais la marque J-3 échoue (3 essais, erreurs Supabase non levées).
+  const db = balanceDb({ bookings: [visio], paid: { ven14: 2000 }, markError: true })
+  const sweep = await withResend(async () => ({ ok: true, json: async () => ({ id: 'e1' }) }), () => runDailySweep(db, NOW))
+  assert.deepEqual(sweep.counts, { reminder_sent: 1 })
+  assert.equal(db.calls.updates.filter((u) => u.values.appointment_reminder_sent_at).length, 3)
+
+  // Le client paie juste après : plus de solde dû, marque J-3 toujours vide, mais balance_reminder_sent_at renseigné.
+  const paidNow = { ...visio, balance_reminder_sent_at: '2026-09-29T07:00:05Z', appointment_reminder_sent_at: null }
+  let emails = 0
+  const general = await withResend(async () => { emails += 1; return { ok: true, json: async () => ({ id: 'x' }) } },
+    () => sendAppointmentReminders(fakeDb({ services: SERVICES, bookings: [paidNow], paid: { ven14: 7000 } }), NOW))
+  assert.equal(emails, 0)
+  assert.equal(general.balance, 1)
+
+  // Même chose si l'e-mail de solde est seulement en cours / incertain (réservation non libérée).
+  const pending = { ...visio, balance_reminder_claimed_at: '2026-09-29T07:00:00Z' }
+  await withResend(async () => { emails += 1; return { ok: true, json: async () => ({}) } },
+    () => sendAppointmentReminders(fakeDb({ services: SERVICES, bookings: [pending], paid: { ven14: 7000 } }), NOW))
+  assert.equal(emails, 0)
+})
+
+test('general J-3: ambiguous Resend answer keeps the mark (0 email next day); a certain error releases it for a retry', async () => {
+  const cabinet = booking('cab14', { starts_at: '2026-10-02T12:00:00Z' })
+
+  // Réseau coupé pendant l'envoi : marque conservée.
+  const uncertainDb = fakeDb({ services: SERVICES, bookings: [cabinet] })
+  const first = await withResend(async () => { throw new TypeError('fetch failed') }, () => sendAppointmentReminders(uncertainDb, NOW))
+  assert.deepEqual(first, { sent: 0, failed: 0, balance: 0, uncertain: 1 })
+  assert.ok(!uncertainDb.calls.updates.some((u) => u.values.appointment_reminder_sent_at === null))
+  // Le lendemain, la ligne est marquée : la requête ne la renvoie plus → 0 e-mail.
+  let emails = 0
+  const next = await withResend(async () => { emails += 1; return { ok: true, json: async () => ({}) } },
+    () => sendAppointmentReminders(fakeDb({ services: SERVICES, bookings: [] }), new Date('2026-09-30T07:00:00Z')))
+  assert.equal(emails, 0)
+  assert.deepEqual(next, { sent: 0 })
+
+  // Erreur certaine (500) : marque libérée, nouvel essai possible au passage suivant.
+  const certainDb = fakeDb({ services: SERVICES, bookings: [cabinet] })
+  const failed = await withResend(async () => ({ ok: false, status: 500 }), () => sendAppointmentReminders(certainDb, NOW))
+  assert.deepEqual(failed, { sent: 0, failed: 1, balance: 0 })
+  assert.deepEqual(certainDb.calls.updates.at(-1).values, { appointment_reminder_sent_at: null })
+  const retry = await withResend(async () => ({ ok: true, json: async () => ({ id: 'r' }) }),
+    () => sendAppointmentReminders(fakeDb({ services: SERVICES, bookings: [cabinet] }), new Date('2026-09-30T07:00:00Z')))
+  assert.equal(retry.sent, 1) // rattrapage J-2
 })

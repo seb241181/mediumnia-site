@@ -5,8 +5,8 @@
 ```bash
 createdb race
 psql -d race -f schema.sql                                   # tables minimales + rôles
-psql -d race -f ../../migrations/20260929090000_rdv_slot_offers.sql   # deux fois : idempotente
-psql -d race -f ../../migrations/20260929090000_rdv_slot_offers.sql
+psql -d race -f ../../migrations/20260929042858_rdv_slot_offers.sql   # deux fois : idempotente
+psql -d race -f ../../migrations/20260929042858_rdv_slot_offers.sql
 # + la vraie fonction claim_rdv_deposit_capture extraite de 20260916193000_rdv_arrhes_paypal_checkout.sql
 bash run.sh
 ```

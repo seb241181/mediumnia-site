@@ -38,9 +38,20 @@ for each row execute function public.set_updated_at();
 revoke all on table public.booking_slot_offers from public, anon, authenticated;
 grant select, insert, update on table public.booking_slot_offers to service_role;
 
+-- La réservation temporaire (paiement en cours) garde la trace du lien :
+-- annuler le lien empêche alors aussi la capture d'un paiement commencé.
+alter table public.rdv_booking_holds
+  add column if not exists slot_offer_id uuid references public.booking_slot_offers(id) on delete set null;
+
+create index if not exists rdv_booking_holds_slot_offer_idx
+  on public.rdv_booking_holds(slot_offer_id)
+  where slot_offer_id is not null;
+
 comment on table public.booking_slot_offers is
   'Créneaux proposés par lien personnel (urgences). Jeton stocké uniquement en empreinte SHA-256. Serveur uniquement.';
 
--- Vérification après exécution (attendu : 1) :
+-- Vérification après exécution (attendu : 1 puis 1) :
 -- select count(*) from information_schema.tables
 --   where table_schema = 'public' and table_name = 'booking_slot_offers';
+-- select count(*) from information_schema.columns
+--   where table_schema = 'public' and table_name = 'rdv_booking_holds' and column_name = 'slot_offer_id';

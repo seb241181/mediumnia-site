@@ -18,6 +18,9 @@ const ERRORS = {
   service_not_bookable: 'Cette prestation ne se réserve pas en ligne.',
   slot_in_past: 'Ce créneau est déjà passé ou commence dans moins de 30 minutes.',
   forbidden: 'Action réservée au praticien.',
+  slot_busy: 'Ce créneau est déjà occupé dans votre Google Agenda (un événement dont le titre ne commence pas par « Urgence »).',
+  slot_booked: 'Un rendez-vous est déjà pris sur ce créneau.',
+  google_calendar_unavailable: 'Google Agenda ne répond pas : impossible de vérifier le créneau. Réessayez dans un instant.',
 }
 
 const STATUS = { open: 'En attente', used: 'Réservé ✓', cancelled: 'Annulé', expired: 'Expiré' }
@@ -94,11 +97,13 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
 
   async function cancel(offer) {
     if (!window.confirm('Annuler ce lien ? La personne ne pourra plus réserver ce créneau avec.')) return
-    await fetch('/api/rdv-admin?action=slot-offers', {
+    const res = await fetch('/api/rdv-admin?action=slot-offers', {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify({ op: 'cancel', practitioner_id: practitionerId, id: offer.id }),
-    }).catch(() => {})
+    }).catch(() => null)
+    const body = res ? await res.json().catch(() => ({})) : {}
+    if (body.error === 'offer_payment_in_progress') window.alert('La personne est en train de payer : le lien ne peut plus être annulé. Vérifiez votre agenda dans quelques minutes.')
     loadOffers().catch(() => {})
   }
 
@@ -129,7 +134,7 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
           <div>
             <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Rendez-vous d’urgence</p>
             <h3 className="mt-1 font-georgia text-xl font-medium text-deep">Proposer un créneau</h3>
-            <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">La personne reçoit un lien personnel : elle réserve ce créneau et règle l’acompte en ligne. Vos événements « Urgence » de Google Agenda ne bloquent pas ce lien.</p>
+            <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">La personne reçoit un lien personnel : elle réserve ce créneau et règle l’acompte en ligne. Vos événements Google Agenda dont le titre commence par « Urgence » ne bloquent pas ce lien ; tout autre événement, si.</p>
           </div>
           <button type="button" onClick={onClose} className="text-mist hover:text-deep" aria-label="Fermer">✕</button>
         </div>

@@ -26,7 +26,7 @@ function paymentMessage(code) {
     balance_requires_full_payment: 'À moins de 48 heures du rendez-vous, le règlement intégral est requis pour une visioconférence.',
     offer_expired: 'Ce lien personnel a expiré. Demandez un nouveau lien à Sébastien.',
     offer_used: 'Ce créneau a déjà été réservé avec ce lien.',
-    offer_cancelled: 'Ce lien personnel a été annulé.',
+    offer_cancelled: 'Ce lien personnel a été annulé : aucun paiement n’a été pris.',
     offer_invalid: 'Ce lien personnel n’est pas valable.',
   }
   return messages[code] || 'Le paiement ne peut pas être préparé pour le moment. Réessayez dans quelques instants.'

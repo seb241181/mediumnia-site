@@ -1,59 +1,90 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { encrypt } from '../lib/googleOAuth.js'
 import {
   blockingEvents,
+  cancelSlotOffer,
   createSlotOffer,
   hashOfferToken,
   loadOpenOffer,
+  offerBlocksCapture,
   slotOfferUrl,
   validateOfferSlot,
 } from '../lib/rdvSlotOffers.js'
 
+// Clé factice, uniquement pour chiffrer un faux jeton Google dans ces tests.
+process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = '0'.repeat(64)
+
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 const OWNER = 'owner-1'
 const PRACT = 'pract-1'
+const NOW = new Date('2026-09-29T08:00:00Z')
 
-function fakeDb({ owner = OWNER, service = {}, offer = null } = {}) {
-  const calls = { inserts: [] }
+function fakeDb({ owner = OWNER, service = {}, offer = null, bookings = [], hold = null, holdsCapturing = [], payment = null } = {}) {
+  const calls = { inserts: [], updates: [] }
   return {
     calls,
     from(table) {
       const filters = {}
       let insert = null
+      let update = null
       const q = {
         select() { return q },
         eq(k, v) { filters[k] = v; return q },
+        in(k, v) { filters[k] = v; return q },
+        lt() { return q },
+        gt() { return q },
+        limit() { return q },
         insert(values) { insert = values; calls.inserts.push({ table, values }); return q },
+        update(values) { update = values; calls.updates.push({ table, values, filters }); return q },
         maybeSingle() {
-          if (table === 'booking_practitioners') return Promise.resolve({ data: filters.owner_id === owner ? { id: PRACT, slug: 'sebastien-seguin' } : null })
+          if (table === 'booking_practitioners') return Promise.resolve({ data: filters.owner_id === owner ? { id: PRACT, slug: 'sebastien-seguin', buffer_before_min: 0, buffer_after_min: 0 } : null })
           if (table === 'booking_services') return Promise.resolve({ data: { id: 'svc-1', title: 'Guidance', duration_min: 60, booking_mode: 'instant', reservation_payment_kind: 'arrhes', reservation_payment_cents: 2000, is_active: true, ...service } })
-          if (table === 'booking_slot_offers') return Promise.resolve({ data: offer && filters.token_hash === offer.token_hash ? offer : null })
+          if (table === 'booking_slot_offers') return Promise.resolve({ data: offer && (filters.token_hash === offer.token_hash || filters.id === offer.id) ? offer : null })
+          if (table === 'rdv_paypal_payments') return Promise.resolve({ data: payment })
+          if (table === 'rdv_booking_holds') return Promise.resolve({ data: hold })
           return Promise.resolve({ data: null })
         },
-        single() { return Promise.resolve({ data: { id: 'offer-1', ...insert, status: 'open' }, error: null }) },
+        single() {
+          if (table === 'booking_calendar_connections') return Promise.resolve({ data: { google_calendar_id: 'cal@group', access_token_enc: encrypt('tok'), token_expiry: '2099-01-01T00:00:00Z' } })
+          return Promise.resolve({ data: { id: 'offer-1', ...insert, status: 'open' }, error: null })
+        },
+        then(resolve) {
+          if (table === 'bookings') return resolve({ data: bookings, error: null })
+          if (table === 'rdv_booking_holds' && !update) return resolve({ data: holdsCapturing, error: null })
+          if (table === 'booking_slot_offers' && update) return resolve({ data: [{ id: 'o1' }], error: null })
+          return resolve({ data: [], error: null })
+        },
       }
       return q
     },
   }
 }
 
-const NOW = new Date('2026-09-29T08:00:00Z')
+function googleWith(items) {
+  const calls = []
+  const impl = async (url) => { calls.push(url); return { ok: true, json: async () => ({ items }) } }
+  impl.calls = calls
+  return impl
+}
 
-test('only events named « Urgence » (or free / cancelled ones) leave the slot open', () => {
-  assert.equal(blockingEvents([{ summary: 'URGENCE', status: 'confirmed' }, { summary: 'Créneau urgence', status: 'confirmed' }]).length, 0)
-  assert.equal(blockingEvents([{ summary: 'Dentiste', status: 'confirmed' }]).length, 1)
+const input = { practitioner_id: PRACT, service_id: 'svc-1', date: '2026-09-29', time: '14:00', validity_hours: 24, customer_first_name: ' Marie ' }
+
+test('only events whose title STARTS with « Urgence » (or free / cancelled ones) leave the slot open', () => {
+  assert.equal(blockingEvents([{ summary: 'URGENCE' }, { summary: 'Urgence - bloc réservé' }, { summary: '  urgence' }]).length, 0)
+  assert.equal(blockingEvents([{ summary: 'Consultation urgence Marie' }]).length, 1)
+  assert.equal(blockingEvents([{ summary: 'Urgences dentaires' }]).length, 1)
+  assert.equal(blockingEvents([{ summary: 'Dentiste' }]).length, 1)
   assert.equal(blockingEvents([{ summary: 'Perso', transparency: 'transparent' }, { summary: 'Annulé', status: 'cancelled' }]).length, 0)
-  assert.equal(blockingEvents([{ summary: 'Urgence' }, { summary: 'Rendez-vous client' }]).length, 1)
 })
 
-test('a personal link stores only the token fingerprint and expires before the appointment', async () => {
+test('a personal link checks the calendar first, stores only the token fingerprint and closes 15 min before', async () => {
   const db = fakeDb()
-  const result = await createSlotOffer({
-    db, userId: OWNER, now: NOW, env: {},
-    input: { practitioner_id: PRACT, service_id: 'svc-1', date: '2026-09-29', time: '14:00', validity_hours: 24, customer_first_name: ' Marie ' },
-  })
+  const fetchImpl = googleWith([{ summary: 'Urgence' }])
+  const result = await createSlotOffer({ db, userId: OWNER, now: NOW, env: {}, fetchImpl, input })
   assert.equal(result.status, 201)
+  assert.equal(fetchImpl.calls.length, 1)
   const token = decodeURIComponent(result.body.url.split('#offre=')[1])
   assert.match(result.body.url, /^https:\/\/mediumia\.fr\/rdv\/sebastien-seguin#offre=/)
   const row = db.calls.inserts[0].values
@@ -61,15 +92,24 @@ test('a personal link stores only the token fingerprint and expires before the a
   assert.ok(!JSON.stringify(row).includes(token))
   assert.equal(row.customer_first_name, 'Marie')
   assert.equal(row.starts_at, '2026-09-29T12:00:00.000Z') // 14 h à Paris (été)
-  assert.equal(row.expires_at, '2026-09-29T11:45:00.000Z') // 24 h > début du RDV : le lien s'arrête 15 min avant
+  assert.equal(row.expires_at, '2026-09-29T11:45:00.000Z')
+})
+
+test('no link for a busy slot: other Google event, existing appointment or Google down', async () => {
+  const busy = await createSlotOffer({ db: fakeDb(), userId: OWNER, now: NOW, fetchImpl: googleWith([{ summary: 'Consultation urgence Marie' }]), input })
+  assert.deepEqual([busy.status, busy.body.error], [409, 'slot_busy'])
+  const booked = await createSlotOffer({ db: fakeDb({ bookings: [{ id: 'b1' }] }), userId: OWNER, now: NOW, fetchImpl: googleWith([]), input })
+  assert.deepEqual([booked.status, booked.body.error], [409, 'slot_booked'])
+  const down = await createSlotOffer({ db: fakeDb(), userId: OWNER, now: NOW, fetchImpl: async () => ({ ok: false }), input })
+  assert.deepEqual([down.status, down.body.error], [503, 'google_calendar_unavailable'])
 })
 
 test('links are refused for someone else, a past slot or a service without deposit', async () => {
-  const input = { practitioner_id: PRACT, service_id: 'svc-1', date: '2026-09-29', time: '14:00', validity_hours: 24 }
-  assert.equal((await createSlotOffer({ db: fakeDb(), userId: 'intrus', input, now: NOW })).status, 403)
-  assert.equal((await createSlotOffer({ db: fakeDb(), userId: OWNER, input: { ...input, time: '09:00' }, now: NOW })).body.error, 'slot_in_past')
-  assert.equal((await createSlotOffer({ db: fakeDb({ service: { reservation_payment_cents: 0 } }), userId: OWNER, input, now: NOW })).body.error, 'service_without_deposit')
-  assert.equal((await createSlotOffer({ db: fakeDb(), userId: OWNER, input: { ...input, validity_hours: 1000 }, now: NOW })).body.error, 'invalid_validity')
+  const fetchImpl = googleWith([])
+  assert.equal((await createSlotOffer({ db: fakeDb(), userId: 'intrus', input, now: NOW, fetchImpl })).status, 403)
+  assert.equal((await createSlotOffer({ db: fakeDb(), userId: OWNER, input: { ...input, time: '09:00' }, now: NOW, fetchImpl })).body.error, 'slot_in_past')
+  assert.equal((await createSlotOffer({ db: fakeDb({ service: { reservation_payment_cents: 0 } }), userId: OWNER, input, now: NOW, fetchImpl })).body.error, 'service_without_deposit')
+  assert.equal((await createSlotOffer({ db: fakeDb(), userId: OWNER, input: { ...input, validity_hours: 1000 }, now: NOW, fetchImpl })).body.error, 'invalid_validity')
 })
 
 test('an expired, used or cancelled link cannot be used, and only for its exact slot', async () => {
@@ -80,10 +120,30 @@ test('an expired, used or cancelled link cannot be used, and only for its exact 
   assert.equal((await loadOpenOffer(fakeDb({ offer: { ...base, status: 'cancelled' } }), token, NOW)).error, 'offer_cancelled')
   assert.equal((await loadOpenOffer(fakeDb({ offer: base }), token, new Date('2026-09-29T11:30:00Z'))).error, 'offer_expired')
   assert.equal((await loadOpenOffer(fakeDb({ offer: base }), 'court', NOW)).error, 'offer_invalid')
-  await assert.rejects(
-    validateOfferSlot({ supabase: fakeDb({ offer: { ...base, expires_at: '2099-01-01T00:00:00Z', starts_at: '2099-01-02T12:00:00.000Z' } }), practitioner: { id: PRACT, is_active: true }, service: { id: 'svc-1', duration_min: 60 }, date: '2099-01-02', time: '15:00', token }),
-    /offer_invalid/,
-  )
+  const future = { ...base, expires_at: '2099-01-01T00:00:00Z', starts_at: '2099-01-02T14:00:00.000Z' }
+  const args = { practitioner: { id: PRACT, is_active: true }, service: { id: 'svc-1', duration_min: 60 }, date: '2099-01-02', token }
+  await assert.rejects(validateOfferSlot({ supabase: fakeDb({ offer: future }), ...args, time: '16:00', fetchImpl: googleWith([]) }), /offer_invalid/)
+  await assert.rejects(validateOfferSlot({ supabase: fakeDb({ offer: future }), ...args, time: '15:00', fetchImpl: googleWith([{ summary: 'Dentiste' }]) }), /slot_unavailable/)
+  const ok = await validateOfferSlot({ supabase: fakeDb({ offer: future }), ...args, time: '15:00', fetchImpl: googleWith([{ summary: 'Urgence' }]) })
+  assert.equal(ok.offerId, 'o1')
+})
+
+test('cancelling a link stops a payment already started, but not a capture in progress', async () => {
+  const offer = { id: 'o1', status: 'cancelled', starts_at: '2099-01-02T14:00:00.000Z' }
+  const pending = { hold: { status: 'payment_pending', slot_offer_id: 'o1' } }
+  assert.equal(await offerBlocksCapture(fakeDb({ offer, payment: pending }), 'ORDER1'), 'offer_cancelled')
+  assert.equal(await offerBlocksCapture(fakeDb({ offer: { ...offer, status: 'open' }, payment: pending }), 'ORDER1'), null)
+  assert.equal(await offerBlocksCapture(fakeDb({ offer, payment: { hold: { status: 'payment_capturing', slot_offer_id: 'o1' } } }), 'ORDER1'), null)
+  assert.equal(await offerBlocksCapture(fakeDb({ offer, payment: { hold: { status: 'payment_pending', slot_offer_id: null } } }), 'ORDER1'), null)
+
+  const inProgress = await cancelSlotOffer({ db: fakeDb({ holdsCapturing: [{ id: 'h1' }] }), userId: OWNER, input: { id: 'o1', practitioner_id: PRACT } })
+  assert.deepEqual([inProgress.status, inProgress.body.error], [409, 'offer_payment_in_progress'])
+  const db = fakeDb()
+  const cancelled = await cancelSlotOffer({ db, userId: OWNER, input: { id: 'o1', practitioner_id: PRACT } })
+  assert.equal(cancelled.status, 200)
+  const release = db.calls.updates.find((u) => u.table === 'rdv_booking_holds')
+  assert.deepEqual(release.values, { status: 'expired' })
+  assert.equal(release.filters.status, 'payment_pending')
 })
 
 test('preview links stay on the preview deployment', () => {
@@ -92,9 +152,13 @@ test('preview links stay on the preview deployment', () => {
 
 test('payment, booking page and shortcut are wired to the personal link', () => {
   for (const file of ['lib/rdvDepositApiHandler.js', 'lib/rdvFullPaymentApiHandler.js']) {
-    assert.match(read(file), /slot = offer_token\s+\? await validateOfferSlot/)
+    const src = read(file)
+    assert.match(src, /slot = offer_token\s+\? await validateOfferSlot/)
+    assert.match(src, /await attachOfferToHold\(supabase, holdResult\.hold_id, slot\.offerId\)/)
   }
-  assert.match(read('lib/rdvDepositApiHandler.js'), /await markOfferUsed\(supabase, booking\)/)
+  const deposit = read('lib/rdvDepositApiHandler.js')
+  assert.ok(deposit.indexOf('offerBlocksCapture(supabase, orderId)') < deposit.indexOf("rpc('claim_rdv_deposit_capture'"))
+  assert.match(deposit, /await markOfferUsed\(supabase, booking\)/)
   assert.match(read('api/rdv-book.js'), /if \(action === 'offer'\) \{\s+if \(req\.method !== 'POST'\)/)
   const page = read('src/components/rdv/RdvPublic.jsx')
   assert.match(page, /window\.location\.hash\.slice\(1\)\)\.get\('offre'\)/)
@@ -105,4 +169,5 @@ test('payment, booking page and shortcut are wired to the personal link', () => 
   const sql = read('supabase/migrations/20260929090000_rdv_slot_offers.sql')
   assert.match(sql, /revoke all on table public\.booking_slot_offers from public, anon, authenticated/)
   assert.match(sql, /check \(expires_at <= starts_at\)/)
+  assert.match(sql, /add column if not exists slot_offer_id uuid references public\.booking_slot_offers\(id\)/)
 })

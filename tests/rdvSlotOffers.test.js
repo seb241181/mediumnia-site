@@ -61,7 +61,7 @@ test('a personal link stores only the token fingerprint and expires before the a
   assert.ok(!JSON.stringify(row).includes(token))
   assert.equal(row.customer_first_name, 'Marie')
   assert.equal(row.starts_at, '2026-09-29T12:00:00.000Z') // 14 h à Paris (été)
-  assert.equal(row.expires_at, row.starts_at) // 24 h > début du RDV : le lien s'arrête au début
+  assert.equal(row.expires_at, '2026-09-29T11:45:00.000Z') // 24 h > début du RDV : le lien s'arrête 15 min avant
 })
 
 test('links are refused for someone else, a past slot or a service without deposit', async () => {

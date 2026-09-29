@@ -16,7 +16,7 @@ const ERRORS = {
   invalid_offer: 'Choisissez la prestation, le jour et l’heure.',
   service_without_deposit: 'Cette prestation ne se règle pas par acompte en ligne.',
   service_not_bookable: 'Cette prestation ne se réserve pas en ligne.',
-  slot_in_past: 'Ce créneau est déjà passé (ou commence dans moins de 15 minutes).',
+  slot_in_past: 'Ce créneau est déjà passé ou commence dans moins de 30 minutes.',
   forbidden: 'Action réservée au praticien.',
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import DailyPayments from './DailyPayments.jsx'
 import ChronosphereIncome from './ChronosphereIncome.jsx'
+import SlotOfferModal from './SlotOfferModal.jsx'
 
 function authHeader(session) {
   return session ? { Authorization: `Bearer ${session.access_token}` } : {}
@@ -150,6 +151,19 @@ export default function AccountingSection({ practitionerId, session }) {
 
   const entries = data?.entries || []
 
+  // Rendez-vous d'urgence : mediumia.fr/rdv#proposer, ou le lien de la fenêtre
+  // d'encaissement, ouvre « Proposer un créneau ».
+  const [slotOfferOpen, setSlotOfferOpen] = useState(false)
+  useEffect(() => {
+    const open = () => setSlotOfferOpen(true)
+    window.addEventListener('mediumia:slot-offer', open)
+    if (window.location.hash === '#proposer') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      setSlotOfferOpen(true)
+    }
+    return () => window.removeEventListener('mediumia:slot-offer', open)
+  }, [])
+
   // Raccourci téléphone : mediumia.fr/rdv#encaisser ouvre directement
   // la fenêtre de saisie manuelle (son écouteur est déclaré juste avant).
   useEffect(() => {
@@ -158,6 +172,7 @@ export default function AccountingSection({ practitionerId, session }) {
     document.getElementById('mediumia-accounting')?.scrollIntoView({ block: 'start' })
     window.dispatchEvent(new CustomEvent('mediumia:manual-payment', { detail: { bookingId: null } }))
   }, [])
+
   const totals = data?.totals || {}
   const kdp = data?.kdp || {}
   // ChronoSphère (tirages, packs, MAX) s'ajoute à l'activité du mois.
@@ -231,6 +246,8 @@ export default function AccountingSection({ practitionerId, session }) {
           </button>
         </div>
       </div>
+
+      {slotOfferOpen && <SlotOfferModal practitionerId={practitionerId} session={session} onClose={() => setSlotOfferOpen(false)} />}
 
       <DailyPayments practitionerId={practitionerId} session={session} onSaved={() => setDayNonce(value => value + 1)} />
 

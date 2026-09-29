@@ -37,6 +37,7 @@ import { decrypt, refreshGoogleToken, encrypt, parisUTCOffsetMs } from '../lib/g
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
 import { findUsableGiftCard, recordGiftRedemption, reserveGiftBalance, restoreGiftBalance, restoreGiftForCancelledBooking } from '../lib/giftCards.js'
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
+import { getPublicSlotOffer } from '../lib/rdvSlotOffers.js'
 import { deleteBookingFromGoogleCalendar, syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 import {
   bookingCancellationUrl,
@@ -546,6 +547,13 @@ export default async function handler(req, res) {
   const supabase = getSupabaseAdmin()
   const action = req.query?.action || req.body?.action
   if (action === 'cancel') return handleCancellation(req, res, supabase)
+  // Lien personnel (créneau d'urgence) : le jeton voyage dans le corps de la
+  // requête, jamais dans une adresse.
+  if (action === 'offer') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+    const result = await getPublicSlotOffer({ db: supabase, token: req.body?.token, practitionerSlug: String(req.body?.practitioner_slug || '') })
+    return res.status(result.status).json(result.body)
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   // ── 1. Validation des champs ──────────────────────────────────────────────

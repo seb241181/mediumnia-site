@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { buildAppointmentReminderEmail, handledByBalanceReminder, sendAppointmentReminders } from '../lib/rdvAppointmentReminders.js'
-import { SMS_PROVIDERS, buildAppointmentSms, normalizeFrenchMobile, sendAppointmentSmsReminders } from '../lib/rdvSmsReminders.js'
+import { SMS_PROVIDERS, asciiFirstName, buildAppointmentSms, normalizeFrenchMobile, sendAppointmentSmsReminders } from '../lib/rdvSmsReminders.js'
+import { sendEmail } from '../lib/transactionalEmail.js'
 import { balanceSweepUpperBound, reminderWindow } from '../lib/parisReminderDays.js'
 import { runDailySweep } from '../lib/rdvBalanceCronHandler.js'
 
@@ -272,4 +273,52 @@ test('a released (failed) attempt is retried normally; a claim younger than 15 m
   assert.deepEqual(result.counts, { none: 1 })
   assert.equal(deliveries, 0)
   assert.deepEqual(inProgress.rpcCalls, [])
+})
+
+test('Resend network answer lost (maybe accepted): claim and token kept, next day 0 new email', async () => {
+  const visio = booking('ven14', { service_id: 'vis', starts_at: '2026-10-02T12:00:00Z', booked_price_cents: 7000, reservation_payment_cents: 2000 })
+  let attempts = 0
+  const tuesday = balanceDb({ bookings: [visio], paid: { ven14: 2000 } })
+  const first = await withResend(async () => { attempts += 1; throw new TypeError('fetch failed') }, () => runDailySweep(tuesday, NOW))
+  assert.deepEqual(first.counts, { reminder_send_uncertain: 1 })
+  assert.ok(!tuesday.rpcCalls.some((c) => c.name === 'release_rdv_balance_reminder')) // jeton conservé
+  const claim = tuesday.rpcCalls.find((c) => c.name === 'claim_rdv_balance_reminder').args
+
+  const leftOver = { ...visio, balance_reminder_claimed_at: claim.p_now, balance_payment_token_hash: claim.p_token_hash, balance_reminder_sent_at: null }
+  const wednesday = balanceDb({ bookings: [leftOver], paid: { ven14: 2000 } })
+  const second = await withResend(async () => { attempts += 1; return { ok: true, json: async () => ({ id: 'e2' }) } }, () => runDailySweep(wednesday, new Date('2026-09-30T07:00:00Z')))
+  assert.deepEqual(second.counts, { reminder_reconciled: 1 })
+  assert.equal(attempts, 1) // aucune nouvelle requête d'envoi
+  assert.equal(wednesday.rpcCalls[0].args.p_token_hash, claim.p_token_hash)
+})
+
+test('sendEmail flags ambiguous outcomes: network exception and Resend 409 are « uncertain », a plain 500 is not', async () => {
+  const run = (impl) => withResend(impl, () => sendEmail({ to: 'a@b.fr', subject: 's', html: '<p>x</p>', text: 'x', idempotencyKey: 'k' }))
+  assert.deepEqual(await run(async () => { throw new TypeError('fetch failed') }), { status: 'error', uncertain: true })
+  assert.deepEqual(await run(async () => ({ ok: false, status: 409 })), { status: 'error', httpStatus: 409, uncertain: true })
+  assert.deepEqual(await run(async () => ({ ok: false, status: 500 })), { status: 'error', httpStatus: 500 })
+})
+
+test('a finalized (or reconciled) balance email also marks the general J-3 reminder as done', async () => {
+  const visio = booking('ven14', { service_id: 'vis', starts_at: '2026-10-02T12:00:00Z', booked_price_cents: 7000, reservation_payment_cents: 2000 })
+  const db = balanceDb({ bookings: [visio], paid: { ven14: 2000 } })
+  const result = await withResend(async () => ({ ok: true, json: async () => ({ id: 'e1' }) }), () => runDailySweep(db, NOW))
+  assert.deepEqual(result.counts, { reminder_sent: 1 })
+  const marked = db.calls.updates.find((u) => 'appointment_reminder_sent_at' in u.values)
+  assert.ok(marked && marked.values.appointment_reminder_sent_at)
+
+  const reconciled = balanceDb({ bookings: [{ ...visio, balance_reminder_claimed_at: '2026-09-28T07:00:00.000Z', balance_payment_token_hash: 'b'.repeat(64) }], paid: { ven14: 2000 } })
+  await withResend(async () => ({ ok: true, json: async () => ({}) }), () => runDailySweep(reconciled, NOW))
+  assert.ok(reconciled.calls.updates.some((u) => 'appointment_reminder_sent_at' in u.values))
+})
+
+test('SMS first names are transliterated to plain ASCII (Éléa → Elea)', () => {
+  assert.equal(asciiFirstName('Éléa'), 'Elea')
+  assert.equal(asciiFirstName('Maëlys Durand'), 'Maelys')
+  assert.equal(asciiFirstName('Chloé-Anaïs'), 'Chloe-Anais')
+  assert.equal(asciiFirstName('Lætitia'), 'Laetitia')
+  assert.equal(asciiFirstName('  '), '')
+  const sms = buildAppointmentSms({ firstName: 'Éléa', startsAt: '2026-09-30T12:00:00Z' })
+  assert.match(sms, /^Bonjour Elea, /)
+  assert.match(sms, /^[\x20-\x7E]+$/) // uniquement de l'ASCII imprimable
 })

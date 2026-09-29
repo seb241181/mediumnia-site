@@ -196,3 +196,12 @@ test('payment, booking page and shortcut are wired to the personal link', () => 
   assert.match(sql, /check \(expires_at <= starts_at\)/)
   assert.match(sql, /add column if not exists slot_offer_id uuid references public\.booking_slot_offers\(id\)/)
 })
+
+test('the #proposer home-screen shortcut keeps its # while the window is open (iPhone saves the current address)', () => {
+  const section = read('src/components/rdv/AccountingSection.jsx')
+  assert.match(section, /if \(window\.location\.hash === '#proposer'\) setSlotOfferOpen\(true\)/)
+  assert.doesNotMatch(section, /history\.replaceState/)
+  const modal = read('src/components/rdv/SlotOfferModal.jsx')
+  assert.match(modal, /const closeModal = \(\) => \{ clearShortcutHash\('#proposer'\); onClose\?\.\(\) \}/)
+  assert.doesNotMatch(modal, /onClick=\{onClose\}/)
+})

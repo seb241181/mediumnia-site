@@ -157,18 +157,18 @@ export default function AccountingSection({ practitionerId, session }) {
   useEffect(() => {
     const open = () => setSlotOfferOpen(true)
     window.addEventListener('mediumia:slot-offer', open)
-    if (window.location.hash === '#proposer') {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
-      setSlotOfferOpen(true)
-    }
+    // Le « #proposer » reste dans l'adresse tant que la fenêtre est ouverte
+    // (raccourci d'écran d'accueil) : SlotOfferModal le retire à la fermeture.
+    if (window.location.hash === '#proposer') setSlotOfferOpen(true)
     return () => window.removeEventListener('mediumia:slot-offer', open)
   }, [])
 
   // Raccourci téléphone : mediumia.fr/rdv#encaisser ouvre directement
   // la fenêtre de saisie manuelle (son écouteur est déclaré juste avant).
   useEffect(() => {
+    // Le « #encaisser » reste dans l'adresse tant que la fenêtre est ouverte :
+    // ManualPaymentModal le retire à la fermeture.
     if (window.location.hash !== '#encaisser') return
-    window.history.replaceState(null, '', window.location.pathname + window.location.search)
     document.getElementById('mediumia-accounting')?.scrollIntoView({ block: 'start' })
     window.dispatchEvent(new CustomEvent('mediumia:manual-payment', { detail: { bookingId: null } }))
   }, [])

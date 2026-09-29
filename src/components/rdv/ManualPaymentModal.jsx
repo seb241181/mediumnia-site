@@ -27,7 +27,17 @@ const PAYMENT_METHODS = [
   ['other', 'Autre'],
 ]
 
+// Raccourcis téléphone : le « #… » reste dans l'adresse tant que la fenêtre est
+// ouverte (l'iPhone l'enregistre ainsi sur l'écran d'accueil) et n'est retiré
+// qu'à la fermeture.
+function clearShortcutHash(hash) {
+  if (typeof window !== 'undefined' && window.location.hash === hash) {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+  }
+}
+
 export default function ManualPaymentModal({ practitionerId, session, services = [], upcomingBookings = [], initialBookingId = null, onClose, onSaved }) {
+  const closeModal = () => { clearShortcutHash('#encaisser'); onClose?.() }
   const initialMode = initialBookingId ? 'booking' : 'reservio'
   const [mode, setMode] = useState(initialMode)
   const [bookingId, setBookingId] = useState(initialBookingId || '')
@@ -146,7 +156,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
       }
       window.dispatchEvent(new CustomEvent('mediumia:finance-saved'))
       onSaved?.(body)
-      onClose?.()
+      closeModal()
     } catch (err) {
       setError(err.message || 'encaissement_impossible')
     } finally {
@@ -164,13 +174,13 @@ export default function ManualPaymentModal({ practitionerId, session, services =
             <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Pour un règlement sur place ou un rendez-vous encore géré dans Reservio.</p>
             <button
               type="button"
-              onClick={() => { onClose?.(); window.dispatchEvent(new CustomEvent('mediumia:slot-offer')) }}
+              onClick={() => { closeModal(); window.dispatchEvent(new CustomEvent('mediumia:slot-offer')) }}
               className="mt-2 font-georgia text-xs font-semibold text-deep underline decoration-gold/50 underline-offset-4"
             >
               Proposer un créneau d’urgence (lien + acompte) →
             </button>
           </div>
-          <button type="button" onClick={onClose} className="text-mist hover:text-deep">✕</button>
+          <button type="button" onClick={closeModal} className="text-mist hover:text-deep">✕</button>
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2 rounded-xl border border-gold/20 bg-white/50 p-1.5">
@@ -264,7 +274,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
             <button type="submit" disabled={saving || loadingContext} className="flex-1 rounded-xl bg-deep px-4 py-3 font-georgia text-sm text-gold hover:bg-deep/90 disabled:opacity-50">
               {saving ? 'Enregistrement…' : 'Enregistrer l’encaissement'}
             </button>
-            <button type="button" onClick={onClose} className="rounded-xl border border-gold/25 px-5 py-3 font-georgia text-sm text-mist hover:text-deep">Annuler</button>
+            <button type="button" onClick={closeModal} className="rounded-xl border border-gold/25 px-5 py-3 font-georgia text-sm text-mist hover:text-deep">Annuler</button>
           </div>
         </form>
       </div>

@@ -88,7 +88,13 @@ test('phone shortcut /rdv#encaisser opens the manual payment window after its li
   const listenerIndex = section.indexOf("window.addEventListener('mediumia:manual-payment'")
   const shortcutIndex = section.indexOf("window.location.hash !== '#encaisser'")
   assert.ok(listenerIndex >= 0 && shortcutIndex > listenerIndex)
-  assert.match(section, /history\.replaceState/)
+  // Le « #encaisser » ne doit PAS être retiré à l'ouverture : sinon l'iPhone
+  // enregistre /rdv sans le # sur l'écran d'accueil et le raccourci n'ouvre plus
+  // la fenêtre. La fenêtre le retire à sa fermeture.
+  assert.doesNotMatch(section, /history\.replaceState/)
+  const modal = fs.readFileSync('src/components/rdv/ManualPaymentModal.jsx', 'utf8')
+  assert.match(modal, /const closeModal = \(\) => \{ clearShortcutHash\('#encaisser'\); onClose\?\.\(\) \}/)
+  assert.doesNotMatch(modal, /onClick=\{onClose\}/)
 })
 
 test('the caisse always shows the "+ Ajouter un encaissement" button', () => {

@@ -38,7 +38,17 @@ export function offerMessage({ firstName, serviceTitle, startsAt, url }) {
   return `${hello} je vous propose un rendez-vous « ${serviceTitle} » le ${when(startsAt)}. Pour le réserver et régler l’acompte, c’est ici : ${url}\nSébastien — MediumIA`
 }
 
+// Raccourcis téléphone : le « #… » reste dans l'adresse tant que la fenêtre est
+// ouverte (l'iPhone l'enregistre ainsi sur l'écran d'accueil) et n'est retiré
+// qu'à la fermeture.
+function clearShortcutHash(hash) {
+  if (typeof window !== 'undefined' && window.location.hash === hash) {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
+  }
+}
+
 export default function SlotOfferModal({ practitionerId, session, onClose }) {
+  const closeModal = () => { clearShortcutHash('#proposer'); onClose?.() }
   const [services, setServices] = useState([])
   const [offers, setOffers] = useState([])
   const [serviceId, setServiceId] = useState('')
@@ -136,7 +146,7 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
             <h3 className="mt-1 font-georgia text-xl font-medium text-deep">Proposer un créneau</h3>
             <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">La personne reçoit un lien personnel : elle réserve ce créneau et règle l’acompte en ligne. Vos événements Google Agenda dont le titre commence par « Urgence » ne bloquent pas ce lien ; tout autre événement, si.</p>
           </div>
-          <button type="button" onClick={onClose} className="text-mist hover:text-deep" aria-label="Fermer">✕</button>
+          <button type="button" onClick={closeModal} className="text-mist hover:text-deep" aria-label="Fermer">✕</button>
         </div>
 
         {created ? (

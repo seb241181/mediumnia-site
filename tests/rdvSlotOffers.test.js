@@ -157,7 +157,7 @@ test('cancel and capture go through the database transactions (no JS race)', asy
 })
 
 test('the database guard covers cancel ↔ capture and expiry (SQL scenarios A–E)', () => {
-  const sql = read('supabase/migrations/20260929090000_rdv_slot_offers.sql')
+  const sql = read('supabase/migrations/20260929042858_rdv_slot_offers.sql')
   assert.match(sql, /before update of status on public\.rdv_booking_holds\s+for each row execute function public\.guard_slot_offer_capture\(\)/)
   assert.match(sql, /v_offer\.expires_at <= now\(\) or v_offer\.starts_at <= now\(\) then raise exception 'slot_offer_expired'/)
   assert.match(sql, /select \* into v_offer from public\.booking_slot_offers where id = new\.slot_offer_id for update/)
@@ -191,7 +191,7 @@ test('payment, booking page and shortcut are wired to the personal link', () => 
   assert.match(read('src/components/rdv/RdvDepositCheckout.jsx'), /offer_token: offerToken/)
   assert.match(read('src/components/rdv/AccountingSection.jsx'), /window\.location\.hash === '#proposer'/)
   assert.match(read('src/components/rdv/ManualPaymentModal.jsx'), /mediumia:slot-offer/)
-  const sql = read('supabase/migrations/20260929090000_rdv_slot_offers.sql')
+  const sql = read('supabase/migrations/20260929042858_rdv_slot_offers.sql')
   assert.match(sql, /revoke all on table public\.booking_slot_offers from public, anon, authenticated/)
   assert.match(sql, /check \(expires_at <= starts_at\)/)
   assert.match(sql, /add column if not exists slot_offer_id uuid references public\.booking_slot_offers\(id\)/)

@@ -24,6 +24,10 @@ function paymentMessage(code) {
     invalid_modality: 'Le règlement de la totalité en ligne n’est pas encore disponible pour ce rendez-vous : vous pouvez réserver avec les arrhes.',
     payment_choice_locked: 'Ce paiement a déjà été préparé. Rechargez la page pour changer de mode de règlement.',
     balance_requires_full_payment: 'À moins de 48 heures du rendez-vous, le règlement intégral est requis pour une visioconférence.',
+    offer_expired: 'Ce lien personnel a expiré. Demandez un nouveau lien à Sébastien.',
+    offer_used: 'Ce créneau a déjà été réservé avec ce lien.',
+    offer_cancelled: 'Ce lien personnel a été annulé : aucun paiement n’a été pris.',
+    offer_invalid: 'Ce lien personnel n’est pas valable.',
   }
   return messages[code] || 'Le paiement ne peut pas être préparé pour le moment. Réessayez dans quelques instants.'
 }
@@ -38,6 +42,7 @@ export default function RdvDepositCheckout({
   checkoutId,
   onComplete,
   onUnavailable,
+  offerToken = null,
 }) {
   const containerRef = useRef(null)
   const [config, setConfig] = useState(null)
@@ -90,7 +95,8 @@ export default function RdvDepositCheckout({
     client_checkout_id: effectiveCheckoutId,
     terms_accepted: true,
     early_performance_requested: true,
-  }), [practitionerSlug, service?.slug, dateStr, time, selectedModality, customer, effectiveCheckoutId])
+    ...(offerToken ? { offer_token: offerToken } : {}),
+  }), [practitionerSlug, service?.slug, dateStr, time, selectedModality, customer, effectiveCheckoutId, offerToken])
 
   useEffect(() => {
     let active = true

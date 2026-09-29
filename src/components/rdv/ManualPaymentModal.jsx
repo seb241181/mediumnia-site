@@ -162,6 +162,13 @@ export default function ManualPaymentModal({ practitionerId, session, services =
             <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Comptabilité</p>
             <h3 className="mt-1 font-georgia text-xl font-medium text-deep">Ajouter un encaissement</h3>
             <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Pour un règlement sur place ou un rendez-vous encore géré dans Reservio.</p>
+            <button
+              type="button"
+              onClick={() => { onClose?.(); window.dispatchEvent(new CustomEvent('mediumia:slot-offer')) }}
+              className="mt-2 font-georgia text-xs font-semibold text-deep underline decoration-gold/50 underline-offset-4"
+            >
+              Proposer un créneau d’urgence (lien + acompte) →
+            </button>
           </div>
           <button type="button" onClick={onClose} className="text-mist hover:text-deep">✕</button>
         </div>

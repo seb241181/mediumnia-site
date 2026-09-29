@@ -69,6 +69,14 @@ function calendarLinks({ title, date, time, durationMin, details }) {
 
 // ── Step indicator ───────────────────────────────────────────────────────────
 
+const OFFER_ERRORS = {
+  offer_invalid: 'Ce lien personnel n’est pas valable.',
+  offer_expired: 'Ce lien personnel a expiré : demandez un nouveau lien à Sébastien.',
+  offer_used: 'Ce créneau a déjà été réservé avec ce lien.',
+  offer_cancelled: 'Ce lien personnel a été annulé.',
+  offer_network: 'Le créneau proposé n’a pas pu être chargé. Rechargez la page.',
+}
+
 function StepBar({ step }) {
   const labels = ['Prestation', 'Date & Heure', 'Coordonnées', 'Paiement']
   return (
@@ -866,6 +874,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const [bookingError, setBookingError]     = useState(null)
 
   const [dayAvail, setDayAvail] = useState({})
+  // Lien personnel (créneau d'urgence) : mediumia.fr/rdv/<slug>#offre=<jeton>
+  const [offer, setOffer] = useState(null)
+  const [offerError, setOfferError] = useState(null)
   const google = useGoogleReviews()
 
   const flowRef = useRef(null)
@@ -884,6 +895,31 @@ export default function RdvPublic({ onBack, onNavigate }) {
         setConfigLoading(false)
       })
   }, [slug])
+
+  // Le jeton est lu dans le fragment de l'adresse puis envoyé seulement à notre API.
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.hash.slice(1)).get('offre')
+    if (!token) return
+    fetch('/api/rdv-book?action=offer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, practitioner_slug: slug }),
+    })
+      .then(async r => ({ ok: r.ok, body: await r.json().catch(() => ({})) }))
+      .then(({ ok, body }) => (ok ? setOffer({ ...body, token }) : setOfferError(body.error || 'offer_invalid')))
+      .catch(() => setOfferError('offer_network'))
+  }, [slug])
+
+  // Créneau proposé : prestation, jour et heure déjà choisis, on passe aux coordonnées.
+  useEffect(() => {
+    if (!offer || !configData?.services) return
+    const raw = configData.services.find(s => s.slug === offer.service_slug)
+    if (!raw) { setOfferError('offer_invalid'); return }
+    setService(formatService(raw))
+    setDate(new Date(`${offer.date}T12:00:00`))
+    setTime(offer.time)
+    setStep(2)
+  }, [offer, configData])
 
   // ── Chargement ──────────────────────────────────────────────────────────────
 
@@ -1259,11 +1295,28 @@ export default function RdvPublic({ onBack, onNavigate }) {
               </div>
             )}
 
+            {offerError && (
+              <div className="mb-6 rounded-2xl border border-gold/30 bg-gold/10 px-5 py-4 font-georgia text-sm text-deep">
+                {OFFER_ERRORS[offerError] || OFFER_ERRORS.offer_invalid} Vous pouvez aussi choisir un autre créneau ci-dessous.
+              </div>
+            )}
+            {offer && typeof step === 'number' && step >= 2 && step < 4 && service && (
+              <div className="mb-6 rounded-2xl border border-gold/35 bg-white/80 px-5 py-4">
+                <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Créneau réservé pour vous{offer.first_name ? ` · ${offer.first_name}` : ''}</p>
+                <p className="mt-1 font-georgia text-base font-medium text-deep">
+                  {service.displayTitle || service.title} · {fmt(date)} à {time.replace(':', ' h ')}
+                </p>
+                <p className="mt-1 font-georgia text-xs text-mist">
+                  Proposé par Sébastien · lien valable jusqu’au {new Date(offer.expires_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}
+                </p>
+              </div>
+            )}
+
             {/* Step 2 — Contact form */}
             {step === 2 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <button onClick={() => setStep(1)} className="font-georgia text-xs text-mist hover:text-deep">← Date & Heure</button>
+                  {!offer && <button onClick={() => setStep(1)} className="font-georgia text-xs text-mist hover:text-deep">← Date & Heure</button>}
                   <h2 className="font-georgia font-medium text-xl">Vos coordonnées</h2>
                 </div>
                 <ContactForm
@@ -1294,8 +1347,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   selectedModality={selectedModality}
                   customer={paymentCustomer}
                   checkoutId={checkoutId}
+                  offerToken={offer?.token || null}
                   onComplete={handlePaidComplete}
-                  onUnavailable={() => { setBookingError('Ce créneau n’est plus disponible.'); setTime(null); setStep(1) }}
+                  onUnavailable={() => { setBookingError('Ce créneau n’est plus disponible.'); if (offer) return; setTime(null); setStep(1) }}
                 />
               </div>
             )}

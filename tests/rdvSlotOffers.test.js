@@ -9,6 +9,7 @@ import {
   hashOfferToken,
   loadOpenOffer,
   offerBlocksCapture,
+  offerErrorFromClaim,
   slotOfferUrl,
   validateOfferSlot,
 } from '../lib/rdvSlotOffers.js'
@@ -128,22 +129,45 @@ test('an expired, used or cancelled link cannot be used, and only for its exact 
   assert.equal(ok.offerId, 'o1')
 })
 
-test('cancelling a link stops a payment already started, but not a capture in progress', async () => {
-  const offer = { id: 'o1', status: 'cancelled', starts_at: '2099-01-02T14:00:00.000Z' }
-  const pending = { hold: { status: 'payment_pending', slot_offer_id: 'o1' } }
-  assert.equal(await offerBlocksCapture(fakeDb({ offer, payment: pending }), 'ORDER1'), 'offer_cancelled')
-  assert.equal(await offerBlocksCapture(fakeDb({ offer: { ...offer, status: 'open' }, payment: pending }), 'ORDER1'), null)
-  assert.equal(await offerBlocksCapture(fakeDb({ offer, payment: { hold: { status: 'payment_capturing', slot_offer_id: 'o1' } } }), 'ORDER1'), null)
-  assert.equal(await offerBlocksCapture(fakeDb({ offer, payment: { hold: { status: 'payment_pending', slot_offer_id: null } } }), 'ORDER1'), null)
+test('cancel and capture go through the database transactions (no JS race)', async () => {
+  const rpcDb = (reply) => {
+    const db = fakeDb()
+    db.rpcCalls = []
+    db.rpc = (name, args) => { db.rpcCalls.push({ name, args }); return Promise.resolve({ data: reply, error: null }) }
+    return db
+  }
+  const late = rpcDb({ ok: false, error: 'offer_payment_in_progress' })
+  const tooLate = await cancelSlotOffer({ db: late, userId: OWNER, input: { id: 'o1', practitioner_id: PRACT } })
+  assert.deepEqual([tooLate.status, tooLate.body.error], [409, 'offer_payment_in_progress'])
+  assert.deepEqual(late.rpcCalls[0], { name: 'cancel_slot_offer', args: { p_offer_id: 'o1', p_practitioner_id: PRACT } })
+  assert.equal((await cancelSlotOffer({ db: rpcDb({ ok: true }), userId: OWNER, input: { id: 'o1', practitioner_id: PRACT } })).status, 200)
+  assert.equal((await cancelSlotOffer({ db: rpcDb({ ok: true }), userId: 'intrus', input: { id: 'o1', practitioner_id: PRACT } })).status, 403)
 
-  const inProgress = await cancelSlotOffer({ db: fakeDb({ holdsCapturing: [{ id: 'h1' }] }), userId: OWNER, input: { id: 'o1', practitioner_id: PRACT } })
-  assert.deepEqual([inProgress.status, inProgress.body.error], [409, 'offer_payment_in_progress'])
-  const db = fakeDb()
-  const cancelled = await cancelSlotOffer({ db, userId: OWNER, input: { id: 'o1', practitioner_id: PRACT } })
-  assert.equal(cancelled.status, 200)
-  const release = db.calls.updates.find((u) => u.table === 'rdv_booking_holds')
-  assert.deepEqual(release.values, { status: 'expired' })
-  assert.equal(release.filters.status, 'payment_pending')
+  // Ordre créé avant expiration, approuvé après : la base expire hold + paiement.
+  const expired = rpcDb({ ok: true, released: true, error: 'offer_expired' })
+  assert.equal(await offerBlocksCapture(expired, 'ORDER1'), 'offer_expired')
+  assert.deepEqual(expired.rpcCalls[0], { name: 'release_slot_offer_hold', args: { p_paypal_order_id: 'ORDER1' } })
+  assert.equal(await offerBlocksCapture(rpcDb({ ok: true, released: false }), 'ORDER1'), null)
+
+  // Annulation arrivée pendant la réclamation : le déclencheur fait échouer claim.
+  assert.equal(offerErrorFromClaim({ message: 'slot_offer_cancelled' }), 'offer_cancelled')
+  assert.equal(offerErrorFromClaim({ message: 'slot_offer_expired' }), 'offer_expired')
+  assert.equal(offerErrorFromClaim({ message: 'other' }), null)
+  assert.equal(offerErrorFromClaim(null), null)
+})
+
+test('the database guard covers cancel ↔ capture and expiry (SQL scenarios A–E)', () => {
+  const sql = read('supabase/migrations/20260929090000_rdv_slot_offers.sql')
+  assert.match(sql, /before update of status on public\.rdv_booking_holds\s+for each row execute function public\.guard_slot_offer_capture\(\)/)
+  assert.match(sql, /v_offer\.expires_at <= now\(\) or v_offer\.starts_at <= now\(\) then raise exception 'slot_offer_expired'/)
+  assert.match(sql, /select \* into v_offer from public\.booking_slot_offers where id = new\.slot_offer_id for update/)
+  // Même ordre de verrouillage que claim_rdv_deposit_capture : hold + paiement, puis offre.
+  const cancel = sql.slice(sql.indexOf('function public.cancel_slot_offer'), sql.indexOf('function public.release_slot_offer_hold'))
+  assert.ok(cancel.indexOf('for update of h, p') < cancel.indexOf('from public.booking_slot_offers'))
+  assert.match(sql, /grant execute on function public\.cancel_slot_offer\(uuid, uuid\) to service_role/)
+  const race = read('supabase/tests/rdv_slot_offers_race/run.sh')
+  assert.match(race, /A\. La capture réclame d'abord/)
+  assert.match(race, /C\. Ordre PayPal créé avant expiration, approuvé après/)
 })
 
 test('preview links stay on the preview deployment', () => {
@@ -158,6 +182,7 @@ test('payment, booking page and shortcut are wired to the personal link', () => 
   }
   const deposit = read('lib/rdvDepositApiHandler.js')
   assert.ok(deposit.indexOf('offerBlocksCapture(supabase, orderId)') < deposit.indexOf("rpc('claim_rdv_deposit_capture'"))
+  assert.match(deposit, /const claimOfferError = offerErrorFromClaim\(claimError\)/)
   assert.match(deposit, /await markOfferUsed\(supabase, booking\)/)
   assert.match(read('api/rdv-book.js'), /if \(action === 'offer'\) \{\s+if \(req\.method !== 'POST'\)/)
   const page = read('src/components/rdv/RdvPublic.jsx')

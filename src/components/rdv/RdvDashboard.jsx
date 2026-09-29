@@ -1082,7 +1082,9 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
     }
   }
 
-  useEffect(() => { loadMe(session) }, [session]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Rechargé quand le compte change, pas à chaque rafraîchissement du jeton
+  // (sinon la page se re-montait et fermait la fenêtre ouverte, ex. urgence).
+  useEffect(() => { loadMe(session) }, [session?.user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load calendar status when active practitioner changes
   useEffect(() => {
@@ -1272,14 +1274,15 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
         </div>
 
         {/* Loading */}
-        {meLoading && (
+        {/* Premier chargement seulement : une mise à jour garde l'écran en place. */}
+        {meLoading && !meData && (
           <div className="flex items-center justify-center py-20">
             <Spinner size="lg" />
           </div>
         )}
 
         {/* No practitioners */}
-        {!meLoading && practitioners.length === 0 && (
+        {(!meLoading || meData) && practitioners.length === 0 && (
           <div className="rounded-2xl border border-gold/25 bg-white/60 p-10 text-center">
             <p className="text-gold text-3xl mb-4">◈</p>
             <p className="font-georgia text-sm text-mist max-w-sm mx-auto leading-relaxed">
@@ -1288,7 +1291,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
           </div>
         )}
 
-        {!meLoading && practitioners.length > 0 && (
+        {(!meLoading || meData) && practitioners.length > 0 && (
           <>
             {/* Practitioner tabs */}
             {practitioners.length > 1 && (

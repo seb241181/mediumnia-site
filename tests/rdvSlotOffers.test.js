@@ -205,3 +205,10 @@ test('the #proposer home-screen shortcut keeps its # while the window is open (i
   assert.match(modal, /const closeModal = \(\) => \{ clearShortcutHash\('#proposer'\); onClose\?\.\(\) \}/)
   assert.doesNotMatch(modal, /onClick=\{onClose\}/)
 })
+
+test('a token refresh does not remount the RDV dashboard (the urgency window stays open)', () => {
+  const dashboard = read('src/components/rdv/RdvDashboard.jsx')
+  assert.match(dashboard, /useEffect\(\(\) => \{ loadMe\(session\) \}, \[session\?\.user\?\.id\]\)/)
+  assert.match(dashboard, /\{meLoading && !meData && \(/)
+  assert.match(dashboard, /\{\(!meLoading \|\| meData\) && practitioners\.length > 0 && \(/)
+})

@@ -238,3 +238,38 @@ test('balance email accepted but finalize fails once: finalize is retried at onc
   assert.deepEqual(stuck.counts, { reminder_sent_unfinalized: 1 })
   assert.ok(!down.rpcCalls.some((c) => c.name === 'release_rdv_balance_reminder'))
 })
+
+test('Resend OK but finalize down all day: the next day only reconciles — 0 new email, same token kept', async () => {
+  const visio = booking('ven14', { service_id: 'vis', starts_at: '2026-10-02T12:00:00Z', booked_price_cents: 7000, reservation_payment_cents: 2000 })
+
+  // Mardi 9 h : e-mail accepté par Resend, finalisation impossible aux 3 essais.
+  let deliveries = 0
+  const tuesday = balanceDb({ bookings: [visio], paid: { ven14: 2000 }, finalize: () => ({ data: null, error: { message: 'db down' } }) })
+  const first = await withResend(async () => { deliveries += 1; return { ok: true, json: async () => ({ id: 'e1' }) } }, () => runDailySweep(tuesday, NOW))
+  assert.deepEqual(first.counts, { reminder_sent_unfinalized: 1 })
+  assert.equal(deliveries, 1)
+  const claim = tuesday.rpcCalls.find((c) => c.name === 'claim_rdv_balance_reminder').args
+  assert.ok(!tuesday.rpcCalls.some((c) => c.name === 'release_rdv_balance_reminder'))
+
+  // État laissé en base : réservation non libérée, jeton du 1er e-mail, envoi non enregistré.
+  const leftOver = { ...visio, balance_reminder_claimed_at: claim.p_now, balance_payment_token_hash: claim.p_token_hash, balance_reminder_sent_at: null }
+
+  // Mercredi 9 h : base rétablie.
+  const wednesday = balanceDb({ bookings: [leftOver], paid: { ven14: 2000 } })
+  const second = await withResend(async () => { deliveries += 1; return { ok: true, json: async () => ({ id: 'e2' }) } }, () => runDailySweep(wednesday, new Date('2026-09-30T07:00:00Z')))
+  assert.deepEqual(second.counts, { reminder_reconciled: 1 })
+  assert.equal(deliveries, 1) // aucun nouvel e-mail
+  assert.deepEqual(wednesday.rpcCalls.map((c) => c.name), ['finalize_rdv_balance_reminder']) // pas de nouvelle réservation, pas de nouveau jeton
+  assert.equal(wednesday.rpcCalls[0].args.p_token_hash, claim.p_token_hash) // le lien du 1er e-mail reste valable
+  assert.equal(wednesday.rpcCalls[0].args.p_sent_at, new Date(claim.p_now).toISOString())
+})
+
+test('a released (failed) attempt is retried normally; a claim younger than 15 min is left alone', async () => {
+  const visio = booking('ven14', { service_id: 'vis', starts_at: '2026-10-02T12:00:00Z', booked_price_cents: 7000, reservation_payment_cents: 2000 })
+  const inProgress = balanceDb({ bookings: [{ ...visio, balance_reminder_claimed_at: new Date(NOW.getTime() - 5 * 60_000).toISOString(), balance_payment_token_hash: 'a'.repeat(64) }], paid: { ven14: 2000 } })
+  let deliveries = 0
+  const result = await withResend(async () => { deliveries += 1; return { ok: true, json: async () => ({ id: 'e' }) } }, () => runDailySweep(inProgress, NOW))
+  assert.deepEqual(result.counts, { none: 1 })
+  assert.equal(deliveries, 0)
+  assert.deepEqual(inProgress.rpcCalls, [])
+})

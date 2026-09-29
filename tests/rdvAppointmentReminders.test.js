@@ -137,7 +137,7 @@ test('the daily task runs the J-3 email and the (inactive) SMS step; the SQL onl
   const cron = read('lib/rdvBalanceCronHandler.js')
   assert.ok(cron.indexOf('await runDailySweep(supabase)') < cron.indexOf('await sendAppointmentReminders(supabase)'))
   assert.match(cron, /smsReminders = await sendAppointmentSmsReminders\(supabase\)/)
-  const sql = read('supabase/migrations/20260929130000_rdv_appointment_reminder.sql')
+  const sql = read('supabase/migrations/20260929101207_rdv_appointment_reminder.sql')
   assert.match(sql, /add column if not exists appointment_reminder_sent_at timestamptz/)
   assert.match(sql, /add column if not exists appointment_sms_reminder_sent_at timestamptz/)
   assert.doesNotMatch(sql, /\bupdate\b|\bdelete\b|drop table/i)

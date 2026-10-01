@@ -12,7 +12,7 @@ const ON_SITE_METHODS = [
 ]
 
 const METHOD_LABELS = { card: 'Carte bancaire', cash: 'Espèces', check: 'Chèque', transfer: 'Virement', paypal: 'PayPal (en ligne)', gift_card: 'Carte cadeau', other: 'Autre' }
-const KIND_LABELS = { arrhes: 'arrhes', balance: 'solde', full_payment: 'paiement intégral', refund: 'remboursement', arrhes_retained: 'arrhes conservées', adjustment: 'règlement' }
+const KIND_LABELS = { arrhes: 'arrhes', balance: 'solde', full_payment: 'paiement intégral', refund: 'remboursement', arrhes_retained: 'arrhes conservées', adjustment: 'règlement', deposit_transfer: 'transfert d’arrhes' }
 
 const pad = (n) => String(n).padStart(2, '0')
 const todayValue = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }

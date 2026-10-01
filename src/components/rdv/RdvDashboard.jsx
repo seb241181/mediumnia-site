@@ -1129,6 +1129,10 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
       }
       if (res.status === 503) {
         const data = await res.json()
+        if (data.error === 'redirect_uri_not_preview') {
+          setNotice({ type: 'error', msg: 'Adresse de retour Google non valable pour cette préversion : connexion bloquée.' })
+          return
+        }
         setNotice({ type: 'error', msg: `Variables manquantes : ${(data.missing_env_vars || []).join(', ')}` })
         return
       }
@@ -1339,12 +1343,22 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                         <p className="font-georgia text-xs text-mist leading-relaxed mb-4">
                           Les créneaux disponibles sont calculés en temps réel à partir de vos indisponibilités Google.
                         </p>
-                        <button
-                          onClick={handleDisconnect}
-                          className="font-georgia text-xs px-5 py-2.5 rounded-xl border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
-                        >
-                          Déconnecter Google Agenda
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          {/* Renouvelle l'autorisation Google sans supprimer la connexion :
+                              le calendrier choisi (google_calendar_id) est conservé. */}
+                          <button
+                            onClick={handleConnect}
+                            className="font-georgia text-xs px-5 py-2.5 rounded-xl bg-deep text-gold hover:bg-deep/90 transition-colors"
+                          >
+                            Reconnecter Google Agenda
+                          </button>
+                          <button
+                            onClick={handleDisconnect}
+                            className="font-georgia text-xs px-5 py-2.5 rounded-xl border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 transition-colors"
+                          >
+                            Déconnecter Google Agenda
+                          </button>
+                        </div>
                       </>
                     ) : (
                       <>

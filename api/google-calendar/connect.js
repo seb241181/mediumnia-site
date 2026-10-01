@@ -56,11 +56,6 @@ export default async function handler(req, res) {
     let redirectHost = ''
     try { redirectHost = new URL(process.env.GOOGLE_REDIRECT_URI).hostname } catch { /* invalide */ }
     console.warn(`[google-oauth] connect redirect_host=${redirectHost || 'invalid'}`)
-    // DIAGNOSTIC TEMPORAIRE (préversion uniquement, à retirer avant toute fusion) :
-    // l'ID client OAuth n'est pas un secret ; jamais le secret, un jeton ni le state.
-    const clientId = String(process.env.GOOGLE_CLIENT_ID || '').trim()
-    const projectNumber = (clientId.match(/^(\d+)-/) || [])[1] || 'inconnu'
-    console.warn(`[google-oauth] diag client_id=${/^[\w.-]+$/.test(clientId) ? clientId : 'invalide'} project_number=${projectNumber}`)
     if (!redirectHost.endsWith('.vercel.app')) {
       return res.status(503).json({ error: 'redirect_uri_not_preview' })
     }

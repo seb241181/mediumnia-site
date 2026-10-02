@@ -11,7 +11,8 @@ if (process.env.VERCEL_ENV === 'preview') {
   const missing = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_PUBLISHABLE_KEY'].filter((key) => !process.env[key])
   process.env.VITE_SUPABASE_URL ||= 'https://uotkpygeqqnekpolezts.supabase.co'
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||= 'sb_publishable_M5rGL8jtq95cwKp1frZ-Cg_K14AGgy4'
-  console.log(`[vite] préversion : client Supabase configuré (${missing.length ? `valeurs publiques de production reprises pour ${missing.join(', ')}` : 'variables de la préversion'})`)
+  const project = (() => { try { return new URL(process.env.VITE_SUPABASE_URL).hostname.split('.')[0] } catch { return 'invalide' } })()
+  console.log(`[vite] préversion : client Supabase configuré (${missing.length ? `valeurs publiques de production reprises pour ${missing.join(', ')}` : 'variables de la préversion'}) — projet ${project}`)
 }
 
 // https://vite.dev/config/

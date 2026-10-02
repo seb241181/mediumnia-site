@@ -437,3 +437,38 @@ test('no path of the requests flow or of Lumia can create a Google Meet', () => 
   assert.match(ui, /Canal visio/)
   assert.match(ui, /a_preciser: 'canal à confirmer'/)
 })
+
+// ── Préversion : le backend doit parler à Supabase TEST avec une vraie clé serveur ──
+
+test('preview check: server key type only (never its value), publishable key refused, production untouched', async () => {
+  const { checkPreviewServerKey, supabaseKeyKind, supabaseProjectRef } = await import('../lib/previewSupabaseCheck.js')
+  const jwt = (role) => ['e30', Buffer.from(JSON.stringify({ role })).toString('base64url'), 'sig'].join('.')
+  assert.equal(supabaseKeyKind('sb_secret_abc123'), 'secret')
+  assert.equal(supabaseKeyKind('sb_publishable_abc123'), 'publishable')
+  assert.equal(supabaseKeyKind(jwt('service_role')), 'jwt_service_role')
+  assert.equal(supabaseKeyKind(jwt('anon')), 'jwt_anon')
+  assert.equal(supabaseKeyKind(''), 'missing')
+  assert.equal(supabaseProjectRef('https://wnbwhnqiulsdjcvkuwos.supabase.co'), 'wnbwhnqiulsdjcvkuwos')
+  const logs = []
+  const realWarn = console.warn
+  console.warn = (line) => logs.push(String(line))
+  try {
+    const secret = 'sb_secret_NE-JAMAIS-AFFICHER-0123456789'
+    assert.deepEqual(checkPreviewServerKey({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co', SUPABASE_SERVICE_ROLE_KEY: secret }),
+      { checked: true, project: 'wnbwhnqiulsdjcvkuwos', kind: 'secret' })
+    assert.throws(() => checkPreviewServerKey({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), /supabase_server_key_invalid/)
+    assert.throws(() => checkPreviewServerKey({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: jwt('anon') }), /supabase_server_key_invalid/)
+    // Production et local : aucune vérification, aucun log, aucun refus.
+    assert.deepEqual(checkPreviewServerKey({ VERCEL_ENV: 'production', SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), { checked: false })
+    assert.deepEqual(checkPreviewServerKey({ SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), { checked: false })
+    assert.deepEqual(logs, [
+      '[preview-check] backend supabase=wnbwhnqiulsdjcvkuwos key=secret',
+      '[preview-check] backend supabase=wnbwhnqiulsdjcvkuwos key=publishable',
+      '[preview-check] backend supabase=x key=jwt_anon',
+    ])
+    assert.ok(!logs.join('\n').includes(secret.slice(10)), 'la valeur de la clé n’apparaît jamais')
+  } finally { console.warn = realWarn }
+  const admin = read('lib/supabaseAdmin.js')
+  assert.ok(admin.indexOf('checkPreviewServerKey()') < admin.indexOf('createClient(url, key'))
+  assert.match(read('vite.config.js'), /projet \$\{project\}/)
+})

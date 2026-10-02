@@ -48,6 +48,7 @@ function fakeDb({ bookings = [], paid = {}, services = [], claimable = () => tru
         eq(k, v) { filters[k] = v; return q },
         is(k, v) { filters[`is:${k}`] = v; return q },
         in() { return q },
+        not() { return q },
         gte(k, v) { calls.windows.gte = v; return q },
         lt(k, v) { calls.windows.lt = v; return q },
         gt(k, v) { calls.windows.gt = v; return q },

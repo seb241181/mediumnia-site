@@ -9,10 +9,14 @@ P="psql -d $DB -q -v ON_ERROR_STOP=1"
 $P -f schema.sql
 $P -f $ROOT/docs/rdv-requests-migration.sql 2>&1 | grep -v NOTICE || true
 $P -f $ROOT/docs/rdv-confirm-request-migration.sql
+# Vrai garde-fou des arrhes (dernière version), tel qu'en production.
+$P -f <(awk '/CREATE OR REPLACE FUNCTION public.enforce_mediumia_booking_reservation_payment/,/^\$\$;/' $ROOT/supabase/migrations/20260916203000_rdv_full_payment_video.sql)
+$P -c "CREATE TRIGGER bookings_require_reservation_payment BEFORE INSERT ON public.bookings FOR EACH ROW EXECUTE FUNCTION public.enforce_mediumia_booking_reservation_payment()"
 $P -c "grant all on all tables in schema public to service_role"
 for pass in 1 2; do   # deux passages : migrations rejouables
   $P -f $ROOT/supabase/migrations/20261002085000_mediumia_customers.sql
   $P -f $ROOT/supabase/migrations/20261002090000_lumia_rdv_intake.sql
+  $P -f $ROOT/supabase/migrations/20261002093000_lumia_confirm_request_manual_source.sql
 done
 $P -f seed.sql
 $P -f scenarios.sql 2>&1 | grep -E "OK|ÉCHEC|ERROR|==|PASSÉS"

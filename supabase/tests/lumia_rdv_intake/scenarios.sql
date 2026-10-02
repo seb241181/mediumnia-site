@@ -120,6 +120,19 @@ select public.confirm_booking_request((:'r12'::jsonb->>'request_id')::uuid, :P, 
 select pg_temp.ok('confirmation existante : booking créé', (:'c1'::jsonb->>'success')::boolean and (select count(*) from public.bookings) = 5);
 select pg_temp.ok('demande planifiée, booking relié', (select status = 'scheduled' and confirmed_booking_id = (:'c1'::jsonb->>'booking_id')::uuid from public.booking_requests where id = (:'r12'::jsonb->>'request_id')::uuid));
 select pg_temp.ok('booking aux coordonnées du client connu', (select customer_email = 'claire@example.test' and customer_last_name = 'Exemple' and status = 'confirmed' from public.bookings where id = (:'c1'::jsonb->>'booking_id')::uuid));
+select pg_temp.ok('demande Lumia (prestation à arrhes) confirmée à la main → booking « manual », sans paiement', (select booking_source = 'manual' and booked_price_cents is null and reservation_payment_cents is null from public.bookings where id = (:'c1'::jsonb->>'booking_id')::uuid));
+insert into public.booking_requests(id, practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, customer_phone, address_line1, postal_code, city, status)
+values ('cccccccc-0000-0000-0000-000000000001', :P, 'bbbbbbbb-0000-0000-0000-000000000003', 'Paul', 'Site', 'paul.site@example.test', '0600000301', '1 rue Exemple', '59000', 'Lille', 'pending');
+select public.confirm_booking_request('cccccccc-0000-0000-0000-000000000001', :P, date_trunc('day', now()) + interval '15 days 9 hours', 0, 15000, null) as c2 \gset
+select pg_temp.ok('demande du formulaire du site : booking « mediumia », comportement inchangé', (:'c2'::jsonb->>'success')::boolean and (select booking_source = 'mediumia' from public.bookings where id = (:'c2'::jsonb->>'booking_id')::uuid));
+do $$ begin
+  insert into public.bookings(practitioner_id, service_id, starts_at, ends_at, customer_first_name, customer_last_name, customer_email, booking_source)
+  values ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000001', now() + interval '20 days', now() + interval '20 days 1 hour', 'Public', 'Sans arrhes', 'public@example.test', 'mediumia');
+  raise exception 'garde-fou contourné';
+exception when check_violation then
+  if sqlerrm <> 'reservation_payment_required' then raise; end if;
+  raise notice 'OK  réservation publique « mediumia » sans arrhes : toujours refusée (reservation_payment_required)';
+end $$;
 select pg_temp.ok('demande sans prestation : confirmation refusée', (public.confirm_booking_request((:'r1'::jsonb->>'request_id')::uuid, :P, now() + interval '20 days', 0, null, null)->>'error') = 'service_not_found');
 select pg_temp.ok('nouveau message après planification : nouvelle demande', (pg_temp.intake('{"message_id":"SMS-13","conversation_id":"CONV-A","message_text":"merci"}')->>'outcome') in ('created','updated'));
 

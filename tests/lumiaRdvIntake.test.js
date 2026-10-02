@@ -492,3 +492,15 @@ test('preview me diagnostic: slugs and counts only, never client data', async ()
   assert.equal(logPreviewMe({ practitioners: [] }, { VERCEL_ENV: 'production' }), null)
   assert.equal(logPreviewMe({ practitioners: [] }, { VERCEL_ENV: 'preview', NODE_TEST_CONTEXT: 'child-v8' }), null)
 })
+
+test('manual confirmation of an agent request: booking « manual », payment guard untouched', () => {
+  const sql = read('supabase/migrations/20261002093000_lumia_confirm_request_manual_source.sql')
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.confirm_booking_request\(/)
+  assert.match(sql, /CASE WHEN v_request\.intake_agent IS NOT NULL THEN 'manual' ELSE 'mediumia' END/)
+  // Le garde-fou des arrhes n'est ni modifié ni désactivé.
+  assert.doesNotMatch(sql, /enforce_mediumia_booking_reservation_payment\s*\(\)\s*(RETURNS|$)|DROP TRIGGER|DISABLE TRIGGER|session_replication_role/i)
+  assert.doesNotMatch(sql, /rdv_paypal_payments|rdv_financial_entries|reservation_payment_cents\s*=/)
+  // Toujours service_role uniquement.
+  assert.match(sql, /REVOKE EXECUTE ON FUNCTION public\.confirm_booking_request\(UUID, UUID, TIMESTAMPTZ, INTEGER, INTEGER, TEXT\)\s+FROM anon, authenticated;/)
+  assert.match(read('docs/rdv-confirm-request-migration.sql'), /Version plus récente : supabase\/migrations\/20261002093000_lumia_confirm_request_manual_source\.sql/)
+})

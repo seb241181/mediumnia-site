@@ -53,6 +53,7 @@ Réponse :
 - Une prestation n'est jamais inventée : un identifiant inconnu est ignoré, et un indice ambigu laisse la prestation vide, à vérifier.
 - Client : rapprochement par téléphone exact normalisé, puis par e-mail exact, jamais par le nom. En cas de doute (« ambiguous »), rien n'est fusionné.
 - Phase 1 : aucune confirmation automatique, aucun booking, aucun événement Google.
+- Une demande d'agent confirmée à la main dans l'espace RDV crée un booking `booking_source = 'manual'` (migration `20261002093000`). Elle ne passe donc pas par le contrôle des arrhes réservé aux réservations publiques « mediumia », et ne reçoit pas les envois automatiques réservés à ces dernières (rappel J-3, SMS, rappel de solde).
 - **Visio = WhatsApp ou FaceTime, jamais Google Meet.**
   - Le canal est retenu s'il est déclaré (`video_channel`) ou écrit explicitement dans le message (« WhatsApp », « FaceTime ») ; sinon il reste `a_preciser`. Il n'est jamais inventé, et aucun autre outil n'est accepté.
   - La demande et le rendez-vous affichent « Visio — WhatsApp », « Visio — FaceTime » ou « Visio — canal à confirmer ».

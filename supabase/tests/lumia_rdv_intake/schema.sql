@@ -10,10 +10,12 @@ create or replace function public.booking_set_updated_at() returns trigger langu
 create table public.booking_practitioners (id uuid primary key default gen_random_uuid(), slug text unique, owner_id uuid, buffer_before_min int default 0, buffer_after_min int default 0);
 create table public.booking_services (
   id uuid primary key default gen_random_uuid(), practitioner_id uuid references public.booking_practitioners(id),
-  slug text not null, title text not null, duration_min int not null, price_cents int, modality text[] not null default '{}', is_active boolean not null default true);
+  slug text not null, title text not null, duration_min int not null, price_cents int, modality text[] not null default '{}', is_active boolean not null default true,
+  currency text not null default 'EUR', booking_mode text not null default 'instant', reservation_payment_kind text not null default 'none', reservation_payment_cents int);
 create table public.bookings (
   id uuid primary key default gen_random_uuid(), practitioner_id uuid references public.booking_practitioners(id), service_id uuid references public.booking_services(id),
   starts_at timestamptz not null, ends_at timestamptz not null, timezone text, customer_first_name text not null, customer_last_name text not null,
   customer_email text not null, customer_phone text, customer_message text, status text not null default 'confirmed',
-  booking_source text not null default 'mediumia', google_event_id text, created_at timestamptz not null default now());
+  booking_source text not null default 'mediumia' check (booking_source in ('mediumia','reservio','manual')),
+  booked_price_cents int, reservation_payment_cents int, google_event_id text, created_at timestamptz not null default now());
 grant all on all tables in schema public to service_role;

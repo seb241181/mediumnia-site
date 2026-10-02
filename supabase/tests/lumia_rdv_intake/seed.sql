@@ -11,3 +11,7 @@ insert into public.bookings(practitioner_id, service_id, starts_at, ends_at, cus
  ('aaaaaaaa-0000-0000-0000-000000000001','bbbbbbbb-0000-0000-0000-000000000001', now() - interval '20 days', now() - interval '20 days' + interval '1 hour','Paul','Famille','paul@example.test','07 99 88 77 66','confirmed'),
  ('aaaaaaaa-0000-0000-0000-000000000001','bbbbbbbb-0000-0000-0000-000000000001', now() - interval '10 days', now() - interval '10 days' + interval '1 hour','Julie','Famille','julie@example.test','+33 7 99 88 77 66','confirmed'),
  ('aaaaaaaa-0000-0000-0000-000000000002','bbbbbbbb-0000-0000-0000-000000000001', now() - interval '10 days', now() - interval '10 days' + interval '1 hour','Marc','Ailleurs','marc@example.test','06 55 55 55 55','confirmed');
+-- Comme en production (après l'historique ci-dessus) : Guidance visio réservable
+-- en ligne avec 20 € d'arrhes, Désenvoûtement « sur demande ».
+update public.booking_services set booking_mode = 'instant', reservation_payment_kind = 'arrhes', reservation_payment_cents = 2000 where slug = 'guidance-visio';
+update public.booking_services set booking_mode = 'request' where slug = 'desenvoutement';

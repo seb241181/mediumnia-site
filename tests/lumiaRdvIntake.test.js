@@ -532,3 +532,12 @@ test('a follow-up without a slot keeps the stored one, and the API returns the s
   // Côté base, la même règle : coalesce(nouveau, ancien).
   assert.match(read('supabase/migrations/20261002090000_lumia_rdv_intake.sql'), /proposed_starts_at = coalesce\(v_proposed, proposed_starts_at\)/)
 })
+
+test('search_path hardening: the three Lumia SQL helpers get a fixed, empty search_path', () => {
+  const sql = read('supabase/migrations/20261002110000_lumia_search_path_hardening.sql')
+  for (const fn of ['mediumia_name_key(TEXT)', 'mediumia_names_compatible(TEXT, TEXT, TEXT, TEXT)', 'lumia_normalize_phone(TEXT)']) {
+    assert.ok(sql.includes(`ALTER FUNCTION public.${fn} SET search_path = '';`), fn)
+  }
+  // Aucune fonction antérieure à Lumia n'est touchée par ce chantier.
+  assert.doesNotMatch(sql.replace(/^--.*$/gm, ''), /rdv_amount_breakdown|mediumia_set_updated_at/)
+})

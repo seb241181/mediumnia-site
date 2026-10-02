@@ -17,6 +17,7 @@ for pass in 1 2; do   # deux passages : migrations rejouables
   $P -f $ROOT/supabase/migrations/20261002085000_mediumia_customers.sql
   $P -f $ROOT/supabase/migrations/20261002090000_lumia_rdv_intake.sql
   $P -f $ROOT/supabase/migrations/20261002093000_lumia_confirm_request_manual_source.sql
+  $P -f $ROOT/supabase/migrations/20261002110000_lumia_search_path_hardening.sql
 done
 $P -f seed.sql
 $P -f scenarios.sql 2>&1 | grep -E "OK|ÉCHEC|ERROR|==|PASSÉS"

@@ -152,5 +152,11 @@ do $$ begin
   exception when check_violation then raise notice 'OK  canal inconnu refusé'; end;
 end $$;
 select pg_temp.ok('fonction : appel incomplet refusé', (public.lumia_upsert_booking_request(:P, '{"agent":"lumia","channel":"sms"}')->>'error') = 'invalid_intake');
+select pg_temp.ok('search_path fixe sur les 3 fonctions Lumia (avertissement Supabase levé)',
+  (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname in ('mediumia_name_key', 'mediumia_names_compatible', 'lumia_normalize_phone')
+     and exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%')) = 3);
+select pg_temp.ok('fonctions toujours justes avec search_path vide', public.lumia_normalize_phone('06 11 22 33 44') = '+33611223344'
+  and public.mediumia_name_key('Réservio') = 'reservio' and public.mediumia_names_compatible('Anne', null, 'ANNE', 'Un'));
 reset role;
 \echo 'TOUS LES SCÉNARIOS SÉQUENTIELS SONT PASSÉS'

@@ -10,11 +10,12 @@ PGHOST=… PGPORT=… bash run.sh
 **vrais** fichiers `docs/rdv-requests-migration.sql` et
 `docs/rdv-confirm-request-migration.sql`, et applique **deux fois** les migrations
 `20261002085000_mediumia_customers.sql`, `20261002090000_lumia_rdv_intake.sql` et
-`20261002093000_lumia_confirm_request_manual_source.sql` (rejouables), avec le vrai
+`20261002093000_lumia_confirm_request_manual_source.sql` et
+`20261002110000_lumia_search_path_hardening.sql` (rejouables), avec le vrai
 garde-fou des arrhes `enforce_mediumia_booking_reservation_payment` (repris de
 `20260916203000_rdv_full_payment_video.sql`).
 
-- `scenarios.sql` : 56 vérifications séquentielles + 4 contraintes :
+- `scenarios.sql` : 58 vérifications séquentielles + 4 contraintes :
   - demande vague (cas A) ;
   - même message relu ;
   - rapprochement client par téléphone, par e-mail, numéro partagé, autre prénom, autre adresse, nom seul, autre praticien, demande d'agent jamais prise comme référence ;

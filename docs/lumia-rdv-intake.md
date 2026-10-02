@@ -35,8 +35,9 @@ Les disponibilités se lisent avec l'API publique existante `/api/rdv-availabili
 | `service_hint` | non | `guidance`, `désenvoûtement`… |
 | `modality` | non | `video`, `in-person`, `phone`, `unknown` |
 | `video_channel` | non | `whatsapp` ou `facetime`, **seulement si le client l'a dit** |
-| `requested_date` + `requested_time` | non | `2026-10-13` + `14:00` (heure de Paris) |
-| `requested_period` | non | `lundi matin` |
+| `proposed_starts_at` | non | instant ISO **avec fuseau** : `2026-10-13T14:00:00+02:00` ; prioritaire s'il est fourni |
+| `preferred_date` + `preferred_time` | non | `2026-10-13` + `14:00` (heure de Paris) ; les deux sont nécessaires pour un créneau (alias acceptés : `requested_date` / `requested_time`) |
+| `preferred_period` | non | `lundi matin` (alias : `requested_period`) |
 | `confidence` | non | 0 à 1 |
 
 Réponse :
@@ -45,13 +46,15 @@ Réponse :
 { "request_id": "…", "outcome": "created | updated | duplicate", "status": "pending",
   "service": { "id": "…", "title": "…" } | null, "service_resolution": "id | hint | ambiguous | unknown_id | none",
   "customer_match": "phone | email | none | ambiguous", "needs_review": true,
-  "proposed_starts_at": "…" | null, "booking_created": false, "calendar_written": false }
+  "proposed_starts_at": "…" | null, "preferred_period": "…" | null,
+  "booking_created": false, "calendar_written": false }
 ```
 
 **Règles :**
 - Le même message (canal + identifiant) renvoie toujours la même demande, même en cas d'appels simultanés.
 - Une prestation n'est jamais inventée : un identifiant inconnu est ignoré, et un indice ambigu laisse la prestation vide, à vérifier.
 - Client : rapprochement par téléphone exact normalisé, puis par e-mail exact, jamais par le nom. En cas de doute (« ambiguous »), rien n'est fusionné.
+- Créneau : jamais inventé. Sans `proposed_starts_at`, il faut **à la fois** une date et une heure ; un créneau passé est ignoré. Un message de suivi qui ne redonne pas de créneau conserve celui déjà enregistré. `proposed_starts_at` et `preferred_period` renvoyés par l'API sont les valeurs **réellement stockées**.
 - Phase 1 : aucune confirmation automatique, aucun booking, aucun événement Google.
 - Une demande d'agent confirmée à la main dans l'espace RDV crée un booking `booking_source = 'manual'` (migration `20261002093000`). Elle ne passe donc pas par le contrôle des arrhes réservé aux réservations publiques « mediumia », et ne reçoit pas les envois automatiques réservés à ces dernières (rappel J-3, SMS, rappel de solde).
 - **Visio = WhatsApp ou FaceTime, jamais Google Meet.**

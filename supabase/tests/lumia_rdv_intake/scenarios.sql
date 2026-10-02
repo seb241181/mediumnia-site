@@ -112,6 +112,10 @@ do $$ begin
   raise exception 'contrainte manquante';
 exception when check_violation then raise notice 'OK  canal visio impossible sur une demande qui n''est pas en visio'; end $$;
 
+select pg_temp.intake(jsonb_build_object('message_id','S-1','conversation_id','CONV-S','phone','0600000401','proposed_starts_at', (date_trunc('day', now()) + interval '11 days 12 hours')::text)) as s1 \gset
+select pg_temp.intake('{"message_id":"S-2","conversation_id":"CONV-S","message_text":"merci"}') as s2 \gset
+select pg_temp.ok('message de suivi sans créneau : le créneau stocké est conservé', (:'s2'::jsonb->>'outcome') = 'updated' and (select proposed_starts_at = date_trunc('day', now()) + interval '11 days 12 hours' from public.booking_requests where id = (:'s1'::jsonb->>'request_id')::uuid));
+
 \echo '== 5. Créneau précis demandé (cas C) puis confirmation par le flux existant =='
 select pg_temp.intake(jsonb_build_object('message_id','SMS-12','phone','0611223344','first_name','Claire','service_id','bbbbbbbb-0000-0000-0000-000000000001','modality','video',
   'proposed_starts_at', (date_trunc('day', now()) + interval '12 days 12 hours')::text, 'message_text','Je voudrais mardi à 14h en visio.')) as r12 \gset

@@ -36,16 +36,26 @@ const SERVICES = [
 function fakeDb() {
   const calls = { rpc: [], tables: [], writes: [] }
   const byMessage = new Map()
+  // Demandes stockées, avec la même règle que la fonction SQL pour un message de
+  // suivi : coalesce(nouveau, ancien) sur le créneau et le souhait.
+  const rows = new Map()
+  const byConversation = new Map()
   let seq = 0
   const db = {
     calls,
+    rows,
     from(table) {
       calls.tables.push(table)
+      const filters = {}
       const q = {
-        select() { return q }, eq() { return q }, in() { return q }, order() { return q }, limit() { return q },
+        select() { return q }, eq(k, v) { filters[k] = v; return q }, in() { return q }, order() { return q }, limit() { return q },
         insert() { calls.writes.push(table); return q }, update() { calls.writes.push(table); return q },
         upsert() { calls.writes.push(table); return q }, delete() { calls.writes.push(table); return q },
-        maybeSingle() { return Promise.resolve(table === 'booking_practitioners' ? { data: { id: PRACT, slug: 'sebastien-seguin' } } : { data: null }) },
+        maybeSingle() {
+          if (table === 'booking_practitioners') return Promise.resolve({ data: { id: PRACT, slug: 'sebastien-seguin' } })
+          if (table === 'booking_requests') return Promise.resolve({ data: rows.get(filters.id) || null })
+          return Promise.resolve({ data: null })
+        },
         single() { return q.maybeSingle() },
         then(ok, ko) { return Promise.resolve(table === 'booking_services' ? { data: SERVICES, error: null } : { data: [] }).then(ok, ko) },
       }
@@ -55,11 +65,23 @@ function fakeDb() {
       calls.rpc.push({ name, args })
       if (name !== 'lumia_upsert_booking_request') return { data: null, error: { message: 'unexpected rpc' } }
       await new Promise((r) => setTimeout(r, 5))
-      const key = `${args.p_payload.channel}:${args.p_payload.message_id}`
+      const p = args.p_payload
+      const key = `${p.channel}:${p.message_id}`
       if (byMessage.has(key)) return { data: { ok: true, outcome: 'duplicate', request_id: byMessage.get(key) } }
+      const convKey = p.conversation_id ? `${p.channel}:${p.conversation_id}` : null
+      if (convKey && byConversation.has(convKey)) {
+        const id = byConversation.get(convKey)
+        const row = rows.get(id)
+        rows.set(id, { proposed_starts_at: p.proposed_starts_at ?? row.proposed_starts_at, preferred_period: p.preferred_period ?? row.preferred_period })
+        byMessage.set(key, id)
+        return { data: { ok: true, outcome: 'updated', request_id: id, customer_match: 'none', needs_review: true } }
+      }
       const id = `req-${++seq}`
       byMessage.set(key, id)
-      return { data: { ok: true, outcome: 'created', request_id: id, customer_match: 'none', needs_review: !args.p_payload.service_id } }
+      if (convKey) byConversation.set(convKey, id)
+      // Postgres renvoie un timestamptz au format « +00:00 ».
+      rows.set(id, { proposed_starts_at: p.proposed_starts_at ? p.proposed_starts_at.replace('.000Z', '+00:00') : null, preferred_period: p.preferred_period })
+      return { data: { ok: true, outcome: 'created', request_id: id, customer_match: 'none', needs_review: !p.service_id } }
     },
   }
   return db
@@ -503,4 +525,63 @@ test('manual confirmation of an agent request: booking « manual », payment gua
   // Toujours service_role uniquement.
   assert.match(sql, /REVOKE EXECUTE ON FUNCTION public\.confirm_booking_request\(UUID, UUID, TIMESTAMPTZ, INTEGER, INTEGER, TEXT\)\s+FROM anon, authenticated;/)
   assert.match(read('docs/rdv-confirm-request-migration.sql'), /Version plus récente : supabase\/migrations\/20261002093000_lumia_confirm_request_manual_source\.sql/)
+})
+
+// ── Créneau demandé : champs structurés envoyés par Lumia ───────────────────
+
+test('preferred_date + preferred_time → Paris time as an ISO instant (Thomas, Alice)', async () => {
+  const db = fakeDb()
+  const thomas = await intake(db, sms({ source_message_id: 'T-1', first_name: 'Thomas', last_name: 'Bernard', preferred_date: '2026-10-13', preferred_time: '14:00', message_text: 'Mardi 13 octobre à 14h ?' }))
+  const alice = await intake(db, sms({ source_message_id: 'A-1', first_name: 'Alice', last_name: 'Martin', preferred_date: '2026-10-14', preferred_time: '15:00' }))
+  // Heure d'été à Paris (UTC+2).
+  assert.equal(thomas.body.proposed_starts_at, '2026-10-13T12:00:00.000Z')
+  assert.equal(alice.body.proposed_starts_at, '2026-10-14T13:00:00.000Z')
+  assert.equal(db.calls.rpc[0].args.p_payload.proposed_starts_at, '2026-10-13T12:00:00.000Z')
+  assert.equal(thomas.body.preferred_period, 'mardi 13 octobre à 14 h 00')
+  // Heure d'hiver (UTC+1) : 1er décembre 14 h → 13 h UTC.
+  assert.equal(validateIntake(sms({ preferred_date: '2026-12-01', preferred_time: '14:00' }), NOW).payload.proposed_starts_at, '2026-12-01T13:00:00.000Z')
+  // Format invalide refusé, sans rien écrire.
+  const bad = await intake(fakeDb(), sms({ preferred_date: '13/10/2026', preferred_time: '14h' }))
+  assert.equal(bad.status, 400)
+  assert.deepEqual(bad.body.fields.sort(), ['preferred_date', 'preferred_time'])
+})
+
+test('a given proposed_starts_at is kept as is (and wins over date + time)', async () => {
+  const db = fakeDb()
+  const res = await intake(db, sms({ source_message_id: 'P-1', proposed_starts_at: '2026-10-15T16:30:00+02:00', preferred_date: '2026-10-13', preferred_time: '14:00' }))
+  assert.equal(res.body.proposed_starts_at, '2026-10-15T14:30:00.000Z')
+  assert.equal(db.calls.rpc[0].args.p_payload.proposed_starts_at, '2026-10-15T14:30:00.000Z')
+  // Sans fuseau explicite, l'heure serait ambiguë : refusée.
+  const ambiguous = await intake(fakeDb(), sms({ source_message_id: 'P-2', proposed_starts_at: '2026-10-15T16:30:00' }))
+  assert.equal(ambiguous.status, 400)
+  assert.deepEqual(ambiguous.body.fields, ['proposed_starts_at'])
+  // Un créneau passé n'est jamais proposé.
+  assert.equal(validateIntake(sms({ proposed_starts_at: '2026-09-01T10:00:00Z' }), NOW).payload.proposed_starts_at, null)
+})
+
+test('never invent a slot when the date or the time is missing', () => {
+  const dateOnly = validateIntake(sms({ preferred_date: '2026-10-13' }), NOW).payload
+  assert.equal(dateOnly.proposed_starts_at, null)
+  assert.equal(dateOnly.preferred_period, 'mardi 13 octobre (heure à définir)')
+  const timeOnly = validateIntake(sms({ preferred_time: '14:00' }), NOW).payload
+  assert.equal(timeOnly.proposed_starts_at, null)
+  assert.equal(timeOnly.preferred_period, null)
+  assert.equal(validateIntake(sms({}), NOW).payload.proposed_starts_at, null)
+})
+
+test('a follow-up without a slot keeps the stored one, and the API returns the stored value', async () => {
+  const db = fakeDb()
+  const first = await intake(db, sms({ source_message_id: 'F-1', source_conversation_id: 'CONV-F', preferred_date: '2026-10-13', preferred_time: '14:00' }))
+  const follow = await intake(db, sms({ source_message_id: 'F-2', source_conversation_id: 'CONV-F', message_text: 'Merci, à bientôt' }))
+  assert.equal(follow.body.outcome, 'updated')
+  assert.equal(follow.body.request_id, first.body.request_id)
+  assert.equal(db.calls.rpc[1].args.p_payload.proposed_starts_at, null) // le nouveau message n'en redonne pas
+  assert.equal(follow.body.proposed_starts_at, '2026-10-13T12:00:00.000Z') // valeur réellement stockée
+  assert.equal(follow.body.preferred_period, 'mardi 13 octobre à 14 h 00')
+  // Doublon : l'état stocké, pas le contenu du message relu.
+  const replay = await intake(db, sms({ source_message_id: 'F-1', source_conversation_id: 'CONV-F', preferred_date: '2026-10-20', preferred_time: '09:00' }))
+  assert.equal(replay.body.outcome, 'duplicate')
+  assert.equal(replay.body.proposed_starts_at, '2026-10-13T12:00:00.000Z')
+  // Côté base, la même règle : coalesce(nouveau, ancien).
+  assert.match(read('supabase/migrations/20261002090000_lumia_rdv_intake.sql'), /proposed_starts_at = coalesce\(v_proposed, proposed_starts_at\)/)
 })

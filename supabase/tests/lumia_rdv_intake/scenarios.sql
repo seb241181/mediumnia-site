@@ -25,7 +25,7 @@ select pg_temp.ok('même identifiant sur un autre canal = autre message', (pg_te
 select pg_temp.intake('{"message_id":"SMS-3","phone":"+33 6 11 22 33 44","first_name":"Claire"}') as r3 \gset
 select pg_temp.ok('client connu par téléphone : e-mail et nom complétés', (select customer_match = 'phone' and customer_email = 'claire@example.test' and customer_last_name = 'Exemple' from public.booking_requests where id = (:'r3'::jsonb->>'request_id')::uuid));
 select pg_temp.intake('{"message_id":"SMS-4","email":"CLAIRE@example.test","first_name":"Claire"}') as r4 \gset
-select pg_temp.ok('client connu par e-mail : téléphone et nom complétés', (select customer_match = 'email' and customer_phone = '06 11 22 33 44' and customer_last_name = 'Exemple' from public.booking_requests where id = (:'r4'::jsonb->>'request_id')::uuid));
+select pg_temp.ok('client connu par e-mail : téléphone et nom complétés', (select customer_match = 'email' and customer_phone = '+33611223344' and customer_last_name = 'Exemple' from public.booking_requests where id = (:'r4'::jsonb->>'request_id')::uuid));
 select pg_temp.intake('{"message_id":"SMS-5","phone":"0799887766"}') as r5 \gset
 select pg_temp.ok('numéro partagé par deux clients : ambigu, rien de complété', (select customer_match = 'ambiguous' and customer_email is null and needs_review from public.booking_requests where id = (:'r5'::jsonb->>'request_id')::uuid));
 select pg_temp.intake('{"message_id":"SMS-6","phone":"0611223344","first_name":"Martine"}') as r6 \gset
@@ -38,6 +38,30 @@ select pg_temp.intake('{"message_id":"SMS-9","phone":"0655555555","first_name":"
 select pg_temp.ok('client d''un autre praticien : non rapproché', (select customer_match = 'none' and customer_email is null from public.booking_requests where id = (:'r9'::jsonb->>'request_id')::uuid));
 
 select pg_temp.ok('une demande d''agent ne sert jamais de référence client', (pg_temp.intake('{"message_id":"SMS-9b","phone":"0600000001","first_name":"Inconnue"}')->>'customer_match') = 'none');
+
+\echo '== 3 bis. Référentiel clients (futur import Reservio, aucune donnée réelle) =='
+select public.upsert_mediumia_customer(:P, 'reservio', 'R-1', 'Nadia', 'Reservio', 'Nadia@Example.test', '+33622334455', '2026-09-01') as k1 \gset
+select pg_temp.ok('fiche Reservio créée (e-mail en minuscules)', (:'k1'::jsonb->>'outcome') = 'created' and (select email = 'nadia@example.test' and imported_at is not null from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
+select pg_temp.ok('ré-import plus ancien : rien n''est écrasé (stale)', (public.upsert_mediumia_customer(:P, 'reservio', 'R-1', 'Ancien', 'Nom', 'ancien@example.test', null, '2026-08-01')->>'outcome') = 'stale' and (select first_name = 'Nadia' and email = 'nadia@example.test' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
+select public.upsert_mediumia_customer(:P, 'reservio', 'R-1', null, null, 'nadia.new@example.test', null, '2026-09-20') as k1b \gset
+select pg_temp.ok('ré-import plus récent : mis à jour, un champ vide n''efface rien', (:'k1b'::jsonb->>'outcome') = 'updated' and (select first_name = 'Nadia' and last_name = 'Reservio' and email = 'nadia.new@example.test' and phone_e164 = '+33622334455' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
+select pg_temp.ok('même identifiant externe : une seule fiche', (select count(*) from public.mediumia_customers where external_id = 'R-1') = 1);
+select pg_temp.ok('Reservio sans identifiant externe : refusé', (public.upsert_mediumia_customer(:P, 'reservio', null, 'X', 'Y', 'x@example.test', null, null)->>'error') = 'external_id_required');
+select public.upsert_mediumia_customer(:P, 'reservio', 'R-2', 'Omar', 'Seul', null, '+33633445566', '2026-09-01') as k2 \gset
+select public.upsert_mediumia_customer(:P, 'reservio', 'R-3', 'Jean', 'Double', 'jean1@example.test', null, '2026-09-01') as k3 \gset
+select public.upsert_mediumia_customer(:P, 'reservio', 'R-4', 'Jean', 'Double', 'jean2@example.test', null, '2026-09-01') as k4 \gset
+select pg_temp.intake('{"message_id":"SMS-K1","phone":"06 22 33 44 55","first_name":"Nadia"}') as i1 \gset
+select pg_temp.ok('1. téléphone exact → fiche client reliée, e-mail complété', (select customer_match = 'phone' and customer_id = (:'k1'::jsonb->>'customer_id')::uuid and customer_email = 'nadia.new@example.test' and customer_last_name = 'Reservio' from public.booking_requests where id = (:'i1'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K2","email":"NADIA.NEW@example.test","first_name":"Nadia"}') as i2 \gset
+select pg_temp.ok('2. e-mail exact → fiche client reliée', (select customer_match = 'email' and customer_id = (:'k1'::jsonb->>'customer_id')::uuid from public.booking_requests where id = (:'i2'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K3","phone":"0633445566","first_name":"Omar"}') as i3 \gset
+select pg_temp.ok('fiche sans e-mail reconnue par téléphone', (select customer_match = 'phone' and customer_id = (:'k2'::jsonb->>'customer_id')::uuid and customer_email is null and needs_review from public.booking_requests where id = (:'i3'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K4","first_name":"Nadia","last_name":"Reservio"}') as i4 \gset
+select pg_temp.ok('3. nom seul → simple suggestion, aucune fusion', (select customer_match = 'none' and customer_id is null and customer_suggestion_id = (:'k1'::jsonb->>'customer_id')::uuid and customer_email is null from public.booking_requests where id = (:'i4'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K5","first_name":"Jean","last_name":"Double"}') as i5 \gset
+select pg_temp.ok('homonymes → pas même une suggestion', (select customer_suggestion_id is null and customer_id is null from public.booking_requests where id = (:'i5'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K6","phone":"0622334455","first_name":"Karim"}') as i6 \gset
+select pg_temp.ok('téléphone d''une fiche, autre prénom → ambigu, non relié', (select customer_match = 'ambiguous' and customer_id is null and customer_email is null from public.booking_requests where id = (:'i6'::jsonb->>'request_id')::uuid));
 
 \echo '== 4. Conversation : la demande est mise à jour (cas B) =='
 select pg_temp.intake('{"message_id":"SMS-10","conversation_id":"CONV-A","phone":"0600000010","first_name":"Léa","message_text":"Bonjour, je voudrais un rendez-vous."}') as r10 \gset

@@ -1,3 +1,5 @@
+-- Prérequis : 20261002085000_mediumia_customers.sql (référentiel clients).
+--
 -- Lumia RDV — demandes de rendez-vous détectées dans les messages (SMS,
 -- iMessage, WhatsApp, Dots…) importées dans MediumIA.
 --
@@ -47,7 +49,10 @@ ALTER TABLE public.booking_requests
   ADD COLUMN IF NOT EXISTS intake_missing TEXT[] NOT NULL DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS intake_confidence NUMERIC(3, 2),
   ADD COLUMN IF NOT EXISTS needs_review BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS lumia_updated_at TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS lumia_updated_at TIMESTAMPTZ,
+  -- Référentiel clients (20261002085000) : lien certain, ou simple suggestion.
+  ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES public.mediumia_customers(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS customer_suggestion_id UUID REFERENCES public.mediumia_customers(id) ON DELETE SET NULL;
 
 -- Le formulaire du site (intake_agent NULL) garde toutes ses obligations.
 ALTER TABLE public.booking_requests DROP CONSTRAINT IF EXISTS booking_requests_site_form_required_check;
@@ -132,6 +137,29 @@ $$;
 REVOKE ALL ON FUNCTION public.lumia_normalize_phone(TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.lumia_normalize_phone(TEXT) TO service_role;
 
+-- Sources fiables pour reconnaître un client (identité = e-mail, sinon fiche).
+CREATE OR REPLACE FUNCTION public.lumia_known_customers(p_practitioner_id UUID)
+RETURNS TABLE (identity TEXT, email TEXT, first_name TEXT, last_name TEXT, phone TEXT, customer_id UUID, seen_at TIMESTAMPTZ)
+LANGUAGE sql
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT coalesce(c.email, 'customer:' || c.id::TEXT), c.email, c.first_name, c.last_name, c.phone_e164, c.id, c.updated_at
+  FROM public.mediumia_customers c WHERE c.practitioner_id = p_practitioner_id
+  UNION ALL
+  SELECT lower(b.customer_email), lower(b.customer_email), b.customer_first_name, b.customer_last_name,
+         public.lumia_normalize_phone(b.customer_phone), NULL::UUID, b.created_at
+  FROM public.bookings b WHERE b.practitioner_id = p_practitioner_id AND b.customer_email IS NOT NULL
+  UNION ALL
+  SELECT lower(r.customer_email), lower(r.customer_email), r.customer_first_name, r.customer_last_name,
+         public.lumia_normalize_phone(r.customer_phone), NULL::UUID, r.created_at
+  FROM public.booking_requests r
+  WHERE r.practitioner_id = p_practitioner_id AND r.intake_agent IS NULL AND r.customer_email IS NOT NULL;
+$$;
+
+REVOKE ALL ON FUNCTION public.lumia_known_customers(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.lumia_known_customers(UUID) TO service_role;
+
 -- ── 4. Import atomique d'une demande ────────────────────────────────────────
 --
 -- p_payload (déjà validé et normalisé côté API) :
@@ -173,8 +201,12 @@ DECLARE
   v_missing TEXT[] := coalesce(ARRAY(SELECT jsonb_array_elements_text(coalesce(p_payload->'missing', '[]'::jsonb))), '{}');
   v_event public.booking_request_intake_events;
   v_request public.booking_requests;
+  v_phone_ids TEXT[];
   v_phone_emails TEXT[];
   v_phone_first_names TEXT[];
+  v_identity TEXT;
+  v_customer UUID;
+  v_suggestion UUID;
   v_match TEXT := 'none';
   v_fill_email TEXT;
   v_fill_last TEXT;
@@ -198,55 +230,54 @@ BEGIN
     RETURN jsonb_build_object('ok', true, 'outcome', 'duplicate', 'request_id', v_event.request_id);
   END IF;
 
-  -- Rapprochement client : téléphone exact normalisé, puis e-mail exact.
-  -- Jamais sur le nom seul. Un doute → « ambiguous », rien n'est complété.
-  -- Sources fiables uniquement : rendez-vous MediumIA et formulaire du site
-  -- (les demandes d'agent contiennent des données non vérifiées).
+  -- Rapprochement client, sources fiables uniquement (référentiel clients,
+  -- rendez-vous MediumIA, formulaire du site — jamais les demandes d'agent) :
+  --   1. téléphone exact normalisé ; 2. e-mail exact ;
+  --   3. nom/prénom : simple suggestion (customer_suggestion_id), jamais fusion.
+  -- Un doute → « ambiguous », rien n'est complété ni relié.
   IF v_phone IS NOT NULL THEN
-    SELECT array_agg(DISTINCT k.email) FILTER (WHERE k.email IS NOT NULL),
+    SELECT array_agg(DISTINCT k.identity),
+           array_agg(DISTINCT k.email) FILTER (WHERE k.email IS NOT NULL),
            array_agg(DISTINCT lower(k.first_name)) FILTER (WHERE k.first_name IS NOT NULL)
-    INTO v_phone_emails, v_phone_first_names
-    FROM (
-      SELECT lower(customer_email) AS email, customer_first_name AS first_name, customer_phone AS phone
-      FROM public.bookings WHERE practitioner_id = p_practitioner_id
-      UNION ALL
-      SELECT lower(customer_email), customer_first_name, customer_phone
-      FROM public.booking_requests WHERE practitioner_id = p_practitioner_id AND intake_agent IS NULL
-    ) k
-    WHERE public.lumia_normalize_phone(k.phone) = v_phone;
+    INTO v_phone_ids, v_phone_emails, v_phone_first_names
+    FROM public.lumia_known_customers(p_practitioner_id) k
+    WHERE k.phone = v_phone;
   END IF;
 
-  IF v_email IS NOT NULL THEN
-    IF coalesce(cardinality(v_phone_emails), 0) > 0 AND NOT (v_email = ANY (v_phone_emails)) THEN
-      v_match := 'ambiguous';            -- téléphone connu sous une autre adresse
-    ELSIF EXISTS (SELECT 1 FROM public.bookings WHERE practitioner_id = p_practitioner_id AND lower(customer_email) = v_email)
-       OR EXISTS (SELECT 1 FROM public.booking_requests WHERE practitioner_id = p_practitioner_id AND intake_agent IS NULL AND lower(customer_email) = v_email) THEN
-      v_match := 'email';
-    END IF;
-  ELSIF coalesce(cardinality(v_phone_emails), 0) = 1 THEN
+  IF v_email IS NOT NULL AND coalesce(cardinality(v_phone_emails), 0) > 0 AND NOT (v_email = ANY (v_phone_emails)) THEN
+    v_match := 'ambiguous';              -- téléphone connu sous une autre adresse
+  ELSIF coalesce(cardinality(v_phone_ids), 0) > 1 THEN
+    v_match := 'ambiguous';              -- numéro partagé par plusieurs clients
+  ELSIF coalesce(cardinality(v_phone_ids), 0) = 1 THEN
     -- Même téléphone mais prénom différent (proche, famille…) : pas de fusion.
     IF v_first IS NOT NULL AND NOT (lower(v_first) = ANY (coalesce(v_phone_first_names, '{}'))) THEN
       v_match := 'ambiguous';
     ELSE
       v_match := 'phone';
+      v_identity := v_phone_ids[1];
       v_fill_email := v_phone_emails[1];
     END IF;
-  ELSIF coalesce(cardinality(v_phone_emails), 0) > 1 THEN
-    v_match := 'ambiguous';
+  ELSIF v_email IS NOT NULL AND EXISTS (SELECT 1 FROM public.lumia_known_customers(p_practitioner_id) k WHERE k.email = v_email) THEN
+    v_match := 'email';
+    v_identity := v_email;
   END IF;
 
   IF v_match IN ('phone', 'email') THEN
     SELECT k.last_name, k.phone INTO v_fill_last, v_fill_phone
-    FROM (
-      SELECT lower(customer_email) AS email, customer_last_name AS last_name, customer_phone AS phone, created_at
-      FROM public.bookings WHERE practitioner_id = p_practitioner_id
-      UNION ALL
-      SELECT lower(customer_email), customer_last_name, customer_phone, created_at
-      FROM public.booking_requests WHERE practitioner_id = p_practitioner_id AND intake_agent IS NULL
-    ) k
-    WHERE k.email = coalesce(v_email, v_fill_email)
-    ORDER BY k.created_at DESC
+    FROM public.lumia_known_customers(p_practitioner_id) k
+    WHERE k.identity = v_identity AND k.last_name IS NOT NULL
+    ORDER BY k.seen_at DESC
     LIMIT 1;
+    -- Fiche du référentiel clients, si elle est unique.
+    SELECT CASE WHEN count(*) = 1 THEN min(c.id::TEXT)::UUID END INTO v_customer
+    FROM public.mediumia_customers c
+    WHERE c.practitioner_id = p_practitioner_id
+      AND ((v_match = 'phone' AND c.phone_e164 = v_phone) OR (v_match = 'email' AND c.email = v_email));
+  ELSIF v_match = 'none' AND v_first IS NOT NULL AND v_last IS NOT NULL THEN
+    SELECT CASE WHEN count(*) = 1 THEN min(c.id::TEXT)::UUID END INTO v_suggestion
+    FROM public.mediumia_customers c
+    WHERE c.practitioner_id = p_practitioner_id
+      AND lower(c.first_name) = lower(v_first) AND lower(c.last_name) = lower(v_last);
   END IF;
 
   -- Message d'une conversation déjà ouverte : mise à jour de cette demande.
@@ -277,6 +308,8 @@ BEGIN
       preferred_period = coalesce(v_period, preferred_period),
       proposed_starts_at = coalesce(v_proposed, proposed_starts_at),
       customer_match = CASE WHEN customer_match IN ('phone', 'email') THEN customer_match ELSE v_match END,
+      customer_id = coalesce(customer_id, v_customer),
+      customer_suggestion_id = CASE WHEN coalesce(customer_id, v_customer) IS NULL THEN coalesce(v_suggestion, customer_suggestion_id) END,
       intake_missing = v_missing,
       intake_confidence = coalesce(v_confidence, intake_confidence),
       lumia_updated_at = now(),
@@ -293,7 +326,8 @@ BEGIN
     ) VALUES (v_request.id, v_agent, v_channel, v_message_id, v_conversation, v_message_at, v_detected_at, 'updated');
 
     RETURN jsonb_build_object('ok', true, 'outcome', 'updated', 'request_id', v_request.id,
-      'customer_match', v_request.customer_match, 'needs_review', v_review);
+      'customer_match', v_request.customer_match, 'customer_id', v_request.customer_id,
+      'customer_suggestion_id', v_request.customer_suggestion_id, 'needs_review', v_review);
   END IF;
 
   v_review := v_service IS NULL OR v_match = 'ambiguous'
@@ -304,14 +338,14 @@ BEGIN
     customer_message, preferred_period, status,
     intake_agent, source_channel, source_message_id, source_conversation_id, source_message_at, detected_at,
     requested_modality, proposed_starts_at, service_hint, customer_match, intake_missing, intake_confidence,
-    needs_review, lumia_updated_at
+    needs_review, lumia_updated_at, customer_id, customer_suggestion_id
   ) VALUES (
     p_practitioner_id, v_service, v_first, coalesce(v_last, v_fill_last), coalesce(v_email, v_fill_email),
     coalesce(v_phone, v_fill_phone),
     v_text, v_period, 'pending',
     v_agent, v_channel, v_message_id, v_conversation, v_message_at, v_detected_at,
     v_modality, v_proposed, v_hint, v_match, v_missing, v_confidence,
-    v_review, now()
+    v_review, now(), v_customer, v_suggestion
   ) RETURNING * INTO v_request;
 
   INSERT INTO public.booking_request_intake_events(
@@ -319,7 +353,7 @@ BEGIN
   ) VALUES (v_request.id, v_agent, v_channel, v_message_id, v_conversation, v_message_at, v_detected_at, 'created');
 
   RETURN jsonb_build_object('ok', true, 'outcome', 'created', 'request_id', v_request.id,
-    'customer_match', v_match, 'needs_review', v_review);
+    'customer_match', v_match, 'customer_id', v_customer, 'customer_suggestion_id', v_suggestion, 'needs_review', v_review);
 EXCEPTION
   WHEN unique_violation THEN
     -- Filet de sécurité (le verrou l'évite) : même message déjà enregistré.

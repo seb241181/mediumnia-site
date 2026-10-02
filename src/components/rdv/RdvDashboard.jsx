@@ -950,6 +950,9 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                       <p><span className="text-mist">Créneau demandé : </span><span className="text-deep">{new Date(req.proposed_starts_at).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })} (à valider, rien n’est réservé)</span></p>
                     )}
                     <p><span className="text-mist">Client : </span><span className="text-deep">{INTAKE_MATCH_LABELS[req.customer_match] || INTAKE_MATCH_LABELS.none}</span></p>
+                    {!req.customer_id && req.customer_suggestion_id && (
+                      <p><span className="text-mist">Suggestion : </span><span className="text-deep">un client du même nom existe dans le fichier clients — à vérifier, rien n’a été fusionné</span></p>
+                    )}
                     {req.intake_missing?.length > 0 && (
                       <p><span className="text-mist">À compléter : </span><span className="text-deep">{req.intake_missing.map(m => INTAKE_MISSING_LABELS[m] || m).join(', ')}</span></p>
                     )}
@@ -964,7 +967,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                       <span className="text-deep">{req.address_line1}{req.address_line2 ? `, ${req.address_line2}` : ''}, {req.postal_code} {req.city}</span>
                     </div>
                   )}
-                  {req.preferred_period && (
+                  {req.preferred_period && !req.intake_agent && (
                     <div className="col-span-2"><span className="text-mist">Préférence : </span><span className="text-deep italic">{req.preferred_period}</span></div>
                   )}
                   {req.customer_message && (

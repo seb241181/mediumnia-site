@@ -10,8 +10,10 @@ $P -f schema.sql
 $P -f $ROOT/docs/rdv-requests-migration.sql 2>&1 | grep -v NOTICE || true
 $P -f $ROOT/docs/rdv-confirm-request-migration.sql
 $P -c "grant all on all tables in schema public to service_role"
-$P -f $ROOT/supabase/migrations/20261002090000_lumia_rdv_intake.sql
-$P -f $ROOT/supabase/migrations/20261002090000_lumia_rdv_intake.sql   # rejouable
+for pass in 1 2; do   # deux passages : migrations rejouables
+  $P -f $ROOT/supabase/migrations/20261002085000_mediumia_customers.sql
+  $P -f $ROOT/supabase/migrations/20261002090000_lumia_rdv_intake.sql
+done
 $P -f seed.sql
 $P -f scenarios.sql 2>&1 | grep -E "OK|ÉCHEC|ERROR|==|PASSÉS"
 
@@ -31,4 +33,6 @@ echo "== 9. Droits : anon / authenticated =="
 for role in anon authenticated; do
   psql -d $DB -Atq -c "set role $role; select public.lumia_upsert_booking_request('aaaaaaaa-0000-0000-0000-000000000001', '{}')" 2>&1 | tail -1 | sed "s/^/  $role : /"
   psql -d $DB -Atq -c "set role $role; select count(*) from booking_request_intake_events" 2>&1 | tail -1 | sed "s/^/  $role : /"
+  psql -d $DB -Atq -c "set role $role; select count(*) from mediumia_customers" 2>&1 | tail -1 | sed "s/^/  $role : /"
+  psql -d $DB -Atq -c "set role $role; select public.upsert_mediumia_customer(null,'reservio','x',null,null,'a@b.fr',null,null)" 2>&1 | tail -1 | sed "s/^/  $role : /"
 done

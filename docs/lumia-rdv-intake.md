@@ -52,3 +52,25 @@ Réponse :
 - Une prestation n'est jamais inventée : un identifiant inconnu est ignoré, et un indice ambigu laisse la prestation vide, à vérifier.
 - Client : rapprochement par téléphone exact normalisé, puis par e-mail exact, jamais par le nom. En cas de doute (« ambiguous »), rien n'est fusionné.
 - Phase 1 : aucune confirmation automatique, aucun booking, aucun événement Google.
+
+## Référentiel clients (`mediumia_customers`)
+
+Table distincte de `booking_requests` et de `bookings`, créée vide par la migration `20261002085000_mediumia_customers.sql`. Elle prépare l'import futur de l'export clients Reservio ; **aucun import n'est fait à ce stade**.
+
+| Colonne | Rôle |
+|---|---|
+| `first_name`, `last_name`, `email` (minuscules), `phone_e164` | Données nécessaires à la gestion des rendez-vous, rien d'autre |
+| `source` | `mediumia`, `reservio`, `manual` |
+| `external_id` | Identifiant chez la source, unique par (praticien, source) : un ré-import ne duplique pas |
+| `imported_at`, `source_updated_at`, `updated_at` | Dates d'import, de mise à jour à la source et en base |
+
+- **Écriture** : uniquement par `upsert_mediumia_customer` (service_role).
+  - Une fiche n'est jamais remplacée par des données plus anciennes à la source : l'appel renvoie `stale`.
+  - Un champ vide n'efface jamais une valeur existante.
+- **Consentements marketing** : volontairement absents. S'il en faut un jour, ils iront dans une table séparée (canal, date, preuve, retrait), jamais mélangés aux données de gestion.
+- **Ce que Lumia en fait**, dans cet ordre de priorité :
+  1. téléphone exact normalisé ;
+  2. e-mail exact.
+
+  Une fiche unique trouvée ainsi est reliée par `booking_requests.customer_id`.
+- **Nom et prénom seuls** : simple suggestion (`customer_suggestion_id`), jamais un lien ni une complétion. Avec des homonymes, il n'y a aucune suggestion.

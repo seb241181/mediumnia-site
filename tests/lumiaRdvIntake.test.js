@@ -144,13 +144,18 @@ test('4-6. client matching: phone and email exact only, never by name; doubt = t
     ['06.11.22.33.44', '+33611223344'], ['+32 470 12 34 56', '+32470123456'], ['12', null], ['', null],
   ]) assert.equal(normalizePhone(input), expected, input)
   const sql = read('supabase/migrations/20261002090000_lumia_rdv_intake.sql')
-  assert.match(sql, /WHERE public\.lumia_normalize_phone\(k\.phone\) = v_phone/)
+  // Sources fiables : référentiel clients, rendez-vous, formulaire du site (normalisés).
+  const known = sql.slice(sql.indexOf('FUNCTION public.lumia_known_customers'), sql.indexOf('REVOKE ALL ON FUNCTION public.lumia_known_customers'))
+  assert.match(known, /FROM public\.mediumia_customers c/)
+  assert.match(known, /public\.lumia_normalize_phone\(b\.customer_phone\)/)
+  // Les demandes d'agent (données non vérifiées) ne servent jamais de référence.
+  assert.match(known, /r\.intake_agent IS NULL/)
+  assert.match(sql, /FROM public\.lumia_known_customers\(p_practitioner_id\) k\s+WHERE k\.phone = v_phone/)
   assert.match(sql, /v_match := 'ambiguous';\s+-- téléphone connu sous une autre adresse/)
+  assert.match(sql, /v_match := 'ambiguous';\s+-- numéro partagé par plusieurs clients/)
   assert.match(sql, /Même téléphone mais prénom différent/)
-  // Le nom n'est jamais un critère de rapprochement.
-  assert.doesNotMatch(sql, /lower\(customer_last_name\)\s*=|customer_last_name\s*=\s*v_last/)
-  // Sources fiables uniquement : les demandes d'agent ne servent jamais de référence.
-  assert.equal((sql.match(/intake_agent IS NULL/g) || []).length >= 3, true)
+  // Le nom ne relie jamais : il ne peut produire qu'une suggestion.
+  assert.doesNotMatch(sql, /customer_id = v_suggestion|v_customer := v_suggestion/)
 })
 
 test('7-8. service: a real MediumIA service or nothing, never invented', () => {
@@ -245,6 +250,28 @@ test('site form keeps every required field; migration is service_role only', () 
   assert.match(sql, /booking_requests_site_form_required_check[\s\S]*intake_agent IS NOT NULL\s+OR \(service_id IS NOT NULL AND customer_first_name IS NOT NULL/)
   assert.match(sql, /REVOKE ALL ON FUNCTION public\.lumia_upsert_booking_request\(UUID, JSONB\) FROM PUBLIC, anon, authenticated/)
   assert.match(sql, /REVOKE ALL ON public\.booking_request_intake_events FROM PUBLIC, anon, authenticated/)
+})
+
+test('customer referential (future Reservio import): phone, then email, name only as a suggestion', () => {
+  const sql = read('supabase/migrations/20261002085000_mediumia_customers.sql')
+  const intakeSql = read('supabase/migrations/20261002090000_lumia_rdv_intake.sql')
+  // Table distincte, provenance, identifiant externe, dates d'import / de mise à jour.
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.mediumia_customers/)
+  assert.match(sql, /source TEXT NOT NULL CHECK \(source IN \('mediumia', 'reservio', 'manual'\)\)/)
+  assert.match(sql, /external_id TEXT,\s+imported_at TIMESTAMPTZ,\s+source_updated_at TIMESTAMPTZ/)
+  assert.match(sql, /uq_mediumia_customers_external[\s\S]*\(practitioner_id, source, external_id\)/)
+  // Jamais écrasée par des données plus anciennes, jamais vidée.
+  assert.match(sql, /p_source_updated_at <= v_existing\.source_updated_at[\s\S]*'stale'/)
+  assert.match(sql, /first_name = coalesce\(nullif\(btrim\(p_first_name\), ''\), first_name\)/)
+  // Données de gestion uniquement : aucun consentement marketing mélangé.
+  const columns = sql.slice(sql.indexOf('CREATE TABLE'), sql.indexOf(');', sql.indexOf('CREATE TABLE')))
+  assert.doesNotMatch(columns, /marketing|consent|newsletter|optin|opt_in/i)
+  // Lumia : fiche reliée seulement par téléphone ou e-mail exacts, nom = suggestion.
+  assert.match(intakeSql, /ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES public\.mediumia_customers\(id\)/)
+  assert.match(intakeSql, /ADD COLUMN IF NOT EXISTS customer_suggestion_id UUID REFERENCES public\.mediumia_customers\(id\)/)
+  assert.match(intakeSql, /\(v_match = 'phone' AND c\.phone_e164 = v_phone\) OR \(v_match = 'email' AND c\.email = v_email\)/)
+  assert.match(intakeSql, /ELSIF v_match = 'none' AND v_first IS NOT NULL AND v_last IS NOT NULL THEN\s+SELECT CASE WHEN count\(\*\) = 1 THEN min\(c\.id::TEXT\)::UUID END INTO v_suggestion/)
+  assert.match(sql, /REVOKE ALL ON public\.mediumia_customers FROM PUBLIC, anon, authenticated/)
 })
 
 test('RDV screen shows « Demande détectée par Lumia » in the existing requests table', () => {

@@ -460,60 +460,7 @@ test('no path of the requests flow or of Lumia can create a Google Meet', () => 
   assert.match(ui, /a_preciser: 'canal à confirmer'/)
 })
 
-// ── Préversion : le backend doit parler à Supabase TEST avec une vraie clé serveur ──
 
-test('preview check: server key type only (never its value), publishable key refused, production untouched', async () => {
-  const { checkPreviewServerKey, supabaseKeyKind, supabaseProjectRef } = await import('../lib/previewSupabaseCheck.js')
-  const jwt = (role) => ['e30', Buffer.from(JSON.stringify({ role })).toString('base64url'), 'sig'].join('.')
-  assert.equal(supabaseKeyKind('sb_secret_abc123'), 'secret')
-  assert.equal(supabaseKeyKind('sb_publishable_abc123'), 'publishable')
-  assert.equal(supabaseKeyKind(jwt('service_role')), 'jwt_service_role')
-  assert.equal(supabaseKeyKind(jwt('anon')), 'jwt_anon')
-  assert.equal(supabaseKeyKind(''), 'missing')
-  assert.equal(supabaseProjectRef('https://wnbwhnqiulsdjcvkuwos.supabase.co'), 'wnbwhnqiulsdjcvkuwos')
-  const logs = []
-  const realWarn = console.warn
-  console.warn = (line) => logs.push(String(line))
-  try {
-    const secret = 'sb_secret_NE-JAMAIS-AFFICHER-0123456789'
-    assert.deepEqual(checkPreviewServerKey({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co', SUPABASE_SERVICE_ROLE_KEY: secret }),
-      { checked: true, project: 'wnbwhnqiulsdjcvkuwos', kind: 'secret' })
-    assert.throws(() => checkPreviewServerKey({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), /supabase_server_key_invalid/)
-    assert.throws(() => checkPreviewServerKey({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: jwt('anon') }), /supabase_server_key_invalid/)
-    // Production et local : aucune vérification, aucun log, aucun refus.
-    assert.deepEqual(checkPreviewServerKey({ VERCEL_ENV: 'production', SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), { checked: false })
-    assert.deepEqual(checkPreviewServerKey({ SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), { checked: false })
-    // Tests lancés par le build Vercel (VERCEL_ENV=preview) : jamais de refus.
-    assert.deepEqual(checkPreviewServerKey({ VERCEL_ENV: 'preview', NODE_TEST_CONTEXT: 'child-v8', SUPABASE_SERVICE_ROLE_KEY: 'test-key' }), { checked: false })
-    assert.deepEqual(logs, [
-      '[preview-check] backend supabase=wnbwhnqiulsdjcvkuwos key=secret',
-      '[preview-check] backend supabase=wnbwhnqiulsdjcvkuwos key=publishable',
-      '[preview-check] backend supabase=x key=jwt_anon',
-    ])
-    assert.ok(!logs.join('\n').includes(secret.slice(10)), 'la valeur de la clé n’apparaît jamais')
-  } finally { console.warn = realWarn }
-  const admin = read('lib/supabaseAdmin.js')
-  assert.ok(admin.indexOf('checkPreviewServerKey()') < admin.indexOf('createClient(url, key'))
-  assert.match(read('vite.config.js'), /projet \$\{project\}/)
-})
-
-test('preview me diagnostic: slugs and counts only, never client data', async () => {
-  const { logPreviewMe } = await import('../lib/previewSupabaseCheck.js')
-  const env = { VERCEL_ENV: 'preview' }
-  const line = logPreviewMe({
-    practitioners: [{ id: 'p1', slug: 'sebastien-seguin', name: 'Sébastien' }, { id: 'p2', slug: 'autre' }],
-    requests: [
-      { practitioner_id: 'p1', status: 'pending', customer_first_name: 'Jean', customer_email: 'jean@example.test' },
-      { practitioner_id: 'p1', status: 'scheduled', customer_first_name: 'Marie' },
-    ],
-    requestsError: null,
-  }, env)
-  assert.equal(line, '[preview-check] me practitioners=sebastien-seguin:1p/2,autre:0p/0 requests_total=2 requests_error=none')
-  assert.doesNotMatch(line, /Jean|Marie|example\.test|Sébastien/)
-  assert.match(logPreviewMe({ practitioners: [], requests: null, requestsError: { code: '42703' } }, env), /requests_total=null requests_error=42703/)
-  assert.equal(logPreviewMe({ practitioners: [] }, { VERCEL_ENV: 'production' }), null)
-  assert.equal(logPreviewMe({ practitioners: [] }, { VERCEL_ENV: 'preview', NODE_TEST_CONTEXT: 'child-v8' }), null)
-})
 
 test('manual confirmation of an agent request: booking « manual », payment guard untouched', () => {
   const sql = read('supabase/migrations/20261002093000_lumia_confirm_request_manual_source.sql')

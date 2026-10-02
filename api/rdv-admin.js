@@ -5,7 +5,6 @@ import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
 import { cancelSlotOffer, createSlotOffer, listSlotOffers } from '../lib/rdvSlotOffers.js'
 import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, transferBookingDeposit } from '../lib/rdvDepositSettlements.js'
 import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
-import { logPreviewMe } from '../lib/previewSupabaseCheck.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
@@ -90,7 +89,7 @@ async function handleMe(req, res, supabase, userId) {
     { data: connections },
     { data: bookings },
     { data: exceptions },
-    { data: requests, error: requestsError },
+    { data: requests },
   ] = await Promise.all([
     supabase.from('booking_services')
       .select('id, slug, title, description, duration_min, price_cents, currency, modality, is_active, sort_order, booking_mode, practitioner_id')
@@ -115,9 +114,6 @@ async function handleMe(req, res, supabase, userId) {
       .order('created_at', { ascending: false })
       .limit(100),
   ])
-
-  // Préversion seulement : comptes et codes d'erreur (aucune donnée client).
-  logPreviewMe({ practitioners, requests, requestsError })
 
   // Phase 2 : récupérer google_event_id pour les demandes planifiées
   const scheduledWithBooking = (requests || []).filter(r => r.status === 'scheduled' && r.confirmed_booking_id)

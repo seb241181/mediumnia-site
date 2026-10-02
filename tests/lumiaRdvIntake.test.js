@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { analyzeReservioExport, mapReservioCustomer, nameKey, RESERVIO_DROPPED_COLUMNS } from '../lib/reservioCustomers.js'
 import {
   AUTO_CONFIRM_ENABLED,
   authenticateLumia,
@@ -252,26 +253,66 @@ test('site form keeps every required field; migration is service_role only', () 
   assert.match(sql, /REVOKE ALL ON public\.booking_request_intake_events FROM PUBLIC, anon, authenticated/)
 })
 
-test('customer referential (future Reservio import): phone, then email, name only as a suggestion', () => {
+test('customer referential (future Reservio import): distinct from requests, provenance, no overwrite, consents apart', () => {
   const sql = read('supabase/migrations/20261002085000_mediumia_customers.sql')
   const intakeSql = read('supabase/migrations/20261002090000_lumia_rdv_intake.sql')
-  // Table distincte, provenance, identifiant externe, dates d'import / de mise à jour.
+  // Table distincte (client ≠ demande), provenance, identifiant externe éventuel, dates.
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.mediumia_customers/)
   assert.match(sql, /source TEXT NOT NULL CHECK \(source IN \('mediumia', 'reservio', 'manual'\)\)/)
-  assert.match(sql, /external_id TEXT,\s+imported_at TIMESTAMPTZ,\s+source_updated_at TIMESTAMPTZ/)
-  assert.match(sql, /uq_mediumia_customers_external[\s\S]*\(practitioner_id, source, external_id\)/)
-  // Jamais écrasée par des données plus anciennes, jamais vidée.
-  assert.match(sql, /p_source_updated_at <= v_existing\.source_updated_at[\s\S]*'stale'/)
-  assert.match(sql, /first_name = coalesce\(nullif\(btrim\(p_first_name\), ''\), first_name\)/)
-  // Données de gestion uniquement : aucun consentement marketing mélangé.
-  const columns = sql.slice(sql.indexOf('CREATE TABLE'), sql.indexOf(');', sql.indexOf('CREATE TABLE')))
-  assert.doesNotMatch(columns, /marketing|consent|newsletter|optin|opt_in/i)
-  // Lumia : fiche reliée seulement par téléphone ou e-mail exacts, nom = suggestion.
+  assert.match(sql, /field_sources JSONB NOT NULL DEFAULT/)
+  assert.match(sql, /identity_status TEXT NOT NULL DEFAULT 'ok' CHECK \(identity_status IN \('ok', 'ambiguous'\)\)/)
+  assert.match(sql, /imported_at TIMESTAMPTZ,\s+source_updated_at TIMESTAMPTZ/)
+  // Jamais plus ancien, jamais sans date, jamais vidé ; jamais de fusion sur le nom seul.
+  assert.match(sql, /IF v_old IS NULL OR \(p_source_updated_at IS NOT NULL AND v_old_at IS NOT NULL AND p_source_updated_at > v_old_at\) THEN/)
+  assert.match(sql, /CONTINUE WHEN v_new IS NULL OR v_new = v_old;/)
+  assert.match(sql, /v_conflict := true;   -- même téléphone, autre nom/)
+  assert.doesNotMatch(sql, /WHERE[^;]*mediumia_names_compatible[^;]*AND phone_e164 IS NULL AND email IS NULL/)
+  // Données de gestion uniquement, consentements à part, note/adresse/naissance absentes.
+  const customers = sql.slice(sql.indexOf('CREATE TABLE IF NOT EXISTS public.mediumia_customers'), sql.indexOf('CREATE UNIQUE INDEX'))
+  assert.doesNotMatch(customers, /marketing|consent|address|note|birthday/i)
+  assert.match(sql, /kind TEXT NOT NULL CHECK \(kind IN \('privacy_policy', 'marketing'\)\)/)
+  // Lumia : fiche reliée seulement par téléphone / e-mail exacts et non ambiguë ; nom = suggestion.
   assert.match(intakeSql, /ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES public\.mediumia_customers\(id\)/)
   assert.match(intakeSql, /ADD COLUMN IF NOT EXISTS customer_suggestion_id UUID REFERENCES public\.mediumia_customers\(id\)/)
-  assert.match(intakeSql, /\(v_match = 'phone' AND c\.phone_e164 = v_phone\) OR \(v_match = 'email' AND c\.email = v_email\)/)
-  assert.match(intakeSql, /ELSIF v_match = 'none' AND v_first IS NOT NULL AND v_last IS NOT NULL THEN\s+SELECT CASE WHEN count\(\*\) = 1 THEN min\(c\.id::TEXT\)::UUID END INTO v_suggestion/)
-  assert.match(sql, /REVOKE ALL ON public\.mediumia_customers FROM PUBLIC, anon, authenticated/)
+  assert.match(intakeSql, /c\.identity_status = 'ok'\s+AND \(\(v_match = 'phone' AND c\.phone_e164 = v_phone\) OR \(v_match = 'email' AND c\.email = v_email\)\)/)
+  assert.match(intakeSql, /IF v_phone_ambiguous THEN\s+v_match := 'ambiguous';/)
+  assert.match(sql + intakeSql, /REVOKE ALL ON public\.mediumia_customers FROM PUBLIC, anon, authenticated/)
+  assert.match(sql, /REVOKE ALL ON public\.mediumia_customer_consents FROM PUBLIC, anon, authenticated/)
+})
+
+test('Reservio export mapping: useful fields only, consents kept apart, privacy ≠ marketing', () => {
+  const mapped = mapReservioCustomer({
+    firstname: ' Hélène ', lastname: 'Fictive', email: ' Helene@Example.TEST ', phone: '06 12 34 56 78',
+    address: '1 rue Exemple', note: 'note', birthday: '1980-01-01',
+    privacyPolicyAcceptedAt: '2024-03-01T10:00:00Z', marketingNotificationsAcceptedAt: '',
+  })
+  assert.deepEqual(mapped.customer, { source: 'reservio', external_id: null, first_name: 'Hélène', last_name: 'Fictive', email: 'helene@example.test', phone_e164: '+33612345678' })
+  for (const dropped of RESERVIO_DROPPED_COLUMNS) assert.ok(!(dropped in mapped.customer))
+  // La politique de confidentialité n'est jamais un consentement marketing.
+  assert.deepEqual(mapped.consents, [{ kind: 'privacy_policy', source: 'reservio', accepted_at: '2024-03-01T10:00:00.000Z' }])
+  const marketing = mapReservioCustomer({ phone: '0612345678', marketingNotificationsAcceptedAt: '2023-05-02T08:00:00Z' })
+  assert.deepEqual(marketing.consents.map((c) => c.kind), ['marketing'])
+  assert.deepEqual(mapReservioCustomer({ firstname: 'Sans', lastname: 'Contact' }), { customer: null, consents: [], issues: ['no_contact'] })
+  assert.deepEqual(mapReservioCustomer({ email: 'pas-un-email', phone: '12' }).issues, ['email_invalid', 'phone_invalid', 'no_contact'])
+  assert.equal(nameKey('Réservio'), nameKey('RESERVIO'))
+})
+
+test('Reservio dry-run analysis: duplicates, shared phones, counts only (no personal data)', () => {
+  const rows = [
+    { firstname: 'Anne', lastname: 'Un', phone: '0611111111', email: 'anne@example.test', privacyPolicyAcceptedAt: '2024-01-01' },
+    { firstname: 'anne', lastname: 'UN', phone: '+33 6 11 11 11 11', email: 'anne@example.test' }, // même personne
+    { firstname: 'Paul', lastname: 'Deux', phone: '0622222222', marketingNotificationsAcceptedAt: '2024-01-01' },
+    { firstname: 'Julie', lastname: 'Deux', phone: '06 22 22 22 22' }, // même téléphone, autre personne
+    { firstname: 'Rien', lastname: 'Du tout', note: 'x', address: 'y' },
+  ]
+  const report = analyzeReservioExport(rows)
+  assert.deepEqual(report, {
+    total: 5, importable: 4, without_contact: 1, invalid_phone: 0, invalid_email: 0,
+    same_person_duplicates: 1, ambiguous_phones: 1, ambiguous_emails: 0,
+    privacy_policy_consents: 1, marketing_consents: 1,
+    dropped_columns_filled: { address: 1, note: 1, birthday: 0 },
+  })
+  assert.doesNotMatch(JSON.stringify(report), /Anne|Paul|example\.test|06/)
 })
 
 test('RDV screen shows « Demande détectée par Lumia » in the existing requests table', () => {

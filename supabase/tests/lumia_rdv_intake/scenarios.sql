@@ -39,29 +39,48 @@ select pg_temp.ok('client d''un autre praticien : non rapproché', (select custo
 
 select pg_temp.ok('une demande d''agent ne sert jamais de référence client', (pg_temp.intake('{"message_id":"SMS-9b","phone":"0600000001","first_name":"Inconnue"}')->>'customer_match') = 'none');
 
-\echo '== 3 bis. Référentiel clients (futur import Reservio, aucune donnée réelle) =='
-select public.upsert_mediumia_customer(:P, 'reservio', 'R-1', 'Nadia', 'Reservio', 'Nadia@Example.test', '+33622334455', '2026-09-01') as k1 \gset
-select pg_temp.ok('fiche Reservio créée (e-mail en minuscules)', (:'k1'::jsonb->>'outcome') = 'created' and (select email = 'nadia@example.test' and imported_at is not null from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
-select pg_temp.ok('ré-import plus ancien : rien n''est écrasé (stale)', (public.upsert_mediumia_customer(:P, 'reservio', 'R-1', 'Ancien', 'Nom', 'ancien@example.test', null, '2026-08-01')->>'outcome') = 'stale' and (select first_name = 'Nadia' and email = 'nadia@example.test' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
-select public.upsert_mediumia_customer(:P, 'reservio', 'R-1', null, null, 'nadia.new@example.test', null, '2026-09-20') as k1b \gset
-select pg_temp.ok('ré-import plus récent : mis à jour, un champ vide n''efface rien', (:'k1b'::jsonb->>'outcome') = 'updated' and (select first_name = 'Nadia' and last_name = 'Reservio' and email = 'nadia.new@example.test' and phone_e164 = '+33622334455' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
-select pg_temp.ok('même identifiant externe : une seule fiche', (select count(*) from public.mediumia_customers where external_id = 'R-1') = 1);
-select pg_temp.ok('Reservio sans identifiant externe : refusé', (public.upsert_mediumia_customer(:P, 'reservio', null, 'X', 'Y', 'x@example.test', null, null)->>'error') = 'external_id_required');
-select public.upsert_mediumia_customer(:P, 'reservio', 'R-2', 'Omar', 'Seul', null, '+33633445566', '2026-09-01') as k2 \gset
-select public.upsert_mediumia_customer(:P, 'reservio', 'R-3', 'Jean', 'Double', 'jean1@example.test', null, '2026-09-01') as k3 \gset
-select public.upsert_mediumia_customer(:P, 'reservio', 'R-4', 'Jean', 'Double', 'jean2@example.test', null, '2026-09-01') as k4 \gset
-select pg_temp.intake('{"message_id":"SMS-K1","phone":"06 22 33 44 55","first_name":"Nadia"}') as i1 \gset
-select pg_temp.ok('1. téléphone exact → fiche client reliée, e-mail complété', (select customer_match = 'phone' and customer_id = (:'k1'::jsonb->>'customer_id')::uuid and customer_email = 'nadia.new@example.test' and customer_last_name = 'Reservio' from public.booking_requests where id = (:'i1'::jsonb->>'request_id')::uuid));
-select pg_temp.intake('{"message_id":"SMS-K2","email":"NADIA.NEW@example.test","first_name":"Nadia"}') as i2 \gset
-select pg_temp.ok('2. e-mail exact → fiche client reliée', (select customer_match = 'email' and customer_id = (:'k1'::jsonb->>'customer_id')::uuid from public.booking_requests where id = (:'i2'::jsonb->>'request_id')::uuid));
-select pg_temp.intake('{"message_id":"SMS-K3","phone":"0633445566","first_name":"Omar"}') as i3 \gset
-select pg_temp.ok('fiche sans e-mail reconnue par téléphone', (select customer_match = 'phone' and customer_id = (:'k2'::jsonb->>'customer_id')::uuid and customer_email is null and needs_review from public.booking_requests where id = (:'i3'::jsonb->>'request_id')::uuid));
-select pg_temp.intake('{"message_id":"SMS-K4","first_name":"Nadia","last_name":"Reservio"}') as i4 \gset
-select pg_temp.ok('3. nom seul → simple suggestion, aucune fusion', (select customer_match = 'none' and customer_id is null and customer_suggestion_id = (:'k1'::jsonb->>'customer_id')::uuid and customer_email is null from public.booking_requests where id = (:'i4'::jsonb->>'request_id')::uuid));
+\echo '== 3 bis. Référentiel clients (futur import Reservio, fiches fictives) =='
+create or replace function pg_temp.cust(id text) returns public.mediumia_customers language sql as $$ select * from public.mediumia_customers where id = id::uuid $$;
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Nadia', 'Réservio', 'Nadia@Example.test', '+33622334455', '2026-09-01') as k1 \gset
+select pg_temp.ok('fiche Reservio sans identifiant externe créée, e-mail normalisé, provenance par champ', (:'k1'::jsonb->>'outcome') = 'created' and (select email = 'nadia@example.test' and imported_at is not null and field_sources->'email'->>'source' = 'reservio' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'nadia', 'RESERVIO', 'nadia@example.test', '+33622334455', '2026-09-01') as k1b \gset
+select pg_temp.ok('doublon du fichier (même téléphone + e-mail, même nom) : même fiche, forte confiance', (:'k1b'::jsonb->>'customer_id') = (:'k1'::jsonb->>'customer_id') and (:'k1b'::jsonb->>'confidence') = 'strong' and (:'k1b'::jsonb->>'outcome') = 'unchanged');
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Nadia', null, 'nadia.new@example.test', '+33622334455', '2026-09-20') as k1c \gset
+select pg_temp.ok('même téléphone, info plus récente : e-mail mis à jour, nom conservé', (:'k1c'::jsonb->>'outcome') = 'updated' and (select email = 'nadia.new@example.test' and last_name = 'Réservio' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Nadia', null, 'nadia.old@example.test', '+33622334455', '2026-06-01') as k1d \gset
+select pg_temp.ok('valeur plus ancienne : rien n''est écrasé', (:'k1d'::jsonb->>'outcome') = 'unchanged' and (select email = 'nadia.new@example.test' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Nadia', null, 'nadia.sansdate@example.test', '+33622334455', null) as k1e \gset
+select pg_temp.ok('valeur sans date : n''écrase jamais', (:'k1e'::jsonb->>'outcome') = 'unchanged' and (select email = 'nadia.new@example.test' from public.mediumia_customers where id = (:'k1'::jsonb->>'customer_id')::uuid));
+select public.upsert_mediumia_customer(:P, 'mediumia', null, 'Ines', 'Récente', 'ines.now@example.test', '+33644556677', '2026-09-30') as m1 \gset
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Ines', 'Récente', 'ines.old@example.test', '+33644556677', '2025-05-01') as m2 \gset
+select pg_temp.ok('donnée MediumIA plus récente jamais écrasée par une ancienne valeur Reservio', (:'m2'::jsonb->>'customer_id') = (:'m1'::jsonb->>'customer_id') and (select email = 'ines.now@example.test' and field_sources->'email'->>'source' = 'mediumia' from public.mediumia_customers where id = (:'m1'::jsonb->>'customer_id')::uuid));
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Karim', 'Autre', null, '+33622334455', '2026-09-01') as k2 \gset
+select pg_temp.ok('même téléphone, autre nom : fiche distincte, les deux marquées ambiguës', (:'k2'::jsonb->>'outcome') = 'created_ambiguous' and (select count(*) from public.mediumia_customers where phone_e164 = '+33622334455' and identity_status = 'ambiguous') = 2);
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Jean', 'Double', 'jean1@example.test', null, '2026-09-01') as j1 \gset
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Jean', 'Double', 'jean2@example.test', null, '2026-09-01') as j2 \gset
+select pg_temp.ok('jamais de fusion sur le nom seul : homonymes sans contact commun = deux fiches', (:'j1'::jsonb->>'outcome') = 'created' and (:'j2'::jsonb->>'outcome') = 'created' and (select count(*) from public.mediumia_customers where last_name = 'Double') = 2);
+select public.upsert_mediumia_customer(:P, 'reservio', 'R-9', 'Zoé', 'Ext', null, '+33655667788', '2026-09-01') as e1 \gset
+select public.upsert_mediumia_customer(:P, 'reservio', 'R-9', 'Zoé', 'Ext', null, '+33655667788', '2026-09-02') as e2 \gset
+select pg_temp.ok('identifiant externe : clé exacte, une seule fiche', (:'e1'::jsonb->>'outcome') = 'created' and (:'e2'::jsonb->>'confidence') = 'external_id' and (select count(*) from public.mediumia_customers where external_id = 'R-9') = 1);
+select public.upsert_mediumia_customer(:P, 'reservio', null, 'Omar', 'Seul', null, '+33633445566', '2026-09-01') as k3 \gset
+\echo '-- Consentements séparés (traces uniquement)'
+select public.record_mediumia_customer_consent((:'k3'::jsonb->>'customer_id')::uuid, 'privacy_policy', 'reservio', '2024-03-01') as c1 \gset
+select public.record_mediumia_customer_consent((:'k3'::jsonb->>'customer_id')::uuid, 'marketing', 'reservio', '2024-03-01') as c2 \gset
+select pg_temp.ok('politique de confidentialité et marketing enregistrés séparément', (:'c1'::jsonb->>'outcome') = 'recorded' and (:'c2'::jsonb->>'outcome') = 'recorded' and (select count(distinct kind) from public.mediumia_customer_consents) = 2);
+select pg_temp.ok('consentement déjà tracé : pas de doublon', (public.record_mediumia_customer_consent((:'k3'::jsonb->>'customer_id')::uuid, 'marketing', 'reservio', '2025-01-01')->>'outcome') = 'already_recorded');
+select pg_temp.ok('type de consentement inconnu refusé', (public.record_mediumia_customer_consent((:'k3'::jsonb->>'customer_id')::uuid, 'newsletter', 'reservio', now())->>'error') = 'invalid_consent');
+\echo '-- Lumia : SMS → téléphone → fiche client → historique → nouvelle demande'
+select pg_temp.intake('{"message_id":"SMS-K1","phone":"06 33 44 55 66","first_name":"Omar"}') as i1 \gset
+select pg_temp.ok('1. téléphone exact → fiche reliée (client ≠ demande)', (select customer_match = 'phone' and customer_id = (:'k3'::jsonb->>'customer_id')::uuid and id <> customer_id from public.booking_requests where id = (:'i1'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K2","email":"ines.now@example.test","first_name":"Ines"}') as i2 \gset
+select pg_temp.ok('2. e-mail exact → fiche reliée', (select customer_match = 'email' and customer_id = (:'m1'::jsonb->>'customer_id')::uuid from public.booking_requests where id = (:'i2'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K3","phone":"0622334455","first_name":"Nadia"}') as i3 \gset
+select pg_temp.ok('téléphone d''une fiche ambiguë → demande ambiguë, aucune fiche reliée', (select customer_match = 'ambiguous' and customer_id is null and customer_email is null from public.booking_requests where id = (:'i3'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"SMS-K4","first_name":"Ines","last_name":"Recente"}') as i4 \gset
+select pg_temp.ok('3. nom seul (sans accent) → simple suggestion, aucune fusion', (select customer_match = 'none' and customer_id is null and customer_suggestion_id = (:'m1'::jsonb->>'customer_id')::uuid and customer_email is null from public.booking_requests where id = (:'i4'::jsonb->>'request_id')::uuid));
 select pg_temp.intake('{"message_id":"SMS-K5","first_name":"Jean","last_name":"Double"}') as i5 \gset
 select pg_temp.ok('homonymes → pas même une suggestion', (select customer_suggestion_id is null and customer_id is null from public.booking_requests where id = (:'i5'::jsonb->>'request_id')::uuid));
-select pg_temp.intake('{"message_id":"SMS-K6","phone":"0622334455","first_name":"Karim"}') as i6 \gset
-select pg_temp.ok('téléphone d''une fiche, autre prénom → ambigu, non relié', (select customer_match = 'ambiguous' and customer_id is null and customer_email is null from public.booking_requests where id = (:'i6'::jsonb->>'request_id')::uuid));
+select pg_temp.ok('historique MediumIA renvoyé pour un client reconnu', (pg_temp.intake('{"message_id":"SMS-K6","phone":"0611223344","first_name":"Claire"}')->'customer_history'->>'bookings')::int = 1);
 
 \echo '== 4. Conversation : la demande est mise à jour (cas B) =='
 select pg_temp.intake('{"message_id":"SMS-10","conversation_id":"CONV-A","phone":"0600000010","first_name":"Léa","message_text":"Bonjour, je voudrais un rendez-vous."}') as r10 \gset

@@ -55,22 +55,39 @@ Réponse :
 
 ## Référentiel clients (`mediumia_customers`)
 
-Table distincte de `booking_requests` et de `bookings`, créée vide par la migration `20261002085000_mediumia_customers.sql`. Elle prépare l'import futur de l'export clients Reservio ; **aucun import n'est fait à ce stade**.
+Un client n'est pas une demande : `mediumia_customers` est distinct de `booking_requests` et de `bookings`. La migration `20261002085000_mediumia_customers.sql` le crée vide. Il pourra recevoir l'export clients Reservio (3 651 fiches) ; **aucun import n'est fait à ce stade**.
 
 | Colonne | Rôle |
 |---|---|
-| `first_name`, `last_name`, `email` (minuscules), `phone_e164` | Données nécessaires à la gestion des rendez-vous, rien d'autre |
-| `source` | `mediumia`, `reservio`, `manual` |
-| `external_id` | Identifiant chez la source, unique par (praticien, source) : un ré-import ne duplique pas |
+| `first_name`, `last_name`, `email` (normalisé), `phone_e164` (normalisé) | Données utiles à la gestion des rendez-vous |
+| `source` | Provenance de la fiche : `mediumia`, `reservio`, `manual` |
+| `external_id` | Identifiant externe s'il existe (l'export Reservio n'en a pas) |
+| `field_sources` | Provenance et date de chaque champ : `{ "email": { "source": "reservio", "at": "…" } }` |
+| `identity_status` | `ok` ou `ambiguous` (téléphone ou e-mail partagé par des noms différents) |
 | `imported_at`, `source_updated_at`, `updated_at` | Dates d'import, de mise à jour à la source et en base |
 
-- **Écriture** : uniquement par `upsert_mediumia_customer` (service_role).
-  - Une fiche n'est jamais remplacée par des données plus anciennes à la source : l'appel renvoie `stale`.
-  - Un champ vide n'efface jamais une valeur existante.
-- **Consentements marketing** : volontairement absents. S'il en faut un jour, ils iront dans une table séparée (canal, date, preuve, retrait), jamais mélangés aux données de gestion.
-- **Ce que Lumia en fait**, dans cet ordre de priorité :
-  1. téléphone exact normalisé ;
-  2. e-mail exact.
+**Écriture** : uniquement par `upsert_mediumia_customer` (service_role).
+- **Rapprochement**, dans cet ordre :
+  1. identifiant externe ;
+  2. téléphone exact ;
+  3. e-mail exact.
 
-  Une fiche unique trouvée ainsi est reliée par `booking_requests.customer_id`.
+  Le nom ne sert qu'à vérifier la compatibilité. Téléphone et e-mail concordants donnent une confiance « strong ».
+- **Doublons du fichier** : même téléphone ou e-mail avec un nom compatible donne la même fiche. Même téléphone ou e-mail avec un autre nom donne une nouvelle fiche, et toutes les fiches concernées passent en `ambiguous`, sans fusion.
+- **Écrasement** : un champ n'est remplacé que par une valeur plus récente. Une valeur sans date ne remplace jamais rien, et un vide n'efface rien. Une donnée MediumIA récente n'est donc jamais remplacée par une ancienne valeur Reservio.
+
+**Consentements** : table séparée `mediumia_customer_consents`, alimentée par `record_mediumia_customer_consent`.
+- `privacyPolicyAcceptedAt` devient `privacy_policy`. Ce n'est **pas** un consentement marketing.
+- `marketingNotificationsAcceptedAt` devient `marketing` : c'est seulement la trace de l'ancien consentement Reservio.
+- Aucun usage automatique en phase 1 : aucune communication commerciale.
+
+**Colonnes Reservio écartées** : `address`, `note` et `birthday` ne sont pas importées.
+
+**Préparation de l'import** : `lib/reservioCustomers.js` (fonctions pures, sans base) fournit :
+- `mapReservioCustomer`, qui convertit une ligne d'export en fiche et en consentements ;
+- `analyzeReservioExport`, une analyse à blanc qui ne renvoie que des compteurs : importables, sans contact, doublons, téléphones ou e-mails ambigus, consentements, colonnes écartées remplies.
+
+**Lumia** :
+- **Parcours** : SMS entrant → téléphone → `mediumia_customers` → fiche → historique MediumIA (`customer_history` : nombre de rendez-vous, dernier rendez-vous) → nouvelle `booking_request`.
+- **Lien** : `customer_id` n'est posé que pour une fiche unique, non ambiguë, trouvée par téléphone ou e-mail exacts.
 - **Nom et prénom seuls** : simple suggestion (`customer_suggestion_id`), jamais un lien ni une complétion. Avec des homonymes, il n'y a aucune suggestion.

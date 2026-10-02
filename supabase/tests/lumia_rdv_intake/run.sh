@@ -35,4 +35,5 @@ for role in anon authenticated; do
   psql -d $DB -Atq -c "set role $role; select count(*) from booking_request_intake_events" 2>&1 | tail -1 | sed "s/^/  $role : /"
   psql -d $DB -Atq -c "set role $role; select count(*) from mediumia_customers" 2>&1 | tail -1 | sed "s/^/  $role : /"
   psql -d $DB -Atq -c "set role $role; select public.upsert_mediumia_customer(null,'reservio','x',null,null,'a@b.fr',null,null)" 2>&1 | tail -1 | sed "s/^/  $role : /"
+  psql -d $DB -Atq -c "set role $role; select count(*) from mediumia_customer_consents" 2>&1 | tail -1 | sed "s/^/  $role : /"
 done

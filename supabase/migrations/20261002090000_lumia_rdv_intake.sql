@@ -139,20 +139,21 @@ GRANT EXECUTE ON FUNCTION public.lumia_normalize_phone(TEXT) TO service_role;
 
 -- Sources fiables pour reconnaître un client (identité = e-mail, sinon fiche).
 CREATE OR REPLACE FUNCTION public.lumia_known_customers(p_practitioner_id UUID)
-RETURNS TABLE (identity TEXT, email TEXT, first_name TEXT, last_name TEXT, phone TEXT, customer_id UUID, seen_at TIMESTAMPTZ)
+RETURNS TABLE (identity TEXT, email TEXT, first_name TEXT, last_name TEXT, phone TEXT, customer_id UUID, seen_at TIMESTAMPTZ, ambiguous BOOLEAN)
 LANGUAGE sql
 STABLE
 SET search_path = public, pg_temp
 AS $$
-  SELECT coalesce(c.email, 'customer:' || c.id::TEXT), c.email, c.first_name, c.last_name, c.phone_e164, c.id, c.updated_at
+  SELECT coalesce(c.email, 'customer:' || c.id::TEXT), c.email, c.first_name, c.last_name, c.phone_e164, c.id, c.updated_at,
+         c.identity_status = 'ambiguous'
   FROM public.mediumia_customers c WHERE c.practitioner_id = p_practitioner_id
   UNION ALL
   SELECT lower(b.customer_email), lower(b.customer_email), b.customer_first_name, b.customer_last_name,
-         public.lumia_normalize_phone(b.customer_phone), NULL::UUID, b.created_at
+         public.lumia_normalize_phone(b.customer_phone), NULL::UUID, b.created_at, false
   FROM public.bookings b WHERE b.practitioner_id = p_practitioner_id AND b.customer_email IS NOT NULL
   UNION ALL
   SELECT lower(r.customer_email), lower(r.customer_email), r.customer_first_name, r.customer_last_name,
-         public.lumia_normalize_phone(r.customer_phone), NULL::UUID, r.created_at
+         public.lumia_normalize_phone(r.customer_phone), NULL::UUID, r.created_at, false
   FROM public.booking_requests r
   WHERE r.practitioner_id = p_practitioner_id AND r.intake_agent IS NULL AND r.customer_email IS NOT NULL;
 $$;
@@ -205,6 +206,8 @@ DECLARE
   v_phone_emails TEXT[];
   v_phone_first_names TEXT[];
   v_identity TEXT;
+  v_phone_ambiguous BOOLEAN := false;
+  v_history JSONB;
   v_customer UUID;
   v_suggestion UUID;
   v_match TEXT := 'none';
@@ -238,13 +241,16 @@ BEGIN
   IF v_phone IS NOT NULL THEN
     SELECT array_agg(DISTINCT k.identity),
            array_agg(DISTINCT k.email) FILTER (WHERE k.email IS NOT NULL),
-           array_agg(DISTINCT lower(k.first_name)) FILTER (WHERE k.first_name IS NOT NULL)
-    INTO v_phone_ids, v_phone_emails, v_phone_first_names
+           array_agg(DISTINCT lower(k.first_name)) FILTER (WHERE k.first_name IS NOT NULL),
+           coalesce(bool_or(k.ambiguous), false)
+    INTO v_phone_ids, v_phone_emails, v_phone_first_names, v_phone_ambiguous
     FROM public.lumia_known_customers(p_practitioner_id) k
     WHERE k.phone = v_phone;
   END IF;
 
-  IF v_email IS NOT NULL AND coalesce(cardinality(v_phone_emails), 0) > 0 AND NOT (v_email = ANY (v_phone_emails)) THEN
+  IF v_phone_ambiguous THEN
+    v_match := 'ambiguous';              -- fiche client déjà marquée ambiguë (numéro partagé)
+  ELSIF v_email IS NOT NULL AND coalesce(cardinality(v_phone_emails), 0) > 0 AND NOT (v_email = ANY (v_phone_emails)) THEN
     v_match := 'ambiguous';              -- téléphone connu sous une autre adresse
   ELSIF coalesce(cardinality(v_phone_ids), 0) > 1 THEN
     v_match := 'ambiguous';              -- numéro partagé par plusieurs clients
@@ -257,6 +263,8 @@ BEGIN
       v_identity := v_phone_ids[1];
       v_fill_email := v_phone_emails[1];
     END IF;
+  ELSIF v_email IS NOT NULL AND EXISTS (SELECT 1 FROM public.lumia_known_customers(p_practitioner_id) k WHERE k.email = v_email AND k.ambiguous) THEN
+    v_match := 'ambiguous';              -- e-mail partagé (fiche ambiguë)
   ELSIF v_email IS NOT NULL AND EXISTS (SELECT 1 FROM public.lumia_known_customers(p_practitioner_id) k WHERE k.email = v_email) THEN
     v_match := 'email';
     v_identity := v_email;
@@ -271,13 +279,20 @@ BEGIN
     -- Fiche du référentiel clients, si elle est unique.
     SELECT CASE WHEN count(*) = 1 THEN min(c.id::TEXT)::UUID END INTO v_customer
     FROM public.mediumia_customers c
-    WHERE c.practitioner_id = p_practitioner_id
+    WHERE c.practitioner_id = p_practitioner_id AND c.identity_status = 'ok'
       AND ((v_match = 'phone' AND c.phone_e164 = v_phone) OR (v_match = 'email' AND c.email = v_email));
+    -- Historique MediumIA du client reconnu (pour l'agent : rendez-vous passés).
+    SELECT jsonb_build_object('bookings', count(*), 'last_starts_at', max(b.starts_at)) INTO v_history
+    FROM public.bookings b
+    WHERE b.practitioner_id = p_practitioner_id
+      AND (lower(b.customer_email) = coalesce(v_email, v_fill_email)
+           OR (v_phone IS NOT NULL AND public.lumia_normalize_phone(b.customer_phone) = v_phone));
   ELSIF v_match = 'none' AND v_first IS NOT NULL AND v_last IS NOT NULL THEN
     SELECT CASE WHEN count(*) = 1 THEN min(c.id::TEXT)::UUID END INTO v_suggestion
     FROM public.mediumia_customers c
     WHERE c.practitioner_id = p_practitioner_id
-      AND lower(c.first_name) = lower(v_first) AND lower(c.last_name) = lower(v_last);
+      AND public.mediumia_name_key(c.first_name) = public.mediumia_name_key(v_first)
+      AND public.mediumia_name_key(c.last_name) = public.mediumia_name_key(v_last);
   END IF;
 
   -- Message d'une conversation déjà ouverte : mise à jour de cette demande.
@@ -327,7 +342,7 @@ BEGIN
 
     RETURN jsonb_build_object('ok', true, 'outcome', 'updated', 'request_id', v_request.id,
       'customer_match', v_request.customer_match, 'customer_id', v_request.customer_id,
-      'customer_suggestion_id', v_request.customer_suggestion_id, 'needs_review', v_review);
+      'customer_suggestion_id', v_request.customer_suggestion_id, 'customer_history', v_history, 'needs_review', v_review);
   END IF;
 
   v_review := v_service IS NULL OR v_match = 'ambiguous'
@@ -353,7 +368,8 @@ BEGIN
   ) VALUES (v_request.id, v_agent, v_channel, v_message_id, v_conversation, v_message_at, v_detected_at, 'created');
 
   RETURN jsonb_build_object('ok', true, 'outcome', 'created', 'request_id', v_request.id,
-    'customer_match', v_match, 'customer_id', v_customer, 'customer_suggestion_id', v_suggestion, 'needs_review', v_review);
+    'customer_match', v_match, 'customer_id', v_customer, 'customer_suggestion_id', v_suggestion,
+    'customer_history', v_history, 'needs_review', v_review);
 EXCEPTION
   WHEN unique_violation THEN
     -- Filet de sécurité (le verrou l'évite) : même message déjà enregistré.

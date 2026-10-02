@@ -1,5 +1,5 @@
 -- Données fictives uniquement.
-truncate public.booking_request_intake_events, public.booking_requests, public.mediumia_customers, public.bookings, public.booking_services, public.booking_practitioners cascade;
+truncate public.booking_request_intake_events, public.booking_requests, public.mediumia_customer_consents, public.mediumia_customers, public.bookings, public.booking_services, public.booking_practitioners cascade;
 insert into public.booking_practitioners(id, slug) values ('aaaaaaaa-0000-0000-0000-000000000001', 'sebastien-seguin'), ('aaaaaaaa-0000-0000-0000-000000000002', 'autre-praticien');
 insert into public.booking_services(id, practitioner_id, slug, title, duration_min, price_cents, modality) values
  ('bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'guidance-visio', 'Guidance — Visio', 60, 7000, '{video}'),

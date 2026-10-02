@@ -1685,7 +1685,9 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                         {activePractitioner.upcoming_bookings.map(b => {
                           const svc = activePractitioner.services.find(s => s.id === b.service_id)
                           const date = new Date(b.starts_at)
+                          // Visio = WhatsApp / FaceTime (demande Lumia), sinon « canal à confirmer » ; jamais Meet.
                           const visio = videoLabel((activePractitioner.pending_requests || []).find(r => r.confirmed_booking_id === b.id))
+                            || (Array.isArray(svc?.modality) && svc.modality.length > 0 && svc.modality.every(m => m === 'video') ? 'Visio — canal à confirmer' : null)
                           return (
                             <div key={b.id} className="rounded-xl border border-gold/15 bg-white/40 px-4 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                               <div className="min-w-0">
@@ -1700,11 +1702,6 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                                 {resendingBookingId === b.id && <Spinner />}
                                 Renvoyer la confirmation
                               </button>
-                              {b.google_meet_link && (
-                                <a href={b.google_meet_link} target="_blank" rel="noreferrer" className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 shrink-0">
-                                  Meet →
-                                </a>
-                              )}
                             </div>
                           )
                         })}

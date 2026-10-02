@@ -11,12 +11,16 @@ const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 // Mardi 29 septembre 2026, 9 h à Paris (passage de la tâche quotidienne).
 const NOW = new Date('2026-09-29T07:00:00Z')
 
-test('J-3 email: date, time, service, Meet link only when given; never « acompte non remboursé »', () => {
-  const visio = buildAppointmentReminderEmail({ firstName: 'Elea', serviceTitle: 'Guidance — Visio', startsAt: '2026-10-02T12:00:00Z', meetLink: 'https://meet.google.com/abc-defg-hij' })
+test('J-3 email: date, time, service, visio channel (never a Meet link); never « acompte non remboursé »', () => {
+  const visio = buildAppointmentReminderEmail({ firstName: 'Elea', serviceTitle: 'Guidance — Visio', startsAt: '2026-10-02T12:00:00Z', visio: 'Visio — WhatsApp' })
   assert.equal(visio.subject, 'Rappel : votre rendez-vous du vendredi 2 octobre à 14 h 00')
   assert.match(visio.text, /Bonjour Elea,/)
-  assert.match(visio.text, /Lien de visioconférence : https:\/\/meet\.google\.com\/abc-defg-hij/)
-  assert.match(visio.html, /Rejoindre la visioconférence/)
+  assert.match(visio.text, /Modalité : Visio — WhatsApp/)
+  assert.match(visio.html, /Visio — WhatsApp/)
+  // Visio = WhatsApp ou FaceTime : plus aucun lien ni bouton Google Meet.
+  assert.doesNotMatch(visio.text + visio.html, /meet\.google|Rejoindre la visioconférence|Lien de visioconférence/)
+  const pending = buildAppointmentReminderEmail({ firstName: 'Elea', serviceTitle: 'Guidance — Visio', startsAt: '2026-10-02T12:00:00Z', visio: 'Visio — canal à confirmer' })
+  assert.match(pending.text, /Sébastien vous précisera le canal de la séance : WhatsApp ou FaceTime\./)
   const cabinet = buildAppointmentReminderEmail({ firstName: '<b>x</b>', serviceTitle: 'Désenvoûtement — En présence', startsAt: '2026-10-02T08:00:00Z' })
   assert.doesNotMatch(cabinet.text, /visioconférence/)
   assert.doesNotMatch(cabinet.html, /<b>x<\/b>/)
@@ -79,7 +83,7 @@ test('one J-3 email per appointment; balance visios, fresh bookings and failures
   process.env.RESEND_FROM_EMAIL = 'MediumIA <rdv@exemple.fr>'
   globalThis.fetch = async (url, init) => {
     const body = JSON.parse(init.body)
-    sent.push({ to: body.to, meet: /meet\.google\.com/.test(body.text) })
+    sent.push({ to: body.to, meet: /meet\.google\.com/.test(body.text + body.html), visio: /Visio — canal à confirmer/.test(body.text) })
     return body.to === 'fail@exemple.fr' ? { ok: false, status: 500 } : { ok: true, json: async () => ({ id: 'e1' }) }
   }
   try {
@@ -98,7 +102,12 @@ test('one J-3 email per appointment; balance visios, fresh bookings and failures
     })
     const result = await sendAppointmentReminders(db, NOW)
     assert.deepEqual(result, { sent: 2, failed: 1, balance: 1 })
-    assert.deepEqual(sent, [{ to: 'old@exemple.fr', meet: false }, { to: 'paidvisio@exemple.fr', meet: true }, { to: 'fail@exemple.fr', meet: false }])
+    // Visio réglée : « Visio — canal à confirmer », et jamais l'ancien lien Meet enregistré.
+    assert.deepEqual(sent, [
+      { to: 'old@exemple.fr', meet: false, visio: false },
+      { to: 'paidvisio@exemple.fr', meet: false, visio: true },
+      { to: 'fail@exemple.fr', meet: false, visio: false },
+    ])
     assert.deepEqual(db.calls.updates.at(-1).values, { appointment_reminder_sent_at: null })
     assert.equal(db.calls.windows.gte, '2026-09-30T22:00:00.000Z') // jeudi 1er oct. 0 h à Paris (rattrapage J-2)
     assert.equal(db.calls.windows.lt, '2026-10-02T22:00:00.000Z')  // samedi 3 oct. 0 h à Paris

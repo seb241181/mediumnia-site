@@ -101,7 +101,7 @@ async function handleMe(req, res, supabase, userId) {
       .select('practitioner_id, google_email, google_calendar_id, token_expiry, is_active')
       .in('practitioner_id', ids),
     supabase.from('bookings')
-      .select('id, practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, starts_at, ends_at, status, google_meet_link')
+      .select('id, practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, starts_at, ends_at, status')
       .in('practitioner_id', ids).eq('status', 'confirmed').gte('starts_at', now)
       .order('starts_at').limit(20),
     supabase.from('booking_exceptions')

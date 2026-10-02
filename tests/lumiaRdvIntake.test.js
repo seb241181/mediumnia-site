@@ -437,7 +437,8 @@ test('a Lumia video request synced to Google never asks for a Meet (real sync co
     assert.doesNotMatch(sent[0].url, /conferenceDataVersion/)
     assert.equal('conferenceData' in sent[0].body, false)
     assert.match(sent[0].body.description, /Visio — WhatsApp/)
-    assert.equal(updates.find((u) => u.table === 'bookings').values.google_meet_link, null)
+    // La colonne historique google_meet_link n'est plus écrite (ni effacée).
+    assert.deepEqual(updates.find((u) => u.table === 'bookings').values, { google_event_id: 'evt1' })
   } finally {
     globalThis.fetch = realFetch
     if (prevKey === undefined) delete process.env.CALENDAR_TOKEN_ENCRYPTION_KEY

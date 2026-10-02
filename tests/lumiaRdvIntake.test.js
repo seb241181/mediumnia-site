@@ -474,3 +474,21 @@ test('preview check: server key type only (never its value), publishable key ref
   assert.ok(admin.indexOf('checkPreviewServerKey()') < admin.indexOf('createClient(url, key'))
   assert.match(read('vite.config.js'), /projet \$\{project\}/)
 })
+
+test('preview me diagnostic: slugs and counts only, never client data', async () => {
+  const { logPreviewMe } = await import('../lib/previewSupabaseCheck.js')
+  const env = { VERCEL_ENV: 'preview' }
+  const line = logPreviewMe({
+    practitioners: [{ id: 'p1', slug: 'sebastien-seguin', name: 'Sébastien' }, { id: 'p2', slug: 'autre' }],
+    requests: [
+      { practitioner_id: 'p1', status: 'pending', customer_first_name: 'Jean', customer_email: 'jean@example.test' },
+      { practitioner_id: 'p1', status: 'scheduled', customer_first_name: 'Marie' },
+    ],
+    requestsError: null,
+  }, env)
+  assert.equal(line, '[preview-check] me practitioners=sebastien-seguin:1p/2,autre:0p/0 requests_total=2 requests_error=none')
+  assert.doesNotMatch(line, /Jean|Marie|example\.test|Sébastien/)
+  assert.match(logPreviewMe({ practitioners: [], requests: null, requestsError: { code: '42703' } }, env), /requests_total=null requests_error=42703/)
+  assert.equal(logPreviewMe({ practitioners: [] }, { VERCEL_ENV: 'production' }), null)
+  assert.equal(logPreviewMe({ practitioners: [] }, { VERCEL_ENV: 'preview', NODE_TEST_CONTEXT: 'child-v8' }), null)
+})

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import DailyPayments from './DailyPayments.jsx'
 import ChronosphereIncome from './ChronosphereIncome.jsx'
 import SlotOfferModal from './SlotOfferModal.jsx'
+import DepositSettlements from './DepositSettlements.jsx'
 
 function authHeader(session) {
   return session ? { Authorization: `Bearer ${session.access_token}` } : {}
@@ -50,7 +51,11 @@ function paymentLabel(value) {
 function entryLabel(value) {
   const labels = {
     deposit: 'Arrhes',
+    arrhes: 'Arrhes',
     balance: 'Solde',
+    refund: 'Remboursement',
+    adjustment: 'Règlement',
+    deposit_transfer: 'Transfert d’arrhes',
     full_payment: 'Paiement intégral',
     manual: 'Saisie manuelle',
     gift_card_sale: 'Vente carte cadeau',
@@ -250,6 +255,8 @@ export default function AccountingSection({ practitionerId, session }) {
       {slotOfferOpen && <SlotOfferModal practitionerId={practitionerId} session={session} onClose={() => setSlotOfferOpen(false)} />}
 
       <DailyPayments practitionerId={practitionerId} session={session} onSaved={() => setDayNonce(value => value + 1)} />
+
+      <DepositSettlements practitionerId={practitionerId} session={session} onChanged={() => setDayNonce(value => value + 1)} />
 
       <p className="mt-6 font-georgia text-xs font-semibold capitalize text-deep">{monthLabel}</p>
 

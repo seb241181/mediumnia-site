@@ -126,6 +126,8 @@ async function handleFinance(req, res, supabase, userId) {
     acc.gross_cents += sign * Number(entry.gross_cents || 0)
     acc.net_cents += sign * Number(entry.net_cents || 0)
     acc.vat_cents += sign * Number(entry.vat_cents || 0)
+    // Transfert d'arrhes : paire -X/+X, ni encaissement ni remboursement.
+    if (entry.entry_kind === 'deposit_transfer') return acc
     acc.entry_count += 1
     if (entry.direction === 'refund') acc.refund_count += 1
     else acc.income_count += 1

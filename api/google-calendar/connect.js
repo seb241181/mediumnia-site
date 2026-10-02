@@ -50,6 +50,17 @@ export default async function handler(req, res) {
     })
   }
 
+  // Préversion : le retour Google doit revenir sur une préversion (*.vercel.app),
+  // jamais sur la production. L'hôte n'est pas un secret : il est logué pour diagnostic.
+  if (process.env.VERCEL_ENV === 'preview') {
+    let redirectHost = ''
+    try { redirectHost = new URL(process.env.GOOGLE_REDIRECT_URI).hostname } catch { /* invalide */ }
+    console.warn(`[google-oauth] connect redirect_host=${redirectHost || 'invalid'}`)
+    if (!redirectHost.endsWith('.vercel.app')) {
+      return res.status(503).json({ error: 'redirect_uri_not_preview' })
+    }
+  }
+
   // Vérification d'identité : l'utilisateur doit être propriétaire du praticien
   const auth = await requirePractitionerOwner(req, slug)
   if (auth.error) {

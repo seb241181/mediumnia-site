@@ -91,6 +91,27 @@ select pg_temp.ok('deux événements (created, updated)', (select array_agg(acti
 select pg_temp.ok('relecture du 2e message : duplicate', (pg_temp.intake('{"message_id":"SMS-11","conversation_id":"CONV-A","preferred_period":"autre"}')->>'outcome') = 'duplicate');
 select pg_temp.ok('aucun booking créé', (select count(*) from public.bookings) = 4);
 
+\echo '== 4 bis. Visio : WhatsApp / FaceTime / à préciser (jamais Google Meet) =='
+select pg_temp.intake('{"message_id":"V-1","modality":"video","video_channel":"whatsapp","phone":"0600000201","message_text":"visio par WhatsApp"}') as v1 \gset
+select pg_temp.ok('visio WhatsApp dite par le client → whatsapp', (select requested_modality = 'video' and video_channel = 'whatsapp' from public.booking_requests where id = (:'v1'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"V-2","modality":"video","video_channel":"facetime","phone":"0600000202"}') as v2 \gset
+select pg_temp.ok('visio FaceTime → facetime', (select video_channel = 'facetime' from public.booking_requests where id = (:'v2'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"V-3","modality":"video","phone":"0600000203","message_text":"en visio"}') as v3 \gset
+select pg_temp.ok('« visio » seulement → a_preciser', (select video_channel = 'a_preciser' from public.booking_requests where id = (:'v3'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"V-4","modality":"video","video_channel":"meet","phone":"0600000204"}') as v4 \gset
+select pg_temp.ok('autre outil (meet, zoom…) jamais retenu → a_preciser', (select video_channel = 'a_preciser' from public.booking_requests where id = (:'v4'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"V-5","modality":"in-person","video_channel":"whatsapp","phone":"0600000205"}') as v5 \gset
+select pg_temp.ok('demande en présence : aucun canal visio', (select video_channel is null from public.booking_requests where id = (:'v5'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"V-6","conversation_id":"CONV-V","modality":"video","phone":"0600000206","message_text":"une visio ?"}') as v6 \gset
+select pg_temp.intake('{"message_id":"V-7","conversation_id":"CONV-V","video_channel":"whatsapp","message_text":"plutôt par WhatsApp"}') as v7 \gset
+select pg_temp.ok('message suivant de la conversation : à préciser → WhatsApp', (:'v7'::jsonb->>'outcome') = 'updated' and (select requested_modality = 'video' and video_channel = 'whatsapp' from public.booking_requests where id = (:'v6'::jsonb->>'request_id')::uuid));
+select pg_temp.intake('{"message_id":"V-8","conversation_id":"CONV-V","message_text":"merci"}') as v8 \gset
+select pg_temp.ok('un message sans canal ne remet pas « à préciser »', (select video_channel = 'whatsapp' from public.booking_requests where id = (:'v6'::jsonb->>'request_id')::uuid));
+do $$ begin
+  update public.booking_requests set video_channel = 'whatsapp' where source_message_id = 'V-5';
+  raise exception 'contrainte manquante';
+exception when check_violation then raise notice 'OK  canal visio impossible sur une demande qui n''est pas en visio'; end $$;
+
 \echo '== 5. Créneau précis demandé (cas C) puis confirmation par le flux existant =='
 select pg_temp.intake(jsonb_build_object('message_id','SMS-12','phone','0611223344','first_name','Claire','service_id','bbbbbbbb-0000-0000-0000-000000000001','modality','video',
   'proposed_starts_at', (date_trunc('day', now()) + interval '12 days 12 hours')::text, 'message_text','Je voudrais mardi à 14h en visio.')) as r12 \gset

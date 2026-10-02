@@ -43,6 +43,9 @@ ALTER TABLE public.booking_requests
   ADD COLUMN IF NOT EXISTS source_message_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS detected_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS requested_modality TEXT,
+  -- Visio = WhatsApp ou FaceTime (jamais Google Meet) ; « a_preciser » tant que
+  -- le client ne l'a pas dit explicitement.
+  ADD COLUMN IF NOT EXISTS video_channel TEXT,
   ADD COLUMN IF NOT EXISTS proposed_starts_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS service_hint TEXT,
   ADD COLUMN IF NOT EXISTS customer_match TEXT,
@@ -76,6 +79,13 @@ ALTER TABLE public.booking_requests ADD CONSTRAINT booking_requests_intake_check
 ALTER TABLE public.booking_requests DROP CONSTRAINT IF EXISTS booking_requests_requested_modality_check;
 ALTER TABLE public.booking_requests ADD CONSTRAINT booking_requests_requested_modality_check
   CHECK (requested_modality IS NULL OR requested_modality IN ('video', 'in-person', 'phone', 'unknown'));
+
+ALTER TABLE public.booking_requests DROP CONSTRAINT IF EXISTS booking_requests_video_channel_check;
+ALTER TABLE public.booking_requests ADD CONSTRAINT booking_requests_video_channel_check
+  CHECK (
+    (video_channel IS NULL OR video_channel IN ('whatsapp', 'facetime', 'a_preciser'))
+    AND (video_channel IS NULL OR requested_modality = 'video')
+  );
 
 ALTER TABLE public.booking_requests DROP CONSTRAINT IF EXISTS booking_requests_customer_match_check;
 ALTER TABLE public.booking_requests ADD CONSTRAINT booking_requests_customer_match_check
@@ -194,6 +204,8 @@ DECLARE
   v_service UUID := nullif(p_payload->>'service_id', '')::UUID;
   v_hint TEXT := nullif(left(p_payload->>'service_hint', 120), '');
   v_modality TEXT := coalesce(nullif(p_payload->>'modality', ''), 'unknown');
+  -- Canal visio explicite seulement (le reste devient « a_preciser »).
+  v_video TEXT := CASE WHEN p_payload->>'video_channel' IN ('whatsapp', 'facetime') THEN p_payload->>'video_channel' END;
   v_period TEXT := nullif(left(p_payload->>'preferred_period', 200), '');
   v_proposed TIMESTAMPTZ := nullif(p_payload->>'proposed_starts_at', '')::TIMESTAMPTZ;
   v_message_at TIMESTAMPTZ := nullif(p_payload->>'message_at', '')::TIMESTAMPTZ;
@@ -320,6 +332,11 @@ BEGIN
       customer_phone = coalesce(customer_phone, v_phone),
       customer_message = left(concat_ws(E'\n— ', customer_message, v_text), 4000),
       requested_modality = CASE WHEN v_modality <> 'unknown' THEN v_modality ELSE requested_modality END,
+      video_channel = CASE
+        WHEN (CASE WHEN v_modality <> 'unknown' THEN v_modality ELSE requested_modality END) = 'video'
+          THEN coalesce(v_video, nullif(video_channel, 'a_preciser'), 'a_preciser')
+        ELSE NULL
+      END,
       preferred_period = coalesce(v_period, preferred_period),
       proposed_starts_at = coalesce(v_proposed, proposed_starts_at),
       customer_match = CASE WHEN customer_match IN ('phone', 'email') THEN customer_match ELSE v_match END,
@@ -352,14 +369,15 @@ BEGIN
     practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, customer_phone,
     customer_message, preferred_period, status,
     intake_agent, source_channel, source_message_id, source_conversation_id, source_message_at, detected_at,
-    requested_modality, proposed_starts_at, service_hint, customer_match, intake_missing, intake_confidence,
+    requested_modality, video_channel, proposed_starts_at, service_hint, customer_match, intake_missing, intake_confidence,
     needs_review, lumia_updated_at, customer_id, customer_suggestion_id
   ) VALUES (
     p_practitioner_id, v_service, v_first, coalesce(v_last, v_fill_last), coalesce(v_email, v_fill_email),
     coalesce(v_phone, v_fill_phone),
     v_text, v_period, 'pending',
     v_agent, v_channel, v_message_id, v_conversation, v_message_at, v_detected_at,
-    v_modality, v_proposed, v_hint, v_match, v_missing, v_confidence,
+    v_modality, CASE WHEN v_modality = 'video' THEN coalesce(v_video, 'a_preciser') END,
+    v_proposed, v_hint, v_match, v_missing, v_confidence,
     v_review, now(), v_customer, v_suggestion
   ) RETURNING * INTO v_request;
 

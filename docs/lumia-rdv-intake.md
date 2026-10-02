@@ -34,6 +34,7 @@ Les disponibilités se lisent avec l'API publique existante `/api/rdv-availabili
 | `service_id` | non | identifiant issu de `lumia-services` |
 | `service_hint` | non | `guidance`, `désenvoûtement`… |
 | `modality` | non | `video`, `in-person`, `phone`, `unknown` |
+| `video_channel` | non | `whatsapp` ou `facetime`, **seulement si le client l'a dit** |
 | `requested_date` + `requested_time` | non | `2026-10-13` + `14:00` (heure de Paris) |
 | `requested_period` | non | `lundi matin` |
 | `confidence` | non | 0 à 1 |
@@ -52,6 +53,10 @@ Réponse :
 - Une prestation n'est jamais inventée : un identifiant inconnu est ignoré, et un indice ambigu laisse la prestation vide, à vérifier.
 - Client : rapprochement par téléphone exact normalisé, puis par e-mail exact, jamais par le nom. En cas de doute (« ambiguous »), rien n'est fusionné.
 - Phase 1 : aucune confirmation automatique, aucun booking, aucun événement Google.
+- **Visio = WhatsApp ou FaceTime, jamais Google Meet.**
+  - Le canal est retenu s'il est déclaré (`video_channel`) ou écrit explicitement dans le message (« WhatsApp », « FaceTime ») ; sinon il reste `a_preciser`. Il n'est jamais inventé, et aucun autre outil n'est accepté.
+  - La demande et le rendez-vous affichent « Visio — WhatsApp », « Visio — FaceTime » ou « Visio — canal à confirmer ».
+  - À la confirmation, l'événement Google Agenda est créé normalement, avec cette ligne dans la description et **sans lien Meet** (`lib/requestCalendarEvent.js` ne demande jamais de visioconférence).
 
 ## Référentiel clients (`mediumia_customers`)
 

@@ -5,6 +5,7 @@ import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
 import { cancelSlotOffer, createSlotOffer, listSlotOffers } from '../lib/rdvSlotOffers.js'
 import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, transferBookingDeposit } from '../lib/rdvDepositSettlements.js'
 import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
+import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
  * /api/rdv-admin?action=<action>
@@ -531,35 +532,10 @@ async function handleRequests(req, res, supabase, userId) {
 
       if (!booking) return res.status(404).json({ error: 'Booking introuvable.' })
 
-      let locationSync = null
-      if (request.address_line1) {
-        locationSync = [request.address_line1, request.address_line2, `${request.postal_code} ${request.city}`]
-          .filter(Boolean).join(', ')
-      }
-
-      const descSync = [
-        'MediumIA Rendez-vous', '',
-        `Client : ${booking.customer_first_name} ${booking.customer_last_name}`,
-        `Téléphone : ${booking.customer_phone || 'Non renseigné'}`,
-        `Email : ${booking.customer_email}`,
-        `Prestation : ${svcSync?.title || ''}`,
-        `Identifiant MediumIA : ${booking.id}`,
-      ].join('\n')
-
-      const syncResult = await syncBookingToGoogleCalendar({
-        supabase,
-        practitionerId:       pid,
-        bookingId:            booking.id,
-        currentGoogleEventId: booking.google_event_id || null,
-        event: {
-          title:       `${svcSync?.title || 'Rendez-vous'} — ${booking.customer_first_name} ${booking.customer_last_name}`,
-          startsAt:    booking.starts_at,
-          endsAt:      booking.ends_at,
-          timezone:    booking.timezone || 'Europe/Paris',
-          location:    locationSync,
-          description: descSync,
-        },
-      })
+      // Jamais de Google Meet : la visio passe par WhatsApp ou FaceTime.
+      const syncResult = await syncBookingToGoogleCalendar(requestCalendarSync({
+        supabase, practitionerId: pid, booking, request, serviceTitle: svcSync?.title,
+      }))
 
       let gStatus
       if (syncResult.status === 'synced' || syncResult.status === 'already_synced') {
@@ -695,36 +671,11 @@ async function handleRequests(req, res, supabase, userId) {
         supabase.from('booking_services').select('title').eq('id', request.service_id).single(),
       ])
 
-      let locationConf = null
-      if (request.address_line1) {
-        locationConf = [request.address_line1, request.address_line2, `${request.postal_code} ${request.city}`]
-          .filter(Boolean).join(', ')
-      }
-
-      const descConf = [
-        'MediumIA Rendez-vous', '',
-        `Client : ${confirmedBooking?.customer_first_name} ${confirmedBooking?.customer_last_name}`,
-        `Téléphone : ${confirmedBooking?.customer_phone || 'Non renseigné'}`,
-        `Email : ${confirmedBooking?.customer_email}`,
-        `Prestation : ${confirmedSvc?.title || ''}`,
-        ...(finalPrice != null ? [`Montant : ${(finalPrice / 100).toFixed(2)} € TTC`] : []),
-        `Identifiant MediumIA : ${bookingId}`,
-      ].join('\n')
-
-      const googleSync = await syncBookingToGoogleCalendar({
-        supabase,
-        practitionerId:       pid,
-        bookingId,
-        currentGoogleEventId: confirmedBooking?.google_event_id || null,
-        event: {
-          title:       `${confirmedSvc?.title || 'Rendez-vous'} — ${confirmedBooking?.customer_first_name} ${confirmedBooking?.customer_last_name}`,
-          startsAt:    confirmedBooking?.starts_at,
-          endsAt:      confirmedBooking?.ends_at,
-          timezone:    confirmedBooking?.timezone || 'Europe/Paris',
-          location:    locationConf,
-          description: descConf,
-        },
-      })
+      const locationConf = requestLocation(request)
+      // Jamais de Google Meet : la visio passe par WhatsApp ou FaceTime.
+      const googleSync = await syncBookingToGoogleCalendar(requestCalendarSync({
+        supabase, practitionerId: pid, booking: confirmedBooking, request, serviceTitle: confirmedSvc?.title, finalPrice,
+      }))
 
       const cancellation = createCancellationToken()
       const { error: tokenErr } = await supabase.from('bookings').update({
@@ -771,7 +722,7 @@ async function handleRequests(req, res, supabase, userId) {
     // prestation réelle du praticien et coordonnées du client.
     const body = req.body || {}
     const CONTACT_FIELDS = ['customer_first_name', 'customer_last_name', 'customer_email', 'customer_phone']
-    const editsContact = CONTACT_FIELDS.some(f => f in body) || 'service_id' in body
+    const editsContact = CONTACT_FIELDS.some(f => f in body) || 'service_id' in body || 'video_channel' in body
     if (editsContact) {
       if (!['pending', 'contacted'].includes(request.status)) {
         return res.status(409).json({ error: 'Seule une demande ouverte peut être complétée.' })
@@ -789,6 +740,13 @@ async function handleRequests(req, res, supabase, userId) {
           return res.status(400).json({ error: 'Adresse e-mail invalide.' })
         }
         update[field] = value ? (field === 'customer_email' ? value.toLowerCase() : value) : null
+      }
+      if ('video_channel' in body) {
+        if (!('video_channel' in request) || request.requested_modality !== 'video') {
+          return res.status(400).json({ error: 'Le canal visio ne concerne qu’une demande en visio.' })
+        }
+        if (!VIDEO_CHANNELS.includes(body.video_channel)) return res.status(400).json({ error: 'Canal visio invalide.' })
+        update.video_channel = body.video_channel
       }
       if ('needs_review' in request) {
         const next = { ...request, ...update }

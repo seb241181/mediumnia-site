@@ -2,9 +2,14 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { analyzeReservioExport, mapReservioCustomer, nameKey, RESERVIO_DROPPED_COLUMNS } from '../lib/reservioCustomers.js'
+import { requestCalendarSync, videoChannelLabel } from '../lib/requestCalendarEvent.js'
+import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
+import { encrypt } from '../lib/googleOAuth.js'
 import {
   AUTO_CONFIRM_ENABLED,
   authenticateLumia,
+  explicitVideoChannel,
+  resolveVideoChannel,
   handleLumiaApi,
   normalizePhone,
   parisLocalToUtc,
@@ -324,4 +329,111 @@ test('RDV screen shows « Demande détectée par Lumia » in the existing reques
   assert.match(ui, /Compléter la demande/)
   // Toujours le même tableau et le même bouton de confirmation.
   assert.match(ui, /Créer le rendez-vous et confirmer →/)
+})
+
+// ── Visio : WhatsApp ou FaceTime, jamais Google Meet ────────────────────────
+
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+test('video channel: only what the client says explicitly, never invented', () => {
+  assert.equal(resolveVideoChannel({ modality: 'video', text: 'Je voudrais une visio par WhatsApp' }), 'whatsapp')
+  assert.equal(resolveVideoChannel({ modality: 'video', text: 'On peut faire en Face Time ?' }), 'facetime')
+  assert.equal(resolveVideoChannel({ modality: 'video', text: 'en visio svp' }), 'a_preciser')
+  assert.equal(resolveVideoChannel({ modality: 'video', text: 'WhatsApp ou FaceTime, comme vous voulez' }), 'a_preciser')
+  assert.equal(resolveVideoChannel({ modality: 'video', declared: 'facetime', text: 'visio' }), 'facetime')
+  assert.equal(resolveVideoChannel({ modality: 'video', declared: 'zoom', text: 'visio' }), 'a_preciser') // jamais un autre outil
+  assert.equal(resolveVideoChannel({ modality: 'video', declared: 'meet', text: 'Google Meet' }), 'a_preciser')
+  assert.equal(resolveVideoChannel({ modality: 'in-person', text: 'WhatsApp' }), null)
+  assert.equal(explicitVideoChannel({ text: 'plutôt par whatsapp' }), 'whatsapp')
+  assert.equal(explicitVideoChannel({ text: 'en visio' }), null)
+})
+
+test('intake: the explicit channel is sent, nothing else, and the database keeps it only for a video request', async () => {
+  const db = fakeDb()
+  await intake(db, sms({ source_message_id: 'V-1', modality: 'video', message_text: 'Une guidance en visio sur WhatsApp mardi ?' }))
+  await intake(db, sms({ source_message_id: 'V-2', modality: 'video', message_text: 'Une guidance en visio mardi ?' }))
+  assert.equal(db.calls.rpc[0].args.p_payload.video_channel, 'whatsapp')
+  assert.equal(db.calls.rpc[1].args.p_payload.video_channel, null)
+  for (const call of db.calls.rpc) assert.doesNotMatch(JSON.stringify(call.args), /conference|meet/i)
+  const sql = read('supabase/migrations/20261002090000_lumia_rdv_intake.sql')
+  assert.match(sql, /CHECK \(\s+\(video_channel IS NULL OR video_channel IN \('whatsapp', 'facetime', 'a_preciser'\)\)\s+AND \(video_channel IS NULL OR requested_modality = 'video'\)/)
+  assert.match(sql, /v_modality, CASE WHEN v_modality = 'video' THEN coalesce\(v_video, 'a_preciser'\) END,/)
+})
+
+test('calendar event of a confirmed request: « Visio — canal », never a Google Meet request', () => {
+  const booking = { id: 'bk-1', customer_first_name: 'Claire', customer_last_name: 'Exemple', customer_email: 'c@example.test', customer_phone: '+33611223344', starts_at: '2026-10-13T12:00:00Z', ends_at: '2026-10-13T13:00:00Z', timezone: 'Europe/Paris', google_event_id: null }
+  const cases = [
+    [{ requested_modality: 'video', video_channel: 'whatsapp' }, 'Visio — WhatsApp'],
+    [{ requested_modality: 'video', video_channel: 'facetime' }, 'Visio — FaceTime'],
+    [{ requested_modality: 'video', video_channel: 'a_preciser' }, 'Visio — canal à confirmer'],
+    [{ requested_modality: 'video', video_channel: null }, 'Visio — canal à confirmer'],
+  ]
+  for (const [request, line] of cases) {
+    assert.equal(videoChannelLabel(request), line)
+    const opts = requestCalendarSync({ supabase: {}, practitionerId: 'p1', booking, request, serviceTitle: 'Guidance — Visio' })
+    assert.ok(opts.event.description.split('\n').includes(line))
+    assert.ok(!('createConference' in opts), 'aucune demande de visioconférence Google')
+    assert.doesNotMatch(JSON.stringify(opts.event), /meet\.google|hangout|conference/i)
+  }
+  // Demande de déplacement (formulaire du site) : description inchangée, sans ligne Visio.
+  const site = requestCalendarSync({ supabase: {}, practitionerId: 'p1', booking, request: { address_line1: '1 rue Exemple', postal_code: '59000', city: 'Lille' }, serviceTitle: 'Dégagement de maison', finalPrice: 25000 })
+  assert.deepEqual(site.event.description.split('\n'), [
+    'MediumIA Rendez-vous', '', 'Client : Claire Exemple', 'Téléphone : +33611223344', 'Email : c@example.test',
+    'Prestation : Dégagement de maison', 'Montant : 250.00 € TTC', 'Identifiant MediumIA : bk-1',
+  ])
+  assert.equal(site.event.location, '1 rue Exemple, 59000 Lille')
+})
+
+test('a Lumia video request synced to Google never asks for a Meet (real sync code, Google simulated)', async () => {
+  const prevKey = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+  process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64)
+  const realFetch = globalThis.fetch
+  const sent = []
+  const updates = []
+  globalThis.fetch = async (url, opts = {}) => {
+    sent.push({ url: String(url), body: opts.body ? JSON.parse(opts.body) : null })
+    return new Response(JSON.stringify({ id: 'evt1' }), { status: 200 })
+  }
+  const supabase = {
+    from(table) {
+      const q = {
+        select() { return q }, eq() { return q },
+        single() { return Promise.resolve({ data: table === 'booking_calendar_connections' ? { access_token_enc: encrypt('jeton-test'), refresh_token_enc: null, token_expiry: '2099-01-01T00:00:00Z', google_calendar_id: 'test@group.calendar.google.com' } : null }) },
+        update(values) { updates.push({ table, values }); return q },
+        then(ok, ko) { return Promise.resolve({ data: null, error: null }).then(ok, ko) },
+      }
+      return q
+    },
+  }
+  try {
+    const booking = { id: '11111111-0000-4000-8000-000000000001', customer_first_name: 'Claire', customer_last_name: 'Exemple', customer_email: 'c@example.test', starts_at: '2026-10-13T12:00:00Z', ends_at: '2026-10-13T13:00:00Z', google_event_id: null }
+    const result = await syncBookingToGoogleCalendar(requestCalendarSync({
+      supabase, practitionerId: 'p1', booking, request: { intake_agent: 'lumia', requested_modality: 'video', video_channel: 'whatsapp' }, serviceTitle: 'Guidance — Visio',
+    }))
+    assert.equal(result.status, 'synced')
+    assert.equal(sent.length, 1) // un seul appel : création de l'événement agenda
+    assert.doesNotMatch(sent[0].url, /conferenceDataVersion/)
+    assert.equal('conferenceData' in sent[0].body, false)
+    assert.match(sent[0].body.description, /Visio — WhatsApp/)
+    assert.equal(updates.find((u) => u.table === 'bookings').values.google_meet_link, null)
+  } finally {
+    globalThis.fetch = realFetch
+    if (prevKey === undefined) delete process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+    else process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = prevKey
+  }
+})
+
+test('no path of the requests flow or of Lumia can create a Google Meet', () => {
+  const admin = read('api/rdv-admin.js')
+  const requests = admin.slice(admin.indexOf('async function handleRequests'), admin.indexOf('// ── Router principal'))
+  assert.doesNotMatch(requests, /createConference|conferenceData|hangoutsMeet/)
+  const syncCalls = requests.match(/syncBookingToGoogleCalendar\(/g) || []
+  assert.equal(syncCalls.length, 2)
+  assert.equal((requests.match(/syncBookingToGoogleCalendar\(requestCalendarSync\(\{/g) || []).length, 2)
+  for (const file of ['lib/lumiaRdvIntake.js', 'lib/requestCalendarEvent.js', 'supabase/migrations/20261002090000_lumia_rdv_intake.sql']) {
+    assert.doesNotMatch(stripComments(read(file)), /createConference|conferenceData|hangoutsMeet|meet\.google/i, file)
+  }
+  const ui = read('src/components/rdv/RdvDashboard.jsx')
+  assert.match(ui, /Canal visio/)
+  assert.match(ui, /a_preciser: 'canal à confirmer'/)
 })

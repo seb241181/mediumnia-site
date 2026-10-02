@@ -728,6 +728,9 @@ function ExceptionsEditor({ exceptions, practitionerId, session, onChanged }) {
 
 const INTAKE_CHANNEL_LABELS = { sms: 'SMS', imessage: 'iMessage', whatsapp: 'WhatsApp', dots: 'Dots', chatgpt: 'ChatGPT', email: 'E-mail', form: 'Formulaire', other: 'Autre canal' }
 const INTAKE_MODALITY_LABELS = { video: 'Visio', 'in-person': 'En présence', phone: 'Téléphone', unknown: 'Non précisée' }
+// Visio = WhatsApp ou FaceTime (jamais Google Meet).
+const VIDEO_CHANNEL_LABELS = { whatsapp: 'WhatsApp', facetime: 'FaceTime', a_preciser: 'canal à confirmer' }
+const videoLabel = (req) => (req?.requested_modality === 'video' ? `Visio — ${VIDEO_CHANNEL_LABELS[req.video_channel] || VIDEO_CHANNEL_LABELS.a_preciser}` : null)
 const INTAKE_MATCH_LABELS = {
   phone: 'Client connu (même téléphone)',
   email: 'Client connu (même e-mail)',
@@ -758,7 +761,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
   const [updating, setUpdating] = useState(null)
   const [syncingId, setSyncingId] = useState(null)
   const [error, setError] = useState(null)
-  const [contact, setContact] = useState({ service_id: '', customer_first_name: '', customer_last_name: '', customer_email: '', customer_phone: '' })
+  const [contact, setContact] = useState({ service_id: '', customer_first_name: '', customer_last_name: '', customer_email: '', customer_phone: '', video_channel: '' })
   const [savingContact, setSavingContact] = useState(false)
 
   async function saveContact(req) {
@@ -913,6 +916,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                     customer_last_name: req.customer_last_name || '',
                     customer_email: req.customer_email || '',
                     customer_phone: req.customer_phone || '',
+                    video_channel: req.requested_modality === 'video' ? (req.video_channel || 'a_preciser') : '',
                   })
                 }
               }}
@@ -944,7 +948,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                     <p className="font-semibold text-deep">Demande détectée par {agentLabel(req.intake_agent)}</p>
                     <p><span className="text-mist">Source : </span><span className="text-deep">{INTAKE_CHANNEL_LABELS[req.source_channel] || req.source_channel}{req.source_message_at ? ` · reçu le ${new Date(req.source_message_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}` : ''}</span></p>
                     <p><span className="text-mist">Prestation détectée : </span><span className="text-deep">{svc?.title || (req.service_hint ? `à vérifier (« ${req.service_hint} »)` : 'non déterminée')}</span></p>
-                    <p><span className="text-mist">Modalité : </span><span className="text-deep">{INTAKE_MODALITY_LABELS[req.requested_modality] || 'Non précisée'}</span></p>
+                    <p><span className="text-mist">Modalité : </span><span className="text-deep">{videoLabel(req) || INTAKE_MODALITY_LABELS[req.requested_modality] || 'Non précisée'}</span></p>
                     {req.preferred_period && <p><span className="text-mist">Souhait : </span><span className="text-deep">{req.preferred_period}</span></p>}
                     {req.proposed_starts_at && (
                       <p><span className="text-mist">Créneau demandé : </span><span className="text-deep">{new Date(req.proposed_starts_at).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })} (à valider, rien n’est réservé)</span></p>
@@ -1002,6 +1006,16 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                         <label className="font-georgia text-[11px] text-mist block mb-1">Téléphone</label>
                         <input type="tel" value={contact.customer_phone} onChange={e => setContact(c => ({ ...c, customer_phone: e.target.value }))} className={inp} />
                       </div>
+                      {req.requested_modality === 'video' && (
+                        <div className="col-span-2">
+                          <label className="font-georgia text-[11px] text-mist block mb-1">Canal visio</label>
+                          <select value={contact.video_channel} onChange={e => setContact(c => ({ ...c, video_channel: e.target.value }))} className={inp}>
+                            <option value="a_preciser">À préciser</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="facetime">FaceTime</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => saveContact(req)}
@@ -1671,11 +1685,12 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                         {activePractitioner.upcoming_bookings.map(b => {
                           const svc = activePractitioner.services.find(s => s.id === b.service_id)
                           const date = new Date(b.starts_at)
+                          const visio = videoLabel((activePractitioner.pending_requests || []).find(r => r.confirmed_booking_id === b.id))
                           return (
                             <div key={b.id} className="rounded-xl border border-gold/15 bg-white/40 px-4 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                               <div className="min-w-0">
                                 <p className="font-georgia text-sm font-semibold text-deep">{b.customer_first_name} {b.customer_last_name}</p>
-                                <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}{visio ? ` · ${visio}` : ''}</p>
                               </div>
                               <button
                                 onClick={() => handleResendConfirmation(b)}

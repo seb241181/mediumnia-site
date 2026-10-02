@@ -461,6 +461,8 @@ test('preview check: server key type only (never its value), publishable key ref
     // Production et local : aucune vérification, aucun log, aucun refus.
     assert.deepEqual(checkPreviewServerKey({ VERCEL_ENV: 'production', SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), { checked: false })
     assert.deepEqual(checkPreviewServerKey({ SUPABASE_SERVICE_ROLE_KEY: 'sb_publishable_xyz' }), { checked: false })
+    // Tests lancés par le build Vercel (VERCEL_ENV=preview) : jamais de refus.
+    assert.deepEqual(checkPreviewServerKey({ VERCEL_ENV: 'preview', NODE_TEST_CONTEXT: 'child-v8', SUPABASE_SERVICE_ROLE_KEY: 'test-key' }), { checked: false })
     assert.deepEqual(logs, [
       '[preview-check] backend supabase=wnbwhnqiulsdjcvkuwos key=secret',
       '[preview-check] backend supabase=wnbwhnqiulsdjcvkuwos key=publishable',

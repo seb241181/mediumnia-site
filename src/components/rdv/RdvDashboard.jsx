@@ -724,6 +724,33 @@ function ExceptionsEditor({ exceptions, practitionerId, session, onChanged }) {
 
 // ── RequestsSection ───────────────────────────────────────────────────────────
 
+// ── Demandes détectées par un agent (Lumia) ──────────────────────────────────
+
+const INTAKE_CHANNEL_LABELS = { sms: 'SMS', imessage: 'iMessage', whatsapp: 'WhatsApp', dots: 'Dots', chatgpt: 'ChatGPT', email: 'E-mail', form: 'Formulaire', other: 'Autre canal' }
+const INTAKE_MODALITY_LABELS = { video: 'Visio', 'in-person': 'En présence', phone: 'Téléphone', unknown: 'Non précisée' }
+const INTAKE_MATCH_LABELS = {
+  phone: 'Client connu (même téléphone)',
+  email: 'Client connu (même e-mail)',
+  none: 'Nouveau client ou client à identifier',
+  ambiguous: 'Client à identifier — rapprochement incertain, rien n’a été fusionné',
+}
+const INTAKE_MISSING_LABELS = { service: 'prestation', first_name: 'prénom', last_name: 'nom', email: 'e-mail', phone: 'téléphone', wish: 'date souhaitée' }
+const agentLabel = (agent) => (agent ? agent.charAt(0).toUpperCase() + agent.slice(1) : 'Agent')
+
+function parisInputs(iso) {
+  if (!iso) return { date: '', time: '' }
+  const at = new Date(iso)
+  return {
+    date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(at),
+    time: new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at),
+  }
+}
+
+function requestDisplayName(req) {
+  const name = [req.customer_first_name, req.customer_last_name].filter(Boolean).join(' ')
+  return name || req.customer_phone || 'Client à identifier'
+}
+
 function RequestsSection({ requests, services, practitionerId, session, onChanged }) {
   const [expandedId, setExpandedId] = useState(null)
   const [form, setForm] = useState({ date: '', time: '', travelFee: '', finalPrice: '', notes: '' })
@@ -731,6 +758,27 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
   const [updating, setUpdating] = useState(null)
   const [syncingId, setSyncingId] = useState(null)
   const [error, setError] = useState(null)
+  const [contact, setContact] = useState({ service_id: '', customer_first_name: '', customer_last_name: '', customer_email: '', customer_phone: '' })
+  const [savingContact, setSavingContact] = useState(false)
+
+  async function saveContact(req) {
+    setSavingContact(true)
+    setError(null)
+    try {
+      const payload = { id: req.id, practitioner_id: practitionerId }
+      for (const [key, value] of Object.entries(contact)) {
+        if ((value || '') !== (req[key] || '')) payload[key] = value
+      }
+      const res = await fetch('/api/rdv-admin?action=requests', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader(session) },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) onChanged()
+      else { const d = await res.json().catch(() => ({})); setError(d.error || 'Erreur') }
+    } catch { setError('Erreur réseau') }
+    finally { setSavingContact(false) }
+  }
 
   const STATUS_CONFIG = {
     pending:   { label: 'En attente', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -833,7 +881,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
   if (!requests || requests.length === 0) {
     return (
       <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-8 text-center">
-        <p className="font-georgia text-sm text-mist">Aucune demande d'intervention en cours.</p>
+        <p className="font-georgia text-sm text-mist">Aucune demande en cours.</p>
       </div>
     )
   }
@@ -856,14 +904,34 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                 const next = isExpanded ? null : req.id
                 setExpandedId(next)
                 setError(null)
-                if (next) setForm({ date: '', time: '', travelFee: '', finalPrice: '', notes: req.practitioner_notes || '' })
+                if (next) {
+                  const proposed = parisInputs(req.proposed_starts_at)
+                  setForm({ date: proposed.date, time: proposed.time, travelFee: '', finalPrice: '', notes: req.practitioner_notes || '' })
+                  setContact({
+                    service_id: req.service_id || '',
+                    customer_first_name: req.customer_first_name || '',
+                    customer_last_name: req.customer_last_name || '',
+                    customer_email: req.customer_email || '',
+                    customer_phone: req.customer_phone || '',
+                  })
+                }
               }}
             >
               <div className="flex-1 min-w-0">
-                <p className="font-georgia text-sm font-semibold text-deep">{req.customer_first_name} {req.customer_last_name}</p>
-                <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {req.city} ({req.postal_code}) · {new Date(req.created_at).toLocaleDateString('fr-FR')}</p>
+                <p className="font-georgia text-sm font-semibold text-deep">{requestDisplayName(req)}</p>
+                <p className="font-georgia text-xs text-mist">
+                  {svc?.title || (req.intake_agent ? 'Prestation à vérifier' : '—')}
+                  {req.city ? ` · ${req.city} (${req.postal_code})` : ''}
+                  {req.intake_agent ? ` · ${INTAKE_CHANNEL_LABELS[req.source_channel] || req.source_channel}` : ''}
+                  {' · '}{new Date(req.created_at).toLocaleDateString('fr-FR')}
+                </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {req.intake_agent && (
+                  <span className="font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-0.5 border border-gold/40 bg-gold/10 text-deep">
+                    {agentLabel(req.intake_agent)}
+                  </span>
+                )}
                 {statusBadge(req.status)}
                 <span className="text-mist text-xs select-none">{isExpanded ? '▲' : '▼'}</span>
               </div>
@@ -871,13 +939,31 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
 
             {isExpanded && (
               <div className="border-t border-gold/15 px-4 py-4 space-y-4">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-georgia">
-                  <div><span className="text-mist">Email : </span><a href={`mailto:${req.customer_email}`} className="text-deep underline">{req.customer_email}</a></div>
-                  <div><span className="text-mist">Tél : </span><a href={`tel:${req.customer_phone}`} className="text-deep">{req.customer_phone}</a></div>
-                  <div className="col-span-2">
-                    <span className="text-mist">Adresse : </span>
-                    <span className="text-deep">{req.address_line1}{req.address_line2 ? `, ${req.address_line2}` : ''}, {req.postal_code} {req.city}</span>
+                {req.intake_agent && (
+                  <div className="rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 space-y-1 font-georgia text-xs">
+                    <p className="font-semibold text-deep">Demande détectée par {agentLabel(req.intake_agent)}</p>
+                    <p><span className="text-mist">Source : </span><span className="text-deep">{INTAKE_CHANNEL_LABELS[req.source_channel] || req.source_channel}{req.source_message_at ? ` · reçu le ${new Date(req.source_message_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}` : ''}</span></p>
+                    <p><span className="text-mist">Prestation détectée : </span><span className="text-deep">{svc?.title || (req.service_hint ? `à vérifier (« ${req.service_hint} »)` : 'non déterminée')}</span></p>
+                    <p><span className="text-mist">Modalité : </span><span className="text-deep">{INTAKE_MODALITY_LABELS[req.requested_modality] || 'Non précisée'}</span></p>
+                    {req.preferred_period && <p><span className="text-mist">Souhait : </span><span className="text-deep">{req.preferred_period}</span></p>}
+                    {req.proposed_starts_at && (
+                      <p><span className="text-mist">Créneau demandé : </span><span className="text-deep">{new Date(req.proposed_starts_at).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })} (à valider, rien n’est réservé)</span></p>
+                    )}
+                    <p><span className="text-mist">Client : </span><span className="text-deep">{INTAKE_MATCH_LABELS[req.customer_match] || INTAKE_MATCH_LABELS.none}</span></p>
+                    {req.intake_missing?.length > 0 && (
+                      <p><span className="text-mist">À compléter : </span><span className="text-deep">{req.intake_missing.map(m => INTAKE_MISSING_LABELS[m] || m).join(', ')}</span></p>
+                    )}
                   </div>
+                )}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-georgia">
+                  {req.customer_email && <div><span className="text-mist">Email : </span><a href={`mailto:${req.customer_email}`} className="text-deep underline">{req.customer_email}</a></div>}
+                  {req.customer_phone && <div><span className="text-mist">Tél : </span><a href={`tel:${req.customer_phone}`} className="text-deep">{req.customer_phone}</a></div>}
+                  {req.address_line1 && (
+                    <div className="col-span-2">
+                      <span className="text-mist">Adresse : </span>
+                      <span className="text-deep">{req.address_line1}{req.address_line2 ? `, ${req.address_line2}` : ''}, {req.postal_code} {req.city}</span>
+                    </div>
+                  )}
                   {req.preferred_period && (
                     <div className="col-span-2"><span className="text-mist">Préférence : </span><span className="text-deep italic">{req.preferred_period}</span></div>
                   )}
@@ -885,6 +971,44 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                     <div className="col-span-2"><span className="text-mist">Message : </span><span className="text-deep italic">{req.customer_message}</span></div>
                   )}
                 </div>
+
+                {canConfirm && req.intake_agent && (
+                  <div className="rounded-xl border border-gold/20 bg-white/60 p-4 space-y-3">
+                    <p className="font-georgia text-xs font-semibold text-deep">Compléter la demande</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Prestation</label>
+                        <select value={contact.service_id} onChange={e => setContact(c => ({ ...c, service_id: e.target.value }))} className={inp}>
+                          <option value="">— Choisir une prestation —</option>
+                          {services.filter(s => s.is_active !== false).map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Prénom</label>
+                        <input value={contact.customer_first_name} onChange={e => setContact(c => ({ ...c, customer_first_name: e.target.value }))} className={inp} />
+                      </div>
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Nom</label>
+                        <input value={contact.customer_last_name} onChange={e => setContact(c => ({ ...c, customer_last_name: e.target.value }))} className={inp} />
+                      </div>
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">E-mail</label>
+                        <input type="email" value={contact.customer_email} onChange={e => setContact(c => ({ ...c, customer_email: e.target.value }))} className={inp} />
+                      </div>
+                      <div>
+                        <label className="font-georgia text-[11px] text-mist block mb-1">Téléphone</label>
+                        <input type="tel" value={contact.customer_phone} onChange={e => setContact(c => ({ ...c, customer_phone: e.target.value }))} className={inp} />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => saveContact(req)}
+                      disabled={savingContact}
+                      className="font-georgia text-xs px-4 py-2 rounded-lg border border-gold/40 text-deep hover:bg-gold/10 disabled:opacity-50"
+                    >
+                      {savingContact ? 'Enregistrement…' : 'Enregistrer'}
+                    </button>
+                  </div>
+                )}
 
                 {canConfirm && (
                   <div className="flex flex-wrap gap-2">
@@ -1495,14 +1619,14 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     )}
                   </section>
 
-                  {/* Demandes de déplacement */}
+                  {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
                   {(activePractitioner.pending_requests?.length > 0 ||
                     activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
                     <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Déplacements</p>
-                          <h2 className="font-georgia text-lg font-medium">Demandes d'intervention</h2>
+                          <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Demandes</p>
+                          <h2 className="font-georgia text-lg font-medium">Demandes de rendez-vous</h2>
                         </div>
                         {activePractitioner.pending_requests?.filter(r => r.status === 'pending').length > 0 && (
                           <span className="font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">

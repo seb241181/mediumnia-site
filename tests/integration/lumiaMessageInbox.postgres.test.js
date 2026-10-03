@@ -104,6 +104,15 @@ test('lumia_message_inbox : RLS stricte par owner_id, aucun accès anonyme, écr
   applySql(path.join(root, 'supabase/migrations/20261004090000_lumia_message_inbox.sql'))
   // Rejouable (idempotente).
   applySql(path.join(root, 'supabase/migrations/20261004090000_lumia_message_inbox.sql'))
+  // pg_cron simulé (même interface que Supabase) pour la migration de rétention.
+  psql(`create schema cron;
+    create table cron.job (jobid bigserial primary key, jobname text unique, schedule text, command text, active boolean default true, username text default current_user);
+    create function cron.schedule(p_name text, p_schedule text, p_command text) returns bigint language sql
+      as $$ insert into cron.job (jobname, schedule, command) values (p_name, p_schedule, p_command) returning jobid $$;
+    create function cron.unschedule(p_id bigint) returns boolean language sql
+      as $$ delete from cron.job where jobid = p_id returning true $$;`)
+  applySql(path.join(root, 'supabase/migrations/20261004100000_lumia_message_inbox_retention.sql'))
+  applySql(path.join(root, 'supabase/migrations/20261004100000_lumia_message_inbox_retention.sql'))
   psql(`insert into auth.users (id, email) values ('${userA}', 'a@example.test'), ('${userB}', 'b@example.test');`)
 
   docker([
@@ -157,6 +166,42 @@ test('lumia_message_inbox : RLS stricte par owner_id, aucun accès anonyme, écr
     assert.ok([401, 403].includes(remove.status))
     assert.equal(psql('select count(*) from public.lumia_message_inbox').stdout.trim(), '4')
     assert.equal(psql("select message_text from public.lumia_message_inbox where source_message_id = 'A-2'").stdout.trim(), 'Message fictif A-2')
+  })
+
+  await t.test('rétention 90 jours : J-89 et 90 j - 1 min conservés, 90 j + 1 min et J-91 supprimés, référence received_at', async () => {
+    psql(`insert into public.lumia_message_inbox (owner_id, source_channel, source_message_id, message_text, message_sent_at, received_at) values
+      ('${userA}', 'sms', 'RET-J89', 'x', now() - interval '89 days', now() - interval '89 days'),
+      ('${userA}', 'sms', 'RET-J90-1MIN', 'x', now() - interval '90 days' + interval '1 minute', now() - interval '90 days' + interval '1 minute'),
+      ('${userA}', 'sms', 'RET-J90+1MIN', 'x', now() - interval '90 days' - interval '1 minute', now() - interval '90 days' - interval '1 minute'),
+      ('${userB}', 'sms', 'RET-J91', 'x', now() - interval '91 days', now() - interval '91 days'),
+      ('${userA}', 'rcs', 'RET-SENT-OLD-RECEIVED-NEW', 'x', now() - interval '120 days', now() - interval '1 day');`)
+    const before = Number(psql('select count(*) from public.lumia_message_inbox').stdout.trim())
+    assert.equal(psql('select public.lumia_purge_message_inbox()').stdout.trim(), '2')
+    assert.equal(psql('select public.lumia_purge_message_inbox()').stdout.trim(), '0', 'idempotente')
+    const left = psql("select string_agg(source_message_id, ',' order by source_message_id) from public.lumia_message_inbox where source_message_id like 'RET-%'").stdout.trim()
+    assert.equal(left, 'RET-J89,RET-J90-1MIN,RET-SENT-OLD-RECEIVED-NEW')
+    assert.equal(Number(psql('select count(*) from public.lumia_message_inbox').stdout.trim()), before - 2)
+    // Une seule tâche planifiée, quotidienne, même après deux applications.
+    assert.equal(psql("select count(*) || ' ' || max(schedule) || ' ' || max(command) from cron.job where jobname = 'lumia-message-inbox-retention'").stdout.trim(),
+      '1 17 3 * * * SELECT public.lumia_purge_message_inbox()')
+  })
+
+  await t.test('droits réduits : service_role insère et lit seulement ; personne d\'autre ne purge', async () => {
+    const ingest = await api(baseUrl, '/lumia_message_inbox', { token: service, method: 'POST', body: row(userA, 'AFTER-PURGE') })
+    assert.equal(ingest.status, 201, 'ingestion toujours possible après purge')
+    for (const [method, route, body] of [
+      ['PATCH', '/lumia_message_inbox?source_message_id=eq.AFTER-PURGE', { message_text: 'modifié' }],
+      ['DELETE', '/lumia_message_inbox?source_message_id=eq.AFTER-PURGE', undefined],
+    ]) {
+      const result = await api(baseUrl, route, { token: service, method, body })
+      assert.ok([401, 403].includes(result.status), `service_role ${method} : ${result.status}`)
+    }
+    for (const token of [service, tokenA, undefined]) {
+      const purge = await api(baseUrl, '/rpc/lumia_purge_message_inbox', { token, method: 'POST', body: {} })
+      assert.ok([401, 403, 404].includes(purge.status), `purge via API : ${purge.status}`)
+    }
+    assert.equal(psql("select count(*) from public.lumia_message_inbox where source_message_id = 'AFTER-PURGE'").stdout.trim(), '1')
+    assert.equal(psql("select has_table_privilege('service_role', 'public.lumia_message_inbox', 'TRUNCATE')").stdout.trim(), 'f')
   })
 
   await t.test('contraintes : canal, identifiant, expéditeur, texte', async () => {

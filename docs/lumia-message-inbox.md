@@ -67,20 +67,29 @@ Le contexte est chargé pour l'agent `metadata.purpose = lumia_rdv_assistant`. U
   - **Limites :** 31 jours, 50 résultats et environ 20 000 caractères au maximum.
 - **Noms affichés :** issus du référentiel clients, par téléphone ou e-mail exacts.
 
-## Rétention (à choisir — aucune purge active)
+## Rétention : 90 jours (active)
 
-| Durée | Pour | Contre |
-|---|---|---|
-| 7 jours | exposition minimale | « qui m'a écrit le mois dernier ? » impossible |
-| **30 jours (recommandé)** | couvre la recherche (31 jours) et le suivi client courant | historique plus ancien perdu |
-| 90 jours | suivi trimestriel | plus de données personnelles stockées |
-| Illimitée | historique complet | exposition croissante ; à justifier (RGPD : minimisation) |
+Migration `supabase/migrations/20261004100000_lumia_message_inbox_retention.sql`.
 
-Une fois la durée choisie, il suffira d'une tâche planifiée qui supprime les lignes dont `message_sent_at` est plus ancien que la limite. Cette tâche n'est **pas** créée.
+- **Date de référence : `received_at`.** C'est l'arrivée du message dans l'Inbox, selon l'horloge du serveur ; le bridge ne la fournit jamais.
+  - `message_sent_at` vient du téléphone et peut manquer ; `created_at` est un doublon technique.
+  - Un vieux message relayé tardivement est donc conservé 90 jours à partir de sa réception.
+- **Règle :** une ligne est supprimée dès que `received_at < now() - 90 jours`.
+  - À 90 jours tout juste, elle est encore conservée (comparaison stricte).
+  - La purge étant quotidienne, une ligne disparaît entre 90 et 91 jours.
+- **Mécanisme : pg_cron**, déjà installé.
+  - La tâche `lumia-message-inbox-retention` tourne chaque jour à 03:17 UTC et appelle `public.lumia_purge_message_inbox()`.
+  - Cette fonction est sans paramètre, en `SECURITY INVOKER`, avec `search_path = ''`, et `EXECUTE` est retiré à `PUBLIC`, `anon`, `authenticated` et `service_role`.
+  - Elle est exécutée par le propriétaire de la table et renvoie seulement le nombre de lignes supprimées : aucun texte dans le journal pg_cron.
+- **Droits finaux sur la table :**
+  - `service_role` : `SELECT` et `INSERT` seulement (ingestion idempotente) ;
+  - `authenticated` : `SELECT` de ses propres lignes par RLS ;
+  - `anon` : aucun.
+- **Aucune autre table n'est purgée.**
 
 ## Activation (procédure)
 
-1. Appliquer la migration en Production.
+1. Appliquer les migrations en Production (table, puis rétention).
 2. Créer `LUMIA_INBOX_TOKEN` en Production Vercel, puis redéployer.
 3. Placer le même jeton dans le Trousseau du Mac (`mediumia-lumia` / `inbox-token`).
 4. Mettre `"inbox_enabled": true` dans `config.local.json`, avec un seul numéro dans `live_only_handles` pour le premier test, puis redémarrer le LaunchAgent.

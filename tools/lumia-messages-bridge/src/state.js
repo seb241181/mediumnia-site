@@ -3,7 +3,9 @@
  * Contient UNIQUEMENT :
  *   - cursor : dernier ROWID de chat.db déjà examiné ;
  *   - processed : identifiant Apple du message (guid) → statut + date ;
- *   - pending : guid → ROWID, nombre d'essais, prochain essai.
+ *   - pending : guid → ROWID, nombre d'essais, prochain essai ;
+ *   - inbox (V2, si activée) : since_cursor (aucun message antérieur), et ses
+ *     propres processed / pending, indépendants du pipeline RDV.
  * Jamais de texte, de numéro ni de nom : en cas de nouvel essai, le message est
  * relu dans chat.db par son ROWID.
  */
@@ -19,6 +21,11 @@ export function loadState(path) {
   if (state?.version !== 1 || !Number.isInteger(state.cursor)) throw new Error('state_invalid')
   state.processed ||= {}
   state.pending ||= {}
+  if (state.inbox) {
+    if (!Number.isInteger(state.inbox.since_cursor)) throw new Error('state_invalid')
+    state.inbox.processed ||= {}
+    state.inbox.pending ||= {}
+  }
   return state
 }
 
@@ -26,11 +33,16 @@ export function newState(mode, cursor, now = new Date()) {
   return { version: 1, mode, cursor, created_at: now.toISOString(), processed: {}, pending: {} }
 }
 
+function pruneMap(map, limit) {
+  const entries = Object.entries(map || {}).filter(([, v]) => Date.parse(v.t) >= limit)
+  entries.sort((a, b) => Date.parse(b[1].t) - Date.parse(a[1].t))
+  return Object.fromEntries(entries.slice(0, MAX_PROCESSED))
+}
+
 export function prune(state, now = new Date()) {
   const limit = now.getTime() - KEEP_DAYS * 86_400_000
-  const entries = Object.entries(state.processed).filter(([, v]) => Date.parse(v.t) >= limit)
-  entries.sort((a, b) => Date.parse(b[1].t) - Date.parse(a[1].t))
-  state.processed = Object.fromEntries(entries.slice(0, MAX_PROCESSED))
+  state.processed = pruneMap(state.processed, limit)
+  if (state.inbox) state.inbox.processed = pruneMap(state.inbox.processed, limit)
   return state
 }
 

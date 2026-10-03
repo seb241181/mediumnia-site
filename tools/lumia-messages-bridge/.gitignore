@@ -1,0 +1,4 @@
+# État local (curseur + identifiants traités), configuration locale et journaux : jamais dans Git.
+state/
+config.local.json
+*.log

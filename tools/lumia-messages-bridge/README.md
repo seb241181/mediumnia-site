@@ -216,6 +216,19 @@ security delete-generic-password -s mediumia-lumia -a intake-token
 
 **Comportement** : le bridge démarre à l'ouverture de session (`RunAtLoad`) et redémarre s'il s'arrête (`KeepAlive`, au plus une fois par minute). Il tourne en arrière-plan, sans fenêtre, en basse priorité. Sans l'option `--live` dans le fichier **et** `"live": true`, il reste en dry-run et ne journalise que des compteurs.
 
+## 5. Boîte de réception Lumia (V2, désactivée par défaut)
+
+Second pipeline, **indépendant** du pipeline RDV : chaque message **entrant texte** en 1-à-1 (iMessage, SMS, RCS, quel que soit son classement) est déposé dans la boîte de réception privée de Lumia (`POST /api/rdv-admin?action=lumia-message-intake`, table `lumia_message_inbox`). Les messages `probable` continuent **aussi** vers l'intake RDV, inchangé.
+
+- **Activation** : `"inbox_enabled": true` dans `config.local.json` (avec `"live": true` et `--live`), jeton distinct dans le Trousseau (`mediumia-lumia` / `inbox-token`), et `LUMIA_INBOX_TOKEN` côté serveur. Sans l'un de ces éléments, rien n'est envoyé.
+- **Pas d'historique** : à l'activation, l'Inbox part du dernier message existant (`state.inbox.since_cursor`), même après un `--lookback-minutes`.
+- **Indépendance** : file d'attente, nouveaux essais, jeton et endpoint séparés. Une panne de l'Inbox ne retarde, ne perd ni ne double aucun envoi RDV, et inversement.
+- **Jamais dans l'Inbox** : messages sortants, groupes, réactions, événements système, pièces jointes (ni le fichier ni un message sans texte), numéros courts (codes, banques…), expéditeurs de `ignore_handles`.
+- **RCS** : canal `rcs` dans l'Inbox (le pipeline RDV garde `other`).
+- **Verrou de test** : `live_only_handles` s'applique aussi à l'Inbox.
+
+Le guide serveur (schéma, RLS, recherche, rétention) est dans `docs/lumia-message-inbox.md`.
+
 ## Confidentialité et sécurité
 
 **Base Apple** :

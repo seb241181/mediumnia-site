@@ -4,6 +4,8 @@
  *   doctor                       diagnostic du Mac (compteurs uniquement, aucun contenu)
  *   run [--once] [--show]        dry-run par défaut : rien n'est envoyé
  *   run --live                   envoi réel, seulement si config.local.json contient "live": true
+ * Boîte de réception Lumia (V2) : seulement si config.local.json contient
+ * "inbox_enabled": true (désactivée par défaut ; jeton Trousseau « inbox-token »).
  * Options : --show-full (numéros non masqués à l'écran), --lookback-minutes N,
  *           --db CHEMIN, --state-dir DOSSIER, --config FICHIER, --interval SECONDES
  */
@@ -14,7 +16,9 @@ import { fileURLToPath } from 'node:url'
 import { createBridge } from './bridge.js'
 import { DEFAULT_CHAT_DB, openChatDb } from './chatdb.js'
 import { assertSafeEndpoint, DEFAULT_ENDPOINT } from './sender.js'
-import { keychainHasToken, readToken } from './token.js'
+import { INBOX_KEYCHAIN_ACCOUNT, keychainHasToken, readInboxToken, readToken } from './token.js'
+
+export const DEFAULT_INBOX_ENDPOINT = 'https://mediumia.fr/api/rdv-admin?action=lumia-message-intake'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -82,6 +86,7 @@ async function doctor(args) {
   }
   chat.close()
   lines.push(`jeton Trousseau  : ${(await keychainHasToken()) ? 'présent (valeur non affichée)' : 'absent'}`)
+  lines.push(`jeton Inbox      : ${(await keychainHasToken(INBOX_KEYCHAIN_ACCOUNT)) ? 'présent (valeur non affichée)' : 'absent'}`)
   console.log(lines.join('\n'))
 }
 
@@ -95,6 +100,9 @@ async function run(args) {
   const mode = args.live ? 'live' : 'dry-run'
   const endpoint = config.endpoint || DEFAULT_ENDPOINT
   assertSafeEndpoint(endpoint)
+  const inboxEnabled = config.inbox_enabled === true
+  const inboxEndpoint = config.inbox_endpoint || DEFAULT_INBOX_ENDPOINT
+  if (inboxEnabled) assertSafeEndpoint(inboxEndpoint)
   const stateDir = args['state-dir'] || join(ROOT, 'state')
   let chat
   try { chat = openChatDb(args.db || config.chat_db || DEFAULT_CHAT_DB) } catch (error) {
@@ -112,6 +120,7 @@ async function run(args) {
     liveOnlyHandles: Array.isArray(config.live_only_handles) ? config.live_only_handles : [],
     endpoint,
     getToken: () => readToken(),
+    inbox: inboxEnabled ? { endpoint: inboxEndpoint, getToken: () => readInboxToken() } : null,
     showFull: Boolean(args['show-full']),
     print: args.show || args['show-full'] ? (text) => console.log(text) : () => {},
     log,
@@ -120,7 +129,7 @@ async function run(args) {
   let stopping = false
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { stopping = true })
   const allowlist = Array.isArray(config.live_only_handles) ? config.live_only_handles.length : 0
-  log(`start mode=${mode} interval_s=${interval / 1000} send_uncertain=${config.send_uncertain === true} test_allowlist=${allowlist}`)
+  log(`start mode=${mode} interval_s=${interval / 1000} send_uncertain=${config.send_uncertain === true} test_allowlist=${allowlist}${inboxEnabled ? ' inbox=on' : ''}`)
   do {
     try { await bridge.tick() } catch (error) { log(`tick_error ${error.code || error.name}`) }
     if (args.once) break

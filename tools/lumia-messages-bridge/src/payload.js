@@ -11,7 +11,9 @@ import { hints } from './classify.js'
 // Même règle que le serveur (MESSAGE_ID_RE).
 export const MESSAGE_ID_RE = /^[A-Za-z0-9._:@+/=-]{1,200}$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Contrat RDV : 2000 caractères ; boîte de réception : 4000.
 const MAX_TEXT = 2000
+const MAX_INBOX_TEXT = 4000
 
 // Service Apple → canal Lumia. iMessage et SMS sont distingués par Apple dans
 // message.service. RCS n'a pas de canal Lumia dédié : « other », documenté.
@@ -19,6 +21,14 @@ export function channelOf(service) {
   if (service === 'iMessage') return 'imessage'
   if (service === 'SMS') return 'sms'
   if (service === 'RCS') return 'other'
+  return null
+}
+
+// Boîte de réception Lumia (V2) : RCS y garde son propre canal.
+export function inboxChannelOf(service) {
+  if (service === 'iMessage') return 'imessage'
+  if (service === 'SMS') return 'sms'
+  if (service === 'RCS') return 'rcs'
   return null
 }
 
@@ -34,7 +44,7 @@ export function messageText(row) {
   if (raw == null) return null
   // Caractère de pièce jointe (U+FFFC) et caractères de contrôle retirés.
   const text = raw.replace(/￼/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ').trim()
-  return text ? text.slice(0, MAX_TEXT) : ''
+  return text ? text.slice(0, MAX_INBOX_TEXT) : ''
 }
 
 // Ce que le bridge sait du message, avant classement.
@@ -43,6 +53,7 @@ export function describe(row) {
     rowid: row.rowid,
     guid: row.guid,
     channel: channelOf(row.service),
+    inbox_channel: inboxChannelOf(row.service),
     incoming: Number(row.is_from_me) === 0,
     reaction: Number(row.associated_message_type || 0) !== 0,
     system: Number(row.item_type || 0) !== 0,
@@ -76,7 +87,7 @@ export function buildPayload(msg, classification, now = new Date()) {
     source_conversation_id: msg.conversation_id,
     message_sent_at: msg.sent_at,
     detected_at: now.toISOString(),
-    message_text: msg.text,
+    message_text: msg.text.slice(0, MAX_TEXT),
     modality: 'unknown',
     confidence: classification.label === 'probable' ? 0.7 : 0.4,
     ...hints(msg.text),
@@ -85,6 +96,23 @@ export function buildPayload(msg, classification, now = new Date()) {
   if (EMAIL_RE.test(handle)) payload.email = handle.toLowerCase()
   else if (normalizePhone(handle)) payload.phone = normalizePhone(handle)
   return payload
+}
+
+// Boîte de réception : le message tel qu'il a été reçu, sans pièce jointe.
+// Expéditeur normalisé (téléphone ou e-mail), jamais de nom (Contacts non lus).
+export function buildInboxPayload(msg, classification) {
+  const handle = String(msg.handle || '').trim()
+  const sender = EMAIL_RE.test(handle) ? handle.toLowerCase() : normalizePhone(handle)
+  return {
+    source_channel: msg.inbox_channel,
+    source_message_id: msg.guid,
+    source_conversation_id: msg.conversation_id,
+    message_sent_at: msg.sent_at,
+    message_text: msg.text,
+    is_from_me: false,
+    classification: classification.label,
+    ...(sender ? { sender } : {}),
+  }
 }
 
 // Même normalisation que le serveur (lib/lumiaRdvIntake.js) : un numéro qu'il

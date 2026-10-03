@@ -5,6 +5,7 @@ import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
 import { cancelSlotOffer, createSlotOffer, listSlotOffers } from '../lib/rdvSlotOffers.js'
 import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, transferBookingDeposit } from '../lib/rdvDepositSettlements.js'
 import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
+import { handleLumiaInboxApi } from '../lib/lumiaMessageInbox.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
@@ -790,6 +791,13 @@ export default async function handler(req, res) {
   // Seulement importer une demande et lister les prestations ; jamais Google.
   if (req.query.action === 'lumia-rdv-intake' || req.query.action === 'lumia-services') {
     const result = await handleLumiaApi({ req, action: req.query.action })
+    return res.status(result.status).json(result.body)
+  }
+
+  // Boîte de réception Lumia (V2) : jeton distinct (LUMIA_INBOX_TOKEN), écriture
+  // seule d'un message texte reçu ; sans ce secret, 503 et rien n'est stocké.
+  if (req.query.action === 'lumia-message-intake') {
+    const result = await handleLumiaInboxApi({ req })
     return res.status(result.status).json(result.body)
   }
 

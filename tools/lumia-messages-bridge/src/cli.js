@@ -109,6 +109,7 @@ async function run(args) {
     lookbackMinutes: Number(args['lookback-minutes'] ?? config.lookback_minutes ?? 0),
     ignoreHandles: Array.isArray(config.ignore_handles) ? config.ignore_handles : [],
     sendUncertain: config.send_uncertain === true,
+    liveOnlyHandles: Array.isArray(config.live_only_handles) ? config.live_only_handles : [],
     endpoint,
     getToken: () => readToken(),
     showFull: Boolean(args['show-full']),
@@ -118,7 +119,8 @@ async function run(args) {
   const interval = Math.max(5, Number(args.interval ?? config.poll_seconds ?? 15)) * 1000
   let stopping = false
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { stopping = true })
-  log(`start mode=${mode} interval_s=${interval / 1000}`)
+  const allowlist = Array.isArray(config.live_only_handles) ? config.live_only_handles.length : 0
+  log(`start mode=${mode} interval_s=${interval / 1000} send_uncertain=${config.send_uncertain === true} test_allowlist=${allowlist}`)
   do {
     try { await bridge.tick() } catch (error) { log(`tick_error ${error.code || error.name}`) }
     if (args.once) break

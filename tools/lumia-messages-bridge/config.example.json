@@ -4,5 +4,6 @@
   "poll_seconds": 15,
   "lookback_minutes": 0,
   "send_uncertain": false,
-  "ignore_handles": []
+  "ignore_handles": [],
+  "live_only_handles": []
 }

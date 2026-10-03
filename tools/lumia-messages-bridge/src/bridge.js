@@ -6,12 +6,23 @@
  */
 import { createHash } from 'node:crypto'
 import { classify } from './classify.js'
-import { buildPayload, describe, mask, skipReason } from './payload.js'
+import { buildPayload, describe, mask, normalizePhone, skipReason } from './payload.js'
 import { loadState, newState, saveState } from './state.js'
 import { sendIntake } from './sender.js'
 
 // Délais entre essais (minutes) ; au-delà, le message est marqué « failed ».
 export const RETRY_MINUTES = [1, 5, 15, 60, 180, 360, 720]
+
+// Verrou de test : en mode live, si la liste n'est pas vide, seuls ces
+// expéditeurs (numéro normalisé ou e-mail) peuvent être envoyés.
+export function sameHandle(a, b) {
+  const x = String(a || '').trim().toLowerCase()
+  const y = String(b || '').trim().toLowerCase()
+  if (!x || !y) return false
+  if (x.includes('@') || y.includes('@')) return x === y
+  const px = normalizePhone(x)
+  return Boolean(px) && px === normalizePhone(y)
+}
 
 export const shortId = (guid) => createHash('sha256').update(String(guid)).digest('hex').slice(0, 10)
 
@@ -22,6 +33,7 @@ export function createBridge({
   lookbackMinutes = 0,
   ignoreHandles = [],
   sendUncertain = false,
+  liveOnlyHandles = [],
   endpoint,
   getToken = async () => null,
   send = sendIntake,
@@ -51,6 +63,8 @@ export function createBridge({
     ].join('\n'))
   }
 
+  const allowed = (handle) => !liveOnlyHandles.length || liveOnlyHandles.some((h) => sameHandle(h, handle))
+
   async function sendDue(state, now, counts) {
     const due = Object.entries(state.pending).filter(([, p]) => Date.parse(p.next_at) <= now.getTime())
     if (!due.length) return
@@ -63,7 +77,7 @@ export function createBridge({
     for (const [guid, pending] of due) {
       const row = chat.messageByRowid(pending.rowid)
       const msg = row ? describe(row) : null
-      if (!msg || msg.guid !== guid || skipReason(msg)) {
+      if (!msg || msg.guid !== guid || skipReason(msg) || !allowed(msg.handle)) {
         delete state.pending[guid]
         state.processed[guid] = { s: 'vanished', t: now.toISOString() }
         continue
@@ -118,6 +132,9 @@ export function createBridge({
         if (mode === 'dry-run') {
           show(msg, cls, buildPayload(msg, cls, now))
           state.processed[msg.guid] = { s: `dry_run_${cls.label}`, t: now.toISOString() }
+        } else if (!allowed(msg.handle)) {
+          state.processed[msg.guid] = { s: 'outside_test_allowlist', t: now.toISOString() }
+          counts.outside_allowlist = (counts.outside_allowlist || 0) + 1
         } else if (cls.label === 'probable' || sendUncertain) {
           state.pending[msg.guid] = { rowid: row.rowid, attempts: 0, next_at: now.toISOString() }
           counts.queued += 1

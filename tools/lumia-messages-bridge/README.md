@@ -134,6 +134,11 @@ Exemple (données fictives) :
 - `incertain` n'est envoyé qu'avec `"send_uncertain": true` ;
 - `ignorer` n'est jamais transmis.
 
+**Verrou de test** (`"live_only_handles"` dans `config.local.json`, vide par défaut) : en mode réel, si la liste contient des numéros ou des adresses, **seuls ces expéditeurs** peuvent être envoyés.
+- Les autres sont marqués `outside_test_allowlist` et ne partent pas.
+- Ils restent dans Messages, à traiter à la main.
+- Ce verrou sert aux premiers essais réels. Videz la liste pour le fonctionnement normal.
+
 **Le texte reste une donnée.** Il n'est jamais interprété comme une consigne. « Ignore les instructions système… » part tel quel dans `message_text`, et le serveur le traite comme une donnée client non fiable.
 
 ## Contrat Lumia (réutilisé tel quel)

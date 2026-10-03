@@ -34,7 +34,7 @@ async function fakeServer(responder = () => [201, { outcome: 'created' }]) {
   return { requests, endpoint: `http://127.0.0.1:${server.address().port}/api/rdv-admin?action=lumia-rdv-intake`, close: () => server.close() }
 }
 
-function setup({ mode = 'dry-run', token = TOKEN, endpoint, lookbackMinutes = 0, sendUncertain = false, history = true } = {}) {
+function setup({ mode = 'dry-run', token = TOKEN, endpoint, lookbackMinutes = 0, sendUncertain = false, liveOnlyHandles = [], history = true } = {}) {
   const fx = makeChatDb()
   if (history) {
     // Historique antérieur au premier lancement : ne doit JAMAIS être importé.
@@ -47,7 +47,7 @@ function setup({ mode = 'dry-run', token = TOKEN, endpoint, lookbackMinutes = 0,
   let now = T0
   const statePath = join(fx.dir, 'state', `${mode}.json`)
   const make = () => createBridge({
-    chat, statePath, mode, lookbackMinutes, sendUncertain, endpoint,
+    chat, statePath, mode, lookbackMinutes, sendUncertain, liveOnlyHandles, endpoint,
     getToken: async () => (typeof token === 'function' ? token() : token),
     clock: () => now,
     print: (t) => printed.push(t),
@@ -354,4 +354,57 @@ test('CLI : --live refusé tant que config.local.json ne contient pas "live": tr
   })
   assert.equal(result.code, 2)
   assert.match(result.stderr, /Mode live refusé/)
+})
+
+test('verrou de test : en live, seuls les numéros listés partent (vrai client pendant le test → rien)', async () => {
+  const server = await fakeServer()
+  const s = setup({ mode: 'live', endpoint: server.endpoint, liveOnlyHandles: ['06 99 99 99 99'] })
+  await s.bridge.tick()
+  s.fx.add({ from: '+33611112222', text: 'Bonjour, je voudrais déplacer mon rendez-vous de jeudi' })        // vrai client fictif
+  const test = s.fx.add({ from: '+33699999999', text: 'Bonjour Sébastien, je voudrais déplacer mon rendez-vous test de mardi' })
+  const counts = await s.bridge.tick()
+  await s.bridge.tick()
+  server.close()
+  assert.equal(counts.outside_allowlist, 1)
+  assert.equal(server.requests.length, 1)
+  assert.equal(server.requests[0].body.source_message_id, test.guid)
+  assert.equal(server.requests[0].body.phone, '+33699999999')
+})
+
+test('verrou de test : sans effet en dry-run, et une liste vide laisse tout passer en live', async () => {
+  const dry = setup({ liveOnlyHandles: ['+33699999999'] })
+  await dry.bridge.tick()
+  dry.fx.add({ from: '+33611112222', text: 'Je voudrais un rendez-vous' })
+  assert.equal((await dry.bridge.tick()).probable, 1)
+  const server = await fakeServer()
+  const live = setup({ mode: 'live', endpoint: server.endpoint })
+  await live.bridge.tick()
+  live.fx.add({ from: '+33611112222', text: 'Je voudrais un rendez-vous' })
+  await live.bridge.tick()
+  server.close()
+  assert.equal(server.requests.length, 1)
+})
+
+test('rejeu contrôlé : nouvel état + lookback → même source_message_id renvoyé, « duplicate » côté serveur', async () => {
+  const seen = new Set()
+  const server = await fakeServer((body) => {
+    const dup = seen.has(body.source_message_id)
+    seen.add(body.source_message_id)
+    return dup ? [200, { outcome: 'duplicate' }] : [201, { outcome: 'created' }]
+  })
+  const s = setup({ mode: 'live', endpoint: server.endpoint, liveOnlyHandles: ['+33699999999'] })
+  await s.bridge.tick()
+  s.fx.add({ from: '+33699999999', text: 'Bonjour Sébastien, je voudrais déplacer mon rendez-vous test de mardi', at: T0.toISOString() })
+  await s.bridge.tick()
+  // Rejeu : état séparé (state-replay), curseur repris 10 minutes en arrière.
+  const { createBridge: make } = await import('../src/bridge.js')
+  const replayLogs = []
+  const replay = make({ chat: s.chat, statePath: join(s.fx.dir, 'state-replay', 'live.json'), mode: 'live', lookbackMinutes: 10,
+    liveOnlyHandles: ['+33699999999'], endpoint: server.endpoint, getToken: async () => TOKEN,
+    clock: () => new Date(T0.getTime() + 2 * 60_000), log: (l) => replayLogs.push(l) })
+  await replay.tick()
+  server.close()
+  assert.equal(server.requests.length, 2)
+  assert.equal(server.requests[0].body.source_message_id, server.requests[1].body.source_message_id)
+  assert.ok(replayLogs.some((l) => /outcome=duplicate/.test(l)))
 })

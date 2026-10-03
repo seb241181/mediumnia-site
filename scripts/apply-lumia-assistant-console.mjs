@@ -1,5 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
+// Dernier patch du prebuild : les ancres visent le code APRÈS les patchs
+// historiques (imports en lazy(), routes dans <DeferredRoute>, titre Pilotage).
+// Ne jamais modifier src/App.jsx ni RdvDashboard.jsx directement : leurs lignes
+// d'origine servent d'ancres aux patchs historiques.
+
 const appPath = new URL('../src/App.jsx', import.meta.url)
 const dashboardPath = new URL('../src/components/rdv/RdvDashboard.jsx', import.meta.url)
 
@@ -20,8 +25,8 @@ let app = await readFile(appPath, 'utf8')
 
 app = insertAfter(
   app,
-  "import RdvDashboard from './components/rdv/RdvDashboard'",
-  "\nimport LumiaAssistantPage from './components/rdv/LumiaAssistantPage'",
+  "const RdvDashboard = lazy(() => import('./components/rdv/RdvDashboard'))",
+  "\nconst LumiaAssistantPage = lazy(() => import('./components/rdv/LumiaAssistantPage'))",
   'App import',
 )
 
@@ -48,9 +53,17 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  "  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />",
-  "  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} onOpenLumia={openLumia} />\n  if (view === 'rdv-lumia') return <LumiaAssistantPage onBack={openRdvDashboard} />",
+  "  if (view === 'rdv-dashboard') return <DeferredRoute><RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} /></DeferredRoute>",
+  "  if (view === 'rdv-dashboard') return <DeferredRoute><RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} onOpenLumia={openLumia} /></DeferredRoute>\n  if (view === 'rdv-lumia') return <DeferredRoute><LumiaAssistantPage onBack={openRdvDashboard} /></DeferredRoute>",
   'route render',
+)
+
+// Page privée : jamais indexée, comme l'espace RDV.
+app = replaceRequired(
+  app,
+  "  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation'",
+  "  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation' || view === 'rdv-lumia'",
+  'private route meta',
 )
 
 await writeFile(appPath, app)
@@ -69,15 +82,15 @@ dashboard = replaceRequired(
   `        {/* Page heading */}
         <div className="mb-8">
           <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">ESPACE PRO</p>
-          <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">MediumIA Rendez-vous</h1>
-          <p className="font-georgia text-mist">Votre pratique. Votre agenda. Vos rendez-vous réunis.</p>
+          <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">{workspace === 'pilotage' ? 'Pilotage MediumIA' : 'MediumIA Rendez-vous'}</h1>
+          <p className="font-georgia text-mist">{workspace === 'pilotage' ? 'Comprendre les parcours pour décider quoi améliorer.' : 'Votre pratique. Votre agenda. Vos rendez-vous réunis.'}</p>
         </div>`,
   `        {/* Page heading */}
         <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">ESPACE PRO</p>
-            <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">MediumIA Rendez-vous</h1>
-            <p className="font-georgia text-mist">Votre pratique. Votre agenda. Vos rendez-vous réunis.</p>
+            <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">{workspace === 'pilotage' ? 'Pilotage MediumIA' : 'MediumIA Rendez-vous'}</h1>
+            <p className="font-georgia text-mist">{workspace === 'pilotage' ? 'Comprendre les parcours pour décider quoi améliorer.' : 'Votre pratique. Votre agenda. Vos rendez-vous réunis.'}</p>
           </div>
           <button
             type="button"

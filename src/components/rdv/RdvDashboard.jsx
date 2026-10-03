@@ -1136,7 +1136,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function RdvDashboard({ onBack, onOpenPublic }) {
+export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   const { session, loading: authLoading, signIn, signOut } = useAuth()
 
   // Dashboard data
@@ -1420,8 +1420,8 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
           </div>
           <button
             type="button"
-            onClick={() => setLumiaOpen(true)}
-            className="shrink-0 border border-gold/40 bg-deep px-5 py-3 font-georgia text-sm font-semibold text-gold shadow-sm transition-colors hover:bg-deep/90 rounded-xl"
+            onClick={onOpenLumia}
+            className="shrink-0 rounded-xl border border-gold/40 bg-deep px-5 py-3 font-georgia text-sm font-semibold text-gold shadow-sm transition-colors hover:bg-deep/90"
           >
             Parler à Lumia
           </button>
@@ -1827,17 +1827,6 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
           </>
         )}
       </main>
-
-      {lumiaOpen && (
-        <div className="fixed inset-0 z-[80] overflow-y-auto bg-cream pt-8 md:pt-12">
-          <AgentChat
-            agentId={LUMIA_AGENT_ID}
-            onBack={() => setLumiaOpen(false)}
-            backLabel="Retour à l’agenda"
-            documentsEnabled={false}
-          />
-        </div>
-      )}
     </div>
   )
 }

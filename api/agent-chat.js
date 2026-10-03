@@ -7,6 +7,7 @@ import {
   resolveAgentRuntimePolicy,
 } from '../lib/agentRuntimePolicy.js'
 import { claimInvitation, getWorkspaceState, saveAssistant } from '../lib/proWorkspace.js'
+import { loadLumiaRdvContext, lumiaContextLogDetail } from '../lib/lumiaAssistantContext.js'
 import { answerFicheVisitor, getFicheAssistantInfo } from '../lib/publicAssistant.js'
 
 const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
@@ -399,8 +400,8 @@ export default async function handler(req, res) {
   if (isLumiaRdv && !auth.rehearsal) {
     try {
       liveRdvContext = await loadLumiaRdvContext({ db, userId: auth.userId })
-    } catch {
-      technicalLog(requestId, 'chat', 'failed', startedAt, 'lumia_context_unavailable')
+    } catch (error) {
+      technicalLog(requestId, 'chat', 'failed', startedAt, lumiaContextLogDetail(error))
       return res.status(503).json({ error: 'Les données RDV de Lumia sont momentanément indisponibles.', requestId })
     }
   }

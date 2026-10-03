@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Modèle de LaunchAgent (NON installé automatiquement). Remplacer :
+    __NODE__   chemin réel de node (ex. /opt/homebrew/bin/node → voir README)
+    __BRIDGE__ chemin absolu du dossier tools/lumia-messages-bridge
+    __HOME__   votre dossier personnel (/Users/votre-nom)
+  Mode réel, plus tard seulement : ajouter un élément string contenant
+  l'option live (voir README) après "run", ET "live": true dans
+  config.local.json. Sinon le bridge reste en dry-run et n'écrit que des
+  compteurs dans le journal.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>fr.mediumia.lumia-messages-bridge</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE__</string>
+    <string>--disable-warning=ExperimentalWarning</string>
+    <string>__BRIDGE__/src/cli.js</string>
+    <string>run</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__BRIDGE__</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>LowPriorityIO</key>
+  <true/>
+  <key>Nice</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/mediumia-lumia-bridge.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/mediumia-lumia-bridge.log</string>
+</dict>
+</plist>

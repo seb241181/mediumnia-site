@@ -1,0 +1,13 @@
+{
+  "name": "lumia-messages-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pont local macOS : messages Messages (iMessage/SMS) liés aux rendez-vous → Lumia Intake (MediumIA). Dry-run par défaut.",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "doctor": "node --disable-warning=ExperimentalWarning src/cli.js doctor",
+    "dry-run": "node --disable-warning=ExperimentalWarning src/cli.js run --show",
+    "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.js"
+  }
+}

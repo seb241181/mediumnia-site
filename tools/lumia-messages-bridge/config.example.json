@@ -1,0 +1,8 @@
+{
+  "live": false,
+  "endpoint": "https://mediumia.fr/api/rdv-admin?action=lumia-rdv-intake",
+  "poll_seconds": 15,
+  "lookback_minutes": 0,
+  "send_uncertain": false,
+  "ignore_handles": []
+}

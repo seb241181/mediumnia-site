@@ -12,6 +12,7 @@ import ProWaitlistPage from './components/ProWaitlistPage'
 import ReseauDirectory from './components/ReseauDirectory'
 import ReseauJoindre from './components/ReseauJoindre'
 import RdvDashboard from './components/rdv/RdvDashboard'
+import LumiaAssistantPage from './components/rdv/LumiaAssistantPage'
 import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
 import ChronospherePage from './components/ChronospherePage'
@@ -173,6 +174,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
 
 function pathToView(p) {
   return p === '/rdv/annuler' ? 'rdv-cancellation'
+    : p === '/rdv/lumia' ? 'rdv-lumia'
     : p.startsWith('/rdv/') ? 'rdv-public'
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
@@ -214,6 +216,7 @@ export default function App() {
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
+  const openLumia        = () => nav('/rdv/lumia',       'rdv-lumia')
   const openRdvPublic   = (slug) => nav(`/rdv/${slug}`,  'rdv-public')
   const backHome        = () => nav('/',                 'home')
 
@@ -225,7 +228,7 @@ export default function App() {
   }
 
   // Sur la réservation, les bulles flottantes masquaient titres et récapitulatif.
-  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere'
+  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-lumia' && view !== 'rdv-public' && view !== 'chronosphere'
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 
@@ -247,7 +250,8 @@ export default function App() {
   if (view === 'avis')         return <><ReviewsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
+  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} onOpenLumia={openLumia} />
+  if (view === 'rdv-lumia') return <LumiaAssistantPage onBack={openRdvDashboard} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
   return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>

@@ -1,12 +1,23 @@
--- MediumIA — Migration confirm_booking_request RPC
--- Fournir au praticien, NE PAS appliquer automatiquement.
--- Appliquer via Supabase Dashboard → SQL Editor.
+-- Lumia RDV — confirmation d'une demande d'agent sans paiement en ligne.
 --
--- Pré-requis : migration docs/rdv-requests-migration.sql déjà appliquée.
+-- Prérequis : 20261002090000_lumia_rdv_intake.sql (colonne intake_agent) et
+-- la fonction confirm_booking_request (docs/rdv-confirm-request-migration.sql).
 --
--- ⚠ Version plus récente : supabase/migrations/20261002093000_lumia_confirm_request_manual_source.sql
--- (booking_source « manual » pour les demandes d'agent). Ne pas réappliquer ce
--- fichier après celle-ci : il retirerait la correction.
+-- Cause : le trigger enforce_mediumia_booking_reservation_payment() exige les
+-- arrhes pour tout booking booking_source = 'mediumia' d'une prestation
+-- « instant » à arrhes. confirm_booking_request ne renseignait pas
+-- booking_source (défaut 'mediumia') : confirmer une demande Lumia pour une
+-- telle prestation échouait avec « reservation_payment_required ».
+--
+-- Correction : les bookings créés depuis une demande d'agent (intake_agent non
+-- nul) sont « manual ». Les demandes du formulaire du site restent « mediumia »
+-- (comportement inchangé ; leurs prestations « request » ne sont pas visées
+-- par le contrôle). Le trigger n'est pas modifié : une réservation publique
+-- « mediumia » sans arrhes reste refusée.
+--
+-- Conséquence : comme les autres rendez-vous « manual », ces bookings ne
+-- reçoivent pas les envois automatiques réservés aux « mediumia » (rappel
+-- J-3, SMS J-1, rappel de solde). Idempotente : peut être rejouée.
 
 CREATE OR REPLACE FUNCTION public.confirm_booking_request(
   p_request_id         UUID,
@@ -101,7 +112,8 @@ BEGIN
     customer_email,
     customer_phone,
     customer_message,
-    status
+    status,
+    booking_source
   ) VALUES (
     v_request.practitioner_id,
     v_request.service_id,
@@ -113,7 +125,12 @@ BEGIN
     v_request.customer_email,
     v_request.customer_phone,
     v_request.customer_message,
-    'confirmed'
+    'confirmed',
+    -- Demande détectée par un agent (Lumia…) et confirmée à la main par le
+    -- praticien : rendez-vous saisi manuellement, sans paiement en ligne.
+    -- Le contrôle des arrhes (enforce_mediumia_booking_reservation_payment)
+    -- reste entier pour les réservations publiques « mediumia ».
+    CASE WHEN v_request.intake_agent IS NOT NULL THEN 'manual' ELSE 'mediumia' END
   )
   RETURNING id INTO v_booking_id;
 
@@ -144,9 +161,3 @@ REVOKE EXECUTE ON FUNCTION public.confirm_booking_request(UUID, UUID, TIMESTAMPT
   FROM anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.confirm_booking_request(UUID, UUID, TIMESTAMPTZ, INTEGER, INTEGER, TEXT)
   TO service_role;
-
--- ── Vérification ───────────────────────────────────────────────────────────────
--- Après application :
---   SELECT proname, prosecdef FROM pg_proc
---   WHERE proname = 'confirm_booking_request';
--- prosecdef doit être true (SECURITY DEFINER).

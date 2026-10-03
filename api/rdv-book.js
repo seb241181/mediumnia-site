@@ -39,6 +39,7 @@ import { findUsableGiftCard, recordGiftRedemption, reserveGiftBalance, restoreGi
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import { getPublicSlotOffer } from '../lib/rdvSlotOffers.js'
 import { deleteBookingFromGoogleCalendar, syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
+import { isVideoOnly, visioLabel, VISIO_PENDING_NOTE } from '../lib/visioChannel.js'
 import {
   bookingCancellationUrl,
   cancellationCutoff,
@@ -224,6 +225,8 @@ function paymentInstructions(modality = []) {
 function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl }) {
   const { dateText, timeText } = formatBookingDate(startsAt, timezone)
   const payment = paymentInstructions(modality)
+  // Visio = WhatsApp ou FaceTime, jamais Google Meet : canal à confirmer.
+  const visio = isVideoOnly(modality) ? visioLabel('a_preciser') : null
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rendez-vous confirmé</title></head>
 <body style="margin:0;padding:0;background:#FAFAF7;font-family:Georgia,serif;color:#1A1535;">
 <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
@@ -234,7 +237,9 @@ function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone,
     <p style="margin:0;font-size:15px;font-weight:bold;">${escapeHtml(svcTitle)}</p>
     <p style="margin:8px 0 0;font-size:14px;color:#4A3F6B;"><strong>Date :</strong> ${escapeHtml(dateText)}</p>
     <p style="margin:4px 0 0;font-size:14px;color:#4A3F6B;"><strong>Heure :</strong> ${escapeHtml(timeText)}</p>
+    ${visio ? `<p style="margin:4px 0 0;font-size:14px;color:#4A3F6B;"><strong>Modalité :</strong> ${escapeHtml(visio)}</p>` : ''}
   </div>
+  ${visio ? `<p style="font-size:14px;line-height:1.7;color:#4A3F6B;">${escapeHtml(VISIO_PENDING_NOTE)}</p>` : ''}
   ${payment ? `<p style="font-size:14px;line-height:1.7;color:#4A3F6B;">${escapeHtml(payment)}</p>` : ''}
   <p style="font-size:14px;line-height:1.7;color:#4A3F6B;margin-top:24px;">Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous.</p>
   <p style="margin:22px 0 30px;"><a href="${escapeHtml(cancelUrl)}" style="display:inline-block;background:#1A1535;color:#C9A84C;text-decoration:none;padding:13px 20px;border-radius:9px;font-weight:bold;">Annuler mon rendez-vous</a></p>
@@ -246,9 +251,11 @@ function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone,
 function buildInstantConfirmationText({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl }) {
   const { dateText, timeText } = formatBookingDate(startsAt, timezone)
   const payment = paymentInstructions(modality)
+  const visio = isVideoOnly(modality) ? visioLabel('a_preciser') : null
   return [
     `Bonjour ${firstName},`, '', 'Votre rendez-vous est confirmé.', '',
     `Prestation : ${svcTitle}`, `Date : ${dateText}`, `Heure : ${timeText}`,
+    ...(visio ? [`Modalité : ${visio}`, VISIO_PENDING_NOTE] : []),
     ...(payment ? ['', payment] : []), '',
     'Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous :', cancelUrl, '',
     'À moins de 48 heures, contactez directement Sébastien.', '',
@@ -899,6 +906,7 @@ export default async function handler(req, res) {
         `Téléphone : ${customer.phone?.trim() || 'Non renseigné'}`,
         `Email : ${customer.email.trim()}`,
         `Prestation : ${service.title}`,
+        ...(isVideoOnly(service.modality) ? [visioLabel('a_preciser')] : []),
         `Identifiant MediumIA : ${instantBookingId}`,
       ].join('\n'),
     },

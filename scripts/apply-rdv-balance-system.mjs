@@ -31,10 +31,10 @@ replaceOnce(
 // 2) Confirmation email: tell deposit-paying video clients about H-72 reminder/H-48 deadline.
 replaceOnce(
   'lib/rdvDepositApiHandler.js',
-  `        meetLink: googleSync.google_meet_link || booking.google_meet_link || null,
+  `        visio,
         cancelUrl: bookingCancellationUrl(cancellation.token),
       })`,
-  `        meetLink: googleSync.google_meet_link || booking.google_meet_link || null,
+  `        visio,
         cancelUrl: bookingCancellationUrl(cancellation.token),
         balanceReminderEnabled: Array.isArray(service.modality)
           && service.modality.includes('video')

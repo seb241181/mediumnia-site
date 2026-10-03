@@ -4,6 +4,8 @@ import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
 import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
 import { cancelSlotOffer, createSlotOffer, listSlotOffers } from '../lib/rdvSlotOffers.js'
 import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, transferBookingDeposit } from '../lib/rdvDepositSettlements.js'
+import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
+import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
  * /api/rdv-admin?action=<action>
@@ -99,14 +101,14 @@ async function handleMe(req, res, supabase, userId) {
       .select('practitioner_id, google_email, google_calendar_id, token_expiry, is_active')
       .in('practitioner_id', ids),
     supabase.from('bookings')
-      .select('id, practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, starts_at, ends_at, status, google_meet_link')
+      .select('id, practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, starts_at, ends_at, status')
       .in('practitioner_id', ids).eq('status', 'confirmed').gte('starts_at', now)
       .order('starts_at').limit(20),
     supabase.from('booking_exceptions')
       .select('id, practitioner_id, exception_date, exception_type, slots, note')
       .in('practitioner_id', ids).order('exception_date'),
     supabase.from('booking_requests')
-      .select('id, service_id, status, customer_first_name, customer_last_name, customer_email, customer_phone, address_line1, address_line2, postal_code, city, customer_message, preferred_period, created_at, scheduled_at, travel_fee_cents, final_price_cents, practitioner_notes, practitioner_id, confirmed_booking_id')
+      .select('*')
       .in('practitioner_id', ids)
       .in('status', ['pending', 'contacted', 'scheduled'])
       .order('created_at', { ascending: false })
@@ -530,35 +532,10 @@ async function handleRequests(req, res, supabase, userId) {
 
       if (!booking) return res.status(404).json({ error: 'Booking introuvable.' })
 
-      let locationSync = null
-      if (request.address_line1) {
-        locationSync = [request.address_line1, request.address_line2, `${request.postal_code} ${request.city}`]
-          .filter(Boolean).join(', ')
-      }
-
-      const descSync = [
-        'MediumIA Rendez-vous', '',
-        `Client : ${booking.customer_first_name} ${booking.customer_last_name}`,
-        `Téléphone : ${booking.customer_phone || 'Non renseigné'}`,
-        `Email : ${booking.customer_email}`,
-        `Prestation : ${svcSync?.title || ''}`,
-        `Identifiant MediumIA : ${booking.id}`,
-      ].join('\n')
-
-      const syncResult = await syncBookingToGoogleCalendar({
-        supabase,
-        practitionerId:       pid,
-        bookingId:            booking.id,
-        currentGoogleEventId: booking.google_event_id || null,
-        event: {
-          title:       `${svcSync?.title || 'Rendez-vous'} — ${booking.customer_first_name} ${booking.customer_last_name}`,
-          startsAt:    booking.starts_at,
-          endsAt:      booking.ends_at,
-          timezone:    booking.timezone || 'Europe/Paris',
-          location:    locationSync,
-          description: descSync,
-        },
-      })
+      // Jamais de Google Meet : la visio passe par WhatsApp ou FaceTime.
+      const syncResult = await syncBookingToGoogleCalendar(requestCalendarSync({
+        supabase, practitionerId: pid, booking, request, serviceTitle: svcSync?.title,
+      }))
 
       let gStatus
       if (syncResult.status === 'synced' || syncResult.status === 'already_synced') {
@@ -594,6 +571,12 @@ async function handleRequests(req, res, supabase, userId) {
       }
       if (['rejected', 'cancelled'].includes(request.status)) {
         return res.status(409).json({ error: `Impossible de confirmer une demande en statut "${request.status}".` })
+      }
+      if (!request.service_id) {
+        return res.status(409).json({ error: 'Choisissez d’abord la prestation de cette demande.' })
+      }
+      if (!request.customer_first_name || !request.customer_last_name || !request.customer_email) {
+        return res.status(409).json({ error: 'Complétez le prénom, le nom et l’e-mail du client avant de confirmer.' })
       }
 
       // ── Google FreeBusy (optionnel — fail open si non connecté ou erreur réseau) ──
@@ -688,36 +671,11 @@ async function handleRequests(req, res, supabase, userId) {
         supabase.from('booking_services').select('title').eq('id', request.service_id).single(),
       ])
 
-      let locationConf = null
-      if (request.address_line1) {
-        locationConf = [request.address_line1, request.address_line2, `${request.postal_code} ${request.city}`]
-          .filter(Boolean).join(', ')
-      }
-
-      const descConf = [
-        'MediumIA Rendez-vous', '',
-        `Client : ${confirmedBooking?.customer_first_name} ${confirmedBooking?.customer_last_name}`,
-        `Téléphone : ${confirmedBooking?.customer_phone || 'Non renseigné'}`,
-        `Email : ${confirmedBooking?.customer_email}`,
-        `Prestation : ${confirmedSvc?.title || ''}`,
-        ...(finalPrice != null ? [`Montant : ${(finalPrice / 100).toFixed(2)} € TTC`] : []),
-        `Identifiant MediumIA : ${bookingId}`,
-      ].join('\n')
-
-      const googleSync = await syncBookingToGoogleCalendar({
-        supabase,
-        practitionerId:       pid,
-        bookingId,
-        currentGoogleEventId: confirmedBooking?.google_event_id || null,
-        event: {
-          title:       `${confirmedSvc?.title || 'Rendez-vous'} — ${confirmedBooking?.customer_first_name} ${confirmedBooking?.customer_last_name}`,
-          startsAt:    confirmedBooking?.starts_at,
-          endsAt:      confirmedBooking?.ends_at,
-          timezone:    confirmedBooking?.timezone || 'Europe/Paris',
-          location:    locationConf,
-          description: descConf,
-        },
-      })
+      const locationConf = requestLocation(request)
+      // Jamais de Google Meet : la visio passe par WhatsApp ou FaceTime.
+      const googleSync = await syncBookingToGoogleCalendar(requestCalendarSync({
+        supabase, practitionerId: pid, booking: confirmedBooking, request, serviceTitle: confirmedSvc?.title, finalPrice,
+      }))
 
       const cancellation = createCancellationToken()
       const { error: tokenErr } = await supabase.from('bookings').update({
@@ -759,6 +717,42 @@ async function handleRequests(req, res, supabase, userId) {
     const update = { updated_at: new Date().toISOString() }
     if (status) update.status = status
     if ('practitioner_notes' in (req.body || {})) update.practitioner_notes = practitioner_notes ?? null
+
+    // Compléter une demande encore ouverte (ex. détectée dans un message) :
+    // prestation réelle du praticien et coordonnées du client.
+    const body = req.body || {}
+    const CONTACT_FIELDS = ['customer_first_name', 'customer_last_name', 'customer_email', 'customer_phone']
+    const editsContact = CONTACT_FIELDS.some(f => f in body) || 'service_id' in body || 'video_channel' in body
+    if (editsContact) {
+      if (!['pending', 'contacted'].includes(request.status)) {
+        return res.status(409).json({ error: 'Seule une demande ouverte peut être complétée.' })
+      }
+      if ('service_id' in body) {
+        const { data: svcEdit } = await supabase.from('booking_services')
+          .select('id').eq('id', body.service_id).eq('practitioner_id', pid).eq('is_active', true).maybeSingle()
+        if (!svcEdit) return res.status(400).json({ error: 'Prestation inconnue pour ce praticien.' })
+        update.service_id = svcEdit.id
+      }
+      for (const field of CONTACT_FIELDS) {
+        if (!(field in body)) continue
+        const value = String(body[field] ?? '').trim().slice(0, field === 'customer_email' ? 254 : 80)
+        if (field === 'customer_email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          return res.status(400).json({ error: 'Adresse e-mail invalide.' })
+        }
+        update[field] = value ? (field === 'customer_email' ? value.toLowerCase() : value) : null
+      }
+      if ('video_channel' in body) {
+        if (!('video_channel' in request) || request.requested_modality !== 'video') {
+          return res.status(400).json({ error: 'Le canal visio ne concerne qu’une demande en visio.' })
+        }
+        if (!VIDEO_CHANNELS.includes(body.video_channel)) return res.status(400).json({ error: 'Canal visio invalide.' })
+        update.video_channel = body.video_channel
+      }
+      if ('needs_review' in request) {
+        const next = { ...request, ...update }
+        update.needs_review = !next.service_id || !next.customer_first_name || !next.customer_last_name || !next.customer_email
+      }
+    }
     if ('travel_fee_cents' in (req.body || {})) {
       const v = travel_fee_cents != null ? Number(travel_fee_cents) : 0
       if (!Number.isFinite(v) || !Number.isInteger(v) || v < 0) {
@@ -791,6 +785,13 @@ async function handleRequests(req, res, supabase, userId) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
+
+  // Lumia Intake : jeton dédié (LUMIA_INTAKE_TOKEN), pas de compte Supabase.
+  // Seulement importer une demande et lister les prestations ; jamais Google.
+  if (req.query.action === 'lumia-rdv-intake' || req.query.action === 'lumia-services') {
+    const result = await handleLumiaApi({ req, action: req.query.action })
+    return res.status(result.status).json(result.body)
+  }
 
   const auth = await requireAuth(req)
   if (auth.error) return res.status(auth.status).json({ error: auth.error })

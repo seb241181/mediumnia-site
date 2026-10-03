@@ -1412,10 +1412,19 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
         <Notice notice={notice} onClose={() => setNotice(null)} />
 
         {/* Page heading */}
-        <div className="mb-8">
-          <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">ESPACE PRO</p>
-          <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">MediumIA Rendez-vous</h1>
-          <p className="font-georgia text-mist">Votre pratique. Votre agenda. Vos rendez-vous réunis.</p>
+        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">ESPACE PRO</p>
+            <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">MediumIA Rendez-vous</h1>
+            <p className="font-georgia text-mist">Votre pratique. Votre agenda. Vos rendez-vous réunis.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLumiaOpen(true)}
+            className="shrink-0 border border-gold/40 bg-deep px-5 py-3 font-georgia text-sm font-semibold text-gold shadow-sm transition-colors hover:bg-deep/90 rounded-xl"
+          >
+            Parler à Lumia
+          </button>
         </div>
 
         {/* Loading */}
@@ -1818,6 +1827,17 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
           </>
         )}
       </main>
+
+      {lumiaOpen && (
+        <div className="fixed inset-0 z-[80] overflow-y-auto bg-cream pt-8 md:pt-12">
+          <AgentChat
+            agentId={LUMIA_AGENT_ID}
+            onBack={() => setLumiaOpen(false)}
+            backLabel="Retour à l’agenda"
+            documentsEnabled={false}
+          />
+        </div>
+      )}
     </div>
   )
 }

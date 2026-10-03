@@ -323,6 +323,21 @@ test('agent-chat : contexte messages chargé pour Lumia, panne non bloquante, r�
   assert.ok(router.indexOf("'lumia-message-intake'") < router.indexOf('const auth = await requireAuth(req)'))
 })
 
+test('rétention 90 jours : pg_cron quotidien, fonction sans paramètre, droits service_role réduits', () => {
+  const sql = read('supabase/migrations/20261004100000_lumia_message_inbox_retention.sql').replace(/--.*$/gm, '')
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lumia_purge_message_inbox\(\)/)
+  assert.match(sql, /SECURITY INVOKER/)
+  assert.ok(!/SECURITY DEFINER/.test(sql))
+  assert.match(sql, /SET search_path = ''/)
+  assert.match(sql, /DELETE FROM public\.lumia_message_inbox\s+WHERE received_at < pg_catalog\.now\(\) - INTERVAL '90 days'/)
+  assert.equal((sql.match(/DELETE FROM/g) || []).length, 1, 'une seule suppression, sur la seule table Inbox')
+  assert.ok(!/booking_requests|bookings|booking_request_intake_events/.test(sql))
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.lumia_purge_message_inbox\(\) FROM PUBLIC, anon, authenticated, service_role/)
+  assert.match(sql, /REVOKE ALL ON public\.lumia_message_inbox FROM service_role;\s*GRANT SELECT, INSERT ON public\.lumia_message_inbox TO service_role;/)
+  assert.match(sql, /cron\.schedule\('lumia-message-inbox-retention', '17 3 \* \* \*', 'SELECT public\.lumia_purge_message_inbox\(\)'\)/)
+  assert.match(sql, /cron\.unschedule\(v_job_id\)/, 'idempotente')
+})
+
 test('migration : RLS stricte, lecture propriétaire seulement, écriture service_role, aucun accès anonyme', () => {
   const sql = read('supabase/migrations/20261004090000_lumia_message_inbox.sql')
   assert.match(sql, /ENABLE ROW LEVEL SECURITY/)

@@ -4,7 +4,7 @@
  *   doctor                       diagnostic du Mac (compteurs uniquement, aucun contenu)
  *   run [--once] [--show]        dry-run par défaut : rien n'est envoyé
  *   run --live                   envoi réel, seulement si config.local.json contient "live": true
- *   backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ [--direction sortants]
+ *   backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ [--direction sortants] [--until-rowid N]
  *                                rattrapage documentaire de l'Inbox (dry-run par défaut ;
  *                                écriture : --live --confirm <phrase affichée par le dry-run>)
  * Messages sortants (lecture seule, Inbox) : "inbox_outgoing": true (avec l'Inbox).
@@ -170,10 +170,17 @@ async function backfillInbox(args) {
     chat.close()
     return
   }
+  const untilRowid = args['until-rowid'] == null ? null : Number(args['until-rowid'])
+  if (untilRowid != null && (!Number.isInteger(untilRowid) || untilRowid <= 0)) {
+    console.error('--until-rowid doit être un entier positif (ROWID inclus).')
+    process.exitCode = 64
+    chat.close()
+    return
+  }
   const statePath = join(args['state-dir'] || join(ROOT, 'state'), direction === 'outgoing' ? 'backfill-inbox-outgoing.json' : 'backfill-inbox.json')
   // 1. Toujours un dry-run complet d'abord (compteurs seulement).
-  const dry = await createInboxBackfill({ chat, ...range, mode: 'dry-run', direction, statePath, ignoreHandles }).run()
-  const expected = confirmationFor(args.from, args.to, dry.eligible, direction)
+  const dry = await createInboxBackfill({ chat, ...range, mode: 'dry-run', direction, untilRowid, statePath, ignoreHandles }).run()
+  const expected = confirmationFor(args.from, args.to, dry.eligible, direction, untilRowid)
   const summary = { ...dry, mode: undefined, aborted: undefined, already: undefined, sent: undefined, duplicate: undefined, failed: undefined, rejected: undefined }
   console.log(JSON.stringify(summary, null, 2))
   if (!args.live) {
@@ -197,7 +204,7 @@ async function backfillInbox(args) {
   const endpoint = config.inbox_endpoint || DEFAULT_INBOX_ENDPOINT
   assertSafeEndpoint(endpoint)
   const live = await createInboxBackfill({
-    chat, ...range, mode: 'live', direction, statePath, ignoreHandles,
+    chat, ...range, mode: 'live', direction, untilRowid, statePath, ignoreHandles,
     target: { endpoint, getToken: () => readInboxToken() },
     log,
   }).run()

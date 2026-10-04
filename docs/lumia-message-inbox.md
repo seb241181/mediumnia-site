@@ -115,7 +115,21 @@ Migration `supabase/migrations/20261005090000_lumia_message_inbox_outgoing.sql`.
 - **Ce qui ne compte jamais comme réponse :** réaction, événement système, pièce jointe seule (ils ne sont pas stockés).
 - **Réponse inconnue (`null`), jamais « sans réponse » :** avant le premier message sortant synchronisé (`limits.outgoing_coverage_from`), ou si les sortants ne sont pas synchronisés.
 
-**Priorités de traitement** (`search.conversations[].priority`) : 1 probable sans réponse, 2 incertain sans réponse, 3 probable déjà répondu, 4 le reste. Lumia distingue message candidat, conversation candidate et demande confirmée (espace RDV).
+**Suivi d'une demande RDV (`rdv_status`)**, distinct de l'attente générale. Le suivi part de la **dernière demande RDV** de la conversation (message reçu classé probable ou incertain) :
+
+| Statut | Signification |
+|---|---|
+| `sans_reponse_visible` | aucune réponse visible après la demande, et aucune réponse antérieure dans le fil |
+| `en_attente` | nouvelle demande (relance, déplacement, annulation…) arrivée après une réponse, sans réponse visible depuis |
+| `repondu` | réponse visible après la demande ; ensuite, rien ou seulement des remerciements / acquiescements (« Merci beaucoup Sébastien 🙏 », « ok », « parfait », emoji…) |
+| `a_verifier` | réponse visible après la demande, puis, après ta **dernière** réponse, un message reçu qui n'est ni une demande RDV ni un remerciement (à relire, pas une demande en attente) |
+| `inconnu` | demande antérieure au premier sortant synchronisé, sans réponse trouvée |
+
+- Les réactions, événements système et pièces jointes seules ne sont pas stockés : ils ne rouvrent jamais une demande.
+- Les questions RDV (« demandes sans réponse », « déplacements / annulations sans réponse », priorités) utilisent `rdv_status`.
+- `awaiting_reply` (attente générale de la conversation) est conservé pour « qui attend encore une réponse ? ».
+
+**Priorités de traitement** (`search.conversations[].priority`, d'après `rdv_status` pour une conversation RDV) : 1 probable sans réponse, 2 incertain sans réponse, 3 probable répondu ou à vérifier, 4 le reste. Lumia distingue message candidat, conversation candidate et demande confirmée (espace RDV).
 
 ## Périodes explicites et rétention
 

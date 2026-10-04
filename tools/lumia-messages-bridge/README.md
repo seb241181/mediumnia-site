@@ -244,6 +244,7 @@ node --disable-warning=ExperimentalWarning src/cli.js backfill-inbox --from 2026
 - **Idempotent :** le serveur déduplique, et une relance ne renvoie pas un message déjà accepté.
 - **Données conservées :** chaque message garde sa vraie date (`message_sent_at`), son canal réel (`rcs` compris), son classement (probable, incertain, ignorer) et l'empreinte du fil. Le serveur fixe `owner_id`.
 - **Mêmes exclusions que le pipeline Inbox live :** sortants, groupes, réactions, événements système, pièces jointes sans texte, numéros courts et `ignore_handles`.
+- **`--until-rowid N`** (ROWID inclus) : s'arrêter exactement où le live a pris le relais (`state.inbox.since_cursor` ou `outgoing_since_cursor`). La phrase de confirmation l'inclut (`…@N:compte`), et le compte reste stable même si de nouveaux messages arrivent.
 
 ## 7. Messages sortants en lecture seule (désactivés par défaut)
 

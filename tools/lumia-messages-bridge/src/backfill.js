@@ -51,8 +51,11 @@ export function backfillRange(fromDay, toDay) {
 }
 
 // Phrase de confirmation exigée pour écrire : sens + période + nombre exact d'éligibles.
-export const confirmationFor = (fromDay, toDay, eligible, direction = 'incoming') =>
-  `${direction === 'outgoing' ? 'sortants:' : ''}${fromDay}..${toDay}:${eligible}`
+export const confirmationFor = (fromDay, toDay, eligible, direction = 'incoming', untilRowid = null) =>
+  `${direction === 'outgoing' ? 'sortants:' : ''}${fromDay}..${toDay}${untilRowid ? `@${untilRowid}` : ''}:${eligible}`
+
+// Mois (heure de Paris) d'un instant ISO : AAAA-MM.
+const parisMonth = (iso) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit' }).format(new Date(iso))
 
 export function createInboxBackfill({
   chat,
@@ -62,6 +65,9 @@ export function createInboxBackfill({
   // incoming = messages reçus ; outgoing = messages envoyés (lecture seule,
   // jamais classés RDV). Jamais les deux dans un même passage.
   direction = 'incoming',
+  // Borne haute exacte (ROWID inclus) : s'arrêter là où le pipeline live a pris
+  // le relais (outgoing_since_cursor / since_cursor). null = toute la période.
+  untilRowid = null,
   target = null,          // { endpoint, getToken } — Inbox seulement
   statePath,
   ignoreHandles = [],
@@ -96,7 +102,7 @@ export function createInboxBackfill({
   async function run() {
     const conversations = new Set()
     const stats = {
-      mode, direction, from: fromIso, to: toIso, read: 0, eligible: 0, conversations: 0,
+      mode, direction, from: fromIso, to: toIso, until_rowid: untilRowid, read: 0, eligible: 0, conversations: 0, after_until: 0, by_month: {},
       by_class: direction === 'incoming' ? { probable: 0, incertain: 0, ignorer: 0 } : undefined,
       by_channel: { imessage: 0, sms: 0, rcs: 0 },
       exclusions: {},
@@ -115,6 +121,7 @@ export function createInboxBackfill({
       if (!rows.length) break
       for (const row of rows) {
         after = Math.max(after, row.rowid)
+        if (untilRowid != null && row.rowid > untilRowid) { stats.after_until += 1; continue }
         stats.read += 1
         const msg = describe(row)
         const reason = exclusion(msg)
@@ -123,6 +130,8 @@ export function createInboxBackfill({
         stats.eligible += 1
         if (direction === 'incoming') stats.by_class[cls.label] += 1
         stats.by_channel[msg.inbox_channel] += 1
+        const month = parisMonth(msg.sent_at)
+        stats.by_month[month] = (stats.by_month[month] || 0) + 1
         conversations.add(msg.conversation_id)
         stats.conversations = conversations.size
         if (mode === 'dry-run') continue

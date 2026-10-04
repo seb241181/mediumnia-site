@@ -12,7 +12,7 @@
  */
 import { createHash } from 'node:crypto'
 import { classify, isAutomatedSender } from './classify.js'
-import { buildInboxPayload, buildPayload, describe, mask, normalizePhone, skipReason } from './payload.js'
+import { buildInboxPayload, buildPayload, describe, mask, normalizePhone, outgoingSkipReason, skipReason } from './payload.js'
 import { loadState, newState, saveState } from './state.js'
 import { sendIntake } from './sender.js'
 
@@ -45,6 +45,9 @@ export function createBridge({
   // Boîte de réception (V2) : null = désactivée (comportement V1 inchangé).
   // { endpoint, getToken } sinon.
   inbox = null,
+  // Messages sortants (lecture seule) vers l'Inbox : désactivé par défaut,
+  // n'a d'effet qu'avec l'Inbox. Jamais vers le pipeline RDV.
+  inboxOutgoing = false,
   send = sendIntake,
   clock = () => new Date(),
   print = () => {},        // affichage détaillé (dry-run interactif seulement)
@@ -67,6 +70,12 @@ export function createBridge({
       state.inbox = { since_cursor: since, activated_at: now.toISOString(), processed: {}, pending: {} }
       log(`inbox_init since_cursor=${since}`)
     }
+    // Activation des sortants : même règle, aucun historique sortant.
+    if (inbox && inboxOutgoing && state.inbox.outgoing_since_cursor == null) {
+      const since = Math.max(state.cursor, chat.initialCursor(now, 0))
+      state.inbox.outgoing_since_cursor = since
+      log(`inbox_outgoing_init since_cursor=${since}`)
+    }
     return state
   }
 
@@ -87,6 +96,10 @@ export function createBridge({
   // numéros courts (codes, banques…) ni les expéditeurs exclus.
   const inboxEligible = (msg) => Boolean(msg.inbox_channel) && !skipReason(msg)
     && !isAutomatedSender(msg.handle) && !ignoreHandles.includes(msg.handle)
+  // Sortants : mêmes exclusions (groupes, réactions, pièces jointes seules,
+  // numéros courts, expéditeurs exclus), interlocuteur obligatoire.
+  const outgoingEligible = (msg) => !outgoingSkipReason(msg)
+    && !isAutomatedSender(msg.counterpart) && !ignoreHandles.includes(msg.counterpart)
 
   // Envoi d'une file (RDV ou Inbox) : chaque file a son jeton, son endpoint et
   // son état ; un message relu dans chat.db par son ROWID.
@@ -143,6 +156,7 @@ export function createBridge({
     const state = load(now)
     const counts = { read: 0, probable: 0, incertain: 0, ignored: 0, skipped: 0, already: 0, queued: 0, sent: 0, retry: 0 }
     if (inbox) Object.assign(counts, { inbox_queued: 0, inbox_sent: 0, inbox_retry: 0 })
+    if (inbox && inboxOutgoing) counts.inbox_out_queued = 0
 
     for (let batch = 0; batch < 20; batch += 1) {
       const rows = chat.newMessages(state.cursor, 200)
@@ -163,6 +177,20 @@ export function createBridge({
           } else {
             state.inbox.pending[msg.guid] = { rowid: row.rowid, attempts: 0, next_at: now.toISOString() }
             counts.inbox_queued += 1
+          }
+        }
+
+        // Sortants (lecture seule) : Inbox uniquement, après leur propre point de départ.
+        if (inbox && inboxOutgoing && row.rowid > state.inbox.outgoing_since_cursor && outgoingEligible(msg)
+          && !state.inbox.processed[msg.guid] && !state.inbox.pending[msg.guid]) {
+          if (mode === 'dry-run') {
+            state.inbox.processed[msg.guid] = { s: 'dry_run', t: now.toISOString() }
+            counts.inbox_out_queued += 1
+          } else if (!allowed(msg.counterpart)) {
+            state.inbox.processed[msg.guid] = { s: 'outside_test_allowlist', t: now.toISOString() }
+          } else {
+            state.inbox.pending[msg.guid] = { rowid: row.rowid, attempts: 0, next_at: now.toISOString() }
+            counts.inbox_out_queued += 1
           }
         }
 
@@ -202,7 +230,7 @@ export function createBridge({
         try {
           await deliver({
             queue: state.inbox, target: inbox, prefix: 'inbox_', counts,
-            stillValid: (msg) => inboxEligible(msg) && allowed(msg.handle),
+            stillValid: (msg) => (msg.incoming ? inboxEligible(msg) && allowed(msg.handle) : inboxOutgoing && outgoingEligible(msg) && allowed(msg.counterpart)),
             payloadFor: (msg, cls) => buildInboxPayload(msg, cls),
           })
         } catch (error) {

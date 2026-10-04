@@ -187,3 +187,33 @@ test('B-7. CLI : dry-run par défaut ; écriture refusée sans inbox_enabled ou 
   const tooLong = await cli(['backfill-inbox', '--from', '2026-01-01', '--to', '2026-09-30', '--db', fx.path])
   assert.equal(tooLong.code, 64)
 })
+
+test('B-8. rattrapage SORTANTS : comptage, Inbox seulement, jamais de classement ; verrou serveur fermé → arrêt net', async () => {
+  const fx = makeChatDb()
+  fx.add({ from: '+33611111111', text: 'Je voudrais un rendez-vous', at: '2026-09-03T08:00:00Z' })
+  const reply = fx.add({ fromMe: true, from: '+33611111111', text: 'Avec plaisir, mardi ?', at: '2026-09-03T08:10:00Z' }).guid
+  fx.add({ fromMe: true, from: '+33622222222', text: 'Bonne journée', at: '2026-09-15T09:00:00Z', noHandle: true })
+  fx.add({ fromMe: true, text: 'A aimé', reaction: 2000, at: '2026-09-16T09:00:00Z' })
+  fx.add({ fromMe: true, text: 'Groupe', groupGuid: 'iMessage;+;g', at: '2026-09-17T09:00:00Z' })
+  fx.add({ fromMe: true, from: '+33633333333', text: 'Octobre', at: '2026-09-30T22:30:00Z' })
+  const chat = openChatDb(fx.path)
+  const dry = await backfill(chat, fx, { direction: 'outgoing' }).run()
+  assert.deepEqual([dry.eligible, dry.conversations, dry.by_class], [2, 2, undefined])
+  assert.deepEqual(dry.exclusions, { entrant: 1, réaction: 1, groupe: 1 })
+  assert.equal(confirmationFor('2026-09-01', '2026-09-30', 2, 'outgoing'), 'sortants:2026-09-01..2026-09-30:2')
+
+  const server = await fakeMediumia()
+  const live = await backfill(chat, fx, { mode: 'live', direction: 'outgoing', statePath: join(fx.dir, 'state', 'backfill-inbox-outgoing.json'), target: { endpoint: server.endpoint, getToken: async () => TOKEN } }).run()
+  server.close()
+  assert.equal(live.sent, 2)
+  assert.equal(server.requests.rdv.length, 0)
+  const bodies = server.requests.inbox.map((r) => r.body)
+  assert.ok(bodies.every((b) => b.is_from_me === true && !('classification' in b) && b.counterpart))
+  assert.equal(bodies.find((b) => b.source_message_id === reply).message_sent_at, '2026-09-03T08:10:00.000Z')
+
+  const locked = await fakeMediumia(() => [422, { error: 'outgoing_not_enabled' }])
+  const stop = await backfill(chat, fx, { mode: 'live', direction: 'outgoing', statePath: join(fx.dir, 'state-3', 'b.json'), target: { endpoint: locked.endpoint, getToken: async () => TOKEN } }).run()
+  locked.close()
+  assert.equal(stop.aborted, 'outgoing_not_enabled')
+  assert.equal(locked.requests.inbox.length, 1, 'un seul essai puis arrêt')
+})

@@ -4,9 +4,10 @@
  *   doctor                       diagnostic du Mac (compteurs uniquement, aucun contenu)
  *   run [--once] [--show]        dry-run par défaut : rien n'est envoyé
  *   run --live                   envoi réel, seulement si config.local.json contient "live": true
- *   backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ
+ *   backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ [--direction sortants]
  *                                rattrapage documentaire de l'Inbox (dry-run par défaut ;
  *                                écriture : --live --confirm <phrase affichée par le dry-run>)
+ * Messages sortants (lecture seule, Inbox) : "inbox_outgoing": true (avec l'Inbox).
  * Boîte de réception Lumia (V2) : seulement si config.local.json contient
  * "inbox_enabled": true (désactivée par défaut ; jeton Trousseau « inbox-token »).
  * Options : --show-full (numéros non masqués à l'écran), --lookback-minutes N,
@@ -126,6 +127,7 @@ async function run(args) {
     endpoint,
     getToken: () => readToken(),
     inbox: inboxEnabled ? { endpoint: inboxEndpoint, getToken: () => readInboxToken() } : null,
+    inboxOutgoing: inboxEnabled && config.inbox_outgoing === true,
     showFull: Boolean(args['show-full']),
     print: args.show || args['show-full'] ? (text) => console.log(text) : () => {},
     log,
@@ -134,7 +136,7 @@ async function run(args) {
   let stopping = false
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { stopping = true })
   const allowlist = Array.isArray(config.live_only_handles) ? config.live_only_handles.length : 0
-  log(`start mode=${mode} interval_s=${interval / 1000} send_uncertain=${config.send_uncertain === true} test_allowlist=${allowlist}${inboxEnabled ? ' inbox=on' : ''}`)
+  log(`start mode=${mode} interval_s=${interval / 1000} send_uncertain=${config.send_uncertain === true} test_allowlist=${allowlist}${inboxEnabled ? ' inbox=on' : ''}${inboxEnabled && config.inbox_outgoing === true ? ' inbox_outgoing=on' : ''}`)
   do {
     try { await bridge.tick() } catch (error) { log(`tick_error ${error.code || error.name}`) }
     if (args.once) break
@@ -160,10 +162,18 @@ async function backfillInbox(args) {
     return
   }
   const ignoreHandles = Array.isArray(config.ignore_handles) ? config.ignore_handles : []
-  const statePath = join(args['state-dir'] || join(ROOT, 'state'), 'backfill-inbox.json')
+  const directionArg = String(args.direction || 'entrants').toLowerCase()
+  const direction = ['sortants', 'outgoing'].includes(directionArg) ? 'outgoing' : ['entrants', 'incoming'].includes(directionArg) ? 'incoming' : null
+  if (!direction) {
+    console.error('--direction entrants | sortants')
+    process.exitCode = 64
+    chat.close()
+    return
+  }
+  const statePath = join(args['state-dir'] || join(ROOT, 'state'), direction === 'outgoing' ? 'backfill-inbox-outgoing.json' : 'backfill-inbox.json')
   // 1. Toujours un dry-run complet d'abord (compteurs seulement).
-  const dry = await createInboxBackfill({ chat, ...range, mode: 'dry-run', statePath, ignoreHandles }).run()
-  const expected = confirmationFor(args.from, args.to, dry.eligible)
+  const dry = await createInboxBackfill({ chat, ...range, mode: 'dry-run', direction, statePath, ignoreHandles }).run()
+  const expected = confirmationFor(args.from, args.to, dry.eligible, direction)
   const summary = { ...dry, mode: undefined, aborted: undefined, already: undefined, sent: undefined, duplicate: undefined, failed: undefined, rejected: undefined }
   console.log(JSON.stringify(summary, null, 2))
   if (!args.live) {
@@ -187,7 +197,7 @@ async function backfillInbox(args) {
   const endpoint = config.inbox_endpoint || DEFAULT_INBOX_ENDPOINT
   assertSafeEndpoint(endpoint)
   const live = await createInboxBackfill({
-    chat, ...range, mode: 'live', statePath, ignoreHandles,
+    chat, ...range, mode: 'live', direction, statePath, ignoreHandles,
     target: { endpoint, getToken: () => readInboxToken() },
     log,
   }).run()

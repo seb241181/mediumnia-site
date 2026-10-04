@@ -13,7 +13,7 @@
  * Le message garde sa vraie date (message_sent_at) ; le serveur fixe owner_id.
  */
 import { classify, isAutomatedSender } from './classify.js'
-import { buildInboxPayload, describe, skipReason } from './payload.js'
+import { buildInboxPayload, describe, outgoingSkipReason, skipReason } from './payload.js'
 import { sendIntake } from './sender.js'
 import { loadBackfillState, saveBackfillState } from './state.js'
 
@@ -50,14 +50,18 @@ export function backfillRange(fromDay, toDay) {
   return { fromIso, toIso }
 }
 
-// Phrase de confirmation exigée pour écrire : période + nombre exact d'éligibles.
-export const confirmationFor = (fromDay, toDay, eligible) => `${fromDay}..${toDay}:${eligible}`
+// Phrase de confirmation exigée pour écrire : sens + période + nombre exact d'éligibles.
+export const confirmationFor = (fromDay, toDay, eligible, direction = 'incoming') =>
+  `${direction === 'outgoing' ? 'sortants:' : ''}${fromDay}..${toDay}:${eligible}`
 
 export function createInboxBackfill({
   chat,
   fromIso,
   toIso,
   mode = 'dry-run',
+  // incoming = messages reçus ; outgoing = messages envoyés (lecture seule,
+  // jamais classés RDV). Jamais les deux dans un même passage.
+  direction = 'incoming',
   target = null,          // { endpoint, getToken } — Inbox seulement
   statePath,
   ignoreHandles = [],
@@ -70,9 +74,17 @@ export function createInboxBackfill({
 }) {
   if (mode !== 'dry-run' && mode !== 'live') throw new Error('mode_invalid')
   if (mode === 'live' && !target?.endpoint) throw new Error('inbox_target_required')
+  if (direction !== 'incoming' && direction !== 'outgoing') throw new Error('direction_invalid')
 
-  // Même éligibilité que le pipeline Inbox live (bridge.js).
+  // Même éligibilité que le pipeline Inbox live (bridge.js), dans le sens choisi.
   function exclusion(msg) {
+    if (direction === 'outgoing') {
+      const skip = outgoingSkipReason(msg)
+      if (skip) return skip
+      if (isAutomatedSender(msg.counterpart)) return 'numéro court'
+      if (ignoreHandles.includes(msg.counterpart)) return 'interlocuteur exclu'
+      return null
+    }
     const skip = skipReason(msg)
     if (skip) return skip
     if (!msg.inbox_channel) return 'service inconnu'
@@ -82,9 +94,10 @@ export function createInboxBackfill({
   }
 
   async function run() {
+    const conversations = new Set()
     const stats = {
-      mode, from: fromIso, to: toIso, read: 0, eligible: 0,
-      by_class: { probable: 0, incertain: 0, ignorer: 0 },
+      mode, direction, from: fromIso, to: toIso, read: 0, eligible: 0, conversations: 0,
+      by_class: direction === 'incoming' ? { probable: 0, incertain: 0, ignorer: 0 } : undefined,
       by_channel: { imessage: 0, sms: 0, rcs: 0 },
       exclusions: {},
       already: 0, sent: 0, duplicate: 0, failed: 0, rejected: 0, aborted: null,
@@ -108,8 +121,10 @@ export function createInboxBackfill({
         if (reason) { stats.exclusions[reason] = (stats.exclusions[reason] || 0) + 1; continue }
         const cls = classify(msg.text, { handle: msg.handle, ignoreHandles })
         stats.eligible += 1
-        stats.by_class[cls.label] += 1
+        if (direction === 'incoming') stats.by_class[cls.label] += 1
         stats.by_channel[msg.inbox_channel] += 1
+        conversations.add(msg.conversation_id)
+        stats.conversations = conversations.size
         if (mode === 'dry-run') continue
         if (state.processed[msg.guid]) { stats.already += 1; continue }
 
@@ -128,6 +143,12 @@ export function createInboxBackfill({
           log(`backfill_aborted auth status=${result.status}`)
           saveBackfillState(statePath, state)
           return stats
+        } else if (result.result === 'reject' && String(result.reason).startsWith('outgoing_not_enabled')) {
+          // Verrou serveur des sortants fermé : arrêt net, rien d'autre envoyé.
+          stats.aborted = 'outgoing_not_enabled'
+          log('backfill_aborted outgoing_not_enabled')
+          saveBackfillState(statePath, state)
+          return stats
         } else if (result.result === 'reject') {
           stats.rejected += 1
           log(`backfill_rejected status=${result.status} reason=${result.reason}`)
@@ -140,7 +161,7 @@ export function createInboxBackfill({
       }
     }
     if (state) saveBackfillState(statePath, state)
-    log(`backfill mode=${mode} read=${stats.read} eligible=${stats.eligible} sent=${stats.sent} duplicate=${stats.duplicate} already=${stats.already} failed=${stats.failed} rejected=${stats.rejected}`)
+    log(`backfill mode=${mode} direction=${direction} read=${stats.read} eligible=${stats.eligible} sent=${stats.sent} duplicate=${stats.duplicate} already=${stats.already} failed=${stats.failed} rejected=${stats.rejected}`)
     return stats
   }
 

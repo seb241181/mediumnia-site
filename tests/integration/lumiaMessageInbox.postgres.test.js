@@ -113,7 +113,12 @@ test('lumia_message_inbox : RLS stricte par owner_id, aucun accès anonyme, écr
       as $$ delete from cron.job where jobid = p_id returning true $$;`)
   applySql(path.join(root, 'supabase/migrations/20261004100000_lumia_message_inbox_retention.sql'))
   applySql(path.join(root, 'supabase/migrations/20261004100000_lumia_message_inbox_retention.sql'))
-  psql(`insert into auth.users (id, email) values ('${userA}', 'a@example.test'), ('${userB}', 'b@example.test');`)
+  // Une ligne entrante existante avant la migration des sortants (counterpart à remplir).
+  psql(`insert into auth.users (id, email) values ('${userA}', 'a@example.test'), ('${userB}', 'b@example.test') on conflict do nothing;
+    insert into public.lumia_message_inbox (owner_id, source_channel, source_message_id, sender, message_text) values ('${userA}', 'sms', 'PRE-OUTGOING', '+33611111111', 'Avant migration');`)
+  applySql(path.join(root, 'supabase/migrations/20261005090000_lumia_message_inbox_outgoing.sql'))
+  applySql(path.join(root, 'supabase/migrations/20261005090000_lumia_message_inbox_outgoing.sql'))
+  psql(`insert into auth.users (id, email) values ('${userA}', 'a@example.test'), ('${userB}', 'b@example.test') on conflict do nothing;`)
 
   docker([
     'run', '-d', '--name', postgrestName, '--network', networkName, '-p', `127.0.0.1:${port}:3000`,
@@ -140,7 +145,7 @@ test('lumia_message_inbox : RLS stricte par owner_id, aucun accès anonyme, écr
   })
 
   await t.test('A ne lit que ses messages ; B ne lit que les siens', async () => {
-    const a = await api(baseUrl, '/lumia_message_inbox?select=owner_id,source_message_id&order=source_message_id', { token: tokenA })
+    const a = await api(baseUrl, '/lumia_message_inbox?select=owner_id,source_message_id&order=source_message_id&source_message_id=neq.PRE-OUTGOING', { token: tokenA })
     assert.equal(a.status, 200)
     assert.deepEqual(a.data.map((r) => r.source_message_id), ['A-1', 'A-2'])
     assert.ok(a.data.every((r) => r.owner_id === userA))
@@ -164,7 +169,7 @@ test('lumia_message_inbox : RLS stricte par owner_id, aucun accès anonyme, écr
     assert.ok([401, 403].includes(update.status))
     const remove = await api(baseUrl, '/lumia_message_inbox?source_message_id=eq.B-1', { token: tokenA, method: 'DELETE' })
     assert.ok([401, 403].includes(remove.status))
-    assert.equal(psql('select count(*) from public.lumia_message_inbox').stdout.trim(), '4')
+    assert.equal(psql('select count(*) from public.lumia_message_inbox').stdout.trim(), '5')
     assert.equal(psql("select message_text from public.lumia_message_inbox where source_message_id = 'A-2'").stdout.trim(), 'Message fictif A-2')
   })
 
@@ -202,6 +207,27 @@ test('lumia_message_inbox : RLS stricte par owner_id, aucun accès anonyme, écr
     }
     assert.equal(psql("select count(*) from public.lumia_message_inbox where source_message_id = 'AFTER-PURGE'").stdout.trim(), '1')
     assert.equal(psql("select has_table_privilege('service_role', 'public.lumia_message_inbox', 'TRUNCATE')").stdout.trim(), 'f')
+  })
+
+  await t.test('sortants : counterpart rempli pour l\'existant ; un sortant n\'a jamais d\'expéditeur ni de classement RDV ; RLS inchangée', async () => {
+    assert.equal(psql("select counterpart from public.lumia_message_inbox where source_message_id = 'PRE-OUTGOING'").stdout.trim(), '+33611111111')
+    const okOut = { owner_id: userA, source_channel: 'sms', source_message_id: 'OUT-OK', counterpart: '+33611111111', message_text: 'Réponse', is_from_me: true }
+    assert.equal((await api(baseUrl, '/lumia_message_inbox', { token: service, method: 'POST', body: okOut })).status, 201)
+    for (const bad of [
+      { source_message_id: 'OUT-CLASS', classification: 'probable' },
+      { source_message_id: 'OUT-SENDER', sender: '+33622222222' },
+      { source_message_id: 'OUT-NOWHO', counterpart: null },
+      { source_message_id: 'OUT-BADWHO', counterpart: 'Sylvie' },
+    ]) {
+      const result = await api(baseUrl, '/lumia_message_inbox', { token: service, method: 'POST', body: { ...okOut, ...bad } })
+      assert.equal(result.status, 400, JSON.stringify(bad))
+    }
+    const a = await api(baseUrl, '/lumia_message_inbox?is_from_me=eq.true&select=source_message_id', { token: tokenA })
+    assert.deepEqual(a.data.map((r) => r.source_message_id), ['OUT-OK'])
+    const b = await api(baseUrl, '/lumia_message_inbox?is_from_me=eq.true&select=source_message_id', { token: tokenB })
+    assert.deepEqual(b.data, [])
+    const forged = await api(baseUrl, '/lumia_message_inbox', { token: tokenA, method: 'POST', body: { ...okOut, source_message_id: 'OUT-FORGED' } })
+    assert.ok([401, 403].includes(forged.status))
   })
 
   await t.test('contraintes : canal, identifiant, expéditeur, texte', async () => {

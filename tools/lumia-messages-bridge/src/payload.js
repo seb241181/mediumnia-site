@@ -60,6 +60,9 @@ export function describe(row) {
     group: Number(row.chat_style) === 43,
     has_attachments: Number(row.has_attachments || 0) === 1,
     handle: row.handle || null,
+    // Interlocuteur : expéditeur (entrant) ou destinataire (sortant, 1-à-1 :
+    // le handle, à défaut l'identifiant du fil).
+    counterpart: row.handle || row.chat_identifier || null,
     sent_at: appleMsToIso(row.date_ms),
     text: messageText(row),
     conversation_id: conversationId(row.chat_guid, row.handle),
@@ -76,6 +79,21 @@ export function skipReason(msg) {
   if (!MESSAGE_ID_RE.test(String(msg.guid || ''))) return 'identifiant invalide'
   if (msg.text == null) return 'texte illisible'
   if (msg.text === '') return msg.has_attachments ? 'pièce jointe sans texte' : 'sans texte'
+  return null
+}
+
+// Messages SORTANTS (lecture seule, Inbox uniquement) : texte, 1-à-1,
+// iMessage/SMS/RCS, avec un interlocuteur. Jamais vers le pipeline RDV.
+export function outgoingSkipReason(msg) {
+  if (msg.incoming) return 'entrant'
+  if (msg.reaction) return 'réaction'
+  if (msg.system) return 'événement système'
+  if (msg.group) return 'groupe'
+  if (!msg.inbox_channel) return 'service inconnu'
+  if (!MESSAGE_ID_RE.test(String(msg.guid || ''))) return 'identifiant invalide'
+  if (msg.text == null) return 'texte illisible'
+  if (msg.text === '') return msg.has_attachments ? 'pièce jointe sans texte' : 'sans texte'
+  if (!msg.counterpart) return 'sans interlocuteur'
   return null
 }
 
@@ -101,6 +119,20 @@ export function buildPayload(msg, classification, now = new Date()) {
 // Boîte de réception : le message tel qu'il a été reçu, sans pièce jointe.
 // Expéditeur normalisé (téléphone ou e-mail), jamais de nom (Contacts non lus).
 export function buildInboxPayload(msg, classification) {
+  if (!msg.incoming) {
+    // Sortant : écrit par Sébastien à counterpart ; aucun classement RDV.
+    const to = String(msg.counterpart || '').trim()
+    const counterpart = EMAIL_RE.test(to) ? to.toLowerCase() : normalizePhone(to)
+    return {
+      source_channel: msg.inbox_channel,
+      source_message_id: msg.guid,
+      source_conversation_id: msg.conversation_id,
+      message_sent_at: msg.sent_at,
+      message_text: msg.text,
+      is_from_me: true,
+      ...(counterpart ? { counterpart } : {}),
+    }
+  }
   const handle = String(msg.handle || '').trim()
   const sender = EMAIL_RE.test(handle) ? handle.toLowerCase() : normalizePhone(handle)
   return {

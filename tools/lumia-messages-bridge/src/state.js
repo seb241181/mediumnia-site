@@ -23,6 +23,7 @@ export function loadState(path) {
   state.pending ||= {}
   if (state.inbox) {
     if (!Number.isInteger(state.inbox.since_cursor)) throw new Error('state_invalid')
+    if (state.inbox.outgoing_since_cursor != null && !Number.isInteger(state.inbox.outgoing_since_cursor)) throw new Error('state_invalid')
     state.inbox.processed ||= {}
     state.inbox.pending ||= {}
   }

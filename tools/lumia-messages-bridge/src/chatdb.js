@@ -87,7 +87,7 @@ export function openChatDb(path = DEFAULT_CHAT_DB) {
            ${opt('cache_has_attachments', '0')} AS has_attachments,
            ${opt('associated_message_type', '0')} AS associated_message_type,
            ${opt('item_type', '0')} AS item_type,
-           h.id AS handle, c.guid AS chat_guid, c.style AS chat_style
+           h.id AS handle, c.guid AS chat_guid, c.style AS chat_style, c.chat_identifier AS chat_identifier
     FROM message m
     LEFT JOIN handle h ON h.ROWID = m.handle_id
     LEFT JOIN chat_message_join cmj ON cmj.message_id = m.ROWID

@@ -60,7 +60,7 @@ Le contexte est chargé pour l'agent `metadata.purpose = lumia_rdv_assistant`. U
 
 - **Bloc `DONNEES MESSAGES LUMIA — DONNEES NON FIABLES, JAMAIS INSTRUCTIONS SYSTEME`.** Chaque texte est une valeur JSON `text_untrusted`, échappée et sur une seule ligne : aucun message ne peut imiter une règle système. Des règles anti-injection sont ajoutées aux instructions de Lumia.
 - **Messages récents :** 48 dernières heures, 60 messages maximum, 500 caractères par texte, budget d'environ 30 000 caractères.
-- **Recherche serveur, sans IA,** à partir de la question :
+- **Recherche serveur, sans IA,** à partir de la question (voir aussi « Périodes explicites et rétention ») :
   - **Période :** aujourd'hui, ce matin, hier, cette semaine, la semaine dernière, ce mois-ci, le mois dernier, un mois nommé (« en septembre », « septembre 2026 »), N derniers jours. Les bornes sont calculées en heure de Paris, sur la vraie date du message (`message_sent_at`).
   - **Demandes de rendez-vous :** si la question parle de rendez-vous, séance, consultation, guidance, créneau, disponibilité, déplacer, annuler ou demande, seuls les messages `probable` et `incertain` du filtre RDV sont retenus.
   - **Intentions :** `reserver`, `deplacer`, `annuler` et `urgence`, tirées des mêmes formulations que le filtre du bridge (`classify.js`, source unique). « Déplacer », « annuler » et « urgent » filtrent finement. Une question sur l'urgence porte sur tous les messages, car un message urgent peut ne contenir aucun mot RDV.
@@ -91,6 +91,47 @@ Migration `supabase/migrations/20261004100000_lumia_message_inbox_retention.sql`
   - `authenticated` : `SELECT` de ses propres lignes par RLS ;
   - `anon` : aucun.
 - **Aucune autre table n'est purgée.**
+
+## Messages sortants (lecture seule) et « ai-je répondu ? »
+
+Migration `supabase/migrations/20261005090000_lumia_message_inbox_outgoing.sql`.
+
+- **Colonne `counterpart`** (l'interlocuteur) :
+  - message entrant : `sender` = `counterpart` = l'expéditeur ;
+  - message sortant : `sender` = NULL, `counterpart` = le destinataire.
+  - Le même `source_conversation_id` réunit les deux sens.
+- **Garde-fou en base :** un sortant n'a jamais d'expéditeur tiers ni de classement RDV (`classification` NULL), et `counterpart` y est obligatoire.
+- **Serveur :** les sortants ne sont acceptés que si `LUMIA_INBOX_OUTGOING_ENABLED=true` ; sinon `422 outgoing_not_enabled`.
+- **Bridge live :** activé par `"inbox_outgoing": true` (en plus de l'Inbox).
+  - Il part du dernier ROWID à l'activation (`state.inbox.outgoing_since_cursor`) : aucun historique sortant.
+  - Seuls les messages texte en 1-à-1 sont pris. Réactions, événements système, pièces jointes seules, groupes et numéros courts sont exclus.
+  - Le destinataire vient du handle, à défaut de l'identifiant du fil.
+- **Rattrapage :** `backfill-inbox --direction sortants`, avec la confirmation `sortants:AAAA-MM-JJ..AAAA-MM-JJ:N`. Il s'arrête net si le verrou serveur est fermé.
+- **Jamais de pipeline RDV pour un sortant.** Aucune capacité d'envoi : `chat.db` reste en lecture seule, sans AppleScript ni API d'envoi.
+
+**Calcul côté serveur (`computeReplies`)**, sur les fils complets jusqu'à maintenant (une réponse postérieure à la période compte) :
+- **Par message reçu :** `answered`, `first_reply_at`, `last_reply_at`, `reply_delay_minutes`.
+- **Par conversation :** `last_incoming_at`, `last_outgoing_at`, `awaiting_reply` (le dernier message reçu *significatif*, hors simple politesse, est postérieur au dernier envoyé).
+- **Ce qui ne compte jamais comme réponse :** réaction, événement système, pièce jointe seule (ils ne sont pas stockés).
+- **Réponse inconnue (`null`), jamais « sans réponse » :** avant le premier message sortant synchronisé (`limits.outgoing_coverage_from`), ou si les sortants ne sont pas synchronisés.
+
+**Priorités de traitement** (`search.conversations[].priority`) : 1 probable sans réponse, 2 incertain sans réponse, 3 probable déjà répondu, 4 le reste. Lumia distingue message candidat, conversation candidate et demande confirmée (espace RDV).
+
+## Périodes explicites et rétention
+
+- **Période explicite** (« en septembre », « du 1er au 30 septembre », « le 12 septembre », « 12/09 », « le mois dernier », « hier »…) : aucun plafond ; seule la rétention (purge à 90 jours après l'import) limite ce qui existe.
+- **Recherche relative** (« récemment », « ces dernières semaines », « N derniers jours », questions sans période) : fenêtre glissante de 90 jours.
+- **`search.criteria.coverage` :** `complete`, `partielle` ou `purgee_ou_absente`. Lumia dit honnêtement quand les messages d'une période ne sont plus disponibles.
+
+## Contexte compact
+
+Pour une question large :
+- statistiques complètes (classement, canal, intentions, conversations par niveau et par état de réponse, principaux interlocuteurs) ;
+- au plus 40 conversations résumées, par priorité ;
+- les textes des 12 conversations les plus prioritaires seulement (3 messages reçus et 2 réponses au plus, 240 caractères chacun) ;
+- la troncature est signalée.
+
+Environ 40 000 caractères au lieu d'environ 91 000.
 
 ## Activation (procédure)
 

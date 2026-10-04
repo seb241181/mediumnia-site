@@ -54,7 +54,11 @@ test('MAX recovery on isolated PostgreSQL (no external network)', { skip: !enabl
   }
   await sql(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
-    create function auth.uid() returns uuid language sql as $$ select null::uuid $$;`)
+    create function auth.uid() returns uuid language sql as $$ select null::uuid $$;
+    -- Mêmes privilèges par défaut que Supabase sur le schéma public.
+    grant usage on schema public to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+    alter default privileges in schema public grant all on functions to anon, authenticated, service_role;`)
   const migrations = [
     '20260905210000_chronosphere_credit_packs.sql',
     '20260908174000_mediumia_global_user_profiles.sql',
@@ -62,6 +66,8 @@ test('MAX recovery on isolated PostgreSQL (no external network)', { skip: !enabl
     '20260923154500_chronosphere_max_launch.sql',
     '20260923170000_chronosphere_max_timeline_client_readonly.sql',
     '20261003105932_chronosphere_max_recovery.sql',
+    '20261004190000_chronosphere_max_adoption_hardening.sql',
+    '20261004191000_chronosphere_max_privileges_hardening.sql',
   ]
   for (const file of migrations) await sql(await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), 'utf8'))
 
@@ -102,6 +108,7 @@ test('MAX recovery on isolated PostgreSQL (no external network)', { skip: !enabl
       generations: () => generations, setPublishFailure: (v) => { failPublish = v },
       setGenerateFailure: (v) => { failGenerate = v }, setGate: (v) => { gate = v },
       setCompleteFailure: (v) => { failComplete = v }, setLoseCompleteReply: (v) => { loseCompleteReply = v },
+      rotate: () => sql(`update chronosphere_credit_packs set pack_token_hash=md5(random()::text)||md5(random()::text) where id=${literal(packId)}`),
       balance: async () => Number(await sql(`select credits_remaining from chronosphere_credit_packs where id=${literal(packId)}`)),
       state: async () => (await rpc('read_chronosphere_max_attempt', { p_user_id: userId })).data,
     }
@@ -258,7 +265,7 @@ test('MAX recovery on isolated PostgreSQL (no external network)', { skip: !enabl
     const f = await fixture()
     await f.run()
     const before = await sql('select count(*) from chronosphere_max_attempts')
-    const migration = await readFile(new URL(`../supabase/migrations/${migrations.at(-1)}`, import.meta.url), 'utf8')
+    const migration = await readFile(new URL('../supabase/migrations/20261003105932_chronosphere_max_recovery.sql', import.meta.url), 'utf8')
     await assert.rejects(sql(migration), /already exists/)
     assert.equal(await sql('select count(*) from chronosphere_max_attempts'), before)
     assert.equal((await f.state()).entries.length, 1)
@@ -290,6 +297,59 @@ test('MAX recovery on isolated PostgreSQL (no external network)', { skip: !enabl
     await sql(`update chronosphere_credit_packs set captured_at=now()-interval '1 year' where id=${literal(f.packId)}`)
     assert.equal((await f.run('retry', { attemptId: recovered.attempt.id })).max.sequenceNumber, 1)
     assert.equal(await f.balance(), 0)
+  })
+  await t.test('status rotation during account inspect: deterministic adoption, zero race', async () => {
+    // Reproduction de l'ancien chemin : hash lu, rotation par status, adoption par hash refusée.
+    const old = await fixture(1)
+    await old.rotate()
+    assert.ok((await rpc('begin_chronosphere_max_attempt', { p_user_id: old.userId, p_pack_token_hash: old.hash, p_nonce: null, p_request: {} })).error,
+      'adopter par un hash déjà tourné échoue (race observée en QA)')
+    // Nouveau chemin : adoption par user_id sous verrou, rotations en parallèle.
+    const f = await fixture(1)
+    const claimed = (await rpc('consume_chronosphere_pack_credit', { p_pack_token_hash: f.hash, p_request_hash: 'legacy' })).data
+    await rpc('complete_chronosphere_pack_draw', { p_draw_id: claimed.draw_id, p_claim_id: claimed.claim_id, p_result_json: result() })
+    for (let round = 0; round < 5; round++) {
+      const outcomes = await Promise.allSettled([
+        f.rotate(), f.run('inspect', { attemptId: null }), f.rotate(), f.run('inspect', { attemptId: null }), f.rotate(),
+      ])
+      for (const o of outcomes) assert.equal(o.status, 'fulfilled', o.reason?.message)
+      const inspected = outcomes.filter((o) => o.value?.max)
+      assert.ok(inspected.every((o) => o.value.max.sequenceNumber === 1))
+    }
+    assert.equal(await sql(`select count(*) from chronosphere_max_attempts where pack_id=${literal(f.packId)}`), '1', 'une seule adoption')
+    assert.equal(f.generations(), 0)
+    assert.equal(await f.balance(), 0)
+    // Pack neuf, sans tirage : inspect concurrent sous rotations = aucune tentative fantôme, aucune erreur.
+    const fresh = await fixture()
+    const runs = await Promise.allSettled(Array.from({ length: 6 }, (_, i) => (i % 2 ? fresh.rotate() : fresh.run('inspect', { attemptId: null }))))
+    for (const o of runs) assert.equal(o.status, 'fulfilled', o.reason?.message)
+    assert.equal(await sql(`select count(*) from chronosphere_max_attempts where pack_id=${literal(fresh.packId)}`), '0')
+    assert.equal(await fresh.balance(), 3)
+  })
+  await t.test('account adoption never crosses accounts and is service-role only', async () => {
+    const a = await fixture(1), b = await fixture(1)
+    const claimed = (await rpc('consume_chronosphere_pack_credit', { p_pack_token_hash: a.hash, p_request_hash: 'legacy' })).data
+    await rpc('complete_chronosphere_pack_draw', { p_draw_id: claimed.draw_id, p_claim_id: claimed.claim_id, p_result_json: result() })
+    assert.equal((await rpc('adopt_chronosphere_max_attempt', { p_user_id: b.userId })).data, null, 'B n’adopte jamais le tirage de A')
+    assert.equal(await sql(`select count(*) from chronosphere_max_attempts where user_id=${literal(b.userId)}`), '0')
+    assert.ok((await rpc('adopt_chronosphere_max_attempt', { p_user_id: null })).error)
+    for (const role of ['anon', 'authenticated']) {
+      assert.equal(await sql(`select has_function_privilege('${role}','public.adopt_chronosphere_max_attempt(uuid)','execute')`), 'f', role)
+    }
+    assert.equal(await sql("select has_function_privilege('service_role','public.adopt_chronosphere_max_attempt(uuid)','execute')"), 't')
+  })
+  await t.test('browser roles keep only the privileges they need', async () => {
+    const privs = async (role, table) => (await sql(`select string_agg(p, ',' order by p) from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) p where has_table_privilege('${role}', 'public.${table}', p)`)) || ''
+    assert.equal(await privs('authenticated', 'mediumia_profiles'), 'DELETE,INSERT,SELECT,UPDATE')
+    assert.equal(await privs('authenticated', 'chronosphere_timelines'), 'SELECT')
+    assert.equal(await privs('authenticated', 'chronosphere_timeline_entries'), 'SELECT')
+    for (const table of ['mediumia_profiles', 'chronosphere_timelines', 'chronosphere_timeline_entries', 'chronosphere_max_attempts']) {
+      assert.equal(await privs('anon', table), '', `anon ${table}`)
+    }
+    assert.equal(await privs('authenticated', 'chronosphere_max_attempts'), '')
+    // Idempotente : une seconde application ne change rien.
+    await sql(await readFile(new URL('../supabase/migrations/20261004191000_chronosphere_max_privileges_hardening.sql', import.meta.url), 'utf8'))
+    assert.equal(await privs('authenticated', 'chronosphere_timelines'), 'SELECT')
   })
   await t.test('classic pack consumption and refund RPCs retain their behavior', async () => {
     const f = await fixture(3, 'pack3')

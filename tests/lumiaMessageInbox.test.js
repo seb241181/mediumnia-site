@@ -561,10 +561,69 @@ test('question RDV « sans réponse » : les « à vérifier » sortent de la li
   assert.deepEqual(all.search.stats.conversations_by_rdv_status, { sans_reponse_visible: 1, en_attente: 1, a_verifier: 1, repondu: 1 })
   assert.deepEqual(all.search.conversations.map((c) => c.priority), [1, 1, 3, 3])
   const general = await ctx(db, 'Qui attend encore une réponse ?', NOW_OCT)
-  // Attente générale inchangée (règle de politesse stricte du filtre) : le message
-  // personnel ET le « Merci beaucoup Sébastien 🙏 » rouvrent la CONVERSATION.
-  assert.deepEqual(general.search.conversations.map((c) => c.who).sort(), ['+33630000001', '+33630000002', '+33630000003', '+33630000004'])
+  // Attente générale : le message personnel rouvre la CONVERSATION ; le
+  // « Merci beaucoup Sébastien 🙏 » non (remerciement terminal).
+  assert.deepEqual(general.search.conversations.map((c) => c.who).sort(), ['+33630000001', '+33630000003', '+33630000004'])
   assert.match(read('api/agent-chat.js'), /Un simple remerciement après ta réponse ne rouvre jamais une demande/)
+})
+
+// ── Remerciement terminal vs « merci + demande » (attente générale ET RDV) ──
+
+const gen = (rows) => computeReplies(rows, { outgoingFrom: SYNC }).conversations.get(rows[0].source_conversation_id)
+
+test('isThanks : remerciement terminal oui ; « merci de… » / action / nouvelle demande jamais', () => {
+  for (const t of ['merci', 'Merci beaucoup 🙏', 'ok', 'Parfait', 'super', 'Top', 'C’est noté', 'À mardi !', '🙏', 'Merci de votre retour', 'Merci d’avoir répondu si vite']) {
+    assert.equal(isThanks(t), true, t)
+  }
+  for (const t of [
+    'Merci de me rappeler', 'Merci de déplacer mon rendez-vous', 'Merci de me confirmer l’heure', 'Merci de m’envoyer les disponibilités',
+    'Merci de me dire si mardi est possible', 'Merci, pouvez-vous annuler mon rendez-vous', 'Merci de réserver jeudi',
+    'Super, je voulais aussi savoir si vous êtes disponible jeudi', 'Parfait, rappelez-moi demain',
+  ]) {
+    assert.equal(isThanks(t), false, t)
+  }
+})
+
+test('A. réponse → « Merci beaucoup 🙏 » : général répondu, RDV répondu', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Merci beaucoup 🙏')]
+  assert.equal(gen(rows).awaiting_reply, false)
+  assert.equal(gen(rows).rdv.rdv_status, 'repondu')
+})
+
+test('B. réponse → « Merci de me rappeler » : général en attente ; RDV à vérifier (non classé) ou nouvelle demande (si classé)', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Merci de me rappeler')]
+  assert.equal(gen(rows).awaiting_reply, true)
+  assert.equal(gen(rows).rdv.rdv_status, 'a_verifier')
+  const classified = [rdvReq(0), rep(5), rdvReq(10, 'Merci de me rappeler', 'incertain')]
+  assert.equal(gen(classified).rdv.rdv_status, 'en_attente', 'le classement prime sur isThanks')
+})
+
+test('C. réponse → « Merci de déplacer mon rendez-vous » : nouvelle demande RDV en attente', () => {
+  const rows = [rdvReq(0), rep(5), rdvReq(10, 'Merci de déplacer mon rendez-vous')]
+  assert.deepEqual([gen(rows).rdv.rdv_status, gen(rows).awaiting_reply], ['en_attente', true])
+  // Même si le classement l'avait manqué, il ne serait jamais absorbé comme un merci.
+  assert.equal(gen([rdvReq(0), rep(5), msg(10, 'Merci de déplacer mon rendez-vous')]).rdv.rdv_status, 'a_verifier')
+})
+
+test('D. réponse → « Merci de me confirmer l’heure » : jamais absorbé comme simple merci', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Merci de me confirmer l’heure')]
+  assert.equal(gen(rows).awaiting_reply, true)
+  assert.notEqual(gen(rows).rdv.rdv_status, 'repondu')
+})
+
+test('E. réponse → emoji seul : ne rouvre rien', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, '🙏')]
+  assert.deepEqual([gen(rows).awaiting_reply, gen(rows).rdv.rdv_status], [false, 'repondu'])
+})
+
+test('F. réponse → « Super, je voulais aussi savoir si vous êtes disponible jeudi » : jamais un simple remerciement', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Super, je voulais aussi savoir si vous êtes disponible jeudi')]
+  assert.equal(gen(rows).awaiting_reply, true)
+  assert.equal(gen(rows).rdv.rdv_status, 'a_verifier')
+})
+
+test('règle Lumia : « réponse visible après la demande », jamais « traitée avec certitude »', () => {
+  assert.match(read('api/agent-chat.js'), /ne dis jamais qu'une demande a été traitée avec certitude/)
 })
 
 test('règles Lumia : candidats par conversation, priorités, jamais présentés comme des demandes confirmées', () => {

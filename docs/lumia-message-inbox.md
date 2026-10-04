@@ -126,8 +126,12 @@ Migration `supabase/migrations/20261005090000_lumia_message_inbox_outgoing.sql`.
 | `inconnu` | demande antérieure au premier sortant synchronisé, sans réponse trouvée |
 
 - Les réactions, événements système et pièces jointes seules ne sont pas stockés : ils ne rouvrent jamais une demande.
+- **Remerciement terminal (`isThanks`)** : « merci », « merci beaucoup », « ok », « parfait », « super », « top », « c'est noté », « à mardi », emoji seul, « merci de votre retour »… Il ne rouvre ni la demande RDV ni la conversation (attente générale).
+  - Ce n'est jamais le cas d'un message qui contient une action ou une nouvelle demande, même sans « ? » : « merci de me rappeler », « merci de déplacer… », « merci de me confirmer… », « merci, pouvez-vous… », « super, je voulais aussi savoir si… ».
+  - Un message déjà classé probable ou incertain suit toujours son classement.
+- **Limite connue :** un message **envoyé** après une demande compte comme « réponse visible », même s'il parle d'autre chose (pas d'analyse sémantique). « Répondu » signifie donc « réponse visible après la demande », jamais « demande traitée avec certitude ».
 - Les questions RDV (« demandes sans réponse », « déplacements / annulations sans réponse », priorités) utilisent `rdv_status`.
-- `awaiting_reply` (attente générale de la conversation) est conservé pour « qui attend encore une réponse ? ».
+- `awaiting_reply` (attente générale de la conversation) est conservé pour « qui attend encore une réponse ? ». Il utilise la même détection des remerciements terminaux.
 
 **Priorités de traitement** (`search.conversations[].priority`, d'après `rdv_status` pour une conversation RDV) : 1 probable sans réponse, 2 incertain sans réponse, 3 probable répondu ou à vérifier, 4 le reste. Lumia distingue message candidat, conversation candidate et demande confirmée (espace RDV).
 

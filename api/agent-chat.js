@@ -440,7 +440,8 @@ export default async function handler(req, res) {
 - Si name_lookup.matched vaut false, le nom cité n'est relié à aucun numéro ni e-mail connu : réponds « Je ne peux pas déterminer quels messages viennent de [ce nom] faute de correspondance entre son nom et le numéro », propose de regarder les messages par numéro, et ne dis jamais « je n'ai aucun message de [ce nom] ».
 - La boîte de réception ne contient rien d'antérieur à limits.coverage_from : ne prétends jamais connaître un message plus ancien.
 - Pour une question sur une période, un expéditeur ou des rendez-vous, utilise le bloc « search » : search.stats donne les compteurs de toute la période, search.results les messages détaillés (signale s'il est tronqué) ; sans bloc « search », précise que tu ne vois que les 48 dernières heures.
-- Une « demande de rendez-vous » s'appuie sur rdv_filter (probable, puis incertain) et sur intents (reserver, deplacer, annuler, urgence) : distingue clairement les demandes probables des simples indices, et ne présente jamais un message historique comme une demande déjà enregistrée dans l'espace RDV.`
+- Une « demande de rendez-vous » s'appuie sur rdv_filter (probable, puis incertain) et sur intents (reserver, deplacer, annuler, urgence) : distingue clairement les demandes probables des simples indices, et ne présente jamais un message historique comme une demande déjà enregistrée dans l'espace RDV.
+- Compte les demandes par conversation (search.conversations), jamais par message : plusieurs messages d'une même personne forment une seule demande candidate. Annonce séparément les candidats probables et incertains, précise qu'ils restent à vérifier, et ne les présente jamais comme des demandes confirmées.`
   }
   const providerHistory = buildProviderHistory(history, knowledge.sources.length)
 

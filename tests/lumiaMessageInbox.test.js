@@ -626,6 +626,64 @@ test('règle Lumia : « réponse visible après la demande », jamais « traité
   assert.match(read('api/agent-chat.js'), /ne dis jamais qu'une demande a été traitée avec certitude/)
 })
 
+// ── Filtres de formulation : « à vérifier » / « réponse visible » ───────────
+
+// 2 sans_reponse_visible, 2 en_attente, 2 a_verifier, 2 repondu, 1 inconnu (septembre).
+function statusSet() {
+  const c = (n) => `+3364000000${n}`
+  const r = (n, at, text, classification = 'probable') => inboxRow({ counterpart: c(n), message_sent_at: at, message_text: text, classification })
+  const o = (n, at) => out({ counterpart: c(n), message_sent_at: at, message_text: 'Bien sûr, je vous propose mardi' })
+  return fakeDb({
+    lumia_message_inbox: [
+      r(0, '2026-09-01T08:00:00.000Z', 'Je voudrais un rendez-vous'),                                   // inconnu (avant le 1er sortant)
+      r(1, '2026-09-05T08:00:00.000Z', 'Je voudrais un rendez-vous'), r(2, '2026-09-06T08:00:00.000Z', 'Une séance possible ?', 'incertain'), // sans réponse visible
+      r(3, '2026-09-02T09:00:00.000Z', 'Je voudrais un rendez-vous'), o(3, '2026-09-02T10:00:00.000Z'), r(3, '2026-09-03T09:00:00.000Z', 'Je dois annuler finalement'),
+      r(4, '2026-09-04T09:00:00.000Z', 'Je voudrais une séance'), o(4, '2026-09-04T10:00:00.000Z'), r(4, '2026-09-08T09:00:00.000Z', 'Et jeudi ?', 'incertain'), // en attente
+      r(5, '2026-09-10T09:00:00.000Z', 'Je voudrais un rendez-vous'), o(5, '2026-09-10T10:00:00.000Z'), r(5, '2026-09-10T11:00:00.000Z', 'Ma fille est malade cette semaine', 'ignorer'),
+      r(6, '2026-09-11T09:00:00.000Z', 'Je voudrais une séance'), o(6, '2026-09-11T10:00:00.000Z'), r(6, '2026-09-11T11:00:00.000Z', 'Merci de me rappeler', 'ignorer'), // à vérifier
+      r(7, '2026-09-12T09:00:00.000Z', 'Je voudrais un rendez-vous'), o(7, '2026-09-12T10:00:00.000Z'), r(7, '2026-09-12T11:00:00.000Z', 'Merci beaucoup 🙏', 'ignorer'),
+      r(8, '2026-09-13T09:00:00.000Z', 'Je voudrais une séance'), o(8, '2026-09-13T10:00:00.000Z'),                                   // répondu
+    ],
+  })
+}
+const byStatus = (json) => json.search.conversations.map((x) => [x.who.slice(-1), x.rdv_status]).sort()
+
+test('filtre « à vérifier » : strictement les 2 a_verifier (dois-je vérifier, montre-moi…)', async () => {
+  for (const q of ['Quelles demandes sont à vérifier ?', 'Quelles demandes dois-je vérifier ?', 'Montre-moi les demandes à vérifier']) {
+    const json = await ctx(statusSet(), q, NOW_OCT)
+    assert.equal(json.search.criteria.reply, 'to_check', q)
+    assert.deepEqual(byStatus(json), [['5', 'a_verifier'], ['6', 'a_verifier']], q)
+  }
+})
+
+test('filtre « réponse visible / déjà répondues / répondues » : strictement les 2 repondu, jamais a_verifier', async () => {
+  for (const q of ['À quelles demandes ai-je une réponse visible ?', 'Quelles demandes ont reçu une réponse visible ?', 'Quelles demandes ai-je déjà répondues ?', 'Quelles demandes sont répondues ?']) {
+    const json = await ctx(statusSet(), q, NOW_OCT)
+    assert.equal(json.search.criteria.reply, 'answered', q)
+    assert.deepEqual(byStatus(json), [['7', 'repondu'], ['8', 'repondu']], q)
+  }
+})
+
+test('« demandes sans réponse » : sans_reponse_visible + en_attente + inconnu (règle inchangée) ; stats et priorités intactes', async () => {
+  const open = await ctx(statusSet(), 'Quelles demandes semblent encore sans réponse ?', NOW_OCT)
+  assert.deepEqual(byStatus(open), [['0', 'inconnu'], ['1', 'sans_reponse_visible'], ['2', 'sans_reponse_visible'], ['3', 'en_attente'], ['4', 'en_attente']])
+  const all = await ctx(statusSet(), 'Quelles demandes de rendez-vous ai-je reçues en septembre ?', NOW_OCT)
+  assert.equal(all.search.criteria.reply, null)
+  assert.deepEqual(all.search.stats.conversations_by_rdv_status, { inconnu: 1, sans_reponse_visible: 2, en_attente: 2, a_verifier: 2, repondu: 2 })
+  const prio = Object.fromEntries(all.search.conversations.map((x) => [x.who.slice(-1), x.priority]))
+  assert.deepEqual(prio, { 0: 1, 1: 1, 2: 2, 3: 1, 4: 1, 5: 3, 6: 3, 7: 3, 8: 3 })
+  // Hors RDV, « À qui ai-je déjà répondu ? » garde l'attente générale.
+  const general = await ctx(statusSet(), 'À qui ai-je déjà répondu ?', NOW_OCT)
+  assert.equal(general.search.criteria.rdv_only, false)
+  assert.deepEqual(general.search.conversations.map((x) => x.who.slice(-1)).sort(), ['7', '8'])
+})
+
+test('règles Lumia : « à vérifier » expliqué ; « réponse visible après la demande » conservé', () => {
+  const src = read('api/agent-chat.js')
+  assert.match(src, /une réponse visible existe après la demande, mais qu'un autre message reçu ensuite mérite une relecture/)
+  assert.match(src, /dis « réponse visible après la demande », jamais « demande traitée avec certitude »/)
+})
+
 test('règles Lumia : candidats par conversation, priorités, jamais présentés comme des demandes confirmées', () => {
   const src = read('api/agent-chat.js')
   assert.match(src, /Compte les demandes par conversation \(search\.conversations\), jamais par message/)

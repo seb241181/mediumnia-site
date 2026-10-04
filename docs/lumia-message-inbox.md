@@ -131,6 +131,11 @@ Migration `supabase/migrations/20261005090000_lumia_message_inbox_outgoing.sql`.
   - Un message déjà classé probable ou incertain suit toujours son classement.
 - **Limite connue :** un message **envoyé** après une demande compte comme « réponse visible », même s'il parle d'autre chose (pas d'analyse sémantique). « Répondu » signifie donc « réponse visible après la demande », jamais « demande traitée avec certitude ».
 - Les questions RDV (« demandes sans réponse », « déplacements / annulations sans réponse », priorités) utilisent `rdv_status`.
+- **Filtres de formulation :**
+  - « à vérifier », « dois-je vérifier », « à relire » : strictement `a_verifier` ;
+  - « réponse visible », « reçu une réponse », « répondues », « déjà répondu » (question RDV) : strictement `repondu`, jamais `a_verifier` ;
+  - « sans réponse », « en attente », « ouvertes » : `sans_reponse_visible` + `en_attente` + `inconnu`.
+  - Hors RDV, « À qui ai-je déjà répondu ? » garde l'attente générale.
 - `awaiting_reply` (attente générale de la conversation) est conservé pour « qui attend encore une réponse ? ». Il utilise la même détection des remerciements terminaux.
 
 **Priorités de traitement** (`search.conversations[].priority`, d'après `rdv_status` pour une conversation RDV) : 1 probable sans réponse, 2 incertain sans réponse, 3 probable répondu ou à vérifier, 4 le reste. Lumia distingue message candidat, conversation candidate et demande confirmée (espace RDV).

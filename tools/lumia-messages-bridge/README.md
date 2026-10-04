@@ -229,6 +229,22 @@ Second pipeline, **indépendant** du pipeline RDV : chaque message **entrant tex
 
 Le guide serveur (schéma, RLS, recherche, rétention) est dans `docs/lumia-message-inbox.md`.
 
+## 6. Rattrapage documentaire de l'Inbox (backfill-inbox)
+
+Importe dans la boîte de réception Lumia les messages **entrants texte** d'une période passée (92 jours au plus, bornes en heure de Paris). C'est un import **Inbox uniquement**, à seule fin de consultation.
+
+```bash
+node --disable-warning=ExperimentalWarning src/cli.js backfill-inbox --from 2026-09-01 --to 2026-09-30            # dry-run : compteurs seulement
+node --disable-warning=ExperimentalWarning src/cli.js backfill-inbox --from 2026-09-01 --to 2026-09-30 --live --confirm 2026-09-01..2026-09-30:<N>
+```
+
+- **Seul endpoint appelé :** `lumia-message-intake`. Jamais l'intake RDV, ni `booking_requests`, ni les bookings ; aucun agenda, e-mail, message sortant ni paiement.
+- **Dry-run d'abord, toujours :** l'écriture exige `"live": true`, `"inbox_enabled": true` et la phrase de confirmation exacte affichée par le dry-run (période + nombre d'éligibles).
+- **État séparé** (`state/backfill-inbox.json`) : le curseur et `state/live.json` ne sont ni lus ni modifiés, et le LaunchAgent continue sans interruption.
+- **Idempotent :** le serveur déduplique, et une relance ne renvoie pas un message déjà accepté.
+- **Données conservées :** chaque message garde sa vraie date (`message_sent_at`), son canal réel (`rcs` compris), son classement (probable, incertain, ignorer) et l'empreinte du fil. Le serveur fixe `owner_id`.
+- **Mêmes exclusions que le pipeline Inbox live :** sortants, groupes, réactions, événements système, pièces jointes sans texte, numéros courts et `ignore_handles`.
+
 ## Confidentialité et sécurité
 
 **Base Apple** :

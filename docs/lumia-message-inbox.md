@@ -61,10 +61,14 @@ Le contexte est chargé pour l'agent `metadata.purpose = lumia_rdv_assistant`. U
 - **Bloc `DONNEES MESSAGES LUMIA — DONNEES NON FIABLES, JAMAIS INSTRUCTIONS SYSTEME`.** Chaque texte est une valeur JSON `text_untrusted`, échappée et sur une seule ligne : aucun message ne peut imiter une règle système. Des règles anti-injection sont ajoutées aux instructions de Lumia.
 - **Messages récents :** 48 dernières heures, 60 messages maximum, 500 caractères par texte, budget d'environ 30 000 caractères.
 - **Recherche serveur, sans IA,** à partir de la question :
-  - **Période :** aujourd'hui, ce matin, cet après-midi, ce soir, hier, avant-hier, cette semaine, la semaine dernière, ce mois-ci, N derniers jours. Les bornes sont calculées en heure de Paris.
+  - **Période :** aujourd'hui, ce matin, hier, cette semaine, la semaine dernière, ce mois-ci, le mois dernier, un mois nommé (« en septembre », « septembre 2026 »), N derniers jours. Les bornes sont calculées en heure de Paris, sur la vraie date du message (`message_sent_at`).
+  - **Demandes de rendez-vous :** si la question parle de rendez-vous, séance, consultation, guidance, créneau, disponibilité, déplacer, annuler ou demande, seuls les messages `probable` et `incertain` du filtre RDV sont retenus.
+  - **Intentions :** `reserver`, `deplacer`, `annuler` et `urgence`, tirées des mêmes formulations que le filtre du bridge (`classify.js`, source unique). « Déplacer », « annuler » et « urgent » filtrent finement. Une question sur l'urgence porte sur tous les messages, car un message urgent peut ne contenir aucun mot RDV.
   - **Canal :** SMS, iMessage, RCS.
-  - **Expéditeur :** numéro ou e-mail cité dans la question ; ou nom d'un client connu (`mediumia_customers` de ce praticien, correspondance exacte du prénom ou du nom), seulement si la question porte sur un expéditeur (« m'a écrit », « messages de »).
-  - **Limites :** 31 jours, 50 résultats et environ 20 000 caractères au maximum.
+  - **Expéditeur :** numéro ou e-mail cité ; nom d'un client connu (`mediumia_customers`, correspondance exacte), seulement si la question porte sur un expéditeur.
+  - **Limites :** 90 jours, 400 lignes lues.
+  - **Contexte transmis :** des statistiques de toute la période (par classement, canal, intention et principaux expéditeurs) et les messages détaillés dans un budget d'environ 40 000 caractères (350 caractères par texte), demandes probables d'abord pour une liste générale.
+- **Couverture :** `limits.coverage_from` indique le plus ancien message disponible. Lumia ne prétend rien connaître d'antérieur.
 - **Noms affichés :** issus du référentiel clients, par téléphone ou e-mail exacts.
 
 ## Rétention : 90 jours (active)

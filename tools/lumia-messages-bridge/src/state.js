@@ -54,3 +54,20 @@ export function saveState(path, state, now = new Date()) {
   renameSync(tmp, path)
   chmodSync(path, 0o600)
 }
+
+// Rattrapage Inbox (backfill-inbox) : état SÉPARÉ de live.json, mêmes règles
+// (identifiants Apple et statuts seulement, fichier 0600, jamais de texte).
+export function loadBackfillState(path) {
+  if (!existsSync(path)) return null
+  const state = JSON.parse(readFileSync(path, 'utf8'))
+  if (state?.version !== 1 || typeof state.processed !== 'object') throw new Error('state_invalid')
+  return state
+}
+
+export function saveBackfillState(path, state) {
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 })
+  const tmp = `${path}.tmp`
+  writeFileSync(tmp, `${JSON.stringify(state, null, 1)}\n`, { mode: 0o600 })
+  renameSync(tmp, path)
+  chmodSync(path, 0o600)
+}

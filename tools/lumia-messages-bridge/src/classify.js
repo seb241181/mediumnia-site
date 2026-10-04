@@ -91,3 +91,19 @@ export function hints(text) {
   else if (/\bpar telephone\b|\bau telephone\b/.test(t)) out.modality = 'phone'
   return out
 }
+
+// Intentions lisibles (sans IA, mêmes formulations que le filtre) : aident
+// Lumia à répondre « qui voulait déplacer / annuler / réserver ? ». Le texte
+// reste une donnée ; seules ces étiquettes en sont tirées.
+const INTENTS = [
+  ['rendez_vous', /\brdv\b|\brendez[ -]?vous\b|\bseances?\b|\bconsultations?\b|\bguidances?\b|\bdesenvout\w*|\bdegagements?\b|\bsoins? energetique/],
+  ['reserver', /\breserv(er|ation|e)\b|\bcreneaux?\b|\bprendre (un )?(rdv|rendez[ -]?vous)\b|\bdispo(nible|nibles|nibilites?|s)?\b/],
+  ['deplacer', /\bdeplac(er|e|ement)\b|\bdecal(er|e)\b|\breport(er|e)\b|\bchanger (la |l |de )?(date|heure|horaire)\b/],
+  ['annuler', /\bannul(er|e|ation)\b/],
+  ['urgence', /\burgen(t|te|ce|ces)\b|\bau plus vite\b|\bau plus tot\b|\bdes que possible\b|\basap\b|\brapidement\b|\bvite\b|\bc est grave\b|\bje n en peux plus\b|\baidez[ -]moi\b/],
+]
+
+export function intents(text) {
+  const t = normalize(text)
+  return INTENTS.filter(([, pattern]) => pattern.test(t)).map(([label]) => label)
+}

@@ -4,15 +4,20 @@
  *   doctor                       diagnostic du Mac (compteurs uniquement, aucun contenu)
  *   run [--once] [--show]        dry-run par défaut : rien n'est envoyé
  *   run --live                   envoi réel, seulement si config.local.json contient "live": true
+ *   backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ
+ *                                rattrapage documentaire de l'Inbox (dry-run par défaut ;
+ *                                écriture : --live --confirm <phrase affichée par le dry-run>)
  * Boîte de réception Lumia (V2) : seulement si config.local.json contient
  * "inbox_enabled": true (désactivée par défaut ; jeton Trousseau « inbox-token »).
  * Options : --show-full (numéros non masqués à l'écran), --lookback-minutes N,
  *           --db CHEMIN, --state-dir DOSSIER, --config FICHIER, --interval SECONDES
  */
 import { execFileSync } from 'node:child_process'
+import process from 'node:process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { backfillRange, confirmationFor, createInboxBackfill } from './backfill.js'
 import { createBridge } from './bridge.js'
 import { DEFAULT_CHAT_DB, openChatDb } from './chatdb.js'
 import { assertSafeEndpoint, DEFAULT_ENDPOINT } from './sender.js'
@@ -139,11 +144,64 @@ async function run(args) {
   log('stop')
 }
 
+// Rattrapage Inbox d'une période passée : jamais le RDV, jamais live.json.
+async function backfillInbox(args) {
+  const config = loadConfig(args.config || join(ROOT, 'config.local.json'))
+  let range
+  try { range = backfillRange(String(args.from || ''), String(args.to || '')) } catch (error) {
+    console.error(`Période invalide (${error.message}) : --from AAAA-MM-JJ --to AAAA-MM-JJ, 92 jours au plus.`)
+    process.exitCode = 64
+    return
+  }
+  let chat
+  try { chat = openChatDb(args.db || config.chat_db || DEFAULT_CHAT_DB) } catch (error) {
+    console.error(explain(error))
+    process.exitCode = 78
+    return
+  }
+  const ignoreHandles = Array.isArray(config.ignore_handles) ? config.ignore_handles : []
+  const statePath = join(args['state-dir'] || join(ROOT, 'state'), 'backfill-inbox.json')
+  // 1. Toujours un dry-run complet d'abord (compteurs seulement).
+  const dry = await createInboxBackfill({ chat, ...range, mode: 'dry-run', statePath, ignoreHandles }).run()
+  const expected = confirmationFor(args.from, args.to, dry.eligible)
+  const summary = { ...dry, mode: undefined, aborted: undefined, already: undefined, sent: undefined, duplicate: undefined, failed: undefined, rejected: undefined }
+  console.log(JSON.stringify(summary, null, 2))
+  if (!args.live) {
+    console.log(`Dry-run : rien n'a été envoyé. Pour écrire dans l'Inbox : --live --confirm ${expected}`)
+    chat.close()
+    return
+  }
+  // 2. Écriture : Inbox activée, mode réel, et confirmation exacte.
+  if (config.live !== true || config.inbox_enabled !== true) {
+    console.error('Écriture refusée : config.local.json doit contenir "live": true et "inbox_enabled": true. Rien n\'est envoyé.')
+    process.exitCode = 2
+    chat.close()
+    return
+  }
+  if (args.confirm !== expected) {
+    console.error(`Écriture refusée : confirmation attendue « ${expected} ». Rien n'est envoyé.`)
+    process.exitCode = 2
+    chat.close()
+    return
+  }
+  const endpoint = config.inbox_endpoint || DEFAULT_INBOX_ENDPOINT
+  assertSafeEndpoint(endpoint)
+  const live = await createInboxBackfill({
+    chat, ...range, mode: 'live', statePath, ignoreHandles,
+    target: { endpoint, getToken: () => readInboxToken() },
+    log,
+  }).run()
+  console.log(JSON.stringify({ sent: live.sent, duplicate: live.duplicate, already: live.already, failed: live.failed, rejected: live.rejected, aborted: live.aborted }, null, 2))
+  if (live.aborted || live.failed || live.rejected) process.exitCode = 1
+  chat.close()
+}
+
 const args = parseArgs(process.argv.slice(2))
 const command = args._[0] || 'run'
 if (command === 'doctor') await doctor(args)
 else if (command === 'run') await run(args)
+else if (command === 'backfill-inbox') await backfillInbox(args)
 else {
-  console.error('Commandes : doctor | run [--once] [--show] [--live]')
+  console.error('Commandes : doctor | run [--once] [--show] [--live] | backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ [--live --confirm …]')
   process.exitCode = 64
 }

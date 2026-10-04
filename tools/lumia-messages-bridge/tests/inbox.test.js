@@ -377,3 +377,112 @@ test('V2-18. état V1 existant relu par le bridge V2 sans perte (curseur, files 
   assert.equal(v2.processed['FAKE-OLD'].s, 'sent')
   assert.equal(v2.inbox.since_cursor, v1.cursor)
 })
+
+// ── Messages sortants (lecture seule) ──────────────────────────────────────
+
+function setupOutgoing(server, { inboxOutgoing = true } = {}) {
+  const s = setup(server)
+  s.makeOut = (opts = {}) => createBridge({
+    chat: s.chat, statePath: s.statePath, mode: 'live', endpoint: server.rdvEndpoint, getToken: async () => RDV_TOKEN,
+    inbox: { endpoint: server.inboxEndpoint, getToken: async () => INBOX_TOKEN },
+    inboxOutgoing: opts.inboxOutgoing ?? inboxOutgoing,
+    clock: () => T0, log: (l) => s.logs.push(l),
+  })
+  return s
+}
+
+test('O-1. sortants désactivés par défaut : jamais synchronisés (V2 inchangée)', async () => {
+  const server = await fakeMediumia()
+  const s = setupOutgoing(server, { inboxOutgoing: false })
+  await s.makeOut().tick()
+  s.fx.add({ fromMe: true, text: 'Je vous confirme mardi 10 h' })
+  await s.makeOut().tick()
+  server.close()
+  assert.equal(server.requests.inbox.length + server.requests.rdv.length, 0)
+  assert.equal(s.state().inbox.outgoing_since_cursor, undefined)
+})
+
+test('O-2. activation : aucun sortant historique ; ensuite Inbox SEULEMENT, sans classement, jamais le RDV', async () => {
+  const server = await fakeMediumia()
+  const s = setupOutgoing(server)
+  s.fx.add({ fromMe: true, from: '+33612345678', text: 'Sortant avant activation' })
+  await s.makeOut().tick()
+  assert.equal(server.requests.inbox.length, 0, 'aucun historique sortant')
+  const since = s.state().inbox.outgoing_since_cursor
+  const reply = s.fx.add({ fromMe: true, from: '+33612345678', text: 'Bien sûr, je vous propose mardi pour votre rendez-vous' })
+  const counts = await s.makeOut().tick()
+  server.close()
+  assert.ok(since > 0)
+  assert.equal(counts.inbox_out_queued, 1)
+  assert.equal(server.requests.rdv.length, 0, 'un sortant ne part jamais vers le RDV, même avec « rendez-vous »')
+  assert.equal(server.requests.inbox.length, 1)
+  const body = server.requests.inbox[0].body
+  assert.equal(body.source_message_id, reply.guid)
+  assert.equal(body.is_from_me, true)
+  assert.equal(body.counterpart, '+33612345678')
+  assert.ok(!('classification' in body) && !('sender' in body), 'jamais de classement RDV ni d\'expéditeur')
+  assert.match(body.source_conversation_id, /^conv-[0-9a-f]{40}$/)
+})
+
+test('O-3. même conversation dans les deux sens ; destinataire retrouvé par l\'identifiant du fil si le handle manque', async () => {
+  const server = await fakeMediumia()
+  const s = setupOutgoing(server)
+  await s.makeOut().tick()
+  s.fx.add({ from: '+33622222222', text: 'Je voudrais un rendez-vous' })
+  s.fx.add({ fromMe: true, from: '+33622222222', text: 'Avec plaisir', noHandle: true })
+  await s.makeOut().tick()
+  server.close()
+  const [incoming, outgoing] = server.requests.inbox.map((r) => r.body)
+  assert.equal(outgoing.counterpart, '+33622222222')
+  assert.equal(incoming.source_conversation_id, outgoing.source_conversation_id)
+  assert.equal(server.requests.rdv.length, 1, 'seul l\'entrant va au RDV')
+})
+
+test('O-4. jamais synchronisés : réaction, pièce jointe seule, groupe, numéro court, interlocuteur exclu', async () => {
+  const server = await fakeMediumia()
+  const s = setup(server, { ignoreHandles: ['+33677777777'] })
+  const make = () => createBridge({
+    chat: s.chat, statePath: s.statePath, mode: 'live', endpoint: server.rdvEndpoint, getToken: async () => RDV_TOKEN, ignoreHandles: ['+33677777777'],
+    inbox: { endpoint: server.inboxEndpoint, getToken: async () => INBOX_TOKEN }, inboxOutgoing: true, clock: () => T0, log: () => {},
+  })
+  await make().tick()
+  s.fx.add({ fromMe: true, text: 'A aimé « ok »', reaction: 2000 })
+  s.fx.add({ fromMe: true, text: null, attachments: 1 })
+  s.fx.add({ fromMe: true, text: 'Message au groupe', groupGuid: 'iMessage;+;chat-groupe' })
+  s.fx.add({ fromMe: true, from: '38015', service: 'SMS', text: 'STOP' })
+  s.fx.add({ fromMe: true, from: '+33677777777', text: 'Message à un exclu' })
+  await make().tick()
+  server.close()
+  assert.equal(server.requests.inbox.length + server.requests.rdv.length, 0)
+})
+
+test('O-5. payload sortant conforme au validateur RÉEL du serveur (verrou ouvert) et refusé verrou fermé', async () => {
+  const { validateInboxMessage } = await import('../../../lib/lumiaMessageInbox.js')
+  const server = await fakeMediumia()
+  const s = setupOutgoing(server)
+  await s.makeOut().tick()
+  s.fx.add({ fromMe: true, from: '06 12 34 56 78', service: 'SMS', text: 'Réponse par SMS' })
+  s.fx.add({ fromMe: true, from: 'client@example.com', service: 'RCS', text: 'Réponse RCS' })
+  await s.makeOut().tick()
+  server.close()
+  assert.equal(server.requests.inbox.length, 2)
+  for (const { body } of server.requests.inbox) {
+    const ok = validateInboxMessage(body, { outgoingEnabled: true })
+    assert.ok(ok.row, JSON.stringify(ok))
+    assert.equal(ok.row.classification, null)
+    assert.equal(validateInboxMessage(body).refused, 'outgoing_not_enabled')
+  }
+})
+
+test('O-6. réponse « outgoing_not_enabled » du serveur : rejet journalisé, RDV et entrants non affectés', async () => {
+  const server = await fakeMediumia({ inbox: (body) => (body.is_from_me ? [422, { error: 'outgoing_not_enabled' }] : [201, { outcome: 'created' }]) })
+  const s = setupOutgoing(server)
+  await s.makeOut().tick()
+  s.fx.add({ from: '+33622222222', text: 'Je voudrais un rendez-vous' })
+  s.fx.add({ fromMe: true, from: '+33622222222', text: 'Avec plaisir' })
+  await s.makeOut().tick()
+  server.close()
+  assert.equal(server.requests.rdv.length, 1)
+  assert.equal(Object.keys(s.state().inbox.pending).length, 0)
+  assert.ok(s.logs.some((l) => /inbox_rejected .*outgoing_not_enabled/.test(l)))
+})

@@ -245,6 +245,14 @@ node --disable-warning=ExperimentalWarning src/cli.js backfill-inbox --from 2026
 - **Données conservées :** chaque message garde sa vraie date (`message_sent_at`), son canal réel (`rcs` compris), son classement (probable, incertain, ignorer) et l'empreinte du fil. Le serveur fixe `owner_id`.
 - **Mêmes exclusions que le pipeline Inbox live :** sortants, groupes, réactions, événements système, pièces jointes sans texte, numéros courts et `ignore_handles`.
 
+## 7. Messages sortants en lecture seule (désactivés par défaut)
+
+- **Activation :** `"inbox_outgoing": true` (avec `"inbox_enabled": true`), et `LUMIA_INBOX_OUTGOING_ENABLED=true` côté serveur.
+- **Point de départ :** le dernier ROWID à l'activation ; aucun historique sortant importé automatiquement.
+- **Ce qui est lu :** messages texte en 1-à-1 (iMessage, SMS, RCS), vers l'Inbox **uniquement** : jamais vers le pipeline RDV, jamais classés.
+- **Aucune capacité d'envoi :** rien n'est écrit dans Messages.
+- **Rattrapage d'une période :** `backfill-inbox --from … --to … --direction sortants` (dry-run, puis `--live --confirm sortants:…:N`).
+
 ## Confidentialité et sécurité
 
 **Base Apple** :

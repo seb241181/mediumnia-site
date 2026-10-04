@@ -107,3 +107,11 @@ export function intents(text) {
   const t = normalize(text)
   return INTENTS.filter(([, pattern]) => pattern.test(t)).map(([label]) => label)
 }
+
+// Simple politesse (« merci », « ok », « bonne soirée »…) : même règle que le
+// filtre. Sert à ne pas compter ces messages comme une nouvelle demande en
+// attente de réponse.
+export function isCourtesy(text) {
+  const stripped = normalize(String(text || '').replace(/￼/g, '')).replace(/[^\p{L}\p{N}\s!.…]/gu, '').trim()
+  return !stripped || COURTESY.test(stripped)
+}

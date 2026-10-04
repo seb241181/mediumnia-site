@@ -36,7 +36,7 @@ export function makeChatDb() {
     return handles.get(key)
   }
   function add({ from = '+33600000001', service = 'iMessage', text = null, attributedBody = null, fromMe = false,
-    at = new Date().toISOString(), attachments = 0, reaction = 0, itemType = 0, groupGuid = null } = {}) {
+    at = new Date().toISOString(), attachments = 0, reaction = 0, itemType = 0, groupGuid = null, noHandle = false } = {}) {
     n += 1
     const guid = `FAKE-${String(n).padStart(4, '0')}-0000-4000-8000-000000000000`
     const { h, c } = handleId(from, service)
@@ -48,7 +48,7 @@ export function makeChatDb() {
     }
     const rowid = Number(db.prepare(`INSERT INTO message (guid, text, attributedBody, handle_id, service, date, is_from_me,
       cache_has_attachments, associated_message_type, item_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(guid, text, attributedBody, h, service, isoToAppleDate(at), fromMe ? 1 : 0, attachments, reaction, itemType).lastInsertRowid)
+      .run(guid, text, attributedBody, noHandle ? 0 : h, service, isoToAppleDate(at), fromMe ? 1 : 0, attachments, reaction, itemType).lastInsertRowid)
     db.prepare('INSERT INTO chat_message_join (chat_id, message_id) VALUES (?, ?)').run(chatId, rowid)
     return { guid, rowid }
   }

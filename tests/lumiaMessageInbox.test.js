@@ -6,8 +6,10 @@ import {
   computeReplies,
   handleLumiaInboxApi,
   loadLumiaInboxContext,
+  isThanks,
   outgoingSyncEnabled,
   parseInboxQuestion,
+  rdvReplyStatus,
   searchLumiaInbox,
   validateInboxMessage,
 } from '../lib/lumiaMessageInbox.js'
@@ -473,6 +475,155 @@ test('8 (contexte). recherche large sur 600 messages + 500 réponses : stats com
     assert.equal(json.search.truncated, true, 'troncature signalée')
     assert.ok(json.search.conversations.length <= 40 && json.search.details.length <= 12)
   }
+})
+
+// ── Suivi d'une demande RDV (distinct de l'attente générale) ───────────────
+
+const SYNC = '2026-09-01T00:00:00.000Z'
+const at = (min) => new Date(Date.parse('2026-09-10T10:00:00Z') + min * 60_000).toISOString()
+const rdvReq = (min, text = 'Je voudrais un rendez-vous', classification = 'probable') => inboxRow({ counterpart: '+33620000000', message_sent_at: at(min), message_text: text, classification })
+const msg = (min, text) => inboxRow({ counterpart: '+33620000000', message_sent_at: at(min), message_text: text, classification: 'ignorer' })
+const rep = (min, text = 'Bien sûr, mardi 10 h ?') => out({ counterpart: '+33620000000', message_sent_at: at(min), message_text: text })
+const status = (rows, outgoingFrom = SYNC) => rdvReplyStatus(rows, { outgoingFrom })
+
+test('A / J. demande → réponse → « merci », « ok », « parfait », « super », emoji seul : répondu, jamais en attente RDV', () => {
+  for (const thanks of ['Merci beaucoup Sébastien 🙏', 'ok', 'Parfait', 'Super, à mardi !', '🙏', 'Merci', 'Top merci', 'C est noté, bonne journée']) {
+    const r = status([rdvReq(0), rep(5), msg(10, thanks)])
+    assert.equal(r.rdv_status, 'repondu', thanks)
+    assert.equal(r.awaiting_rdv_reply, false)
+  }
+  assert.equal(isThanks('Merci, est-ce possible de décaler ?'), false, 'une question n\'est pas un remerciement')
+})
+
+test('B. demande → réponse → message personnel : à vérifier, jamais en attente RDV ; une réponse ultérieure le couvre', () => {
+  const r = status([rdvReq(0), rep(5), msg(30, 'Ma fille est malade cette semaine, je vous tiens au courant')])
+  assert.deepEqual([r.rdv_status, r.awaiting_rdv_reply], ['a_verifier', false])
+  assert.equal(status([rdvReq(0), rep(5), msg(30, 'Ma fille est malade cette semaine'), rep(40, 'Prompt rétablissement')]).rdv_status, 'repondu')
+})
+
+test('C / E / F. réponse puis NOUVELLE demande (relance, annulation, déplacement) : en attente', () => {
+  for (const text of ['Finalement je voudrais un autre rendez-vous', 'Je dois annuler mon rendez-vous de mardi', 'Est-ce possible de déplacer ma séance ?']) {
+    const r = status([rdvReq(0), rep(5), rdvReq(60, text)])
+    assert.deepEqual([r.rdv_status, r.awaiting_rdv_reply, r.last_rdv_request_at, r.rdv_reply_at], ['en_attente', true, at(60), null], text)
+  }
+  // Une demande incertaine compte aussi comme nouvelle demande.
+  assert.equal(status([rdvReq(0), rep(5), rdvReq(60, 'Vous êtes dispo jeudi ?', 'incertain')]).rdv_status, 'en_attente')
+})
+
+test('D. demande sans aucune réponse : sans réponse visible', () => {
+  const r = status([rdvReq(0), msg(30, 'Bonne journée')])
+  assert.deepEqual([r.rdv_status, r.awaiting_rdv_reply, r.rdv_reply_at], ['sans_reponse_visible', true, null])
+})
+
+test('G. réactions / événements système / pièces jointes seules : non stockés, donc ne rouvrent jamais le RDV', () => {
+  // Le bridge ne les synchronise pas (tests O-4 / V2-11) : le fil ne contient que la demande et la réponse.
+  assert.equal(status([rdvReq(0), rep(5)]).rdv_status, 'repondu')
+})
+
+test('H. couverture des sortants inconnue : inconnu, jamais « sans réponse »', () => {
+  assert.deepEqual([status([rdvReq(0)], null).rdv_status, status([rdvReq(0)], null).awaiting_rdv_reply], ['inconnu', null])
+  assert.equal(status([rdvReq(0)], at(10)).rdv_status, 'inconnu', 'demande antérieure au premier sortant synchronisé')
+  assert.equal(status([rdvReq(0), rep(5)], at(3)).rdv_status, 'repondu', 'une réponse trouvée reste une réponse')
+})
+
+test('I. plusieurs demandes dans la même conversation : seule la dernière détermine le statut', () => {
+  assert.equal(status([rdvReq(0), rdvReq(2, 'Et sinon jeudi ?', 'incertain'), rep(5)]).rdv_status, 'repondu')
+  assert.equal(status([rdvReq(0), rep(5), rdvReq(20), rep(25), msg(30, 'merci')]).rdv_status, 'repondu')
+  assert.equal(status([rdvReq(0), rep(5), rdvReq(20), rep(25), rdvReq(40, 'Je dois annuler finalement')]).rdv_status, 'en_attente')
+  assert.equal(status([msg(0, 'Bisous')]), null, 'aucune demande RDV : pas de suivi RDV')
+})
+
+test('attente générale conservée : un message personnel après la réponse rouvre la CONVERSATION, pas la demande RDV', () => {
+  const rows = [rdvReq(0), rep(5), msg(30, 'Ma fille est malade cette semaine')]
+  const conv = computeReplies(rows, { outgoingFrom: SYNC }).conversations.get(rows[0].source_conversation_id)
+  assert.equal(conv.awaiting_reply, true, 'awaiting_reply (général) inchangé')
+  assert.equal(conv.rdv.rdv_status, 'a_verifier')
+  assert.equal(conv.rdv.awaiting_rdv_reply, false)
+})
+
+test('question RDV « sans réponse » : les « à vérifier » sortent de la liste mais restent comptés ; « qui attend » général inchangé', async () => {
+  const rows = [
+    inboxRow({ counterpart: '+33630000001', message_sent_at: '2026-09-05T10:00:00Z', message_text: 'Je voudrais un rendez-vous', classification: 'probable' }),
+    out({ counterpart: '+33630000001', message_sent_at: '2026-09-05T10:10:00Z' }),
+    inboxRow({ counterpart: '+33630000001', message_sent_at: '2026-09-05T10:20:00Z', message_text: 'Ma fille est malade cette semaine', classification: 'ignorer' }),
+    inboxRow({ counterpart: '+33630000002', message_sent_at: '2026-09-06T10:00:00Z', message_text: 'Je voudrais un rendez-vous', classification: 'probable' }),
+    out({ counterpart: '+33630000002', message_sent_at: '2026-09-06T10:10:00Z' }),
+    inboxRow({ counterpart: '+33630000002', message_sent_at: '2026-09-06T10:20:00Z', message_text: 'Merci beaucoup Sébastien 🙏', classification: 'ignorer' }),
+    inboxRow({ counterpart: '+33630000003', message_sent_at: '2026-09-07T10:00:00Z', message_text: 'Je voudrais un rendez-vous', classification: 'probable' }),
+    out({ counterpart: '+33630000003', message_sent_at: '2026-09-07T10:10:00Z' }),
+    inboxRow({ counterpart: '+33630000003', message_sent_at: '2026-09-08T10:00:00Z', message_text: 'Je dois annuler mon rendez-vous', classification: 'probable' }),
+    inboxRow({ counterpart: '+33630000004', message_sent_at: '2026-09-09T10:00:00Z', message_text: 'Je voudrais un rendez-vous', classification: 'probable' }),
+  ]
+  const db = fakeDb({ lumia_message_inbox: rows })
+  const open = await ctx(db, 'Quelles demandes de rendez-vous de septembre semblent encore sans réponse ?', NOW_OCT)
+  assert.deepEqual(open.search.conversations.map((c) => [c.who, c.rdv_status]), [['+33630000004', 'sans_reponse_visible'], ['+33630000003', 'en_attente']])
+  const all = await ctx(db, 'Quelles demandes de rendez-vous ai-je reçues en septembre ?', NOW_OCT)
+  assert.deepEqual(all.search.stats.conversations_by_rdv_status, { sans_reponse_visible: 1, en_attente: 1, a_verifier: 1, repondu: 1 })
+  assert.deepEqual(all.search.conversations.map((c) => c.priority), [1, 1, 3, 3])
+  const general = await ctx(db, 'Qui attend encore une réponse ?', NOW_OCT)
+  // Attente générale : le message personnel rouvre la CONVERSATION ; le
+  // « Merci beaucoup Sébastien 🙏 » non (remerciement terminal).
+  assert.deepEqual(general.search.conversations.map((c) => c.who).sort(), ['+33630000001', '+33630000003', '+33630000004'])
+  assert.match(read('api/agent-chat.js'), /Un simple remerciement après ta réponse ne rouvre jamais une demande/)
+})
+
+// ── Remerciement terminal vs « merci + demande » (attente générale ET RDV) ──
+
+const gen = (rows) => computeReplies(rows, { outgoingFrom: SYNC }).conversations.get(rows[0].source_conversation_id)
+
+test('isThanks : remerciement terminal oui ; « merci de… » / action / nouvelle demande jamais', () => {
+  for (const t of ['merci', 'Merci beaucoup 🙏', 'ok', 'Parfait', 'super', 'Top', 'C’est noté', 'À mardi !', '🙏', 'Merci de votre retour', 'Merci d’avoir répondu si vite']) {
+    assert.equal(isThanks(t), true, t)
+  }
+  for (const t of [
+    'Merci de me rappeler', 'Merci de déplacer mon rendez-vous', 'Merci de me confirmer l’heure', 'Merci de m’envoyer les disponibilités',
+    'Merci de me dire si mardi est possible', 'Merci, pouvez-vous annuler mon rendez-vous', 'Merci de réserver jeudi',
+    'Super, je voulais aussi savoir si vous êtes disponible jeudi', 'Parfait, rappelez-moi demain',
+  ]) {
+    assert.equal(isThanks(t), false, t)
+  }
+})
+
+test('A. réponse → « Merci beaucoup 🙏 » : général répondu, RDV répondu', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Merci beaucoup 🙏')]
+  assert.equal(gen(rows).awaiting_reply, false)
+  assert.equal(gen(rows).rdv.rdv_status, 'repondu')
+})
+
+test('B. réponse → « Merci de me rappeler » : général en attente ; RDV à vérifier (non classé) ou nouvelle demande (si classé)', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Merci de me rappeler')]
+  assert.equal(gen(rows).awaiting_reply, true)
+  assert.equal(gen(rows).rdv.rdv_status, 'a_verifier')
+  const classified = [rdvReq(0), rep(5), rdvReq(10, 'Merci de me rappeler', 'incertain')]
+  assert.equal(gen(classified).rdv.rdv_status, 'en_attente', 'le classement prime sur isThanks')
+})
+
+test('C. réponse → « Merci de déplacer mon rendez-vous » : nouvelle demande RDV en attente', () => {
+  const rows = [rdvReq(0), rep(5), rdvReq(10, 'Merci de déplacer mon rendez-vous')]
+  assert.deepEqual([gen(rows).rdv.rdv_status, gen(rows).awaiting_reply], ['en_attente', true])
+  // Même si le classement l'avait manqué, il ne serait jamais absorbé comme un merci.
+  assert.equal(gen([rdvReq(0), rep(5), msg(10, 'Merci de déplacer mon rendez-vous')]).rdv.rdv_status, 'a_verifier')
+})
+
+test('D. réponse → « Merci de me confirmer l’heure » : jamais absorbé comme simple merci', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Merci de me confirmer l’heure')]
+  assert.equal(gen(rows).awaiting_reply, true)
+  assert.notEqual(gen(rows).rdv.rdv_status, 'repondu')
+})
+
+test('E. réponse → emoji seul : ne rouvre rien', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, '🙏')]
+  assert.deepEqual([gen(rows).awaiting_reply, gen(rows).rdv.rdv_status], [false, 'repondu'])
+})
+
+test('F. réponse → « Super, je voulais aussi savoir si vous êtes disponible jeudi » : jamais un simple remerciement', () => {
+  const rows = [rdvReq(0), rep(5), msg(10, 'Super, je voulais aussi savoir si vous êtes disponible jeudi')]
+  assert.equal(gen(rows).awaiting_reply, true)
+  assert.equal(gen(rows).rdv.rdv_status, 'a_verifier')
+})
+
+test('règle Lumia : « réponse visible après la demande », jamais « traitée avec certitude »', () => {
+  assert.match(read('api/agent-chat.js'), /ne dis jamais qu'une demande a été traitée avec certitude/)
 })
 
 test('règles Lumia : candidats par conversation, priorités, jamais présentés comme des demandes confirmées', () => {

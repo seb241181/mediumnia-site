@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 import { chronosphereMaxDemoProfile, chronosphereMaxDemoTimeline, chronosphereMaxDemoTimelines } from '../data/chronosphereMaxDemo.js'
 import { getSolarTemperament } from '../../lib/chronosphereSolarTemperament.js'
-import { summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
+import { compareChronosphereSnapshots, summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
+import { createAccountScope, readMaxAttempt, writeMaxAttempt } from '../lib/chronosphereMaxSession.js'
 import { useAuth } from '../lib/useAuth.js'
 import PublicPageNav from './PublicPageNav'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
@@ -41,14 +42,6 @@ function loadPayPalSdk(clientId) {
   })
 }
 
-function maxTokenKey(userId) {
-  return userId ? `chronosphere_max_packToken:${userId}` : ''
-}
-
-function maxPendingKey(userId) {
-  return userId ? `chronosphere_max_pending:${userId}` : ''
-}
-
 function followedDays(createdAt) {
   if (!createdAt) return 0
   const start = new Date(createdAt)
@@ -74,7 +67,9 @@ function normalizeLiveTimeline(value) {
     followedSinceDays: followedDays(value.createdAt),
     lastReadingLabel: last?.readAt ? formatDate(last.readAt) : 'Pas encore commencée',
     entries,
-    comparison: last?.comparison || { summary: { persistent: [], moved: [], opened: [], noLongerAppears: [] } },
+    comparison: entries.length >= 2
+      ? compareChronosphereSnapshots(entries.at(-2).snapshot, entries.at(-1).snapshot)
+      : { summary: { persistent: [], moved: [], opened: [], noLongerAppears: [] } },
     finalSynthesis: entries.length >= 3 ? summarizeChronosphereLine(entries) : null,
   }
 }
@@ -293,8 +288,20 @@ function FinalSynthesis({ timeline }) {
   )
 }
 
-export default function ChronosphereMaxPage({ onBack, onNavigate }) {
-  const { session, user, loading: authLoading, signIn, signUp } = useAuth()
+export default function ChronosphereMaxPage(props) {
+  const auth = useAuth()
+  return <ChronosphereMaxSessionPage key={auth.user?.id || 'signed-out'} auth={auth} {...props} />
+}
+
+export function ChronosphereMaxSessionPage({ auth, onBack, onNavigate }) {
+  const { session, user, loading: authLoading, signIn, signUp } = auth
+  const accountScope = useRef(createAccountScope())
+  useLayoutEffect(() => {
+    const scope = createAccountScope()
+    accountScope.current = scope
+    readingBusyRef.current = false
+    return () => scope.close()
+  }, [])
   const [selectedId, setSelectedId] = useState(chronosphereMaxDemoTimeline.id)
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
@@ -311,6 +318,10 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
   const [drawError, setDrawError] = useState('')
   const [lastResult, setLastResult] = useState(null)
   const [pendingReadNonce, setPendingReadNonce] = useState('')
+  const [recoveryAttempt, setRecoveryAttempt] = useState(null)
+  const [recoveryChecked, setRecoveryChecked] = useState(false)
+  const [correctingAttempt, setCorrectingAttempt] = useState(false)
+  const readingBusyRef = useRef(false)
   const [form, setForm] = useState({
     timelineTitle: '',
     fullName: '',
@@ -321,17 +332,17 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     number1: '',
     number2: '',
     number3: '',
-    deliveryEmail: '',
+    deliveryEmail: user?.email || '',
   })
   const paypalContainerRef = useRef(null)
   const pendingPaymentRef = useRef(null)
+  const pendingLookupVersionRef = useRef(0)
 
   const selected = useMemo(
     () => chronosphereMaxDemoTimelines.find((timeline) => timeline.id === selectedId) || chronosphereMaxDemoTimeline,
     [selectedId],
   )
 
-  const activeTimeline = liveTimeline || selected
   const activeSolarSign = liveTimeline
     ? (liveTimeline.entries.at(-1)?.snapshot?.solarSign || null)
     : chronosphereMaxDemoProfile.solarSign
@@ -348,26 +359,9 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
       .catch(() => setPaypalConfig(null))
   }, [])
 
-  useEffect(() => {
-    if (!user) {
-      setPackToken('')
-      setCreditState(null)
-      setLiveTimeline(null)
-      return
-    }
-    setForm((current) => ({ ...current, deliveryEmail: current.deliveryEmail || user.email || '' }))
-    const key = maxTokenKey(user.id)
-    const stored = key ? localStorage.getItem(key) || '' : ''
-    setPackToken(stored)
-    try {
-      const raw = localStorage.getItem(maxPendingKey(user.id))
-      setPendingPayment(raw ? JSON.parse(raw) : null)
-    } catch {
-      setPendingPayment(null)
-    }
-  }, [user])
-
   async function refreshMaxStatus(token = packToken, allowAccountFallback = true) {
+    const scope = accountScope.current
+    if (!scope.current()) return null
     if (!session?.access_token) return null
     const payload = token ? { packToken: token } : { product: 'max3' }
     const res = await fetch('/api/rdv-config?chronospherePayPalAction=status', {
@@ -377,9 +371,10 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     })
     const data = await res.json().catch(() => ({}))
 
+    if (!scope.current()) return null
+
     if (!res.ok || !data.valid || data.product !== 'max3') {
       if (token && allowAccountFallback && (res.status === 404 || res.status === 401)) {
-        try { localStorage.removeItem(maxTokenKey(user?.id)) } catch {}
         setPackToken('')
         return refreshMaxStatus('', false)
       }
@@ -390,10 +385,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
       return null
     }
 
-    if (data.packToken && user?.id) {
-      try { localStorage.setItem(maxTokenKey(user.id), data.packToken) } catch {}
-      setPackToken(data.packToken)
-    }
+    if (data.packToken) setPackToken(data.packToken)
     setCreditState({
       product: 'max3',
       creditsRemaining: data.creditsRemaining,
@@ -420,7 +412,28 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     refreshMaxStatus(packToken, true).catch(() => setPaymentError('Impossible de relire votre suivi MAX pour le moment.'))
   }, [packToken, session?.access_token, user?.id])
 
+  useEffect(() => {
+    if (!session?.access_token || !user) return
+    const scope = accountScope.current
+    const version = ++pendingLookupVersionRef.current
+    fetch('/api/rdv-config?chronospherePayPalAction=pendingMax', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    }).then(async (res) => {
+      const data = await res.json().catch(() => ({}))
+      if (!scope.current() || version !== pendingLookupVersionRef.current) return
+      if (!res.ok) throw new Error('pending_lookup_failed')
+      pendingPaymentRef.current = data.pending || null
+      setPendingPayment(data.pending || null)
+    }).catch(() => {
+      if (scope.current() && version === pendingLookupVersionRef.current) {
+        setPaymentError('Impossible de vérifier un paiement en attente pour le moment.')
+      }
+    })
+  }, [session?.access_token, user?.id])
+
   async function handleAuth(mode) {
+    const scope = accountScope.current
     setAuthMessage('')
     const email = authEmail.trim()
     if (!email || authPassword.length < 6) {
@@ -429,6 +442,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     }
     const action = mode === 'signup' ? signUp : signIn
     const { data, error } = await action(email, authPassword)
+    if (!scope.current()) return
     if (error) {
       setAuthMessage(userErrorMessage(error, 'Connexion impossible. Vérifiez votre e-mail et votre mot de passe, puis réessayez.'))
       return
@@ -440,7 +454,9 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     }
   }
 
-async function captureMaxOrder(orderId, token) {
+  async function captureMaxOrder(orderId) {
+    const scope = accountScope.current
+    if (!scope.current()) return null
     if (!session?.access_token || !user) throw new Error('auth_required')
     const res = await fetch('/api/rdv-config?chronospherePayPalAction=capture', {
       method: 'POST',
@@ -448,26 +464,22 @@ async function captureMaxOrder(orderId, token) {
       body: JSON.stringify({ orderId }),
     })
     const data = await res.json().catch(() => ({}))
+    if (!scope.current()) return null
     if (!res.ok || data.product !== 'max3') throw new Error(data.error || 'capture_failed')
-    try {
-      localStorage.setItem(maxTokenKey(user.id), token)
-      localStorage.removeItem(maxPendingKey(user.id))
-    } catch {}
+    pendingLookupVersionRef.current += 1
     pendingPaymentRef.current = null
     setPendingPayment(null)
-    setPackToken(token)
-    setCreditState({ product: 'max3', creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: data.packStatus || 'active', resumeMode: 'token' })
-    await refreshMaxStatus(token)
+    await refreshMaxStatus('', true)
     return data
   }
 
   async function verifyPendingMaxPayment() {
     const pending = pendingPayment || pendingPaymentRef.current
-    if (!pending?.orderId || !pending?.packToken) return
+    if (!pending?.orderId) return
     setPaymentBusy(true)
     setPaymentError('')
     try {
-      await captureMaxOrder(pending.orderId, pending.packToken)
+      await captureMaxOrder(pending.orderId)
     } catch (error) {
       setPaymentError(error?.message === 'paypal_capture_failed'
         ? 'Le paiement n’est pas encore confirmé par PayPal.'
@@ -484,13 +496,15 @@ async function captureMaxOrder(orderId, token) {
     if (!node) return
 
     let cancelled = false
+    const scope = accountScope.current
     node.innerHTML = ''
     loadPayPalSdk(paypalConfig.clientId)
       .then(() => {
-        if (cancelled || !window.paypal?.Buttons) return null
+        if (cancelled || !scope.current() || !window.paypal?.Buttons) return null
         return window.paypal.Buttons({
           style: { layout: 'vertical', shape: 'rect', label: 'paypal' },
           createOrder: async () => {
+            if (!scope.current()) throw new Error('account_changed')
             setPaymentError('')
             const res = await fetch('/api/rdv-config?chronospherePayPalAction=create', {
               method: 'POST',
@@ -498,19 +512,20 @@ async function captureMaxOrder(orderId, token) {
               body: JSON.stringify({ product: 'max3', consentAccepted: true }),
             })
             const data = await res.json().catch(() => ({}))
-            if (!res.ok || data.product !== 'max3' || !data.id || !data.packToken) throw new Error(data.error || 'paypal_create_order_failed')
-            const pending = { orderId: data.id, packToken: data.packToken }
+            if (!scope.current()) throw new Error('account_changed')
+            if (!res.ok || data.product !== 'max3' || !data.id) throw new Error(data.error || 'paypal_create_order_failed')
+            const pending = { orderId: data.id }
+            pendingLookupVersionRef.current += 1
             pendingPaymentRef.current = pending
             setPendingPayment(pending)
-            try { localStorage.setItem(maxPendingKey(user.id), JSON.stringify(pending)) } catch {}
             return data.id
           },
           onApprove: async (data) => {
             const pending = pendingPaymentRef.current
-            if (!pending?.packToken) throw new Error('max_payment_token_missing')
+            if (pending?.orderId !== data.orderID) throw new Error('max_payment_order_missing')
             setPaymentBusy(true)
             try {
-              await captureMaxOrder(data.orderID, pending.packToken)
+              await captureMaxOrder(data.orderID)
             } finally {
               setPaymentBusy(false)
             }
@@ -529,7 +544,7 @@ async function captureMaxOrder(orderId, token) {
 
   async function submitMaxReading(event) {
     event.preventDefault()
-    if (!packToken || !session?.access_token || !user) return
+    if (!packToken || !session?.access_token || !user || !recoveryChecked || readingBusyRef.current) return
     setDrawError('')
     const numbers = [form.number1, form.number2, form.number3].map((value) => Number(value))
     if (numbers.some((value) => !Number.isInteger(value) || value < 1 || value > 58) || new Set(numbers).size !== 3) {
@@ -546,6 +561,13 @@ async function captureMaxOrder(orderId, token) {
     }
 
     const nonce = pendingReadNonce || (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    const scope = accountScope.current
+    // Persist only the opaque handle before dispatch; input lives on the server.
+    try { writeMaxAttempt(localStorage, user.id, { nonce }) } catch {
+      setDrawError('La reprise ne peut pas être enregistrée dans ce navigateur. Aucun crédit n’a été utilisé.')
+      return
+    }
+    readingBusyRef.current = true
     setPendingReadNonce(nonce)
     setDrawBusy(true)
     try {
@@ -566,20 +588,82 @@ async function captureMaxOrder(orderId, token) {
           maxTimelineId: liveTimeline?.id || '',
           maxTimelineTitle: liveTimeline?.title || form.timelineTitle.trim(),
           maxReadNonce: nonce,
+          previousAttemptId: lastResult?.max?.attemptId || null,
+          replaceRequest: correctingAttempt,
         }),
       })
       const data = await res.json().catch(() => ({}))
+      if (!scope.current()) return
+      if (data.attempt) {
+        setRecoveryAttempt(data.attempt)
+        writeMaxAttempt(localStorage, user.id, data.attempt)
+      }
       if (!res.ok) throw new Error(data.message || data.error || 'max_read_failed')
+      if (!data.reading) throw new Error('La lecture est en cours. Reprenez cette tentative dans quelques instants.')
       setLastResult(data)
+      setRecoveryAttempt(null)
+      writeMaxAttempt(localStorage, user.id, null)
       setPendingReadNonce('')
+      setCorrectingAttempt(false)
       setForm((current) => ({ ...current, number1: '', number2: '', number3: '' }))
       await refreshMaxStatus(packToken, true)
     } catch (error) {
+      if (!scope.current()) return
+      setRecoveryAttempt((current) => current || { nonce, status: 'recoverable' })
       setDrawError(userErrorMessage(error, 'La lecture MAX n’a pas pu être générée. Réessayez dans quelques instants.'))
     } finally {
-      setDrawBusy(false)
+      if (scope.current()) { readingBusyRef.current = false; setDrawBusy(false) }
     }
   }
+
+  async function restoreReading(action = 'inspect', handle = recoveryAttempt) {
+    const scope = accountScope.current
+    if (!user || !session?.access_token || !scope.current() || readingBusyRef.current) return
+    readingBusyRef.current = true
+    setDrawBusy(true)
+    setDrawError('')
+    try {
+      const res = await fetch('/api/oracle-interpret?mode=chronosphere', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ maxAction: action, attemptId: handle?.id || null }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!scope.current()) return
+      if (data.attempt) {
+        setRecoveryAttempt(data.attempt)
+        writeMaxAttempt(localStorage, user.id, data.attempt)
+      }
+      if (!res.ok) throw new Error(data.message || 'Impossible de récupérer la lecture pour le moment. Réessayez sans lancer une nouvelle lecture.')
+      setRecoveryChecked(true)
+      if (data.reading) {
+        setLastResult(data)
+        setPendingReadNonce('')
+        setRecoveryAttempt(null)
+        writeMaxAttempt(localStorage, user.id, null)
+        await refreshMaxStatus(packToken, true)
+      } else if (!data.attempt) {
+        setRecoveryAttempt(null)
+        setPendingReadNonce('')
+        writeMaxAttempt(localStorage, user.id, null)
+      }
+    } catch (error) {
+      if (scope.current()) setDrawError(userErrorMessage(error, 'Impossible de récupérer la lecture pour le moment. Réessayez sans lancer une nouvelle lecture.'))
+    } finally {
+      if (scope.current()) { readingBusyRef.current = false; setDrawBusy(false) }
+    }
+  }
+
+  const inspectPendingReading = useEffectEvent((pending) => restoreReading('inspect', pending))
+  const accountId = user?.id
+
+  useEffect(() => {
+    if (!accountId || !session?.access_token) return
+    const pending = readMaxAttempt(localStorage, accountId)
+    let active = true
+    queueMicrotask(() => { if (active) inspectPendingReading(pending) })
+    return () => { active = false }
+  }, [accountId, session?.access_token])
 
   return (
     <div className="cosmic-page cosmic-page--chronosphere min-h-screen bg-cream text-deep">
@@ -660,7 +744,7 @@ async function captureMaxOrder(orderId, token) {
                     consentAccepted={consentAccepted}
                     accessToken={session?.access_token}
                     onRedeemed={(data) => {
-                      try { localStorage.setItem(maxTokenKey(user.id), data.packToken) } catch {}
+                      if (!accountScope.current.current()) return
                       setCreditState({ product: 'max3', creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: 'active', resumeMode: 'token' })
                       setPackToken(data.packToken)
                     }}
@@ -694,7 +778,28 @@ async function captureMaxOrder(orderId, token) {
           </div>
         </section>
 
-        {user && packToken && (creditState?.creditsRemaining ?? 0) > 0 && (
+        {user && (!recoveryChecked || recoveryAttempt || drawError) && (
+          <section className="mt-7 rounded-3xl border border-gold/30 bg-white/80 p-5" aria-live="polite">
+            <p className="font-georgia text-sm">{drawError || 'Une lecture peut être reprise sans nouvelle consommation de crédit.'}</p>
+            <button type="button" disabled={drawBusy} onClick={() => restoreReading(recoveryAttempt ? 'retry' : 'inspect')} className="mt-3 rounded-xl bg-deep px-6 py-3 font-georgia text-sm text-gold disabled:opacity-50">
+              {drawBusy ? 'Vérification…' : 'Reprendre ma lecture'}
+            </button>
+            {recoveryAttempt?.canEdit && !drawBusy && (
+              <button type="button" onClick={() => {
+                setPendingReadNonce(recoveryAttempt.nonce)
+                setCorrectingAttempt(true)
+                setRecoveryAttempt(null)
+                setDrawError('')
+                setRecoveryChecked(true)
+                refreshMaxStatus(packToken, true).catch(() => {})
+              }} className="ml-3 mt-3 font-georgia text-sm underline">
+                Corriger les informations
+              </button>
+            )}
+          </section>
+        )}
+
+        {user && recoveryChecked && !recoveryAttempt && packToken && (creditState?.creditsRemaining ?? 0) > 0 && (
           <section className="mt-7 rounded-3xl border border-gold/30 bg-white/80 p-5 shadow-sm md:p-8">
             <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Lecture {liveTimeline?.entries?.length ? liveTimeline.entries.length + 1 : 1} / 3</p>
             <h2 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{liveTimeline ? 'Continuer cette Ligne de Temps' : 'Créer votre Ligne de Temps'}</h2>

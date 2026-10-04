@@ -96,6 +96,8 @@ export function openChatDb(path = DEFAULT_CHAT_DB) {
   const byRowid = db.prepare(`${select} WHERE m.ROWID = ?`)
   const maxRowid = db.prepare('SELECT COALESCE(MAX(ROWID), 0) AS id FROM message')
   const maxRowidBefore = db.prepare('SELECT COALESCE(MAX(ROWID), 0) AS id FROM message WHERE date <= ?')
+  // Période [début, fin[ (dates Apple), par ROWID croissant : rattrapage documentaire.
+  const between = db.prepare(`${select} WHERE m.date >= ? AND m.date < ? AND m.ROWID > ? ORDER BY m.ROWID LIMIT ?`)
 
   // Une même ligne peut apparaître dans deux fils (rare) : on garde la première.
   const unique = (rows) => {
@@ -107,6 +109,8 @@ export function openChatDb(path = DEFAULT_CHAT_DB) {
     columns,
     newMessages: (afterRowid, limit = 200) => unique(after.all(afterRowid, limit)),
     messageByRowid: (rowid) => byRowid.get(rowid) || null,
+    messagesBetween: (fromIso, toIso, afterRowid = 0, limit = 200) =>
+      unique(between.all(isoToAppleDate(fromIso), isoToAppleDate(toIso), afterRowid, limit)),
     // Curseur initial : dernier message déjà présent (ou antérieur à « maintenant − lookback »).
     initialCursor: (now, lookbackMinutes = 0) => (lookbackMinutes > 0
       ? maxRowidBefore.get(isoToAppleDate(new Date(now.getTime() - lookbackMinutes * 60_000).toISOString())).id

@@ -15,7 +15,7 @@ test('politique : versionnée, marquée, une section par thème', () => {
   assert.match(LUMIA_POLICY_VERSION, /^\d{4}-\d{2}-\d{2}\.\d+$/)
   assert.ok(policy.startsWith(`${LUMIA_POLICY_MARKER} v${LUMIA_POLICY_VERSION}`))
   assert.deepEqual(LUMIA_POLICY_SECTIONS.map((s) => s.id),
-    ['couches', 'voix', 'verite', 'dates', 'demandes', 'donnees_non_fiables', 'securite', 'actions', 'messages'])
+    ['couches', 'voix', 'verite', 'dates', 'demandes', 'disponibilites', 'donnees_non_fiables', 'securite', 'actions', 'messages'])
   assert.ok(Object.isFrozen(LUMIA_POLICY_SECTIONS) && LUMIA_POLICY_SECTIONS.every((s) => Object.isFrozen(s.rules)))
 })
 

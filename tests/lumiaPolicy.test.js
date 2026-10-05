@@ -46,6 +46,36 @@ test('politique : toutes les règles métier centralisées', () => {
   assert.match(read('lib/rdvSlotOffers.js'), /const URGENCE_RE = \/\^\\s\*urgence\\b\/i/)
 })
 
+test('capacité Google : réponse affirmative limitée au calcul via MediumIA, sans lecture pour une question de capacité', () => {
+  assert.equal(LUMIA_POLICY_VERSION, '2026-10-05.1')
+  assert.match(policy, /Tu peux utiliser Google Agenda via le moteur MediumIA pour calculer les disponibilités, actuellement en lecture seule \(phase 2\)/)
+  assert.match(policy, /Si Sébastien demande si tu as accès à son agenda Google, réponds oui en précisant toujours les limites actuelles/)
+  assert.match(policy, /déterminer si un créneau est libre ou occupé via MediumIA, en lecture seule/)
+  assert.match(policy, /Une simple question sur cette capacité ne déclenche aucun appel Google ni aucune lecture des données de disponibilité/)
+})
+
+test('capacité Google : absence de bloc = calcul non effectué, jamais absence d’accès', () => {
+  assert.match(policy, /L'absence du bloc DONNEES DISPONIBILITES LUMIA signifie uniquement qu'aucun calcul de disponibilité n'a été effectué pour cette question, jamais une absence de capacité d'accès à Google Agenda/)
+  assert.match(policy, /Ne dis jamais « je n'ai pas accès à Google Agenda » au seul motif que ce bloc est absent/)
+  assert.match(policy, /Sans bloc DONNEES DISPONIBILITES LUMIA, dis que tu n'as pas calculé les disponibilités/)
+  assert.match(policy, /Cette capacité ne prouve pas que l'agenda a été consulté ni que sa connexion fonctionne à cet instant : les erreurs explicites du moteur restent à signaler/)
+  assert.match(policy, /« calendar_unavailable ».*ne confirme jamais qu'un créneau est libre/)
+})
+
+test('capacité Google : limites Phase 2 annoncées, aucun contenu privé ni action d’écriture', () => {
+  const capabilityRule = LUMIA_POLICY_SECTIONS.find((s) => s.id === 'disponibilites').rules
+    .find((r) => r.startsWith('Si Sébastien demande si tu as accès'))
+  assert.match(capabilityRule, /toujours les limites actuelles/)
+  assert.match(capabilityRule, /en lecture seule/)
+  assert.match(capabilityRule, /les titres et contenus privés des événements ne sont pas exposés au modèle/)
+  assert.match(capabilityRule, /aucune création, modification, déplacement ou suppression n'est autorisée dans cette version, même sur demande/)
+  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, [])
+  for (const action of ['calendar_create', 'calendar_update', 'calendar_move', 'calendar_delete']) {
+    assert.deepEqual(authorizeLumiaAction(action, { validatedBy: 'owner', idempotencyKey: 'capability:1', maxPerRun: 1 }),
+      { allowed: false, reason: 'action_not_allowed' })
+  }
+})
+
 test('politique : aucun secret, coordonnée bancaire, numéro ni e-mail', () => {
   for (const text of [policy, read('lib/lumiaPolicy.js')]) {
     assert.ok(!/\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,}/.test(text), 'aucun IBAN')

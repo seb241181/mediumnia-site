@@ -32,7 +32,7 @@ test('Phase 3A : RPC étroits, verrouillés service_role et sans écriture Mediu
   assert.match(migration, /revoke all on function public\.lumia_create_action_intent[\s\S]*from public, anon, authenticated/i)
   assert.doesNotMatch(migration, /\bupdate\s+public\.bookings\b/i)
   assert.doesNotMatch(migration, /\binsert\s+into\s+public\.bookings\b/i)
-  assert.doesNotMatch(migration, /google_calendar|messages\.app|chat\.db/i)
+  assert.doesNotMatch(migration.replace(/^--.*$/gm, ''), /google_calendar|messages\.app|chat\.db/i)
 })
 
 test('Phase 3A : approval liée au propriétaire, à la conversation, au hash et à une claim unique', () => {

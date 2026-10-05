@@ -30,6 +30,7 @@
  */
 import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
+import { addDays, effectiveRules, generateSlots, parisTimeToUTC } from '../lib/rdvAvailability.js'
 
 const SLUG_RE         = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 const DATE_RE         = /^\d{4}-\d{2}-\d{2}$/
@@ -41,71 +42,8 @@ const CONFIG_REQUIRED = (notice) => ({
   notice: notice || 'Réservations temporairement indisponibles — configuration en cours.',
 })
 
-function parisTimeToUTC(dateStr, timeStr, offsetMs) {
-  const [h, m] = timeStr.split(':').map(Number)
-  const parisMidnightUTC = new Date(dateStr + 'T00:00:00Z').getTime() + offsetMs
-  return new Date(parisMidnightUTC + h * 3600_000 + m * 60_000)
-}
-
-/**
- * Génère les créneaux disponibles.
- *
- * googleBusy     : événements Google bruts [{ start, end }] (non étendus)
- * existingBusy   : réservations MediumIA [{ start, end }] avec buffers déjà appliqués
- *                  (start = b.starts_at - buf_before, end = b.ends_at + buf_after)
- * bufBeforeMs, bufAfterMs : buffers du praticien en ms
- *
- * Pour chaque créneau [S, E], est bloqué si :
- *   - événement Google [GS, GE] : GS < E + bufAfter  AND  GE > S - bufBefore
- *   - réservation étendue [bS, bE] : bS < E + bufAfter  AND  bE > S - bufBefore
- * → même condition unifiée, car existingBusy est déjà étendu d'un côté et on
- *   étend le créneau de l'autre côté → équivalent à l'overlap des deux zones tampon.
- */
-function generateSlots(dateStr, rules, googleBusy, existingBusy, offsetMs, durationMin, bufBeforeMs, bufAfterMs) {
-  const slots = []
-  const durationMs = durationMin * 60_000
-
-  for (const rule of rules) {
-    const ruleStartUTC = parisTimeToUTC(dateStr, rule.start_time, offsetMs).getTime()
-    const ruleEndUTC   = parisTimeToUTC(dateStr, rule.end_time,   offsetMs).getTime()
-    let cursor = ruleStartUTC
-
-    while (cursor + durationMs <= ruleEndUTC) {
-      const slotStart = cursor
-      const slotEnd   = cursor + durationMs
-
-      // Vérifier contre événements Google (bruts) et réservations étendues :
-      // conflit si bStart < slotEnd + bufAfter  AND  bEnd > slotStart - bufBefore
-      const checkEnd   = slotEnd   + bufAfterMs
-      const checkStart = slotStart - bufBeforeMs
-
-      const isGoogleBusy = googleBusy.some(({ start, end }) => {
-        const gS = new Date(start).getTime()
-        const gE = new Date(end).getTime()
-        return gS < checkEnd && gE > checkStart
-      })
-
-      const isBookingBusy = !isGoogleBusy && existingBusy.some(b => {
-        return b.start < checkEnd && b.end > checkStart
-      })
-
-      const parisDate = new Date(slotStart - offsetMs)
-      const hh = String(parisDate.getUTCHours()).padStart(2, '0')
-      const mm = String(parisDate.getUTCMinutes()).padStart(2, '0')
-      slots.push({ time: `${hh}:${mm}`, available: !isGoogleBusy && !isBookingBusy })
-      cursor = slotEnd
-    }
-  }
-
-  slots.sort((a, b) => a.time.localeCompare(b.time))
-  return slots
-}
-
-function addDays(dateStr, n) {
-  const d = new Date(dateStr + 'T12:00:00Z')
-  d.setUTCDate(d.getUTCDate() + n)
-  return d.toISOString().slice(0, 10)
-}
+// Grille, conversion Paris → UTC et règle de conflit : lib/rdvAvailability.js
+// (moteur partagé avec Lumia).
 
 /**
  * GET /api/rdv-availability?practitioner=<slug>&service_slug=<slug>&from=YYYY-MM-DD&days=N
@@ -188,16 +126,7 @@ async function handleRange(req, res, slug) {
   // Règles effectives de chaque jour (null = fermé / non configuré).
   const rulesByDate = new Map()
   for (const date of dates) {
-    const exception = exceptionByDate.get(date)
-    let rules = null
-    if (exception?.exception_type === 'closed') rules = null
-    else if (exception?.exception_type === 'modified' && exception.slots?.length) rules = exception.slots
-    else {
-      const dbDay = (new Date(date + 'T12:00:00Z').getDay() + 6) % 7
-      const dayRules = (allRules || []).filter(r => r.day_of_week === dbDay)
-      rules = dayRules.length ? dayRules : null
-    }
-    rulesByDate.set(date, rules)
+    rulesByDate.set(date, effectiveRules(date, exceptionByDate.get(date), allRules))
   }
 
   const result = Object.fromEntries(dates.map(date => [date, false]))

@@ -9,6 +9,7 @@ import {
 import { claimInvitation, getWorkspaceState, saveAssistant } from '../lib/proWorkspace.js'
 import { loadLumiaRdvContext, lumiaContextLogDetail } from '../lib/lumiaAssistantContext.js'
 import { loadLumiaInboxContext, lumiaInboxLogDetail } from '../lib/lumiaMessageInbox.js'
+import { LUMIA_AVAILABILITY_UNAVAILABLE, loadLumiaAvailabilityContext, lumiaAvailabilityLogDetail } from '../lib/lumiaAvailabilityContext.js'
 import { buildLumiaPolicyInstructions, redactForLog } from '../lib/lumiaPolicy.js'
 import { answerFicheVisitor, getFicheAssistantInfo } from '../lib/publicAssistant.js'
 
@@ -422,7 +423,20 @@ export default async function handler(req, res) {
     }
   }
 
-  const combinedKnowledge = [knowledge.text, liveRdvContext, inboxContext].filter(Boolean).join('\n\n---\n\n')
+  // Disponibilités (phase 2, lecture seule) : calculées seulement si le message
+  // de Sébastien porte sur un créneau ; sinon aucune lecture Google. Une panne
+  // ne déclare jamais un créneau libre.
+  let availabilityContext = ''
+  if (isLumiaRdv && !auth.rehearsal) {
+    try {
+      availabilityContext = await loadLumiaAvailabilityContext({ db, userId: auth.userId, question: cleanMessage })
+    } catch (error) {
+      technicalLog(requestId, 'chat', 'degraded', startedAt, lumiaAvailabilityLogDetail(error))
+      availabilityContext = LUMIA_AVAILABILITY_UNAVAILABLE
+    }
+  }
+
+  const combinedKnowledge = [knowledge.text, liveRdvContext, inboxContext, availabilityContext].filter(Boolean).join('\n\n---\n\n')
   let instructions = buildAgentInstructions(agent, combinedKnowledge)
   // Couche POLITIQUE : règles permanentes versionnées (lib/lumiaPolicy.js), ajoutées
   // aux instructions système uniquement. Le parseur ne reçoit que cleanMessage.

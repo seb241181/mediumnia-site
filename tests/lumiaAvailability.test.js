@@ -148,7 +148,7 @@ const times = (payload, date) => payload.slots.filter((s) => s.local_date === da
 // ── 1. Disponibilité normale ────────────────────────────────────────────────
 
 test('1. disponibilité normale selon booking_availability_rules (grille de la page publique)', async () => {
-  const { payload, text, google } = await ask('Qu’est-ce que j’ai de libre mardi pour une guidance ?')
+  const { payload, text, db, google } = await ask('Qu’est-ce que j’ai de libre mardi pour une guidance ?')
   assert.ok(text.startsWith(LUMIA_AVAILABILITY_MARKER))
   assert.equal(payload.status, 'ok')
   assert.deepEqual(payload.requested_period.from, '2026-10-13')
@@ -161,6 +161,15 @@ test('1. disponibilité normale selon booking_availability_rules (grille de la p
     local_date: '2026-10-13', local_weekday: 'mardi', local_time: '09:00', local_end_time: '10:00',
   })
   assert.equal(google.calls.length, 1)
+  assert.ok(db.log.tables.includes('booking_availability_rules'))
+  assert.ok(db.log.tables.includes('booking_calendar_connections'))
+  assert.deepEqual(db.log.writes, [])
+  assert.equal(google.calls[0].method, 'GET')
+  const busy = await ask('Qu’est-ce que j’ai de libre mardi pour une guidance ?', {
+    events: [ev('2026-10-13T08:00:00Z', '2026-10-13T09:00:00Z')],
+  })
+  assert.equal(busy.google.calls.length, 1)
+  assert.deepEqual(times(busy.payload, '2026-10-13'), ['09:00', '11:00', '14:00', '15:00', '16:00', '17:00'])
 })
 
 // ── 2. Jour fermé ───────────────────────────────────────────────────────────
@@ -409,6 +418,23 @@ test('16. isolation owner A / B : praticien, prestations, règles et agenda du s
 
 // ── 17. Question hors disponibilités ────────────────────────────────────────
 
+test('capacité Google : « As-tu accès à mon agenda Google ? » ne consulte ni Google ni la DB disponibilité', async () => {
+  for (const question of [
+    'As-tu accès à mon agenda Google ?',
+    'Est-ce que tu as accès à mon agenda Google ?',
+    'Peux-tu accéder à Google Agenda ?',
+  ]) {
+    assert.equal(isAvailabilityQuestion(question), false, question)
+    assert.equal(parseAvailabilityQuestion(question, NOW), null, question)
+    const { text, payload, db, google } = await ask(question)
+    assert.equal(text, '', question)
+    assert.equal(payload, null, question)
+    assert.deepEqual(db.log.tables, [], question)
+    assert.deepEqual(db.log.writes, [], question)
+    assert.equal(google.calls.length, 0, question)
+  }
+})
+
 test('17. question hors disponibilités : aucune requête, aucun appel Google', async () => {
   for (const q of [
     'Résume mes messages d’hier', 'Qui attend encore une réponse ?', 'Quels messages parlent de créneaux ?',
@@ -595,7 +621,7 @@ test('lecture seule : aucune écriture en base ni dans Google ; seul le renouvel
 
 test('politique : disponibilité déterministe, jamais inventée, Google indisponible, lecture seule', () => {
   const policy = buildLumiaPolicyInstructions()
-  assert.equal(LUMIA_POLICY_VERSION, '2026-10-04.2')
+  assert.equal(LUMIA_POLICY_VERSION, '2026-10-05.1')
   for (const re of [
     /résultat déterministe du moteur MediumIA \+ Google Agenda/,
     /N'invente jamais un créneau/,

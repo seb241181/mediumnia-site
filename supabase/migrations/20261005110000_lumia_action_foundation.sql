@@ -71,6 +71,16 @@ CREATE TABLE IF NOT EXISTS public.lumia_action_intents (
     (target_source = 'none' AND target_id IS NULL)
     OR (target_source <> 'none' AND target_id IS NOT NULL AND char_length(target_id) BETWEEN 1 AND 512)
   ),
+  CONSTRAINT lumia_action_intents_action_target_check CHECK (
+    (action_type IN ('mediumia.booking.create', 'google.event.create')
+      AND target_source = 'none' AND target_id IS NULL)
+    OR (action_type IN ('mediumia.booking.update', 'mediumia.booking.cancel')
+      AND target_source = 'mediumia_booking' AND target_id IS NOT NULL)
+    OR (action_type IN ('google.event.update', 'google.event.cancel')
+      AND target_source = 'google_event' AND target_id IS NOT NULL)
+    OR (action_type = 'message.send'
+      AND target_source = 'message_conversation' AND target_id IS NOT NULL)
+  ),
   CONSTRAINT lumia_action_intents_approval_check CHECK (
     (status = 'preview' AND approved_by IS NULL AND approved_at IS NULL AND claimed_at IS NULL AND executed_at IS NULL AND expired_at IS NULL)
     OR (status = 'approved' AND approved_by = owner_id AND approved_at IS NOT NULL AND claimed_at IS NULL AND executed_at IS NULL AND expired_at IS NULL)
@@ -190,6 +200,26 @@ BEGIN
     AND p_practitioner_id IS NULL THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_practitioner_required';
   END IF;
+  IF p_practitioner_id IS NOT NULL THEN
+    PERFORM 1
+    FROM public.booking_practitioners p
+    WHERE p.id = p_practitioner_id AND p.owner_id = p_owner_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'lumia_practitioner_not_owned';
+    END IF;
+  END IF;
+  IF NOT (
+    (p_action_type IN ('mediumia.booking.create', 'google.event.create')
+      AND COALESCE(p_target_source, 'none') = 'none' AND NULLIF(p_target_id, '') IS NULL)
+    OR (p_action_type IN ('mediumia.booking.update', 'mediumia.booking.cancel')
+      AND COALESCE(p_target_source, 'none') = 'mediumia_booking' AND NULLIF(p_target_id, '') IS NOT NULL)
+    OR (p_action_type IN ('google.event.update', 'google.event.cancel')
+      AND COALESCE(p_target_source, 'none') = 'google_event' AND NULLIF(p_target_id, '') IS NOT NULL)
+    OR (p_action_type = 'message.send'
+      AND COALESCE(p_target_source, 'none') = 'message_conversation' AND NULLIF(p_target_id, '') IS NOT NULL)
+  ) THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_action_target_incoherent';
+  END IF;
 
   -- Vérification explicite owner/agent/conversation avant toute insertion.
   PERFORM 1
@@ -207,7 +237,13 @@ BEGIN
   IF FOUND THEN
     IF v_intent.payload_hash <> v_hash
       OR v_intent.action_type <> p_action_type
-      OR v_intent.conversation_id <> p_conversation_id THEN
+      OR v_intent.conversation_id <> p_conversation_id
+      OR v_intent.practitioner_id IS DISTINCT FROM p_practitioner_id
+      OR v_intent.target_source IS DISTINCT FROM COALESCE(p_target_source, 'none')
+      OR v_intent.target_id IS DISTINCT FROM NULLIF(p_target_id, '')
+      OR v_intent.expected_version IS DISTINCT FROM p_expected_version
+      OR v_intent.expected_target_updated_at IS DISTINCT FROM p_expected_target_updated_at
+      OR v_intent.target_google_etag IS DISTINCT FROM NULLIF(p_target_google_etag, '') THEN
       RAISE EXCEPTION USING ERRCODE = '23505', MESSAGE = 'lumia_idempotency_key_reused_with_different_action';
     END IF;
     RETURN jsonb_build_object(
@@ -245,7 +281,13 @@ BEGIN
       IF FOUND THEN
         IF v_intent.payload_hash <> v_hash
           OR v_intent.action_type <> p_action_type
-          OR v_intent.conversation_id <> p_conversation_id THEN
+          OR v_intent.conversation_id <> p_conversation_id
+          OR v_intent.practitioner_id IS DISTINCT FROM p_practitioner_id
+          OR v_intent.target_source IS DISTINCT FROM COALESCE(p_target_source, 'none')
+          OR v_intent.target_id IS DISTINCT FROM NULLIF(p_target_id, '')
+          OR v_intent.expected_version IS DISTINCT FROM p_expected_version
+          OR v_intent.expected_target_updated_at IS DISTINCT FROM p_expected_target_updated_at
+          OR v_intent.target_google_etag IS DISTINCT FROM NULLIF(p_target_google_etag, '') THEN
           RAISE EXCEPTION USING ERRCODE = '23505', MESSAGE = 'lumia_idempotency_key_reused_with_different_action';
         END IF;
         RETURN jsonb_build_object(
@@ -296,6 +338,12 @@ BEGIN
   IF v_intent.status IN ('succeeded', 'failed', 'compensation_required') THEN
     RETURN jsonb_build_object('intent_id', v_intent.id, 'status', v_intent.status, 'idempotent', true);
   END IF;
+  IF v_intent.status = 'expired' THEN
+    RETURN jsonb_build_object('intent_id', v_intent.id, 'status', 'expired', 'approved', false, 'reason', 'preview_expired', 'idempotent', true);
+  END IF;
+  IF v_intent.status = 'approved' THEN
+    RETURN jsonb_build_object('intent_id', v_intent.id, 'status', 'approved', 'approved_at', v_intent.approved_at, 'idempotent', true);
+  END IF;
   IF v_intent.status <> 'preview' THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_intent_not_approvable';
   END IF;
@@ -305,7 +353,7 @@ BEGIN
     WHERE id = v_intent.id;
     INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)
     VALUES (v_intent.id, p_owner_id, 'expired', 'server', NULL, '{}'::jsonb);
-    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_preview_expired';
+    RETURN jsonb_build_object('intent_id', v_intent.id, 'status', 'expired', 'approved', false, 'reason', 'preview_expired', 'idempotent', false);
   END IF;
   UPDATE public.lumia_action_intents
   SET status = 'approved', approved_by = p_owner_id, approved_at = clock_timestamp()
@@ -345,6 +393,9 @@ BEGIN
   IF v_intent.status IN ('succeeded', 'failed', 'compensation_required') THEN
     RETURN jsonb_build_object('intent_id', v_intent.id, 'status', v_intent.status, 'execution_result', v_intent.execution_result, 'claimed', false, 'idempotent', true);
   END IF;
+  IF v_intent.status = 'expired' THEN
+    RETURN jsonb_build_object('intent_id', v_intent.id, 'status', 'expired', 'claimed', false, 'reason', 'preview_expired', 'idempotent', true);
+  END IF;
   IF v_intent.status = 'executing' THEN
     RETURN jsonb_build_object('intent_id', v_intent.id, 'status', v_intent.status, 'claimed', false, 'reason', 'already_claimed');
   END IF;
@@ -355,7 +406,7 @@ BEGIN
     UPDATE public.lumia_action_intents SET status = 'expired', expired_at = clock_timestamp() WHERE id = v_intent.id;
     INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)
     VALUES (v_intent.id, p_owner_id, 'expired', 'server', NULL, '{}'::jsonb);
-    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_preview_expired';
+    RETURN jsonb_build_object('intent_id', v_intent.id, 'status', 'expired', 'claimed', false, 'reason', 'preview_expired', 'idempotent', false);
   END IF;
   UPDATE public.lumia_action_intents SET status = 'executing', claimed_at = clock_timestamp() WHERE id = v_intent.id RETURNING * INTO v_intent;
   INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)

@@ -183,7 +183,7 @@ BEGIN
     OR p_preview IS NULL OR jsonb_typeof(p_preview) <> 'object' THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_invalid_preview_payload';
   END IF;
-  IF p_preview_expires_at <= now() OR p_preview_expires_at > now() + interval '30 minutes' THEN
+  IF p_preview_expires_at <= clock_timestamp() OR p_preview_expires_at > clock_timestamp() + interval '30 minutes' THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_invalid_preview_expiry';
   END IF;
   IF (p_action_type LIKE 'mediumia.booking.%' OR p_action_type LIKE 'google.event.%')
@@ -199,7 +199,7 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'lumia_conversation_not_owned';
   END IF;
 
-  v_hash := encode(digest(p_canonical_payload::text, 'sha256'), 'hex');
+  v_hash := encode(extensions.digest(p_canonical_payload::text, 'sha256'), 'hex');
   SELECT * INTO v_intent
   FROM public.lumia_action_intents
   WHERE owner_id = p_owner_id AND idempotency_key = p_idempotency_key
@@ -299,16 +299,16 @@ BEGIN
   IF v_intent.status <> 'preview' THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_intent_not_approvable';
   END IF;
-  IF v_intent.preview_expires_at <= now() THEN
+  IF v_intent.preview_expires_at <= clock_timestamp() THEN
     UPDATE public.lumia_action_intents
-    SET status = 'expired', expired_at = now()
+    SET status = 'expired', expired_at = clock_timestamp()
     WHERE id = v_intent.id;
     INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)
     VALUES (v_intent.id, p_owner_id, 'expired', 'server', NULL, '{}'::jsonb);
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_preview_expired';
   END IF;
   UPDATE public.lumia_action_intents
-  SET status = 'approved', approved_by = p_owner_id, approved_at = now()
+  SET status = 'approved', approved_by = p_owner_id, approved_at = clock_timestamp()
   WHERE id = v_intent.id
   RETURNING * INTO v_intent;
   INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)
@@ -351,13 +351,13 @@ BEGIN
   IF v_intent.status <> 'approved' THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_intent_not_claimable';
   END IF;
-  IF v_intent.preview_expires_at <= now() THEN
-    UPDATE public.lumia_action_intents SET status = 'expired', expired_at = now() WHERE id = v_intent.id;
+  IF v_intent.preview_expires_at <= clock_timestamp() THEN
+    UPDATE public.lumia_action_intents SET status = 'expired', expired_at = clock_timestamp() WHERE id = v_intent.id;
     INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)
     VALUES (v_intent.id, p_owner_id, 'expired', 'server', NULL, '{}'::jsonb);
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_preview_expired';
   END IF;
-  UPDATE public.lumia_action_intents SET status = 'executing', claimed_at = now() WHERE id = v_intent.id RETURNING * INTO v_intent;
+  UPDATE public.lumia_action_intents SET status = 'executing', claimed_at = clock_timestamp() WHERE id = v_intent.id RETURNING * INTO v_intent;
   INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)
   VALUES (v_intent.id, p_owner_id, 'claimed', 'executor', NULL, jsonb_build_object('executor', p_executor_name));
   RETURN jsonb_build_object('intent_id', v_intent.id, 'status', v_intent.status, 'claimed', true, 'payload_hash', v_intent.payload_hash);
@@ -396,12 +396,12 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'lumia_intent_not_finishable';
   END IF;
   UPDATE public.lumia_action_intents
-  SET status = p_final_status, executed_at = now(), execution_result = p_execution_result
+  SET status = p_final_status, executed_at = clock_timestamp(), execution_result = p_execution_result
   WHERE id = v_intent.id
   RETURNING * INTO v_intent;
   INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)
   VALUES (v_intent.id, p_owner_id, 'finished', 'executor', NULL,
-    jsonb_build_object('status', p_final_status, 'result_hash', encode(digest(p_execution_result::text, 'sha256'), 'hex')));
+    jsonb_build_object('status', p_final_status, 'result_hash', encode(extensions.digest(p_execution_result::text, 'sha256'), 'hex')));
   RETURN jsonb_build_object('intent_id', v_intent.id, 'status', v_intent.status, 'execution_result', v_intent.execution_result, 'idempotent', false);
 END;
 $$;
@@ -418,8 +418,8 @@ BEGIN
   PERFORM public.lumia_require_service_role();
   WITH expired AS (
     UPDATE public.lumia_action_intents
-    SET status = 'expired', expired_at = now()
-    WHERE status IN ('preview', 'approved') AND preview_expires_at <= now()
+    SET status = 'expired', expired_at = clock_timestamp()
+    WHERE status IN ('preview', 'approved') AND preview_expires_at <= clock_timestamp()
     RETURNING id, owner_id
   ), audit AS (
     INSERT INTO public.lumia_action_attempts (intent_id, owner_id, event_type, actor_type, actor_id, detail)

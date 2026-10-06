@@ -105,6 +105,8 @@ test('l’administration est authentifiée via rdv-admin et offre réponse + rem
   assert.match(server, /owner_id', userId/)
   assert.match(server, /slug', 'sebastien-seguin'/)
   assert.match(server, /email-question-answer\//)
+  assert.match(server, /Une erreur est toujours possible/)
+  assert.match(server, /aucune prédiction ne peut être considérée comme certaine, garantie ou infaillible/)
   assert.match(server, /v2\/payments\/captures\/\$\{encodeURIComponent\(row\.paypal_capture_id\)\}\/refund/)
   assert.match(panel, /Envoyer la réponse/)
   assert.match(panel, /Refuser et rembourser/)

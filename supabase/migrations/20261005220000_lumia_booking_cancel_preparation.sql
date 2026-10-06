@@ -146,6 +146,13 @@ BEGIN
     END IF;
   END IF;
 
+  -- Fail closed if the gift-card guard is unavailable in this environment.
+  -- The following static query is never reached when the table is absent, so a
+  -- schema drift cannot leave the intent executing after an undefined_table.
+  IF v_failure IS NULL AND to_regclass('public.gift_card_redemptions') IS NULL THEN
+    v_failure := 'gift_card_guard_unavailable';
+  END IF;
+
   IF v_failure IS NULL THEN
     -- Deterministic financial lock order after bookings:
     -- balance payment → booking hold → PayPal payment → refunds → transfers

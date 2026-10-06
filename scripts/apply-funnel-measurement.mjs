@@ -155,8 +155,8 @@ pilotage = replaceRequired(
 )
 pilotage = replaceRequired(
   pilotage,
-  `    chronosphere_payment_opened: round(24),\n  }`,
-  `    chronosphere_payment_opened: round(24),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
   'client preview funnel totals',
 )
 pilotage = replaceRequired(

@@ -110,6 +110,7 @@ test('l’administration est authentifiée via rdv-admin et offre réponse + rem
   assert.match(server, /v2\/payments\/captures\/\$\{encodeURIComponent\(row\.paypal_capture_id\)\}\/refund/)
   assert.match(panel, /Envoyer la réponse/)
   assert.match(panel, /Refuser et rembourser/)
+  assert.match(server, /une erreur reste possible et aucune prédiction ne peut être considérée comme certaine ni garantie/)
 })
 
 test('le parcours public et le tableau de bord sont branchés', () => {

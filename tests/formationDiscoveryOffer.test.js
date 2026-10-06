@@ -209,7 +209,7 @@ test('public Formation page presents progressive payment first and keeps Discove
   const paypal = read('lib/paypalSandbox.js')
   const terms = read('public/cgv-formation.html')
 
-  assert.ok(page.indexOf('Commencer sans s’engager') < page.indexOf('Découverte · la méthode de Sébastien'))
+  assert.ok(page.indexOf('Commencer sans s’engager') < page.indexOf('Découverte · ma méthode'))
   assert.match(page, /Introduction complète/)
   assert.match(page, /Module 1 — L’Intention comme Porte/)
   assert.match(page, /Exercices du Module 1/)
@@ -218,7 +218,7 @@ test('public Formation page presents progressive payment first and keeps Discove
   assert.match(page, /PDF Découverte personnel/)
   assert.match(page, /Vos 29 € comptent dans le total de 597 €/)
   assert.match(page, /Vous pouvez suivre la Découverte sans utiliser l’assistant/)
-  assert.match(page, /La méthode de Sébastien/)
+  assert.match(page, /Ma méthode : 25 modules, 269 pages et 84 exercices guidés/)
   assert.match(page, /<FormationCheckout product="discovery" \/>/)
   assert.match(catalog, /Prix public : 29 € TTC/)
   assert.match(paypal, /mediumia_grant_purchase_access_atomic/)

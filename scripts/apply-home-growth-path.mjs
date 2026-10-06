@@ -167,4 +167,107 @@ analytics = replaceRequired(
 
 await writeFile(analyticsPath, analytics)
 
-console.log('MediumIA home growth path: quiz route, home sections and quiz metrics applied')
+// Pilotage : libellés, entonnoir du quiz et portes « Quiz » / « Codex » de
+// l'accueil. Les ancres visent le tableau de bord après apply-funnel-measurement
+// et apply-oracle-email-sequence-pilotage.
+const dashboardPath = new URL('../src/components/rdv/PilotageDashboard.jsx', import.meta.url)
+const adminPath = new URL('../api/rdv-admin.js', import.meta.url)
+
+let dashboard = await readFile(dashboardPath, 'utf8')
+
+dashboard = insertAfter(
+  dashboard,
+  "  oracle_email_unsubscribed: 'Désinscriptions séquence 3 exercices',",
+  "\n  quiz_view: 'Vues quiz des canaux',\n  quiz_started: 'Quiz commencés',\n  quiz_completed: 'Quiz terminés',\n  quiz_shared: 'Résultats de quiz partagés',\n  quiz_email_optin_completed: 'Séquences 3 exercices demandées (quiz)',",
+  'pilotage quiz labels',
+)
+
+dashboard = insertAfter(
+  dashboard,
+  '    oracle_email_unsubscribed: round(2),',
+  '\n    quiz_view: round(64),\n    quiz_started: round(51),\n    quiz_completed: round(43),\n    quiz_shared: round(9),\n    quiz_email_optin_completed: round(14),',
+  'pilotage quiz preview totals',
+)
+
+dashboard = replaceRequired(
+  dashboard,
+  '    formation: round(24),\n  }\n  const oracle_next_steps = {',
+  '    formation: round(24),\n    quiz: round(31),\n    codex: round(6),\n  }\n  const oracle_next_steps = {',
+  'pilotage quiz preview doors',
+)
+
+dashboard = insertAfter(
+  dashboard,
+  '  const formationPurchaseCompleted = Number(totals.formation_purchase_completed || 0)',
+  `
+  const quizHomeClicks = Number(homeDoors.quiz || 0)
+  const quizViews = Number(totals.quiz_view || 0)
+  const quizStarted = Number(totals.quiz_started || 0)
+  const quizCompleted = Number(totals.quiz_completed || 0)
+  const quizShared = Number(totals.quiz_shared || 0)
+  const quizOptin = Number(totals.quiz_email_optin_completed || 0)`,
+  'pilotage quiz values',
+)
+
+dashboard = replaceRequired(
+  dashboard,
+  "            {['oracle', 'chronosphere', 'reseau', 'formation'].map(key => {\n              const labels = { oracle: 'Oracle', chronosphere: 'Chronosphère', reseau: 'Réseau', formation: 'Formation' }",
+  "            {['formation', 'quiz', 'oracle', 'chronosphere', 'reseau', 'codex'].map(key => {\n              const labels = { oracle: 'Oracle', chronosphere: 'Chronosphère', reseau: 'Réseau', formation: 'Formation', quiz: 'Quiz des canaux', codex: 'Codex (Amazon)' }",
+  'pilotage home doors',
+)
+
+dashboard = replaceRequired(
+  dashboard,
+  `      </section>
+
+      <section className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">`,
+  `      </section>
+
+      <section className="rounded-2xl border border-gold/20 bg-white/65 p-6">
+        <div className="mb-6">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">QUIZ DES CANAUX</p>
+          <h3 className="mt-1 font-georgia text-xl font-medium text-deep">Du quiz gratuit aux 3 exercices</h3>
+          <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">La porte d’entrée gratuite : combien découvrent leur canal, le partagent, puis demandent les exercices.</p>
+        </div>
+        <div className="space-y-5">
+          <FunnelRow label="Page quiz vue" value={quizViews} reference={quizViews} detail={quizHomeClicks ? \`dont \${quizHomeClicks.toLocaleString('fr-FR')} depuis l’accueil\` : undefined} />
+          <FunnelRow label="Quiz commencé" value={quizStarted} reference={quizViews} detail={pct(quizStarted, quizViews)} />
+          <FunnelRow label="Résultat obtenu" value={quizCompleted} reference={quizViews} detail={pct(quizCompleted, quizStarted)} />
+          <FunnelRow label="Résultat partagé" value={quizShared} reference={quizViews} detail={pct(quizShared, quizCompleted)} />
+          <FunnelRow label="Séquence 3 exercices demandée" value={quizOptin} reference={quizViews} detail={pct(quizOptin, quizCompleted)} />
+        </div>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">`,
+  'pilotage quiz funnel',
+)
+
+await writeFile(dashboardPath, dashboard)
+
+let admin = await readFile(adminPath, 'utf8')
+
+admin = replaceRequired(
+  admin,
+  '  const home_doors = { oracle: 0, chronosphere: 0, reseau: 0, formation: 0 }',
+  '  const home_doors = { oracle: 0, chronosphere: 0, reseau: 0, formation: 0, quiz: 0, codex: 0 }',
+  'pilotage server home doors',
+)
+
+// Les Previews Vercel affichent les données de démonstration du serveur.
+admin = replaceRequired(
+  admin,
+  '    conference_interest_click: round(11),\n  }\n  const home_doors = {',
+  '    conference_interest_click: round(11),\n    quiz_view: round(64),\n    quiz_started: round(51),\n    quiz_completed: round(43),\n    quiz_shared: round(9),\n    quiz_email_optin_completed: round(14),\n  }\n  const home_doors = {',
+  'pilotage server preview totals',
+)
+
+admin = replaceRequired(
+  admin,
+  '    formation: round(24),\n  }\n  const oracle_next_steps = {',
+  '    formation: round(24),\n    quiz: round(31),\n    codex: round(6),\n  }\n  const oracle_next_steps = {',
+  'pilotage server preview doors',
+)
+
+await writeFile(adminPath, admin)
+
+console.log('MediumIA home growth path: quiz route, home sections, quiz metrics and pilotage applied')

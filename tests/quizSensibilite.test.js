@@ -78,3 +78,11 @@ test('the home page keeps the Formation first, then the quiz, the approach, the 
   assert.match(sections, /Troisième mouvement · en cours/)
   assert.match(read('src/components/CosmicLibraryHero.jsx'), /href="\/quiz-sensibilite"/)
 })
+
+test('the pilotage dashboard labels the quiz events and shows its funnel and home doors', () => {
+  const patch = read('scripts/apply-home-growth-path.mjs')
+  assert.match(patch, /quiz_completed: 'Quiz terminés'/)
+  assert.match(patch, /QUIZ DES CANAUX/)
+  assert.match(patch, /quiz: 'Quiz des canaux', codex: 'Codex \(Amazon\)'/)
+  assert.match(patch, /const home_doors = \{ oracle: 0, chronosphere: 0, reseau: 0, formation: 0, quiz: 0, codex: 0 \}/)
+})

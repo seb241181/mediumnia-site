@@ -200,7 +200,7 @@ function QuestionCheckout({ config }) {
         ))}
 
         <div className="rounded-2xl border border-gold/20 bg-white/60 p-4 font-georgia text-xs leading-relaxed text-mist">
-          <p className="mb-2">Une question = un sujet identifiable. Sébastien vous répond personnellement ; il ne s’agit pas d’une conversation illimitée. Aucune question d’ordre médical n’est acceptée : diagnostic, traitement, pronostic, symptômes, grossesse, urgence ou décision de santé. La réponse est une guidance ; elle ne remplace jamais un avis juridique ou financier et ne garantit pas de contact avec un défunt. Toute demande médicale sera refusée et remboursée.</p>
+          <p className="mb-2">Une question = un sujet identifiable. Sébastien vous répond personnellement ; il ne s’agit pas d’une conversation illimitée. Aucune question d’ordre médical n’est acceptée : diagnostic, traitement, pronostic, symptômes, grossesse, urgence ou décision de santé. La réponse est une guidance ; elle ne remplace jamais un avis juridique ou financier et ne garantit pas de contact avec un défunt. Toute demande médicale sera refusée et remboursée. N’indiquez aucune donnée de santé dans votre question ou dans le contexte.</p>
           <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-gold/20 bg-cream/60 p-3">
             <input type="checkbox" checked={rulesOk} onChange={(e) => setRulesOk(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#C9A84C]" />
             <span className="text-sm text-deep">J’ai lu et j’accepte les règles de cette prestation, notamment l’interdiction de toute question d’ordre médical, ainsi que la <a href="/confidentialite" className="text-gold hover:underline">politique de confidentialité</a>.</span>

@@ -35,14 +35,18 @@ function ShareResult({ dominant }) {
   const [note, setNote] = useState('')
   const text = quizShareText(dominant)
 
+  // Compté seulement quand le partage ou la copie aboutit (pas sur une annulation).
   async function share() {
-    trackMediumiaMetric('quiz_shared', 'quiz')
     if (navigator.share) {
-      try { await navigator.share({ text }) } catch { /* partage annulé */ }
+      try {
+        await navigator.share({ text })
+        trackMediumiaMetric('quiz_shared', 'quiz')
+      } catch { /* partage annulé */ }
       return
     }
     try {
       await navigator.clipboard.writeText(text)
+      trackMediumiaMetric('quiz_shared', 'quiz')
       setNote('Texte copié : collez-le dans un message ou une story.')
     } catch {
       setNote('Le partage n’est pas disponible sur cet appareil.')
@@ -60,7 +64,7 @@ function ShareResult({ dominant }) {
 }
 
 // Même séquence que la page Formation : 3 exercices réellement issus du parcours,
-// 3 e-mails seulement, consentement explicite.
+// 3 e-mails seulement, consentement explicite enregistré avec sa source « quiz ».
 function ExerciseLead() {
   const [email, setEmail] = useState('')
   const [consent, setConsent] = useState(false)
@@ -79,7 +83,7 @@ function ExerciseLead() {
       const res = await fetch('/api/oracle-interpret?mode=formation-email-sequence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), consent: true }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), consent: true, origin: 'quiz' }),
       })
       const body = await res.json().catch(() => ({}))
       if (res.status === 429) {

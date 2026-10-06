@@ -86,3 +86,28 @@ test('the pilotage dashboard labels the quiz events and shows its funnel and hom
   assert.match(patch, /quiz: 'Quiz des canaux', codex: 'Codex \(Amazon\)'/)
   assert.match(patch, /const home_doors = \{ oracle: 0, chronosphere: 0, reseau: 0, formation: 0, quiz: 0, codex: 0 \}/)
 })
+
+test('quiz opt-ins keep their own consent source, version and email wording', async () => {
+  const { formationLeadConsent, buildFormationEmailSequence } = await import('../lib/formationEmailLead.js')
+  assert.deepEqual(
+    [formationLeadConsent('quiz').source, formationLeadConsent('quiz').consentVersion],
+    ['quiz_page', 'quiz-3-exercises-v1-2026-10-06'],
+  )
+  assert.equal(formationLeadConsent().source, 'formation_page')
+  assert.equal(formationLeadConsent('anything-else').source, 'formation_page')
+
+  const quiz = buildFormationEmailSequence({ unsubscribeToken: 'q'.repeat(43), origin: 'quiz' })
+  const formation = buildFormationEmailSequence({ unsubscribeToken: 'f'.repeat(43) })
+  assert.ok(quiz.every((item) => item.text.includes('depuis le quiz MediumIA') && !item.text.includes('après votre tirage Oracle')))
+  assert.ok(formation.every((item) => item.text.includes('depuis la page Formation MediumIA')))
+
+  assert.match(read('src/components/QuizSensibilitePage.jsx'), /consent: true, origin: 'quiz'/)
+  assert.match(read('supabase/migrations/20261006050000_allow_quiz_email_sequence_source.sql'), /'oracle_free_result', 'formation_page', 'quiz_page'/)
+  assert.match(read('scripts/apply-home-growth-path.mjs'), /à la fin du quiz des canaux de perception/)
+})
+
+test('a share is counted only once the share sheet or the copy succeeds', () => {
+  const page = read('src/components/QuizSensibilitePage.jsx')
+  assert.match(page, /await navigator\.share\(\{ text \}\)\n\s+trackMediumiaMetric\('quiz_shared', 'quiz'\)/)
+  assert.match(page, /await navigator\.clipboard\.writeText\(text\)\n\s+trackMediumiaMetric\('quiz_shared', 'quiz'\)/)
+})

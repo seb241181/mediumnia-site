@@ -513,7 +513,9 @@ test('the 597 € migration is dated 26 September 2026, after the credit migrati
   // Les migrations plus récentes (ex. MediumIA Pro du 27/09) ne touchent
   // jamais au parcours Formation.
   for (const later of files.filter((f) => f > '20260926100000_formation_parcours_597.sql')) {
-    const sql = readFileSync(new URL(`../supabase/migrations/${later}`, import.meta.url), 'utf8')
+    // 'formation_page' est une valeur de source de consentement (séquence des
+    // 3 exercices), pas le parcours : elle peut être reprise telle quelle.
+    const sql = readFileSync(new URL(`../supabase/migrations/${later}`, import.meta.url), 'utf8').replaceAll("'formation_page'", "''")
     assert.doesNotMatch(sql, /\b(mediumia_entitlements|formation_[a-z_]+|parcours_[a-z_]+)\b/i, `${later} must not touch the Formation path`)
   }
 })

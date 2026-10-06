@@ -270,4 +270,105 @@ admin = replaceRequired(
 
 await writeFile(adminPath, admin)
 
-console.log('MediumIA home growth path: quiz route, home sections, quiz metrics and pilotage applied')
+// Séquence des 3 exercices demandée depuis le quiz : le consentement est
+// enregistré avec sa vraie source (quiz_page) et sa propre version, les
+// e-mails nomment le quiz, et la politique de confidentialité cite ce point
+// d'entrée. Ancres : lib/formationEmailLead.js et LegalPages.jsx après
+// apply-formation-email-lead.
+const leadPath = new URL('../lib/formationEmailLead.js', import.meta.url)
+const legalPath = new URL('../src/components/LegalPages.jsx', import.meta.url)
+
+let lead = await readFile(leadPath, 'utf8')
+
+lead = insertAfter(
+  lead,
+  "export const FORMATION_EMAIL_CONSENT_VERSION = 'formation-3-exercises-v1-2026-09-07'",
+  `
+export const QUIZ_EMAIL_SOURCE = 'quiz_page'
+export const QUIZ_EMAIL_CONSENT_VERSION = 'quiz-3-exercises-v1-2026-10-06'
+
+// Seule l'origine « quiz » change la source ; toute autre valeur reste Formation.
+export function formationLeadConsent(origin) {
+  return origin === 'quiz'
+    ? { source: QUIZ_EMAIL_SOURCE, consentVersion: QUIZ_EMAIL_CONSENT_VERSION, context: 'depuis le quiz MediumIA' }
+    : { source: FORMATION_EMAIL_SOURCE, consentVersion: FORMATION_EMAIL_CONSENT_VERSION, context: 'depuis la page Formation MediumIA' }
+}`,
+  'lead quiz consent',
+)
+
+lead = replaceRequired(
+  lead,
+  `function formationContextCopy(value) {
+  return String(value || '')
+    .replaceAll('après votre tirage Oracle', 'depuis la page Formation MediumIA')
+    .replaceAll('après votre tirage Oracle.', 'depuis la page Formation MediumIA.')
+}
+
+export function buildFormationEmailSequence({ unsubscribeToken, nowMs = Date.now() }) {
+  return buildOracleEmailSequence({ unsubscribeToken, nowMs }).map((item) => ({
+    ...item,
+    html: formationContextCopy(item.html),
+    text: formationContextCopy(item.text),
+  }))
+}`,
+  `function formationContextCopy(value, context = 'depuis la page Formation MediumIA') {
+  return String(value || '')
+    .replaceAll('après votre tirage Oracle', context)
+}
+
+export function buildFormationEmailSequence({ unsubscribeToken, nowMs = Date.now(), origin }) {
+  const { context } = formationLeadConsent(origin)
+  return buildOracleEmailSequence({ unsubscribeToken, nowMs }).map((item) => ({
+    ...item,
+    html: formationContextCopy(item.html, context),
+    text: formationContextCopy(item.text, context),
+  }))
+}`,
+  'lead email context',
+)
+
+lead = replaceRequired(
+  lead,
+  `async function reserveSubscription(supabase, emailHash, tokenHash, now = new Date()) {
+  const payload = {
+    email_hash: emailHash,
+    status: 'pending',
+    source: FORMATION_EMAIL_SOURCE,
+    consent_version: FORMATION_EMAIL_CONSENT_VERSION,`,
+  `async function reserveSubscription(supabase, emailHash, tokenHash, now = new Date(), consent = formationLeadConsent()) {
+  const payload = {
+    email_hash: emailHash,
+    status: 'pending',
+    source: consent.source,
+    consent_version: consent.consentVersion,`,
+  'lead reservation consent',
+)
+
+lead = replaceRequired(
+  lead,
+  '    const reservation = await reserveSubscription(supabase, emailHash, tokenHash)',
+  '    const reservation = await reserveSubscription(supabase, emailHash, tokenHash, new Date(), formationLeadConsent(req.body?.origin))',
+  'lead reservation call',
+)
+
+lead = replaceRequired(
+  lead,
+  '      const sequence = buildFormationEmailSequence({ unsubscribeToken })',
+  '      const sequence = buildFormationEmailSequence({ unsubscribeToken, origin: req.body?.origin })',
+  'lead sequence origin',
+)
+
+await writeFile(leadPath, lead)
+
+let legal = await readFile(legalPath, 'utf8')
+
+legal = replaceRequired(
+  legal,
+  'Après votre tirage Oracle gratuit ou directement depuis la page Formation, vous pouvez demander',
+  'Après votre tirage Oracle gratuit, à la fin du quiz des canaux de perception ou directement depuis la page Formation, vous pouvez demander',
+  'privacy quiz entry point',
+)
+
+await writeFile(legalPath, legal)
+
+console.log('MediumIA home growth path: quiz route, home sections, quiz metrics, pilotage and quiz consent applied')

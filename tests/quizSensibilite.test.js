@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { CHANNELS, PROFILES, QUESTIONS, QUIZ_URL, percentages, quizShareText, scoreQuiz } from '../src/lib/quizSensibilite.js'
+import { CHANNELS, PROFILES, QUESTIONS, QUIZ_SHARE_URL, percentages, quizShareText, scoreQuiz } from '../src/lib/quizSensibilite.js'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -44,7 +44,8 @@ test('unknown answers are ignored and percentages add up', () => {
 test('share text names the channel and links back to the quiz', () => {
   const text = quizShareText('connaissance')
   assert.match(text, /Clairconnaissance/)
-  assert.ok(text.endsWith(QUIZ_URL))
+  assert.ok(text.endsWith(QUIZ_SHARE_URL))
+  assert.match(text, /src=story-quiz/)
 })
 
 test('the quiz page has its own route, rewrite, share preview and sitemap entry', () => {

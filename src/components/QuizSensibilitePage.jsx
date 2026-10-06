@@ -4,6 +4,7 @@ import SiteNav from './SiteNav'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 import { CHANNELS, PROFILES, QUESTIONS, percentages, quizShareText, scoreQuiz } from '../lib/quizSensibilite.js'
 import { canvasToQuizFile, drawQuizStoryImage } from '../lib/quizShareImage.js'
+import { storyAttributionUrl } from '../lib/mediumiaAttribution.js'
 
 function openWith(onOpen) {
   return (event) => {
@@ -44,10 +45,12 @@ function ShareResult({ result }) {
     setNote('')
     try {
       const file = await canvasToQuizFile(await drawQuizStoryImage(document.createElement('canvas'), result))
+      try { await navigator.clipboard?.writeText(storyAttributionUrl('quiz')) } catch {}
       if (navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file], text })
           trackMediumiaMetric('quiz_shared', 'quiz')
+          setNote('Lien MediumIA traçable copié : vous pouvez l’ajouter en sticker Lien dans votre story.')
         } catch { /* partage annulé */ }
       } else {
         const url = URL.createObjectURL(file)

@@ -638,6 +638,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               const token = drawTokenRef.current
               const product = paymentProductRef.current
               if (captureResult.product !== product) throw new Error('payment_product_mismatch')
+              trackMediumiaMetric('chronosphere_purchase_completed', 'chronosphere')
               if (product === 'single') {
                 setLegacyDrawToken(token)
                 setCreditState(null)

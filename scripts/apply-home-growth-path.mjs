@@ -206,7 +206,14 @@ dashboard = insertAfter(
   const quizCompleted = Number(totals.quiz_completed || 0)
   const quizShared = Number(totals.quiz_shared || 0)
   const quizOptin = Number(totals.quiz_email_optin_completed || 0)
-  const socialShares = oracleShared + quizShared`,
+  const socialShares = oracleShared + quizShared
+  const storyAttribution = data?.story_attribution || {}
+  const oracleStory = storyAttribution['story-oracle'] || { visits: 0, events: {} }
+  const quizStory = storyAttribution['story-quiz'] || { visits: 0, events: {} }
+  const storyVisits = Number(oracleStory.visits || 0) + Number(quizStory.visits || 0)
+  const storyFreeResults = Number(oracleStory.events?.oracle_free_draw_completed || 0) + Number(quizStory.events?.quiz_completed || 0)
+  const storyPaymentStarts = Number(oracleStory.events?.question_payment_started || 0) + Number(oracleStory.events?.chronosphere_payment_opened || 0) + Number(oracleStory.events?.formation_payment_started || 0) + Number(quizStory.events?.question_payment_started || 0) + Number(quizStory.events?.chronosphere_payment_opened || 0) + Number(quizStory.events?.formation_payment_started || 0)
+  const storyPurchases = Number(oracleStory.events?.question_purchase_completed || 0) + Number(oracleStory.events?.chronosphere_purchase_completed || 0) + Number(oracleStory.events?.formation_purchase_completed || 0) + Number(quizStory.events?.question_purchase_completed || 0) + Number(quizStory.events?.chronosphere_purchase_completed || 0) + Number(quizStory.events?.formation_purchase_completed || 0)`,
   'pilotage quiz values',
 )
 
@@ -234,6 +241,12 @@ dashboard = replaceRequired(
           <MetricCard eyebrow="Total partagé" value={socialShares} note={'Sur les ' + days + ' derniers jours'} />
           <MetricCard eyebrow="Stories Oracle" value={oracleShared} note={pct(oracleShared, oracleDrawCompleted) + ' des tirages obtenus'} />
           <MetricCard eyebrow="Stories Quiz" value={quizShared} note={pct(quizShared, quizCompleted) + ' des résultats obtenus'} />
+        </div>
+        <div className="mt-5 grid gap-4 border-t border-gold/20 pt-5 sm:grid-cols-4">
+          <MetricCard eyebrow="Visites ramenées" value={storyVisits} note={Number(oracleStory.visits || 0) + ' Oracle · ' + Number(quizStory.visits || 0) + ' Quiz'} />
+          <MetricCard eyebrow="Résultats gratuits" value={storyFreeResults} note={pct(storyFreeResults, storyVisits) + ' des visites story'} />
+          <MetricCard eyebrow="Paiements lancés" value={storyPaymentStarts} note={pct(storyPaymentStarts, storyVisits) + ' des visites story'} />
+          <MetricCard eyebrow="Achats attribués" value={storyPurchases} note={pct(storyPurchases, storyVisits) + ' des visites story'} />
         </div>
       </section>
 
@@ -280,6 +293,42 @@ admin = replaceRequired(
   '    formation: round(24),\n  }\n  const oracle_next_steps = {',
   '    formation: round(24),\n    quiz: round(31),\n    codex: round(6),\n  }\n  const oracle_next_steps = {',
   'pilotage server preview doors',
+)
+
+
+admin = insertAfter(
+  admin,
+  "  const oracle_next_steps = {\n    chronosphere: round(12),\n    reseau: round(7),\n    formation: round(9),\n  }",
+  "\n  const story_attribution = {\n    'story-oracle': { visits: round(18), events: { oracle_free_draw_completed: round(11), chronosphere_payment_opened: round(3), chronosphere_purchase_completed: round(1), question_purchase_completed: round(1) } },\n    'story-quiz': { visits: round(13), events: { quiz_completed: round(8), formation_payment_started: round(2), formation_purchase_completed: round(1) } },\n  }",
+  'pilotage preview story attribution',
+)
+
+admin = replaceRequired(
+  admin,
+  '  return { preview: true, days, totals, home_doors, oracle_next_steps, daily }',
+  '  return { preview: true, days, totals, home_doors, oracle_next_steps, story_attribution, daily }',
+  'pilotage preview story attribution return',
+)
+
+admin = insertAfter(
+  admin,
+  '  const oracle_next_steps = { chronosphere: 0, reseau: 0, formation: 0 }',
+  "\n  const story_attribution = {\n    'story-oracle': { visits: 0, events: {} },\n    'story-quiz': { visits: 0, events: {} },\n  }",
+  'pilotage live story attribution',
+)
+
+admin = replaceRequired(
+  admin,
+  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    dailyMap.set",
+  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.event_name === 'story_visit' && row.source in story_attribution) {\n      story_attribution[row.source].visits += count\n    }\n    if (row.event_name === 'story_attributed' && row.source?.startsWith('story-')) {\n      const separator = row.source.indexOf(':')\n      const story = separator > 0 ? row.source.slice(0, separator) : ''\n      const event = separator > 0 ? row.source.slice(separator + 1) : ''\n      if (story in story_attribution && event) {\n        story_attribution[story].events[event] = (story_attribution[story].events[event] || 0) + count\n      }\n    }\n    dailyMap.set",
+  'pilotage story attribution aggregation',
+)
+
+admin = replaceRequired(
+  admin,
+  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, daily })',
+  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, story_attribution, daily })',
+  'pilotage live story attribution return',
 )
 
 await writeFile(adminPath, admin)

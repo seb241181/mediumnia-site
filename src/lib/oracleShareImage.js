@@ -1,3 +1,5 @@
+import { storyAttributionUrl } from './mediumiaAttribution.js'
+
 const W = 1080
 const H = 1920
 const GOLD = '#E4C77A'
@@ -147,7 +149,7 @@ export async function drawOracleStoryImage(canvas, cards = []) {
 
 export function oracleStoryText(cards = []) {
   const names = cards.slice(0, 3).map((card) => card?.name).filter(Boolean)
-  return `✦ Mon tirage Oracle Au-delà de l’Âme : ${names.join(' · ')}\nTirage test offert sur https://mediumia.fr/oracle`
+  return `✦ Mon tirage Oracle Au-delà de l’Âme : ${names.join(' · ')}\nTirage test offert sur ${storyAttributionUrl('oracle')}`
 }
 
 export function canvasToOracleFile(canvas) {

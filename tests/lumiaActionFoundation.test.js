@@ -15,7 +15,7 @@ test('Phase 3A : socle actionnel durable, sans action métier activée', () => {
   assert.match(migration, /expected_target_updated_at timestamptz/i)
   assert.match(migration, /target_google_etag text/i)
   assert.match(migration, /unique \(owner_id, idempotency_key\)/i)
-  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, [])
+  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel'])
 })
 
 test('Phase 3A : RPC étroits, verrouillés service_role et sans écriture MediumIA/Google/Messages', () => {

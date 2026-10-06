@@ -616,21 +616,21 @@ test('lecture seule : aucune écriture en base ni dans Google ; seul le renouvel
     assert.doesNotMatch(src, /method:\s*'(POST|PUT|PATCH|DELETE)'/, file)
     assert.doesNotMatch(src, /console\./, `${file} : aucun log de données`)
   }
-  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, [])
+  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel'])
 })
 
 test('politique : disponibilité déterministe, jamais inventée, Google indisponible, lecture seule', () => {
   const policy = buildLumiaPolicyInstructions()
-  assert.equal(LUMIA_POLICY_VERSION, '2026-10-05.1')
+  assert.equal(LUMIA_POLICY_VERSION, '2026-10-06.1')
   for (const re of [
     /résultat déterministe du moteur MediumIA \+ Google Agenda/,
     /N'invente jamais un créneau/,
     /« calendar_unavailable ».*ne confirme jamais qu'un créneau est libre/,
     /Une disponibilité proposée n'est pas une réservation/,
-    /Aucune action n'est effectuée avant une validation explicite future de Sébastien/,
+    /Une question de disponibilité ne déclenche aucune action/,
     /Tu ne connais ni le titre ni le contenu des événements Google/,
-    /\(phase 2\) est strictement en lecture seule/,
-    /ACTIONS AUTORISEES : aucune \(lecture seule\)/,
+    /Action actuellement autorisée : annuler un rendez-vous MediumIA confirmé/,
+    /ACTIONS AUTORISEES : mediumia\.booking\.cancel/,
   ]) assert.match(policy, re)
 })
 

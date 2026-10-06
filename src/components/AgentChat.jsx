@@ -331,7 +331,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
               <p className="font-georgia text-[11px] text-mist/55 mt-3">
                 {documentsEnabled
                   ? 'Conversation enregistrée dans MediumIA. Les documents ne sont utilisés qu’après validation et les actions externes restent désactivées.'
-                  : 'Conversation enregistrée dans MediumIA. Les documents et actions externes restent désactivés pendant le pilote Founder.'}
+                  : 'Conversation enregistrée dans MediumIA. L’annulation MediumIA ne s’exécute qu’après votre validation explicite ; les autres actions externes restent désactivées.'}
               </p>
             </form>
           </>

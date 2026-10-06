@@ -18,7 +18,7 @@ let analytics = await readFile(analyticsPath, 'utf8')
 analytics = replaceRequired(
   analytics,
   `  'chronosphere_payment_opened',\n  'question_view',\n  'question_payment_started',\n  'question_purchase_completed',\n])`,
-  `  'chronosphere_payment_opened',\n  'question_view',\n  'question_payment_started',\n  'question_purchase_completed',\n  'oracle_free_view',\n  'oracle_free_draw_started',\n  'oracle_free_draw_completed',\n  'formation_view',\n  'formation_proof_view',\n  'formation_assistant_started',\n  'formation_payment_started',\n  'formation_purchase_completed',\n  'conference_page_view',\n  'conference_interest_click',\n])`,
+  `  'chronosphere_payment_opened',\n  'question_view',\n  'question_payment_started',\n  'question_purchase_completed',\n  'oracle_free_view',\n  'oracle_free_draw_started',\n  'oracle_free_draw_completed',\n  'oracle_shared',\n  'formation_view',\n  'formation_proof_view',\n  'formation_assistant_started',\n  'formation_payment_started',\n  'formation_purchase_completed',\n  'conference_page_view',\n  'conference_interest_click',\n])`,
   'analytics allowlist',
 )
 analytics = replaceRequired(
@@ -111,7 +111,7 @@ let admin = await readFile(adminPath, 'utf8')
 admin = replaceRequired(
   admin,
   `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n  }`,
-  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    oracle_shared: round(11),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
   'server preview funnel totals',
 )
 admin = replaceRequired(
@@ -150,13 +150,13 @@ let pilotage = await readFile(pilotagePath, 'utf8')
 pilotage = replaceRequired(
   pilotage,
   `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',`,
-  `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',\n  oracle_free_view: 'Vues tirage Oracle offert',\n  oracle_free_draw_started: 'Tirages Oracle lancés',\n  oracle_free_draw_completed: 'Tirages Oracle obtenus',\n  formation_view: 'Vues Formation',\n  formation_proof_view: 'Aperçus Module 1 vus',\n  formation_assistant_started: 'Essais assistant commencés',\n  formation_payment_started: 'Paiements Formation lancés',\n  formation_purchase_completed: 'Accès Formation activés',\n  conference_page_view: 'Vues page Conférences',\n  conference_interest_click: 'Intérêt Conférences',`,
+  `  chronosphere_payment_opened: 'Paiements Chronosphère ouverts',\n  oracle_free_view: 'Vues tirage Oracle offert',\n  oracle_free_draw_started: 'Tirages Oracle lancés',\n  oracle_free_draw_completed: 'Tirages Oracle obtenus',\n  oracle_shared: 'Tirages Oracle partagés',\n  formation_view: 'Vues Formation',\n  formation_proof_view: 'Aperçus Module 1 vus',\n  formation_assistant_started: 'Essais assistant commencés',\n  formation_payment_started: 'Paiements Formation lancés',\n  formation_purchase_completed: 'Accès Formation activés',\n  conference_page_view: 'Vues page Conférences',\n  conference_interest_click: 'Intérêt Conférences',`,
   'pilotage labels',
 )
 pilotage = replaceRequired(
   pilotage,
   `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n  }`,
-  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    oracle_shared: round(11),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
   'client preview funnel totals',
 )
 pilotage = replaceRequired(
@@ -180,7 +180,7 @@ pilotage = replaceRequired(
 pilotage = replaceRequired(
   pilotage,
   `  const homeViews = Number(totals.home_view || 0)\n\n  const keyRows`,
-  `  const homeViews = Number(totals.home_view || 0)\n  const oracleFreeViews = Number(totals.oracle_free_view || 0)\n  const oracleDrawStarted = Number(totals.oracle_free_draw_started || 0)\n  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleNextClicks = Object.values(oracleNextSteps).reduce((sum, value) => sum + Number(value || 0), 0)\n  const formationViews = Number(totals.formation_view || 0)\n  const formationProofViews = Number(totals.formation_proof_view || 0)\n  const formationAssistantStarted = Number(totals.formation_assistant_started || 0)\n  const formationPaymentStarted = Number(totals.formation_payment_started || 0)\n  const formationPurchaseCompleted = Number(totals.formation_purchase_completed || 0)\n\n  const keyRows`,
+  `  const homeViews = Number(totals.home_view || 0)\n  const oracleFreeViews = Number(totals.oracle_free_view || 0)\n  const oracleDrawStarted = Number(totals.oracle_free_draw_started || 0)\n  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleShared = Number(totals.oracle_shared || 0)\n  const oracleNextClicks = Object.values(oracleNextSteps).reduce((sum, value) => sum + Number(value || 0), 0)\n  const formationViews = Number(totals.formation_view || 0)\n  const formationProofViews = Number(totals.formation_proof_view || 0)\n  const formationAssistantStarted = Number(totals.formation_assistant_started || 0)\n  const formationPaymentStarted = Number(totals.formation_payment_started || 0)\n  const formationPurchaseCompleted = Number(totals.formation_purchase_completed || 0)\n\n  const keyRows`,
   'pilotage funnel values',
 )
 pilotage = replaceRequired(

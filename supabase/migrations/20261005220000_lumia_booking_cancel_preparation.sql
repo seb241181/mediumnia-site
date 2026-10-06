@@ -5,6 +5,20 @@
 -- L'unique écriture future de l'exécuteur est la transition métier atomique
 -- confirmed -> cancelled, plus le journal Lumia et un éventuel job Google.
 
+-- bookings.updated_at is the optimistic-concurrency snapshot used by Lumia.
+-- now() is transaction-stable, so two updates inside one transaction could
+-- otherwise keep the same timestamp. Use wall-clock time for every UPDATE.
+CREATE OR REPLACE FUNCTION public.booking_set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public, pg_temp
+AS $
+BEGIN
+  NEW.updated_at = clock_timestamp();
+  RETURN NEW;
+END;
+$;
+
 CREATE TABLE IF NOT EXISTS public.lumia_calendar_sync_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES public.bookings(id) ON DELETE RESTRICT,

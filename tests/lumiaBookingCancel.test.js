@@ -110,6 +110,11 @@ test('Phase 3B : matrice des jobs Google — création, reprise, refus fermé et
   assert.doesNotMatch(migration, /on conflict\b/i, 'aucune UNIQUE brute ne peut sortir du RPC')
 })
 
+test('Phase 3B : bookings.updated_at utilise clock_timestamp pour la concurrence optimiste', () => {
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.booking_set_updated_at\(\)/i)
+  assert.match(migration, /NEW\.updated_at = clock_timestamp\(\)/i)
+})
+
 test('Phase 3B : reprise après claim, échecs durables et snapshot updated_at sont explicitement protégés', () => {
   assert.match(migration, /v_intent\.status IN \('succeeded', 'failed', 'compensation_required'\)/i)
   assert.match(migration, /IF v_intent\.status <> 'executing'/i)

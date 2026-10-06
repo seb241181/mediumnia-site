@@ -1,9 +1,12 @@
+import { storyAttributionUrl } from './mediumiaAttribution.js'
+
 // Quiz « Quel est votre canal de perception ? » : les quatre canaux du
 // Module 2 de la Formation (La Perception Pure). Chaque réponse pointe vers un
 // canal ; le résultat est un miroir pour commencer à pratiquer, jamais un
 // diagnostic ni la mesure d'un don.
 
 export const QUIZ_URL = 'https://mediumia.fr/quiz-sensibilite'
+export const QUIZ_SHARE_URL = storyAttributionUrl('quiz')
 
 export const CHANNELS = ['sensation', 'vision', 'audience', 'connaissance']
 
@@ -154,6 +157,6 @@ export function percentages(scores) {
 
 export function quizShareText(dominant) {
   const profile = PROFILES[dominant]
-  if (!profile) return `Quel est votre canal de perception ? Découvrez-le en 2 minutes.\n${QUIZ_URL}`
-  return `✦ Mon canal de perception dominant : ${profile.name} — « ${profile.motto} ».\nEt vous, quel est le vôtre ? Quiz gratuit en 2 minutes.\n${QUIZ_URL}`
+  if (!profile) return `Quel est votre canal de perception ? Découvrez-le en 2 minutes.\n${QUIZ_SHARE_URL}`
+  return `✦ Mon canal de perception dominant : ${profile.name} — « ${profile.motto} ».\nEt vous, quel est le vôtre ? Quiz gratuit en 2 minutes.\n${QUIZ_SHARE_URL}`
 }

@@ -6,6 +6,7 @@ import { cancelSlotOffer, createSlotOffer, listSlotOffers } from '../lib/rdvSlot
 import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, transferBookingDeposit } from '../lib/rdvDepositSettlements.js'
 import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
 import { handleLumiaInboxApi } from '../lib/lumiaMessageInbox.js'
+import { handleLumiaBookingCancelApi } from '../lib/lumiaBookingCancelApi.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 /**
@@ -866,6 +867,14 @@ export default async function handler(req, res) {
       else if (req.method === 'POST' && input.op === 'transfer') result = await transferBookingDeposit({ supabase, userId, input })
       else if (req.method === 'POST' && input.op === 'retain') result = await retainBookingDeposit({ supabase, userId, input })
       else result = { status: 400, body: { error: 'invalid_request' } }
+      return res.status(result.status).json(result.body)
+    }
+    case 'lumia-booking-cancel': {
+      // Phase 3B is deliberately dormant: the helper refuses before any RPC
+      // while LUMIA_ALLOWED_ACTIONS remains [].  It derives owner_id from this
+      // authenticated request and never trusts ownership from the body.
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+      const result = await handleLumiaBookingCancelApi({ db: supabase, userId, input: req.body || {} })
       return res.status(result.status).json(result.body)
     }
     default:             return res.status(400).json({ error: `action inconnue: ${action}` })

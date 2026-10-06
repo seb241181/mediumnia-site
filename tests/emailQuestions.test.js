@@ -94,5 +94,5 @@ test('les métriques question sont explicitement autorisées', () => {
   for (const event of ['question_view', 'question_payment_started', 'question_purchase_completed']) {
     assert.match(src, new RegExp(`'${event}'`))
   }
-  assert.match(src, /chronosphere-example\|question/)
+  assert.match(src, /const SOURCE_RE = .*question/)
 })

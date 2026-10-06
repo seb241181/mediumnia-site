@@ -34,11 +34,11 @@ const routeSeoHelpers = `const ROUTE_META = {
   },
   chronosphere: {
     title: 'ChronoSphère 999 — Cycles, lignes de temps & thème astral | MediumIA',
-    description: 'Explorez les lignes de temps possibles avec l’Oracle des Lignes de Temps créé par Sébastien, relié à votre thème natal, au ciel du moment et à trois cartes choisies par vos nombres.',
+    description: 'Explorez les lignes de temps possibles avec mon Oracle des Lignes de Temps, relié à votre thème natal, au ciel du moment et à trois cartes choisies par vos nombres.',
   },
   'chronosphere-example': {
     title: 'Exemple de tirage Chronosphère 999 | MediumIA',
-    description: 'Découvrez comment ChronoSphère relie l’Oracle des Lignes de Temps de Sébastien, votre thème natal et le ciel du moment pour explorer plusieurs trajectoires possibles.',
+    description: 'Découvrez comment je relie mon Oracle des Lignes de Temps, votre thème natal et le ciel du moment pour explorer plusieurs trajectoires possibles avec ChronoSphère.',
   },
   'chronosphere-max': {
     title: 'ChronoSphère MAX — Suivre votre Ligne de Temps en 3 lectures | MediumIA',
@@ -197,7 +197,7 @@ chronosphere = replaceRequired(
 chronosphere = replaceRequired(
   chronosphere,
   `            {/* Numbers */}\n            <div className="mb-7 grid grid-cols-3 gap-3 md:gap-5">`,
-  `            {/* Numbers */}\n            <div className="mb-4 rounded-xl border border-gold/25 bg-gold/[.06] px-4 py-3.5">\n              <p className="font-georgia text-sm leading-relaxed text-deep/80">\n                Choisissez spontanément <strong className="text-deep">trois nombres différents entre 1 et 58</strong>. Le site ne tire rien au hasard à votre place : chaque nombre correspond à une carte existante de l’Oracle des Lignes de Temps créé par Sébastien. Le premier désigne la carte principale ; les deux suivants ses résonances. Il n’y a pas de bon ou de mauvais choix.\n              </p>\n            </div>\n            <div className="mb-7 grid grid-cols-3 gap-3 md:gap-5">`,
+  `            {/* Numbers */}\n            <div className="mb-4 rounded-xl border border-gold/25 bg-gold/[.06] px-4 py-3.5">\n              <p className="font-georgia text-sm leading-relaxed text-deep/80">\n                Choisissez spontanément <strong className="text-deep">trois nombres différents entre 1 et 58</strong>. Le site ne tire rien au hasard à votre place : chaque nombre correspond à une carte existante de mon Oracle des Lignes de Temps. Le premier désigne la carte principale ; les deux suivants ses résonances. Il n’y a pas de bon ou de mauvais choix.\n              </p>\n            </div>\n            <div className="mb-7 grid grid-cols-3 gap-3 md:gap-5">`,
   'Chronosphere number-choice explanation',
 )
 

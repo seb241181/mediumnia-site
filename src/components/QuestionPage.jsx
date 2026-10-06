@@ -250,10 +250,10 @@ export default function QuestionPage({ onBack, onNavigate }) {
     <div className="cosmic-page cosmic-page--network min-h-screen bg-cream text-deep">
       <SiteNav current="consulter" onHome={onBack} />
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-28 md:pt-32">
-        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Sans rendez-vous · réponse par e-mail</p>
-        <h1 className="mt-2 font-georgia text-3xl font-medium leading-tight md:text-5xl">Une question à Sébastien</h1>
+        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Nouveau · sans rendez-vous</p>
+        <h1 className="mt-2 font-georgia text-3xl font-medium leading-tight md:text-5xl">Guidance par e-mail</h1>
         <p className="mt-4 max-w-xl font-georgia text-base leading-relaxed text-mist">
-          Vous posez une question précise. Sébastien prend personnellement connaissance de votre demande et vous transmet <strong className="text-deep">une réponse personnelle et développée</strong> par e-mail — pas un simple oui ou non, un véritable éclairage.
+          Vous posez une ou deux questions précises. Sébastien prend personnellement connaissance de votre demande et vous transmet <strong className="text-deep">une guidance personnelle et développée</strong> par e-mail — pas un simple oui ou non, un véritable éclairage.
         </p>
 
         <ul className="mt-6 grid gap-2 font-georgia text-sm text-deep/80 sm:grid-cols-3">

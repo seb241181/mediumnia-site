@@ -257,7 +257,7 @@ export default function QuestionPage({ onBack, onNavigate }) {
         </p>
 
         <ul className="mt-6 grid gap-2 font-georgia text-sm text-deep/80 sm:grid-cols-3">
-          <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Réponse écrite personnellement par moi</li>
+          <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Réponse que j’écris personnellement</li>
           <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Sous 72 h ouvrées</li>
           <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Aucun rendez-vous à prévoir</li>
         </ul>

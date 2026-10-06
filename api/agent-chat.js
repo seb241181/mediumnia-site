@@ -11,6 +11,7 @@ import { loadLumiaRdvContext, lumiaContextLogDetail } from '../lib/lumiaAssistan
 import { loadLumiaInboxContext, lumiaInboxLogDetail } from '../lib/lumiaMessageInbox.js'
 import { LUMIA_AVAILABILITY_UNAVAILABLE, loadLumiaAvailabilityContext, lumiaAvailabilityLogDetail } from '../lib/lumiaAvailabilityContext.js'
 import { buildLumiaPolicyInstructions, redactForLog } from '../lib/lumiaPolicy.js'
+import { maybeHandleLumiaBookingCancelChat } from '../lib/lumiaBookingCancelChat.js'
 import { answerFicheVisitor, getFicheAssistantInfo } from '../lib/publicAssistant.js'
 
 const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
@@ -360,6 +361,57 @@ export default async function handler(req, res) {
   if (userMessageError) {
     technicalLog(requestId, 'chat', 'failed', startedAt, 'message_persistence_failed')
     return res.status(500).json({ error: 'Impossible d’enregistrer le message', requestId, conversationId })
+  }
+
+  // Lumia Phase 3: actions déterministes traitées côté serveur avant tout appel
+  // au modèle. Un message client n'entre jamais ici : cleanMessage vient de la
+  // session propriétaire authentifiée de cette conversation privée.
+  if (agent.metadata?.purpose === 'lumia_rdv_assistant' && !auth.rehearsal) {
+    try {
+      const actionResult = await maybeHandleLumiaBookingCancelChat({
+        db,
+        userId: auth.userId,
+        conversationId,
+        message: cleanMessage,
+      })
+      if (actionResult?.handled) {
+        const { error: actionMessageError } = await db.from('agent_messages').insert({
+          conversation_id: conversationId,
+          agent_id: agent.id,
+          owner_id: auth.userId,
+          role: 'assistant',
+          content: actionResult.reply,
+          sources: [],
+        })
+        if (actionMessageError) {
+          technicalLog(requestId, 'chat', 'failed', startedAt, 'action_persistence_failed')
+          return res.status(500).json({ error: 'Action traitée mais réponse non enregistrée', requestId, conversationId })
+        }
+        await writeAudit(db, {
+          ownerId: auth.userId,
+          agentId: agent.id,
+          eventType: 'agent_response_generated',
+          conversationId,
+          requestId,
+          provider: 'server',
+          model: 'lumia-action-engine',
+          sourceCount: 0,
+          durationMs: Date.now() - startedAt,
+          result: 'success',
+        })
+        technicalLog(requestId, 'chat', 'success', startedAt)
+        return res.status(200).json({
+          conversationId,
+          reply: actionResult.reply,
+          sources: [],
+          requestId,
+          actionHandled: true,
+        })
+      }
+    } catch (error) {
+      technicalLog(requestId, 'chat', 'degraded', startedAt, error?.message || 'lumia_action_unavailable')
+      // Fail closed for actions, but preserve ordinary read-only Lumia chat.
+    }
   }
 
   const { data: latestMessages, error: historyError } = await db

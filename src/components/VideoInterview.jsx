@@ -50,9 +50,9 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, compact = 
   return (
     <section id={id} className={`mx-auto max-w-6xl scroll-mt-28 px-6 ${compact ? 'pt-14' : 'py-14'}`} aria-labelledby={`${id}-title`}>
       <div className={compact ? '' : 'mx-auto mb-8 max-w-2xl text-center'}>
-        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Sébastien en interview</p>
+        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Mon interview</p>
         <h2 id={`${id}-title`} className={`mt-2 font-georgia font-medium leading-tight text-deep ${compact ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>
-          {compact ? 'Découvrez sa façon de travailler' : 'Écoutez Sébastien parler de la médiumnité'}
+          {compact ? 'Découvrez ma façon de travailler' : 'Écoutez-moi parler de la médiumnité'}
         </h2>
         {!compact && (
           <p className="mt-3 font-georgia leading-relaxed text-mist">
@@ -108,11 +108,11 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, compact = 
           <div className="mt-5 flex flex-col gap-3">
             {onOpenRdv && (
               <button type="button" onClick={onOpenRdv} className="rounded-full bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold">
-                Prendre rendez-vous avec Sébastien →
+                Prendre rendez-vous avec moi →
               </button>
             )}
             <a href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" className="self-start font-georgia text-xs text-mist underline decoration-gold/40 underline-offset-4 hover:text-deep">Voir l’interview sur YouTube ↗</a>
-            <p className="border-t border-gold/15 pt-3 font-georgia text-xs text-mist">Suivre Sébastien :</p>
+            <p className="border-t border-gold/15 pt-3 font-georgia text-xs text-mist">Me suivre :</p>
             <div className="-mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 font-georgia text-xs text-mist">
               {SOCIAL_LINKS.map((link) => (
                 <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 underline decoration-gold/40 underline-offset-4 hover:text-deep">

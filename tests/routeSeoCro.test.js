@@ -8,6 +8,7 @@ test('public routes receive dedicated client-side metadata and canonical URLs', 
   const app = read('src/App.jsx')
   assert.match(app, /Formation à la médiumnité consciente — MediumIA/)
   assert.match(app, /ChronoSphère 999 — Cycles, lignes de temps & thème astral \| MediumIA/)
+  assert.match(app, /Oracle des Lignes de Temps créé par Sébastien, relié à votre thème natal/)
   assert.match(app, /Réseau MediumIA — Trouver un praticien/)
   assert.match(app, /Conférence offerte le 22 octobre — Et si la médiumnité devenait accessible \? \| MediumIA/)
   assert.match(app, /'chronosphere-max': \{\n    title: 'ChronoSphère MAX — /)
@@ -28,7 +29,8 @@ test('Chronosphere explains exact birth time, number choice and pack resume befo
   assert.match(chrono, /aucune heure approximative n’est inventée/)
   assert.match(chrono, /vérifiez votre acte de naissance/)
   assert.match(chrono, /trois nombres différents entre 1 et 58/)
-  assert.match(chrono, /Le premier porte l’axe principal du tirage/)
+  assert.match(chrono, /chaque nombre correspond à une carte existante de l’Oracle des Lignes de Temps créé par Sébastien/)
+  assert.match(chrono, /Le premier désigne la carte principale/)
   assert.match(chrono, /l’e-mail contient votre lien personnel pour reprendre les tirages restants/)
 })
 

@@ -212,6 +212,7 @@ BEGIN
       ELSIF v_has_refund THEN v_failure := 'refund_exists_requires_review';
       ELSIF v_has_transfer THEN v_failure := 'deposit_transfer_exists_requires_review';
       END IF;
+    END IF;
   END IF;
 
   -- The Google projection must already be safely representable before the

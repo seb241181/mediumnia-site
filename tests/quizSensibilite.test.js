@@ -106,8 +106,16 @@ test('quiz opt-ins keep their own consent source, version and email wording', as
   assert.match(read('scripts/apply-home-growth-path.mjs'), /à la fin du quiz des canaux de perception/)
 })
 
-test('a share is counted only once the share sheet or the copy succeeds', () => {
+test('quiz sharing creates a story image and counts only a completed share or copy', () => {
   const page = read('src/components/QuizSensibilitePage.jsx')
-  assert.match(page, /await navigator\.share\(\{ text \}\)\n\s+trackMediumiaMetric\('quiz_shared', 'quiz'\)/)
-  assert.match(page, /await navigator\.clipboard\.writeText\(text\)\n\s+trackMediumiaMetric\('quiz_shared', 'quiz'\)/)
+  const image = read('src/lib/quizShareImage.js')
+  assert.match(page, /drawQuizStoryImage/)
+  assert.match(page, /navigator\.canShare\?\.\(\{ files: \[file\] \}\)/)
+  assert.match(page, /await navigator\.share\(\{ files: \[file\], text \}\)/)
+  assert.match(page, /await navigator\.clipboard\.writeText\(text\)/)
+  assert.match(page, /trackMediumiaMetric\('quiz_shared', 'quiz'\)/)
+  assert.match(image, /const W = 1080/)
+  assert.match(image, /const H = 1920/)
+  assert.match(image, /MON CANAL DE PERCEPTION/)
+  assert.match(image, /mediumia\.fr\/quiz-sensibilite/)
 })

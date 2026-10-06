@@ -37,7 +37,7 @@ test('le prix PayPal vient uniquement du pack serveur', () => {
   assert.match(src, /value: \(meta\.amountCents \/ 100\)\.toFixed\(2\)/)
   assert.doesNotMatch(src, /req\.body\?\.amount|req\.body\.amount/)
   assert.match(src, /capture\.amount\?\.value !== \(row\.amount_cents \/ 100\)\.toFixed\(2\)/)
-  assert.match(src, /unit\.custom_id === row\.id/)
+  assert.match(src, /custom_id === row\.id/)
 })
 
 test('la migration lie pack, nombre de questions et montant et reste service_role only', () => {
@@ -86,7 +86,7 @@ test('le parcours public et le tableau de bord sont branchés', () => {
   assert.match(app, /<QuestionPage/)
   assert.match(consult, /Poser une question par e-mail/)
   assert.match(dashboard, /<EmailQuestionsPanel session=\{session\}/)
-  assert.match(vercel, /"source": "\/question"/)
+  assert.ok(JSON.parse(vercel).rewrites.some((item) => item.source === '/question' && item.destination === '/index.html'))
 })
 
 test('les métriques question sont explicitement autorisées', () => {

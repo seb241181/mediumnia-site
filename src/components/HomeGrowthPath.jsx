@@ -170,7 +170,7 @@ export function ArcheSection() {
         <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">L’œuvre · L’Octave de l’Âme</p>
         <h2 id="arche-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">L’Arche</h2>
         <p className="mt-3 font-georgia text-lg leading-relaxed text-mist">
-          Au-delà de la pratique, une lecture de ce que nous sommes. L’Arche est l’œuvre de Sébastien Seguin, écrite en mouvements.
+          Au-delà de la pratique, une lecture de ce que nous sommes. J’ai écrit L’Arche comme une œuvre en mouvements.
         </p>
       </div>
       <div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_1fr]">

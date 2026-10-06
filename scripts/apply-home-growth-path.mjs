@@ -65,8 +65,8 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  "onOpenRdv, onOpenConferences, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
-  "onOpenRdv, onOpenConferences, onOpenQuiz, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
+  "onOpenRdv, onOpenQuestion, onOpenConferences, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
+  "onOpenRdv, onOpenQuestion, onOpenConferences, onOpenQuiz, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
   'home signature',
 )
 
@@ -131,8 +131,8 @@ app = insertAfter(
 
 app = replaceRequired(
   app,
-  'onOpenRdv={openRdvPublic} onOpenConferences={openConferences} onNavigate={legalNav} />{guardian}</>',
-  'onOpenRdv={openRdvPublic} onOpenConferences={openConferences} onOpenQuiz={openQuiz} onNavigate={legalNav} />{guardian}</>',
+  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenConferences={openConferences} onNavigate={legalNav} />{guardian}</>',
+  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenConferences={openConferences} onOpenQuiz={openQuiz} onNavigate={legalNav} />{guardian}</>',
   'home quiz prop',
 )
 
@@ -160,8 +160,8 @@ analytics = insertAfter(
 
 analytics = replaceRequired(
   analytics,
-  'const SOURCE_RE = /^(home|oracle|chronosphere|chronosphere-example|formation|conferences)(:(oracle|chronosphere|reseau|formation|notify))?$/',
-  'const SOURCE_RE = /^(home|oracle|chronosphere|chronosphere-example|formation|conferences|quiz)(:(oracle|chronosphere|reseau|formation|notify|quiz|codex))?$/',
+  'const SOURCE_RE = /^(home|oracle|chronosphere|chronosphere-example|formation|conferences|question)(:(oracle|chronosphere|reseau|formation|notify|question|q1|q2))?$/',
+  'const SOURCE_RE = /^(home|oracle|chronosphere|chronosphere-example|formation|conferences|question|quiz)(:(oracle|chronosphere|reseau|formation|notify|question|q1|q2|quiz|codex))?$/',
   'quiz sources',
 )
 

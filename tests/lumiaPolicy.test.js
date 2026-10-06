@@ -49,7 +49,7 @@ test('politique : toutes les règles métier centralisées', () => {
 test('capacité Google : réponse affirmative limitée au calcul via MediumIA, sans lecture pour une question de capacité', () => {
   assert.equal(LUMIA_POLICY_VERSION, '2026-10-06.1')
   assert.match(policy, /Tu peux utiliser Google Agenda via le moteur MediumIA pour calculer les disponibilités en lecture seule/)
-  assert.match(policy, /Si Sébastien demande si tu as accès à son agenda Google, réponds oui en précisant toujours les limites actuelles/)
+  assert.match(policy, /Si Sébastien demande si tu as accès à son agenda Google, réponds oui en précisant les limites actuelles/)
   assert.match(policy, /déterminer si un créneau est libre ou occupé via MediumIA, en lecture seule/)
   assert.match(policy, /Une simple question sur cette capacité ne déclenche aucun appel Google ni aucune lecture des données de disponibilité/)
 })

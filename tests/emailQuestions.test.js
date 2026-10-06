@@ -61,6 +61,9 @@ test('le checkout public propose exactement q1 et q2', () => {
   assert.match(page, /questionAction=create/)
   assert.match(page, /questionAction=capture/)
   assert.match(page, /réponse personnelle et développée/)
+  assert.match(page, /Aucune question d’ordre médical n’est acceptée/)
+  assert.match(page, /Toute demande médicale sera refusée et remboursée/)
+  assert.match(page, /interdiction de toute question d’ordre médical/)
 })
 
 test('l’administration est authentifiée via rdv-admin et offre réponse + remboursement', () => {

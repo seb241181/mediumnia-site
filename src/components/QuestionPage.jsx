@@ -127,7 +127,7 @@ function QuestionCheckout({ config }) {
         <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Demande enregistrée</p>
         <h2 className="mt-3 font-georgia text-2xl font-medium text-deep md:text-3xl">C’est noté ✦</h2>
         <p className="mx-auto mt-4 max-w-lg font-georgia leading-relaxed text-mist">
-          Sébastien prend personnellement connaissance de votre demande et vous transmettra une réponse personnelle et développée par e-mail{due ? `, au plus tard le ${due}` : ' sous 72 heures ouvrées'}. Un e-mail de confirmation vient de vous être envoyé.
+          Je prends personnellement connaissance de votre demande et je vous transmets une réponse personnelle et développée par e-mail{due ? `, au plus tard le ${due}` : ' sous 72 heures ouvrées'}. Un e-mail de confirmation vient de vous être envoyé.
         </p>
         <p className="mt-4 font-georgia text-sm text-mist">Vous n’avez rien d’autre à faire : la réponse arrivera directement dans votre boîte e-mail.</p>
       </div>
@@ -200,7 +200,7 @@ function QuestionCheckout({ config }) {
         ))}
 
         <div className="rounded-2xl border border-gold/20 bg-white/60 p-4 font-georgia text-xs leading-relaxed text-mist">
-          <p className="mb-2">Une question = un sujet identifiable. Sébastien vous répond personnellement ; il ne s’agit pas d’une conversation illimitée. Aucune question d’ordre médical n’est acceptée : diagnostic, traitement, pronostic, symptômes, grossesse, urgence ou décision de santé. La réponse est une guidance ; elle ne remplace jamais un avis juridique ou financier et ne garantit pas de contact avec un défunt. Toute demande médicale sera refusée et remboursée. N’indiquez aucune donnée de santé dans votre question ou dans le contexte.</p>
+          <p className="mb-2">Une question = un sujet identifiable. Je vous réponds personnellement ; il ne s’agit pas d’une conversation illimitée. Aucune question d’ordre médical n’est acceptée : diagnostic, traitement, pronostic, symptômes, grossesse, urgence ou décision de santé. La réponse est une guidance ; elle ne remplace jamais un avis juridique ou financier et ne garantit pas de contact avec un défunt. Toute demande médicale sera refusée et remboursée. N’indiquez aucune donnée de santé dans votre question ou dans le contexte.</p>
           <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-gold/20 bg-cream/60 p-3">
             <input type="checkbox" checked={rulesOk} onChange={(e) => setRulesOk(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#C9A84C]" />
             <span className="text-sm text-deep">J’ai lu et j’accepte les règles de cette prestation, notamment l’interdiction de toute question d’ordre médical, ainsi que la <a href="/confidentialite" className="text-gold hover:underline">politique de confidentialité</a>.</span>
@@ -253,11 +253,11 @@ export default function QuestionPage({ onBack, onNavigate }) {
         <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Nouveau · sans rendez-vous</p>
         <h1 className="mt-2 font-georgia text-3xl font-medium leading-tight md:text-5xl">Guidance par e-mail</h1>
         <p className="mt-4 max-w-xl font-georgia text-base leading-relaxed text-mist">
-          Vous posez une ou deux questions précises. Sébastien prend personnellement connaissance de votre demande et vous transmet <strong className="text-deep">une guidance personnelle et développée</strong> par e-mail — pas un simple oui ou non, un véritable éclairage.
+          Vous posez une ou deux questions précises. Je prends personnellement connaissance de votre demande et je vous transmets <strong className="text-deep">une guidance personnelle et développée</strong> par e-mail — pas un simple oui ou non, un véritable éclairage.
         </p>
 
         <ul className="mt-6 grid gap-2 font-georgia text-sm text-deep/80 sm:grid-cols-3">
-          <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Réponse écrite par Sébastien</li>
+          <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Réponse écrite personnellement par moi</li>
           <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Sous 72 h ouvrées</li>
           <li className="rounded-xl border border-gold/20 bg-white/60 px-4 py-3">Aucun rendez-vous à prévoir</li>
         </ul>
@@ -267,7 +267,7 @@ export default function QuestionPage({ onBack, onNavigate }) {
           {availability === 'disabled' && (
             <div className="rounded-2xl border border-gold/25 bg-white/70 p-6 text-center font-georgia text-sm text-mist">
               {config?.remaining === 0 ? 'Le quota de demandes disponible pour le moment est atteint.' : 'Ce service sera bientôt disponible.'}
-              {' '}Vous pouvez <a href="/rdv/sebastien-seguin" className="text-gold hover:underline">réserver une guidance avec Sébastien</a>.
+              {' '}Vous pouvez <a href="/rdv/sebastien-seguin" className="text-gold hover:underline">réserver une guidance avec moi</a>.
             </div>
           )}
           {availability === 'error' && <p className="font-georgia text-sm text-mist">Service momentanément indisponible. Réessayez dans un instant.</p>}
@@ -275,7 +275,7 @@ export default function QuestionPage({ onBack, onNavigate }) {
         </div>
 
         <p className="mt-10 font-georgia text-xs leading-relaxed text-mist/80">
-          La prestation comprend la réponse à la ou aux questions commandées. Toute nouvelle question constitue une nouvelle demande. Si votre demande dépasse ce cadre, Sébastien pourra vous orienter vers une guidance complète ou procéder à un remboursement.
+          La prestation comprend la réponse à la ou aux questions commandées. Toute nouvelle question constitue une nouvelle demande. Si votre demande dépasse ce cadre, je pourrai vous orienter vers une guidance complète ou procéder à un remboursement.
         </p>
       </main>
       <LegalFooter onNavigate={onNavigate} />

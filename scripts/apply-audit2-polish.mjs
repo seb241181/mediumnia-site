@@ -118,12 +118,14 @@ if (hasCosmicLibraryHero && !index.includes('/images/home/mediumia-cosmic-librar
 await writeFile(indexPath, index)
 
 let transactionalEmail = await readFile(transactionalEmailPath, 'utf8')
-transactionalEmail = replaceRequired(
-  transactionalEmail,
-  `export async function sendEmail({ to, subject, html, text, idempotencyKey, scheduledAt }) {\n  const apiKey = process.env.RESEND_API_KEY\n  const from = process.env.RESEND_FROM_EMAIL`,
-  `export async function sendEmail({ to, subject, html, text, idempotencyKey, scheduledAt, from: fromOverride }) {\n  const apiKey = process.env.RESEND_API_KEY\n  const from = String(fromOverride || process.env.RESEND_FROM_EMAIL || '').trim()`,
-  'transactional email sender override',
-)
+if (!transactionalEmail.includes('from: fromOverride')) {
+  transactionalEmail = replaceRequired(
+    transactionalEmail,
+    `export async function sendEmail({ to, subject, html, text, idempotencyKey, scheduledAt }) {\n  const apiKey = process.env.RESEND_API_KEY\n  const from = process.env.RESEND_FROM_EMAIL`,
+    `export async function sendEmail({ to, subject, html, text, idempotencyKey, scheduledAt, from: fromOverride }) {\n  const apiKey = process.env.RESEND_API_KEY\n  const from = String(fromOverride || process.env.RESEND_FROM_EMAIL || '').trim()`,
+    'transactional email sender override',
+  )
+}
 await writeFile(transactionalEmailPath, transactionalEmail)
 
 let oracleEmailSequence = await readFile(oracleEmailSequencePath, 'utf8')

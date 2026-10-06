@@ -6,7 +6,7 @@ import '../styles/home-simplified.css'
 export const COSMIC_HOME_CONFIG = Object.freeze({
   title: 'Se former à la médiumnité.',
   emphasis: 'Consulter un médium.',
-  description: 'MediumIA, c’est la Formation MediumIA de Sébastien Seguin, médium depuis plus de douze ans, et ses consultations : un chemin clair pour comprendre et développer votre sensibilité.',
+  description: 'J’ai créé MediumIA pour réunir ma formation à la médiumnité et mes consultations : un chemin clair, construit à partir de plus de douze ans de pratique, pour comprendre et développer votre sensibilité.',
   primaryAction: 'Découvrir la Formation',
   quizAction: 'Pas encore sûr ? Découvrez votre canal de perception en 2 minutes',
 })

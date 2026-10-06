@@ -18,6 +18,7 @@ import { handleGiftCards } from '../lib/giftCards.js'
 import { handleFormationPath } from '../lib/formationPath.js'
 import { handleDefi } from '../lib/defiIntuitionServer.js'
 import { handleCspReport } from '../lib/cspReport.js'
+import { handleEmailQuestions } from '../lib/emailQuestions.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -35,6 +36,9 @@ export default async function handler(req, res) {
 
   // Rapports CSP (en-tête Content-Security-Policy-Report-Only, vercel.json)
   if (req.query?.cspReport) return handleCspReport(req, res)
+
+  const questionAction = req.query?.questionAction
+  if (questionAction) return handleEmailQuestions(req, res, questionAction)
 
   const rdvBalanceAction = req.query?.rdvBalanceAction
   if (rdvBalanceAction === 'cron') {

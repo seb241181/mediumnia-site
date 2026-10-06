@@ -2,6 +2,7 @@ import { useState } from 'react'
 import oracleCards from '../data/oracleCards.json'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 import { canvasToOracleFile, drawOracleStoryImage, oracleStoryText } from '../lib/oracleShareImage.js'
+import { storyAttributionUrl } from '../lib/mediumiaAttribution.js'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 export default function OracleTest() {
@@ -22,11 +23,13 @@ export default function OracleTest() {
       const canvas = await drawOracleStoryImage(document.createElement('canvas'), result.cards)
       const file = await canvasToOracleFile(canvas)
       const text = oracleStoryText(result.cards)
+      try { await navigator.clipboard?.writeText(storyAttributionUrl('oracle')) } catch {}
 
       if (navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file], text })
           trackMediumiaMetric('oracle_shared', 'oracle')
+          setShareNote('Lien MediumIA traçable copié : vous pouvez l’ajouter en sticker Lien dans votre story.')
         } catch { /* partage annulé */ }
       } else {
         const url = URL.createObjectURL(file)

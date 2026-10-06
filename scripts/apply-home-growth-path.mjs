@@ -231,9 +231,9 @@ dashboard = replaceRequired(
           <p className="mt-2 font-georgia text-xs leading-relaxed text-cream/70">Compteur agrégé des stories partagées depuis l’Oracle et le Quiz sur la période choisie.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
-          <MetricCard eyebrow="Total partagé" value={socialShares} note={`Sur les ${days} derniers jours`} />
-          <MetricCard eyebrow="Stories Oracle" value={oracleShared} note={`${pct(oracleShared, oracleDrawCompleted)} des tirages obtenus`} />
-          <MetricCard eyebrow="Stories Quiz" value={quizShared} note={`${pct(quizShared, quizCompleted)} des résultats obtenus`} />
+          <MetricCard eyebrow="Total partagé" value={socialShares} note={'Sur les ' + days + ' derniers jours'} />
+          <MetricCard eyebrow="Stories Oracle" value={oracleShared} note={pct(oracleShared, oracleDrawCompleted) + ' des tirages obtenus'} />
+          <MetricCard eyebrow="Stories Quiz" value={quizShared} note={pct(quizShared, quizCompleted) + ' des résultats obtenus'} />
         </div>
       </section>
 

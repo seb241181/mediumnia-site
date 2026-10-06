@@ -69,7 +69,7 @@ export default function ChronosphereExamplePage({ onBack, onOpenChronosphere, on
           <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-gold/25 bg-gold/[.06] px-5 py-4 text-left">
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Dans un vrai tirage</p>
             <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/75">
-              Vous choisissez trois nombres entre 1 et 58. Ils correspondent à trois cartes existantes de l’Oracle des Lignes de Temps créé par Sébastien. ChronoSphère calcule ensuite votre thème natal et le ciel du moment, puis relie l’ensemble pour explorer des lignes de temps possibles — jamais un avenir unique présenté comme certain.
+              Vous choisissez trois nombres entre 1 et 58. Ils correspondent à trois cartes existantes de mon Oracle des Lignes de Temps. ChronoSphère calcule ensuite votre thème natal et le ciel du moment, puis relie l’ensemble pour explorer des lignes de temps possibles — jamais un avenir unique présenté comme certain.
             </p>
           </div>
         </section>

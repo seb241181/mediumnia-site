@@ -849,10 +849,10 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
           <div data-chronosphere-positioning="oracle-first-v1" className="mx-auto mt-7 max-w-3xl rounded-3xl border-2 border-gold/45 bg-white/80 p-6 text-left shadow-[0_14px_38px_rgba(26,21,53,.07)] md:p-8">
             <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Ce qu’est réellement ChronoSphère</p>
             <h2 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">
-              L’Oracle des Lignes de Temps de Sébastien, relié à votre thème natal
+              Mon Oracle des Lignes de Temps, relié à votre thème natal
             </h2>
             <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/80 md:text-base">
-              ChronoSphère ne génère pas trois cartes au hasard. <strong className="text-deep">Les 58 cartes de l’Oracle des Lignes de Temps existent déjà</strong>, avec leur nom, leur symbolique et leur structure. Vous choisissez trois nombres entre 1 et 58 : chacun correspond directement à une carte de cet oracle créé par Sébastien.
+              ChronoSphère ne génère pas trois cartes au hasard. <strong className="text-deep">Les 58 cartes de l’Oracle des Lignes de Temps existent déjà</strong>, avec leur nom, leur symbolique et leur structure. Vous choisissez trois nombres entre 1 et 58 : chacun correspond directement à une carte de l’oracle que j’ai créé.
             </p>
             <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/80 md:text-base">
               Ces trois cartes sont ensuite croisées avec <strong className="text-deep">votre date, votre heure et votre lieu de naissance</strong>, puis avec le ciel du moment et des fenêtres calculées sur les mois à venir. L’objectif n’est pas de figer un avenir unique, mais d’explorer des <strong className="text-deep">lignes de temps possibles</strong> : ce qui est porteur, ce qui demande préparation, ce qui peut évoluer selon vos choix.
@@ -860,7 +860,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
             <div className="mt-5 grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-gold/20 bg-cream/70 p-4">
                 <p className="font-georgia text-[10px] uppercase tracking-[0.15em] text-gold">1 · L’Oracle</p>
-                <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">58 cartes et leur architecture symbolique, créées par Sébastien.</p>
+                <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">J’ai créé 58 cartes, chacune avec sa propre architecture symbolique.</p>
               </div>
               <div className="rounded-2xl border border-gold/20 bg-cream/70 p-4">
                 <p className="font-georgia text-[10px] uppercase tracking-[0.15em] text-gold">2 · Votre ciel</p>
@@ -901,7 +901,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
             <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
               <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">3 · Oracle</p>
               <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Résonances chiffrées</h2>
-              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Trois nombres choisis par vous correspondent directement à trois cartes de l’Oracle des Lignes de Temps de Sébastien.</p>
+              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Trois nombres choisis par vous correspondent directement à trois cartes de mon Oracle des Lignes de Temps.</p>
             </article>
           </div>
 
@@ -1064,7 +1064,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
             {/* Numbers */}
             <div className="mb-4 rounded-xl border border-gold/25 bg-gold/[.06] px-4 py-3.5">
               <p className="font-georgia text-sm leading-relaxed text-deep/80">
-                Choisissez spontanément <strong className="text-deep">trois nombres différents entre 1 et 58</strong>. Le site ne tire rien au hasard à votre place : chaque nombre correspond à une carte existante de l’Oracle des Lignes de Temps créé par Sébastien. Le premier désigne la carte principale ; les deux suivants ses résonances. Il n’y a pas de bon ou de mauvais choix.
+                Choisissez spontanément <strong className="text-deep">trois nombres différents entre 1 et 58</strong>. Le site ne tire rien au hasard à votre place : chaque nombre correspond à une carte existante de mon Oracle des Lignes de Temps. Le premier désigne la carte principale ; les deux suivants ses résonances. Il n’y a pas de bon ou de mauvais choix.
               </p>
             </div>
             <div className="mb-7 grid grid-cols-3 gap-3 md:gap-5">
@@ -1237,7 +1237,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                 Tirage payant
               </p>
               <p className="mb-5 font-georgia text-sm leading-relaxed text-deep/80">
-                Chaque tirage ChronoSphère 999 part de trois cartes réelles de l’Oracle des Lignes de Temps créé par Sébastien, puis les croise avec votre ciel natal et vos fenêtres temporelles personnalisées. L’intelligence artificielle intervient ensuite comme outil d’interprétation de cet ensemble — elle ne choisit pas les cartes et ne crée pas l’oracle.
+                Chaque tirage ChronoSphère 999 part de trois cartes réelles de mon Oracle des Lignes de Temps, puis les croise avec votre ciel natal et vos fenêtres temporelles personnalisées. L’intelligence artificielle intervient ensuite comme outil d’interprétation de cet ensemble — elle ne choisit pas les cartes et ne crée pas l’oracle.
               </p>
               <p className="mb-6 text-center font-georgia text-2xl font-medium text-deep">
                 {formattedPrice ? formattedPrice.replace(' TTC', '') : '...'}
@@ -1444,7 +1444,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
 
                   <ResultSection eyebrow="06 · Oracle des Lignes de Temps" title="Vos trois cartes et leur synthèse" highlight>
                     <p className="mb-5 font-georgia text-xs leading-relaxed text-mist">
-                      Ces cartes proviennent de l’Oracle des Lignes de Temps créé par Sébastien. Elles correspondent aux trois nombres que vous avez choisis au début du tirage.
+                      Ces cartes proviennent de mon Oracle des Lignes de Temps. Elles correspondent aux trois nombres que vous avez choisis au début du tirage.
                     </p>
                     <div className="grid gap-3 md:grid-cols-3">
                       {result.cards.map((card, i) => (

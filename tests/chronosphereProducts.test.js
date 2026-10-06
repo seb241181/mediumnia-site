@@ -142,6 +142,6 @@ test('home presents ChronoSphère as a compact « Découvrir » card with its pa
   assert.match(discover, /Pack conseillé : 9,90 € TTC pour 3 tirages/)
   assert.match(discover, /Entrer dans ChronoSphère/)
   assert.match(discover, /Pas un tirage aléatoire du logiciel/)
-  assert.match(discover, /oracle de 58 cartes créé par Sébastien/i)
+  assert.match(discover, /mon Oracle des Lignes de Temps, composé de 58 cartes/i)
   assert.match(discover, /href="\/chronosphere\/exemple"/)
 })

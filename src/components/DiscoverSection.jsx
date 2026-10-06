@@ -29,7 +29,7 @@ function DiscoverCard({ eyebrow, title, children, action, href, onOpen, extra })
 const CHRONO_STEPS = [
   { step: '1 · Socle', title: 'Empreinte de naissance', text: 'Date, heure et lieu posent la base de votre lecture.' },
   { step: '2 · Passage', title: 'Énergie actuelle', text: 'La dynamique du moment et vos fenêtres temporelles.' },
-  { step: '3 · Oracle', title: 'Résonances chiffrées', text: 'Trois nombres ouvrent une lecture symbolique.' },
+  { step: '3 · Oracle', title: 'Oracle des Lignes de Temps', text: 'Vos trois nombres correspondent à trois cartes d’un oracle de 58 cartes créé par Sébastien.' },
 ]
 
 function ChronosphereFeature({ onOpen }) {
@@ -40,6 +40,7 @@ function ChronosphereFeature({ onOpen }) {
         <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">ChronoSphère 999 · cycles et lignes de temps</p>
         <h3 className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">Où en êtes-vous dans votre cycle&nbsp;?</h3>
         <p className="mt-3 max-w-2xl font-georgia text-lg italic leading-relaxed text-mist">« Votre naissance pose le socle ; le moment présent ouvre la fenêtre. »</p>
+        <p className="mt-4 max-w-2xl font-georgia text-sm leading-relaxed text-deep/75"><strong>Pas un tirage aléatoire du logiciel :</strong> ChronoSphère relie l’Oracle des Lignes de Temps créé par Sébastien à votre thème natal pour explorer plusieurs trajectoires possibles plutôt qu’un avenir figé.</p>
         <ol className="mt-7 grid gap-3 md:grid-cols-3">
           {CHRONO_STEPS.map((item) => (
             <li key={item.step} className="rounded-2xl border border-gold/20 bg-cream/70 px-4 py-4">

@@ -5,6 +5,7 @@ import {
   EMAIL_QUESTION_DAILY_CAP,
   EMAIL_QUESTION_PACKS,
   EMAIL_QUESTION_TERMS_VERSION,
+  buildEmailGuidanceAnswer,
   emailQuestionEnv,
   emailQuestionsOpen,
 } from '../lib/emailQuestions.js'
@@ -87,6 +88,31 @@ test('le checkout public propose exactement q1 et q2', () => {
   assert.match(page, /interdiction de toute question d’ordre médical/)
 })
 
+test('la réponse de guidance reprend le style Chronosphère et échappe les contenus', () => {
+  const email = buildEmailGuidanceAnswer({
+    first_name: '<Camille>',
+    questions: [
+      { q: 'Est-ce le bon moment pour changer de travail ?' },
+      { q: '<script>alert(1)</script>' },
+    ],
+  }, 'Voici ma guidance <b>personnelle</b>.\nDeuxième ligne.')
+
+  assert.equal(email.subject, 'Votre guidance par e-mail — MediumIA')
+  assert.match(email.html, /background:#f3efe6/)
+  assert.match(email.html, /background:#1a1535/)
+  assert.match(email.html, /#d4b469/)
+  assert.match(email.html, /GUIDANCE PAR E-MAIL/)
+  assert.match(email.html, /Votre demande/)
+  assert.match(email.html, /Votre guidance/)
+  assert.match(email.html, /Question 1/)
+  assert.match(email.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/)
+  assert.match(email.html, /Voici ma guidance &lt;b&gt;personnelle&lt;\/b&gt;/)
+  assert.doesNotMatch(email.html, /<script>alert\(1\)<\/script>/)
+  assert.doesNotMatch(email.html, /<b>personnelle<\/b>/)
+  assert.match(email.text, /VOTRE DEMANDE/)
+  assert.match(email.text, /VOTRE GUIDANCE/)
+  assert.match(email.text, /Cette guidance repose sur une interprétation intuitive/)
+})
 test('les e-mails n’utilisent aucune boîte contact fictive et supportent Reply-To', () => {
   const server = read('lib/emailQuestions.js')
   const helper = read('lib/transactionalEmail.js')
@@ -105,8 +131,10 @@ test('l’administration est authentifiée via rdv-admin et offre réponse + rem
   assert.match(server, /owner_id', userId/)
   assert.match(server, /slug', 'sebastien-seguin'/)
   assert.match(server, /email-question-answer\//)
+  const rendered = buildEmailGuidanceAnswer({ first_name: 'Camille', questions: [{ q: 'Ma question' }] }, 'Ma guidance personnalisée.')
   const disclaimer = 'Cette guidance repose sur une interprétation intuitive : une erreur reste possible et aucune prédiction ne peut être considérée comme certaine ni garantie.'
-  assert.equal(server.split(disclaimer).length - 1, 2)
+  assert.ok(rendered.html.includes(disclaimer))
+  assert.ok(rendered.text.includes(disclaimer))
   assert.doesNotMatch(server, /certaine, garantie ou infaillible/)
   assert.match(server, /v2\/payments\/captures\/\$\{encodeURIComponent\(row\.paypal_capture_id\)\}\/refund/)
   assert.match(panel, /Envoyer la réponse/)

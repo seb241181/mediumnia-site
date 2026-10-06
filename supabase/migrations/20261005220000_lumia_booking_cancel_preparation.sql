@@ -54,10 +54,12 @@ DECLARE
   v_balance public.rdv_balance_payments;
   v_paypal public.rdv_paypal_payments;
   v_hold public.rdv_booking_holds;
+  v_google_job public.lumia_calendar_sync_jobs;
   v_has_gift BOOLEAN := false;
   v_has_refund BOOLEAN := false;
   v_has_transfer BOOLEAN := false;
   v_booking_found BOOLEAN := false;
+  v_google_job_found BOOLEAN := false;
   v_failure TEXT;
   v_result JSONB;
 BEGIN
@@ -124,12 +126,21 @@ BEGIN
         v_failure := 'booking_not_found';
       ELSIF v_booking.practitioner_id <> v_intent.practitioner_id THEN
         v_failure := 'booking_practitioner_mismatch';
-      ELSIF v_booking.booking_source IS DISTINCT FROM 'mediumia' THEN
+      ELSE
+        PERFORM 1
+        FROM public.booking_practitioners p
+        WHERE p.id = v_booking.practitioner_id
+          AND p.owner_id = p_owner_id;
+        IF NOT FOUND THEN
+          v_failure := 'practitioner_not_owned';
+        END IF;
+      END IF;
+      IF v_failure IS NULL AND v_booking.booking_source IS DISTINCT FROM 'mediumia' THEN
         v_failure := 'lumia_booking_source_not_allowed';
-      ELSIF v_booking.status <> 'confirmed' THEN
+      ELSIF v_failure IS NULL AND v_booking.status <> 'confirmed' THEN
         v_failure := 'booking_not_confirmed';
-      ELSIF v_intent.expected_target_updated_at IS NULL
-         OR v_booking.updated_at IS DISTINCT FROM v_intent.expected_target_updated_at THEN
+      ELSIF v_failure IS NULL AND (v_intent.expected_target_updated_at IS NULL
+         OR v_booking.updated_at IS DISTINCT FROM v_intent.expected_target_updated_at) THEN
         v_failure := 'booking_changed_since_preview';
       END IF;
     END IF;
@@ -235,18 +246,40 @@ BEGIN
   END IF;
 
   IF v_booking.google_event_id IS NOT NULL THEN
-    INSERT INTO public.lumia_calendar_sync_jobs(
-      booking_id, practitioner_id, operation, status, google_event_id, idempotency_key
-    ) VALUES (
-      v_booking.id, v_booking.practitioner_id, 'cancel_projection', 'pending',
-      v_booking.google_event_id, 'lumia.google.cancel_projection:' || v_booking.id::TEXT
-    ) ON CONFLICT (booking_id, operation) DO NOTHING;
+    IF NOT v_google_job_found THEN
+      INSERT INTO public.lumia_calendar_sync_jobs(
+        booking_id, practitioner_id, operation, status, google_event_id, idempotency_key
+      ) VALUES (
+        v_booking.id, v_booking.practitioner_id, 'cancel_projection', 'pending',
+        v_booking.google_event_id, 'lumia.google.cancel_projection:' || v_booking.id::TEXT
+      );
+    END IF;
+  END IF;
+
+  -- A stale completed/manual job for a different Google event must not let a
+  -- new cancellation claim that its projection is pending. This lock follows
+  -- every financial guard and is still acquired before the booking transition.
+  IF v_failure IS NULL AND v_booking.google_event_id IS NOT NULL THEN
+    BEGIN
+      SELECT * INTO v_google_job
+      FROM public.lumia_calendar_sync_jobs
+      WHERE booking_id = v_booking.id AND operation = 'cancel_projection'
+      FOR UPDATE NOWAIT;
+      v_google_job_found := FOUND;
+    EXCEPTION WHEN lock_not_available THEN
+      v_failure := 'booking_or_payment_busy';
+    END;
+    IF v_failure IS NULL AND v_google_job_found
+       AND (v_google_job.google_event_id <> v_booking.google_event_id
+         OR v_google_job.status NOT IN ('pending', 'retry', 'running')) THEN
+      v_failure := 'google_sync_job_incoherent';
+    END IF;
   END IF;
 
   v_result := jsonb_build_object(
     'intent_id', v_intent.id, 'status', 'succeeded', 'executed', true,
     'booking_id', v_booking.id,
-    'google_sync', CASE WHEN v_booking.google_event_id IS NULL THEN 'not_required' ELSE 'pending' END
+    'google_sync', CASE WHEN v_booking.google_event_id IS NULL THEN 'not_required' ELSE COALESCE(v_google_job.status, 'pending') END
   );
   UPDATE public.lumia_action_intents
   SET status = 'succeeded', executed_at = clock_timestamp(),
@@ -255,7 +288,7 @@ BEGIN
   INSERT INTO public.lumia_action_attempts(intent_id, owner_id, event_type, actor_type, actor_id, detail)
   VALUES (v_intent.id, p_owner_id, 'finished', 'executor', p_owner_id,
     jsonb_build_object('status', 'succeeded', 'booking_id', v_booking.id,
-      'google_sync', CASE WHEN v_booking.google_event_id IS NULL THEN 'not_required' ELSE 'pending' END));
+      'google_sync', CASE WHEN v_booking.google_event_id IS NULL THEN 'not_required' ELSE COALESCE(v_google_job.status, 'pending') END));
   RETURN v_result;
 END;
 $$;

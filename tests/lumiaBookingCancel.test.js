@@ -69,6 +69,20 @@ test('Phase 3B : seule la source MediumIA peut être annulée par Lumia', () => 
   assert.match(migration, /where id = v_booking\.id[\s\S]*and status = 'confirmed'[\s\S]*and updated_at = v_intent\.expected_target_updated_at/i)
 })
 
+test('Phase 3B : l’exécution révalide le propriétaire du praticien sous verrou', () => {
+  assert.match(migration, /from public\.booking_practitioners p[\s\S]*p\.id = v_booking\.practitioner_id[\s\S]*p\.owner_id = p_owner_id/i)
+  assert.match(migration, /practitioner_not_owned/i)
+})
+
+test('Phase 3B : le job Google existant doit rester cohérent et actionnable', () => {
+  assert.match(migration, /from public\.lumia_calendar_sync_jobs[\s\S]*for update nowait/i)
+  assert.match(migration, /v_google_job\.google_event_id <> v_booking\.google_event_id/i)
+  assert.match(migration, /v_google_job\.status not in \('pending', 'retry', 'running'\)/i)
+  assert.match(migration, /google_sync_job_incoherent/i)
+  assert.doesNotMatch(migration, /on conflict \(booking_id, operation\) do nothing/i)
+  assert.match(migration, /coalesce\(v_google_job\.status, 'pending'\)/i)
+})
+
 test('Phase 3B : reprise après claim, échecs durables et snapshot updated_at sont explicitement protégés', () => {
   assert.match(migration, /v_intent\.status IN \('succeeded', 'failed', 'compensation_required'\)/i)
   assert.match(migration, /IF v_intent\.status <> 'executing'/i)
@@ -84,7 +98,30 @@ test('Phase 3B : API authentifiée reste dormante tant que la whitelist est vide
   assert.deepEqual(LUMIA_ALLOWED_ACTIONS, [])
   assert.match(api, /if \(!LUMIA_ALLOWED_ACTIONS\.includes\(LUMIA_BOOKING_CANCEL_ACTION\)\) return disabled\(\)/)
   assert.match(api, /ownedConversation\(db, userId/i)
+  assert.match(api, /LUMIA_RDV_AGENT_ID = 'fcd33963-3e5f-4726-abec-b9c5c5ee4fe2'/)
+  assert.match(api, /eq\('agent_id', LUMIA_RDV_AGENT_ID\)/)
   assert.match(api, /booking_practitioners\.owner_id', userId/i)
   assert.match(api, /booking\.booking_source !== 'mediumia'/i)
   assert.doesNotMatch(api, /sendEmail|googleCalendar|Messages\.app|chat\.db/)
+})
+
+test('Phase 3B : approve et claim n’acceptent que l’intent Lumia cancel privé', () => {
+  assert.match(api, /async function ownedBookingCancelIntent[\s\S]*action_type !== LUMIA_BOOKING_CANCEL_ACTION[\s\S]*target_source !== 'mediumia_booking'[\s\S]*!data\.practitioner_id[\s\S]*!isUuid\(data\.target_id\)/)
+  const approveAt = api.indexOf("if (op === 'approve')")
+  const approveRpcAt = api.indexOf("lumia_approve_action_intent")
+  const executeAt = api.indexOf("if (op === 'execute')")
+  const claimRpcAt = api.indexOf("lumia_claim_action_execution")
+  assert.ok(api.indexOf('ownedBookingCancelIntent', approveAt) < approveRpcAt)
+  assert.ok(api.indexOf('ownedBookingCancelIntent', executeAt) < claimRpcAt)
+})
+
+test('Phase 3B : claim utilise les quatre arguments serveur et la clé de l’intent', () => {
+  const claimAt = api.indexOf("lumia_claim_action_execution")
+  const claimBlock = api.slice(claimAt, claimAt + 360)
+  assert.match(claimBlock, /p_owner_id: userId/)
+  assert.match(claimBlock, /p_conversation_id: conversation\.id/)
+  assert.match(claimBlock, /p_intent_id: intent\.id/)
+  assert.match(claimBlock, /p_executor_name: LUMIA_BOOKING_CANCEL_EXECUTOR/)
+  assert.match(api, /idempotencyKey: intent\.idempotency_key/)
+  assert.doesNotMatch(api, /input\.idempotency_key/)
 })

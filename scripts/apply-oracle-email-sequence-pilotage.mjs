@@ -26,15 +26,15 @@ pilotage = replaceRequired(
 
 pilotage = replaceRequired(
   pilotage,
-  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleNextClicks`,
-  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleEmailOptinView = Number(totals.oracle_email_optin_view || 0)\n  const oracleEmailOptinCompleted = Number(totals.oracle_email_optin_completed || 0)\n  const oracleNextClicks`,
+  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleShared = Number(totals.oracle_shared || 0)\n  const oracleNextClicks`,
+  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleShared = Number(totals.oracle_shared || 0)\n  const oracleEmailOptinView = Number(totals.oracle_email_optin_view || 0)\n  const oracleEmailOptinCompleted = Number(totals.oracle_email_optin_completed || 0)\n  const oracleNextClicks`,
   'pilotage opt-in values',
 )
 
 pilotage = replaceRequired(
   pilotage,
   `            <FunnelRow label="Résultat obtenu" value={oracleDrawCompleted} reference={oracleFreeViews} detail={pct(oracleDrawCompleted, oracleDrawStarted)} />\n            <FunnelRow label="Action suivante choisie" value={oracleNextClicks} reference={oracleFreeViews} detail={pct(oracleNextClicks, oracleDrawCompleted)} />`,
-  `            <FunnelRow label="Résultat obtenu" value={oracleDrawCompleted} reference={oracleFreeViews} detail={pct(oracleDrawCompleted, oracleDrawStarted)} />\n            <FunnelRow label="Proposition des 3 exercices vue" value={oracleEmailOptinView} reference={oracleFreeViews} detail={pct(oracleEmailOptinView, oracleDrawCompleted)} />\n            <FunnelRow label="Séquence 3 exercices demandée" value={oracleEmailOptinCompleted} reference={oracleFreeViews} detail={pct(oracleEmailOptinCompleted, oracleEmailOptinView)} />\n            <FunnelRow label="Autre action suivante choisie" value={oracleNextClicks} reference={oracleFreeViews} detail={pct(oracleNextClicks, oracleDrawCompleted)} />`,
+  `            <FunnelRow label="Résultat obtenu" value={oracleDrawCompleted} reference={oracleFreeViews} detail={pct(oracleDrawCompleted, oracleDrawStarted)} />\n            <FunnelRow label="Tirage partagé" value={oracleShared} reference={oracleFreeViews} detail={pct(oracleShared, oracleDrawCompleted)} />\n            <FunnelRow label="Proposition des 3 exercices vue" value={oracleEmailOptinView} reference={oracleFreeViews} detail={pct(oracleEmailOptinView, oracleDrawCompleted)} />\n            <FunnelRow label="Séquence 3 exercices demandée" value={oracleEmailOptinCompleted} reference={oracleFreeViews} detail={pct(oracleEmailOptinCompleted, oracleEmailOptinView)} />\n            <FunnelRow label="Autre action suivante choisie" value={oracleNextClicks} reference={oracleFreeViews} detail={pct(oracleNextClicks, oracleDrawCompleted)} />`,
   'Oracle opt-in funnel rows',
 )
 

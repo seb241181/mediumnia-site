@@ -3,6 +3,7 @@ import LegalFooter from './LegalFooter'
 import SiteNav from './SiteNav'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 import { CHANNELS, PROFILES, QUESTIONS, percentages, quizShareText, scoreQuiz } from '../lib/quizSensibilite.js'
+import { canvasToQuizFile, drawQuizStoryImage } from '../lib/quizShareImage.js'
 
 function openWith(onOpen) {
   return (event) => {
@@ -31,32 +32,60 @@ function ChannelBars({ scores }) {
   )
 }
 
-function ShareResult({ dominant }) {
+function ShareResult({ result }) {
   const [note, setNote] = useState('')
-  const text = quizShareText(dominant)
+  const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const text = quizShareText(result?.dominant)
 
-  // Compté seulement quand le partage ou la copie aboutit (pas sur une annulation).
-  async function share() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ text })
+  async function shareImage() {
+    if (!result || busy) return
+    setBusy(true)
+    setNote('')
+    try {
+      const file = await canvasToQuizFile(await drawQuizStoryImage(document.createElement('canvas'), result))
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], text })
+          trackMediumiaMetric('quiz_shared', 'quiz')
+        } catch { /* partage annulé */ }
+      } else {
+        const url = URL.createObjectURL(file)
+        const link = Object.assign(document.createElement('a'), { href: url, download: file.name })
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 2000)
         trackMediumiaMetric('quiz_shared', 'quiz')
-      } catch { /* partage annulé */ }
-      return
+        setNote('Image enregistrée : ajoutez-la à votre story Instagram, TikTok ou Facebook.')
+      }
+    } catch {
+      setNote('L’image n’a pas pu être créée sur cet appareil.')
+    } finally {
+      setBusy(false)
     }
+  }
+
+  async function copyText() {
     try {
       await navigator.clipboard.writeText(text)
       trackMediumiaMetric('quiz_shared', 'quiz')
-      setNote('Texte copié : collez-le dans un message ou une story.')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
     } catch {
-      setNote('Le partage n’est pas disponible sur cet appareil.')
+      setNote('La copie n’est pas disponible sur cet appareil.')
     }
   }
 
   return (
-    <div className="mt-5 text-center">
-      <button type="button" onClick={share} className="w-full rounded-xl border border-gold/40 bg-white px-5 py-3 font-georgia text-sm font-bold text-deep sm:w-auto">
-        Partager mon résultat ✦
+    <div className="mt-6 rounded-2xl border border-gold/25 bg-white/70 p-5 text-center">
+      <p className="font-georgia text-sm font-medium text-deep">Partagez votre canal en story</p>
+      <p className="mt-1 font-georgia text-xs text-mist">Votre résultat devient une image 1080 × 1920 prête pour Instagram, TikTok ou Facebook.</p>
+      <button type="button" onClick={shareImage} disabled={busy} className="mt-4 w-full rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-bold text-gold disabled:opacity-60">
+        {busy ? 'Création de l’image…' : 'Partager mon résultat en story →'}
+      </button>
+      <button type="button" onClick={copyText} className="mt-2 w-full rounded-xl border border-gold/35 bg-white px-5 py-3 font-georgia text-sm text-deep">
+        {copied ? 'Texte copié ✓' : 'Copier aussi le texte'}
       </button>
       {note && <p role="status" className="mt-2 font-georgia text-xs text-mist">{note}</p>}
     </div>
@@ -269,7 +298,7 @@ export default function QuizSensibilitePage({ onBack, onNavigate, onOpenFormatio
               <p className="mt-2 font-georgia text-sm leading-relaxed text-deep">{profile.practice}</p>
             </div>
 
-            <ShareResult dominant={result.dominant} />
+            <ShareResult result={result} />
 
             <blockquote className="mt-10 border-l-2 border-gold pl-5 font-georgia text-base italic leading-relaxed text-deep/85">
               « Il est essentiel de ne pas vous enfermer dans une case prédéfinie. […] Dans la pratique, il y a toujours un canal qui est plus fluide que les autres, surtout au début. Et seule la pratique peut vous révéler lequel. »

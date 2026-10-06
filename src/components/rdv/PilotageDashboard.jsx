@@ -22,9 +22,9 @@ const LABELS = {
   chronosphere_example_view: 'Vues exemple Chronosphère',
   chronosphere_example_cta: 'Clics depuis l’exemple',
   chronosphere_payment_opened: 'Paiements Chronosphère ouverts',
-  question_view: 'Visites Questions e-mail',
-  question_payment_started: 'Paiements Questions e-mail ouverts',
-  question_purchase_completed: 'Questions e-mail commandées',
+  question_view: 'Visites Guidances e-mail',
+  question_payment_started: 'Paiements Guidances e-mail ouverts',
+  question_purchase_completed: 'Guidances e-mail commandées',
 }
 
 function authHeader(session) {
@@ -270,13 +270,13 @@ export default function PilotageDashboard({ session, demoMode = false }) {
         <MetricCard eyebrow="Chronosphère" value={chronoClicks} note={`${pct(chronoClicks, homeClicks)} des clics guidés de l’accueil`} />
         <MetricCard eyebrow="Exemple Chronosphère" value={exampleViews} note={`${exampleCta.toLocaleString('fr-FR')} clics vers le tirage`} />
         <MetricCard eyebrow="Paiement ouvert" value={paymentOpened} note={`${pct(paymentOpened, exampleCta || chronoClicks)} après l’étape précédente`} />
-        <MetricCard eyebrow="Questions e-mail" value={questionViews} note={`${questionPurchases.toLocaleString('fr-FR')} commande${questionPurchases > 1 ? 's' : ''} · ${pct(questionPurchases, questionViews)} des visites`} />
+        <MetricCard eyebrow="Guidances e-mail" value={questionViews} note={`${questionPurchases.toLocaleString('fr-FR')} commande${questionPurchases > 1 ? 's' : ''} · ${pct(questionPurchases, questionViews)} des visites`} />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
         <article className="rounded-2xl border border-gold/20 bg-white/65 p-6 lg:col-span-2">
           <div className="mb-6">
-            <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">QUESTIONS PAR E-MAIL</p>
+            <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">GUIDANCES PAR E-MAIL</p>
             <h3 className="mt-1 font-georgia text-xl font-medium text-deep">Visites et passage à la commande</h3>
             <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Le compteur de visite se déclenche à l’ouverture de la page /question. Les chiffres restent agrégés et anonymes.</p>
           </div>

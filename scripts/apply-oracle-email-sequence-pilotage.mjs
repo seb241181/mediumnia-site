@@ -26,8 +26,8 @@ pilotage = replaceRequired(
 
 pilotage = replaceRequired(
   pilotage,
-  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleNextClicks`,
-  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleEmailOptinView = Number(totals.oracle_email_optin_view || 0)\n  const oracleEmailOptinCompleted = Number(totals.oracle_email_optin_completed || 0)\n  const oracleNextClicks`,
+  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleShared = Number(totals.oracle_shared || 0)\n  const oracleNextClicks`,
+  `  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleShared = Number(totals.oracle_shared || 0)\n  const oracleEmailOptinView = Number(totals.oracle_email_optin_view || 0)\n  const oracleEmailOptinCompleted = Number(totals.oracle_email_optin_completed || 0)\n  const oracleNextClicks`,
   'pilotage opt-in values',
 )
 

@@ -8,9 +8,11 @@ test('the shared story helper counts a share only on success and downloads other
   const { shareImageFile } = await import('../src/lib/shareImage.js')
   assert.equal(typeof shareImageFile, 'function')
   const helper = read('src/lib/shareImage.js')
-  assert.match(helper, /return 'cancelled'/)
   assert.match(helper, /return 'shared'/)
   assert.match(helper, /return 'downloaded'/)
+  // Seule une annulation de l'utilisateur (AbortError) ne retombe pas sur le
+  // téléchargement ; tout autre échec télécharge l'image.
+  assert.match(helper, /if \(error\?\.name === 'AbortError'\) return 'cancelled'\n\s+return downloadFile\(file\)/)
   assert.equal(1080, (await import('../src/lib/shareImage.js')).STORY_W)
   assert.equal(1920, (await import('../src/lib/shareImage.js')).STORY_H)
 })
@@ -30,6 +32,10 @@ test('the Oracle free draw offers a story share that keeps the interpretation pr
   assert.match(patch, /jamais votre interprétation personnelle/)
   assert.match(patch, /trackMediumiaMetric\('oracle_shared', 'oracle'\)/)
   assert.match(patch, /'quiz_email_optin_completed',\\n {2}'oracle_shared',/)
+  // L'image reflète la structure du tirage (figée dans result), pas celle que
+  // le sélecteur — resté actif — afficherait au moment du partage.
+  assert.match(patch, /emailSequenceProof, spread \}/)
+  assert.match(patch, /const drawn = result\.spread \|\| spread/)
   const img = read('src/lib/oracleShareImage.js')
   assert.match(img, /mediumia\.fr\/oracle/)
   // L'image ne dessine jamais l'interprétation.

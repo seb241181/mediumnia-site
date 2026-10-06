@@ -21,7 +21,7 @@ let oracleTest = await readFile(oracleTestPath, 'utf8')
 oracleTest = replaceRequired(
   oracleTest,
   "  const [result, setResult]   = useState(null)",
-  "  const [result, setResult]   = useState(null)\n  const [shareBusy, setShareBusy] = useState(false)\n  const [shareNote, setShareNote] = useState('')\n\n  async function shareOracleStory() {\n    if (!result?.cards?.length) return\n    setShareBusy(true)\n    setShareNote('')\n    try {\n      const { drawOracleImage } = await import('../lib/oracleShareImage.js')\n      const { canvasToFile, shareImageFile } = await import('../lib/shareImage.js')\n      const canvas = await drawOracleImage(document.createElement('canvas'), { spreadName: spread.name, cards: result.cards, positions: spread.positions })\n      const file = await canvasToFile(canvas, 'mon-tirage-oracle-mediumia.png')\n      const outcome = await shareImageFile(file, 'J’ai fait mon tirage Oracle offert sur MediumIA ✦ mediumia.fr/oracle')\n      if (outcome === 'cancelled') return\n      trackMediumiaMetric('oracle_shared', 'oracle')\n      if (outcome === 'downloaded') setShareNote('Image enregistrée : ajoutez-la à votre story Instagram, TikTok ou Facebook.')\n    } catch {\n      setShareNote('L’image n’a pas pu être créée sur cet appareil.')\n    } finally {\n      setShareBusy(false)\n    }\n  }",
+  "  const [result, setResult]   = useState(null)\n  const [shareBusy, setShareBusy] = useState(false)\n  const [shareNote, setShareNote] = useState('')\n\n  async function shareOracleStory() {\n    if (!result?.cards?.length) return\n    setShareBusy(true)\n    setShareNote('')\n    try {\n      const { drawOracleImage } = await import('../lib/oracleShareImage.js')\n      const { canvasToFile, shareImageFile } = await import('../lib/shareImage.js')\n      const drawn = result.spread || spread\n      const canvas = await drawOracleImage(document.createElement('canvas'), { spreadName: drawn.name, cards: result.cards, positions: drawn.positions })\n      const file = await canvasToFile(canvas, 'mon-tirage-oracle-mediumia.png')\n      const outcome = await shareImageFile(file, 'J’ai fait mon tirage Oracle offert sur MediumIA ✦ mediumia.fr/oracle')\n      if (outcome === 'cancelled') return\n      trackMediumiaMetric('oracle_shared', 'oracle')\n      if (outcome === 'downloaded') setShareNote('Image enregistrée : ajoutez-la à votre story Instagram, TikTok ou Facebook.')\n    } catch {\n      setShareNote('L’image n’a pas pu être créée sur cet appareil.')\n    } finally {\n      setShareBusy(false)\n    }\n  }",
   'OracleTest share state',
 )
 
@@ -38,6 +38,16 @@ oracleTest = replaceRequired(
           </div>
 `,
   'OracleTest share button',
+)
+
+// Fige la structure utilisée pour le tirage : le sélecteur reste actif après
+// le tirage, donc l'image doit refléter la structure du résultat, pas celle
+// sélectionnée au moment du partage.
+oracleTest = replaceRequired(
+  oracleTest,
+  "      setResult({ cards: drawnCards, interpretation, emailSequenceProof })",
+  "      setResult({ cards: drawnCards, interpretation, emailSequenceProof, spread })",
+  'OracleTest result spread capture',
 )
 
 await writeFile(oracleTestPath, oracleTest)

@@ -80,16 +80,7 @@ export function drawCallToAction(ctx, question, url) {
   ctx.fillText(url, STORY_W / 2, 1722)
 }
 
-// Renvoie 'shared' | 'downloaded' | 'cancelled'.
-export async function shareImageFile(file, text) {
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], text })
-      return 'shared'
-    } catch {
-      return 'cancelled'
-    }
-  }
+function downloadFile(file) {
   const url = URL.createObjectURL(file)
   const link = Object.assign(document.createElement('a'), { href: url, download: file.name })
   document.body.appendChild(link)
@@ -97,4 +88,21 @@ export async function shareImageFile(file, text) {
   link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 2000)
   return 'downloaded'
+}
+
+// Renvoie 'shared' | 'downloaded' | 'cancelled'. Seule une annulation de
+// l'utilisateur (AbortError) renvoie 'cancelled' ; tout autre échec du partage
+// (activation expirée, restriction de la plateforme…) retombe sur le
+// téléchargement, pour que le bouton ne reste jamais sans effet.
+export async function shareImageFile(file, text) {
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], text })
+      return 'shared'
+    } catch (error) {
+      if (error?.name === 'AbortError') return 'cancelled'
+      return downloadFile(file)
+    }
+  }
+  return downloadFile(file)
 }

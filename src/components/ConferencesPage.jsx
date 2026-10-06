@@ -93,7 +93,7 @@ export default function ConferencesPage({ onBack, onNavigate }) {
           <div className="relative mx-auto max-w-5xl text-center">
             <p className="font-georgia text-[11px] uppercase tracking-[0.28em] text-gold">MEDIUMIA · EN DIRECT · CONFÉRENCE OFFERTE</p>
             <h1 className="mx-auto mt-5 max-w-5xl font-georgia text-5xl font-medium leading-[1.05] md:text-7xl">{title}</h1>
-            <p className="mx-auto mt-6 max-w-2xl font-georgia text-base leading-relaxed text-cream/70 md:text-lg">Une heure avec Sébastien Seguin pour comprendre l’approche MediumIA, expérimenter les premières bases de la pratique et poser vos questions en direct.</p>
+            <p className="mx-auto mt-6 max-w-2xl font-georgia text-base leading-relaxed text-cream/70 md:text-lg">Je vous propose une heure en direct pour vous présenter mon approche MediumIA, expérimenter les premières bases de la pratique et répondre à vos questions.</p>
             <p className="mt-5 font-georgia text-lg font-semibold tracking-wide text-gold md:text-2xl">{eventDate} · {duration}</p>
             <div className="mx-auto mt-7 max-w-2xl rounded-2xl border border-gold/35 bg-gold/10 px-5 py-4">
               <p className="font-georgia text-sm font-semibold text-gold">🎁 1 formation MediumIA complète offerte en direct — valeur {prizeValue}</p>

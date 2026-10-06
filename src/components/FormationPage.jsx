@@ -29,7 +29,7 @@ const POINTS = [
   { titre: 'Le cœur au centre', texte: "Ce parcours place le cœur comme véritable centre de la pratique médiumnique. Le cœur est votre émetteur-récepteur. Le cerveau n'est qu'un processeur." },
   { titre: 'La souveraineté comme protection', texte: "Votre souveraineté intérieure est votre première et meilleure protection. Vous apprenez à la poser à chaque pratique — sans peur ni rituels compliqués." },
   { titre: "L'autonomie comme objectif", texte: "L'objectif n'est pas de vous rendre dépendant d'un enseignant ou d'un oracle. L'objectif est que vous trouviez votre propre voix et que vous appreniez à lui faire confiance." },
-  { titre: "Un assistant facultatif, formé sur la méthode", texte: "MediumIA n'est pas la formation et ne remplace pas Sébastien. C'est un outil facultatif, formé sur le contenu des 25 modules et la vision du parcours, disponible uniquement si vous souhaitez vous en servir." },
+  { titre: "Un assistant facultatif, formé sur la méthode", texte: "MediumIA n'est pas la formation et ne me remplace pas. C'est un outil facultatif, formé sur le contenu de mes 25 modules et la vision du parcours, disponible uniquement si vous souhaitez vous en servir." },
 ]
 
 // Once the parcours is open, this answer describes it (closed: unchanged).
@@ -37,7 +37,7 @@ const FAQ_PAY_QUESTION = 'Puis-je payer en plusieurs fois ?'
 const FAQ = [
   { q: 'Faut-il déjà avoir des capacités médiumniques ?', r: "Non, et c'est même tout le sens de cet accompagnement. La médiumnité n'est pas un don réservé à quelques élus. Le parcours est conçu pour les débutants comme pour celles et ceux qui pratiquent déjà et veulent structurer ce qu'ils ressentent." },
   { q: 'Combien de temps dure le parcours ?', r: "Il n'y a pas de durée imposée. Certains traversent un module par semaine, d'autres prennent le temps de vivre chaque exercice sur plusieurs jours. Vous disposez de 12 mois d'accès à l'application pour cheminer librement, et les modules téléchargés restent à vous pour toujours." },
-  { q: 'Est-ce que MediumIA remplace un vrai accompagnement humain ?', r: "Non. Le cœur du parcours, ce sont les 25 modules, les 84 exercices et la méthode transmise par Sébastien. L'assistant MediumIA est facultatif : vous pouvez suivre toute la formation sans l'utiliser. Si vous le souhaitez, il reste disponible comme outil complémentaire pour travailler les exercices et relire vos ressentis." },
+  { q: 'Est-ce que MediumIA remplace un vrai accompagnement humain ?', r: "Non. Le cœur du parcours, ce sont mes 25 modules, les 84 exercices et la méthode que je vous transmets. L'assistant MediumIA est facultatif : vous pouvez suivre toute la formation sans l'utiliser. Si vous le souhaitez, il reste disponible comme outil complémentaire pour travailler les exercices et relire vos ressentis." },
   { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. MediumIA n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin." },
   { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, l'assistant intégré et les modules PDF sont accessibles en ligne. Après confirmation du paiement, votre accès est activé sur l'adresse e-mail utilisée avec PayPal." },
   { q: FAQ_PAY_QUESTION, r: "Oui. La Formation MediumIA est à 597 € TTC. Paiement en plusieurs fois disponible avec PayPal selon éligibilité." },
@@ -114,7 +114,7 @@ function FAQAccordion() {
 }
 
 const HERO_APPORTS = [
-  'La méthode de Sébastien : 25 modules, 269 pages et 84 exercices guidés',
+  'Ma méthode : 25 modules, 269 pages et 84 exercices guidés',
   'Commencez par la Découverte à 29 € : introduction + Module 1 complet',
   'Assistant MediumIA facultatif : un outil en plus si vous souhaitez l’utiliser',
 ]
@@ -124,7 +124,7 @@ const FORMATION_SECTIONS = [
   { id: 'formation-apercu-reel', label: 'Aperçu' },
   { id: 'offre', label: 'Tarif' },
   { id: 'essayer', label: 'Essayer' },
-  { id: 'formateur', label: 'Formateur' },
+  { id: 'formateur', label: 'À propos' },
   { id: 'faq', label: 'FAQ' },
 ]
 
@@ -333,7 +333,7 @@ export default function FormationPage({ onBack, onNavigate }) {
             <div>
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Formation MediumIA · en ligne</p>
               <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-[1.08] mb-5">Développer sa médiumnité, pas à pas</h1>
-              <p className="font-georgia text-lg md:text-xl text-deep/85 leading-relaxed mb-4">Une méthode conçue et écrite par Sébastien Seguin à partir de plus de douze ans de pratique, en 25 modules et 4 niveaux, pour comprendre et structurer votre médiumnité dans la clarté.</p>
+              <p className="font-georgia text-lg md:text-xl text-deep/85 leading-relaxed mb-4">J’ai conçu et écrit cette méthode à partir de plus de douze ans de pratique. Je l’ai structurée en 25 modules et 4 niveaux pour vous aider à comprendre et développer votre médiumnité dans la clarté.</p>
               <p className="font-georgia text-sm text-mist leading-relaxed mb-4"><strong className="text-deep">L’intelligence artificielle n’est pas la formation.</strong> L’assistant MediumIA est un outil facultatif, disponible en complément si vous souhaitez l’utiliser.</p>
               <p className="font-georgia text-base text-mist leading-relaxed mb-6"><strong className="text-deep">Pour qui :</strong> les personnes sensibles qui veulent comprendre ce qu’elles perçoivent, qu’elles débutent ou pratiquent déjà.</p>
               <ul className="font-georgia text-base text-deep space-y-2">
@@ -348,7 +348,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                   <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold mb-3">Commencer sans s’engager</p>
                   <div className="rounded-2xl border border-gold/35 bg-gold/10 p-5 mb-4">
                     <p className="font-georgia text-deep leading-none"><span className="text-5xl font-medium">{money(offer.discoveryCents)}</span></p>
-                    <p className="font-georgia text-sm font-bold text-deep mt-2">pour découvrir réellement la méthode de Sébastien</p>
+                    <p className="font-georgia text-sm font-bold text-deep mt-2">pour découvrir réellement ma méthode</p>
                     <p className="font-georgia text-sm text-mist mt-3">Introduction + Module 1 complet + exercices. Puis, seulement si vous souhaitez continuer : {money(offer.stepCents)} par mois.</p>
                     <p className="font-georgia text-xs text-mist mt-2">Vos {money(offer.discoveryCents)} comptent dans le total · arrêt et reprise possibles</p>
                   </div>
@@ -365,7 +365,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                 <button onClick={() => goTo('offre')} className="font-georgia px-7 py-4 rounded-lg bg-deep text-gold font-bold">Commencer par la Découverte à {offer ? money(offer.discoveryCents) : '29 €'} →</button>
                 <button onClick={() => goTo('programme')} className="font-georgia px-7 py-3.5 rounded-lg border-2 border-gold/50 text-deep font-bold hover:border-gold transition-colors">Explorer le programme</button>
               </div>
-              <p className="font-georgia text-xs text-mist mt-5">Par Sébastien Seguin, médium depuis plus de douze ans. 12 mois d’accès, PDF à vous pour votre usage personnel.</p>
+              <p className="font-georgia text-xs text-mist mt-5">Je suis Sébastien Seguin, médium depuis plus de douze ans. Vous gardez vos PDF pour votre usage personnel et disposez de 12 mois d’accès à l’application.</p>
             </aside>
           </div>
         </section>
@@ -374,14 +374,14 @@ export default function FormationPage({ onBack, onNavigate }) {
           <div className="max-w-4xl mx-auto text-center">
             <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">D’abord la méthode</p>
             <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-3">Commencez par 29 € — continuez seulement si elle vous convient</h2>
-            <p className="font-georgia text-mist text-base leading-relaxed max-w-2xl mx-auto mb-4">Vous découvrez d’abord un vrai morceau de la méthode de Sébastien. L’assistant IA est facultatif : votre achat porte d’abord sur le contenu, les exercices et la progression.</p>
+            <p className="font-georgia text-mist text-base leading-relaxed max-w-2xl mx-auto mb-4">Vous découvrez d’abord un vrai morceau de ma méthode. L’assistant IA est facultatif : votre achat porte d’abord sur le contenu, les exercices et la progression.</p>
 
             <ParcoursOffer />
 
             <div className="max-w-2xl mx-auto mt-5 rounded-2xl border-2 border-gold/45 bg-white/85 p-6 md:p-8 text-left shadow-[0_16px_46px_rgba(26,21,53,0.07)]">
               <div className="text-center mb-6">
                 <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">Première étape</p>
-                <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep">Découverte · la méthode de Sébastien</h3>
+                <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep">Découverte · ma méthode</h3>
                 <p className="font-georgia text-4xl text-deep font-medium mt-3">29 €</p>
                 <p className="font-georgia text-sm text-mist mt-2">Un vrai module complet pour décider sur pièce, sans vous engager sur les 597 €.</p>
               </div>
@@ -481,7 +481,7 @@ export default function FormationPage({ onBack, onNavigate }) {
           <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">
             <div className="flex-1 text-left">
               <p className="font-georgia text-lg md:text-xl font-bold text-deep">Aperçu réel · Module 1</p>
-              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour lire un extrait de la pédagogie MediumIA.</p>
+              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour lire un extrait de ma pédagogie.</p>
             </div>
             <DetailsMark className="text-gold/70 text-2xl" />
           </summary>
@@ -490,7 +490,7 @@ export default function FormationPage({ onBack, onNavigate }) {
             <div className="text-center max-w-2xl mx-auto mb-10">
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Aperçu réel · Module 1</p>
               <h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4">L'Intention comme Porte</h2>
-              <p className="font-georgia text-mist text-base leading-relaxed">Avant d'investir dans le parcours complet, découvrez un vrai extrait de la pédagogie MediumIA.</p>
+              <p className="font-georgia text-mist text-base leading-relaxed">Avant d'investir dans le parcours complet, découvrez un vrai extrait de ma pédagogie.</p>
             </div>
 
             <article className="rounded-3xl border-2 border-gold/30 bg-white/70 p-7 md:p-10 shadow-[0_12px_34px_rgba(26,21,53,.06)]">
@@ -553,7 +553,7 @@ export default function FormationPage({ onBack, onNavigate }) {
 
         <section id="essai-assistant" className="px-6 py-12 bg-deep/[0.04]">
           <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8"><h3 className="font-georgia font-medium text-2xl leading-tight mb-2">Essayer l’assistant MediumIA</h3><p className="font-georgia text-mist text-base leading-relaxed">C’est un outil facultatif pour travailler la méthode de Sébastien, pas un remplacement de l’accompagnement humain. 5 messages offerts, sans inscription.</p></div>
+            <div className="text-center mb-8"><h3 className="font-georgia font-medium text-2xl leading-tight mb-2">Essayer l’assistant MediumIA</h3><p className="font-georgia text-mist text-base leading-relaxed">C’est un outil facultatif pour travailler ma méthode, pas pour me remplacer ni remplacer l’accompagnement humain. 5 messages offerts, sans inscription.</p></div>
             <TrialChat />
           </div>
         </section>
@@ -568,19 +568,19 @@ export default function FormationPage({ onBack, onNavigate }) {
         <details id="formateur" className="group mx-auto max-w-5xl scroll-mt-40 px-6 py-2">
           <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">
             <div className="flex-1 text-left">
-              <p className="font-georgia text-lg md:text-xl font-bold text-deep">Sébastien & l’approche MediumIA</p>
-              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour découvrir le formateur et ce qui rend la méthode différente.</p>
+              <p className="font-georgia text-lg md:text-xl font-bold text-deep">Mon approche MediumIA</p>
+              <p className="font-georgia text-xs md:text-sm text-mist mt-1">Ouvrir pour découvrir mon parcours et ce qui rend ma méthode différente.</p>
             </div>
             <DetailsMark className="text-gold/70 text-2xl" />
           </summary>
           <div className="px-6 py-16">
 <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Le formateur</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Sébastien Seguin</h2></div>
+            <div className="text-center mb-10"><p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Qui suis-je ?</p><h2 className="font-georgia font-medium text-3xl md:text-4xl leading-tight">Sébastien Seguin</h2></div>
             <div className="flex flex-col md:flex-row gap-10 items-start">
               <div className="shrink-0 flex justify-center md:justify-start w-full md:w-auto"><img src="/sebastien.jpg" alt="Sébastien Seguin, médium et fondateur de MediumIA" loading="lazy" decoding="async" className="w-44 h-60 md:w-52 md:h-72 object-cover object-top rounded-2xl border-2 shadow-md" style={{ borderColor: '#C9A84C' }} /></div>
               <div className="space-y-4 font-georgia text-base md:text-lg text-deep/80 leading-relaxed">
                 <p>Je m'appelle <strong className="text-deep">Sébastien Seguin</strong>. Je suis médium professionnel depuis plus de douze ans.</p>
-                <p>Ce parcours a été construit à partir de cette pratique réelle, quotidienne : des milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles. <strong className="text-deep">MediumIA n'est pas un parcours théorique. C'est une transmission.</strong></p>
+                <p>J’ai construit ce parcours à partir de cette pratique réelle, quotidienne : des milliers de séances, de rencontres avec des consultants, des défunts, des guides, des oracles. <strong className="text-deep">MediumIA n'est pas un parcours théorique. C'est une transmission.</strong></p>
                 <details className="group">
                   <summary className="cursor-pointer list-none font-georgia text-sm font-bold text-gold [&::-webkit-details-marker]:hidden"><span className="details-mark__closed">Lire la suite →</span><span className="details-mark__open">Réduire ↑</span></summary>
                   <div className="space-y-4 pt-4">

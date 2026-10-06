@@ -71,7 +71,7 @@ function calendarLinks({ title, date, time, durationMin, details }) {
 
 const OFFER_ERRORS = {
   offer_invalid: 'Ce lien personnel n’est pas valable.',
-  offer_expired: 'Ce lien personnel a expiré : demandez un nouveau lien à Sébastien.',
+  offer_expired: 'Ce lien personnel a expiré : demandez un nouveau lien à votre praticien.',
   offer_used: 'Ce créneau a déjà été réservé avec ce lien.',
   offer_cancelled: 'Ce lien personnel a été annulé.',
   offer_network: 'Le créneau proposé n’a pas pu être chargé. Rechargez la page.',
@@ -234,14 +234,14 @@ function RatingChip({ google }) {
   )
 }
 
-function RdvReviews({ google }) {
+function RdvReviews({ google, firstPerson = false }) {
   if (!google.available || !google.count || !google.reviews?.length) return null
   return (
     <section id="avis-rdv" className="mt-14 scroll-mt-24" aria-labelledby="avis-rdv-title">
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Avis clients</p>
-          <h2 id="avis-rdv-title" className="mt-1 font-georgia text-2xl font-medium text-deep">Ils ont consulté Sébastien</h2>
+          <h2 id="avis-rdv-title" className="mt-1 font-georgia text-2xl font-medium text-deep">{firstPerson ? 'Ils m’ont consulté' : 'Leurs avis après consultation'}</h2>
         </div>
         <p className="font-georgia text-sm text-mist">
           <Stars value={Math.round(google.rating || 0)} size="text-sm" />{' '}
@@ -1088,7 +1088,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
             <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-4">Demande envoyée</p>
             <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-4">Votre demande a bien été transmise.</h1>
             <p className="font-georgia text-mist text-base mb-8 leading-relaxed">
-              Sébastien vous recontactera afin de convenir de la date de l'intervention et de vous confirmer le montant total, frais de déplacement éventuels compris.
+              {slug === 'sebastien-seguin' ? "Je vous recontacterai afin de convenir de la date de l'intervention et de vous confirmer le montant total, frais de déplacement éventuels compris." : `${practitioner?.name || 'Le praticien'} vous recontactera afin de convenir de la date de l'intervention et de vous confirmer le montant total, frais de déplacement éventuels compris.`}
             </p>
             {service && (
               <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
@@ -1297,7 +1297,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
             {offerError && (
               <div className="mb-6 rounded-2xl border border-gold/30 bg-gold/10 px-5 py-4 font-georgia text-sm text-deep">
-                {OFFER_ERRORS[offerError] || OFFER_ERRORS.offer_invalid} Vous pouvez aussi choisir un autre créneau ci-dessous.
+                {(offerError === 'offer_expired' && slug === 'sebastien-seguin')
+                  ? 'Ce lien personnel a expiré : demandez-moi un nouveau lien.'
+                  : (OFFER_ERRORS[offerError] || OFFER_ERRORS.offer_invalid)} Vous pouvez aussi choisir un autre créneau ci-dessous.
               </div>
             )}
             {offer && typeof step === 'number' && step >= 2 && step < 4 && service && (
@@ -1307,7 +1309,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   {service.displayTitle || service.title} · {fmt(date)} à {time.replace(':', ' h ')}
                 </p>
                 <p className="mt-1 font-georgia text-xs text-mist">
-                  Proposé par Sébastien · lien valable jusqu’au {new Date(offer.expires_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}
+                  {slug === 'sebastien-seguin' ? 'Je vous ai proposé ce créneau' : `Proposé par ${practitioner?.name || 'votre praticien'}`} · lien valable jusqu’au {new Date(offer.expires_at).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}
                 </p>
               </div>
             )}
@@ -1381,7 +1383,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
           </div>
         </div>
 
-        {step === 0 && <RdvReviews google={google} />}
+        {step === 0 && <RdvReviews google={google} firstPerson={slug === 'sebastien-seguin'} />}
         {step === 0 && slug === 'sebastien-seguin' && <div className="-mx-6"><VideoInterview id="interview-rdv" compact /></div>}
       </main>
       <LegalFooter onNavigate={onNavigate} />

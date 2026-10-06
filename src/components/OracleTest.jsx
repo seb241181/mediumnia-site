@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import oracleCards from '../data/oracleCards.json'
+import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
+import { canvasToOracleFile, drawOracleStoryImage, oracleStoryText } from '../lib/oracleShareImage.js'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 export default function OracleTest() {
@@ -9,6 +11,39 @@ export default function OracleTest() {
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
   const [result, setResult]   = useState(null)
+  const [shareBusy, setShareBusy] = useState(false)
+  const [shareNote, setShareNote] = useState('')
+
+  async function shareResult() {
+    if (!result?.cards?.length || shareBusy) return
+    setShareBusy(true)
+    setShareNote('')
+    try {
+      const canvas = await drawOracleStoryImage(document.createElement('canvas'), result.cards)
+      const file = await canvasToOracleFile(canvas)
+      const text = oracleStoryText(result.cards)
+
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], text })
+          trackMediumiaMetric('oracle_shared', 'oracle')
+        } catch { /* partage annulé */ }
+      } else {
+        const url = URL.createObjectURL(file)
+        const link = Object.assign(document.createElement('a'), { href: url, download: file.name })
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 2000)
+        trackMediumiaMetric('oracle_shared', 'oracle')
+        setShareNote('Image enregistrée : ajoutez-la à votre story Instagram, TikTok ou Facebook.')
+      }
+    } catch {
+      setShareNote('L’image n’a pas pu être créée sur cet appareil.')
+    } finally {
+      setShareBusy(false)
+    }
+  }
 
   function handleNumberChange(index, raw) {
     const copy = [...numbers]
@@ -117,6 +152,19 @@ export default function OracleTest() {
             ))}
           </div>
           <p className="font-georgia text-base md:text-lg text-deep italic leading-relaxed whitespace-pre-line">{result.interpretation}</p>
+          <div className="mt-8 rounded-2xl border border-gold/25 bg-deep/[0.04] p-5 text-center">
+            <p className="font-georgia text-sm text-deep">Partagez votre tirage en story</p>
+            <p className="mt-1 font-georgia text-xs text-mist">Une image 1080 × 1920 est créée avec vos trois vraies cartes.</p>
+            <button
+              type="button"
+              onClick={shareResult}
+              disabled={shareBusy}
+              className="mt-4 w-full rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-bold text-gold disabled:opacity-60"
+            >
+              {shareBusy ? 'Création de l’image…' : 'Partager sur Instagram, TikTok, Facebook →'}
+            </button>
+            {shareNote && <p role="status" className="mt-2 font-georgia text-xs text-mist">{shareNote}</p>}
+          </div>
         </div>
       )}
     </div>

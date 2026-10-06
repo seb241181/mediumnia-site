@@ -207,7 +207,7 @@ function QuestionCheckout({ config }) {
           </label>
           <label className="mt-2 flex cursor-pointer items-start gap-3 rounded-xl border border-gold/20 bg-cream/60 p-3">
             <input type="checkbox" checked={waived} onChange={(e) => setWaived(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#C9A84C]" />
-            <span className="text-sm text-deep">Je demande que Sébastien commence à traiter ma demande immédiatement et je renonce à mon droit de rétractation dès le début de l’exécution de la prestation.</span>
+            <span className="text-sm text-deep">Je demande que la prestation commence avant la fin du délai de rétractation et reconnais qu’une fois la prestation pleinement exécutée, je ne pourrai plus exercer ce droit.</span>
           </label>
         </div>
 

@@ -36,7 +36,7 @@ test('politique : toutes les règles métier centralisées', () => {
     [/Ne donne jamais de coordonnées bancaires, de secret/, 'aucune coordonnée bancaire ni secret'],
     [/titre commençant par « Urgence »/, 'convention Urgence'],
     [/Action actuellement autorisée : annuler un rendez-vous MediumIA confirmé/, 'annulation MediumIA activée'],
-    [/Tu n'envoies rien \(aucun message, e-mail, lien ou paiement\)/, 'aucun envoi'],
+    [/Aucune création ou déplacement de rendez-vous, aucun événement Google manuel, aucun e-mail, SMS, iMessage, RCS, lien ou paiement/, 'aucun envoi'],
     [/search\.criteria\.mode vaut « classify »/, 'tri ≠ filtre'],
     [/ACTIONS AUTORISEES : mediumia\.booking\.cancel/, 'liste blanche affichée'],
   ]

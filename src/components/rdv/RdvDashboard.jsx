@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../lib/useAuth'
+import EmailQuestionsPanel from './EmailQuestionsPanel'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1461,6 +1462,8 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
 
                 {/* Main column */}
                 <div className="md:col-span-2 space-y-5 min-w-0">
+
+                  {activePractitioner.slug === 'sebastien-seguin' && <EmailQuestionsPanel session={session} />}
 
                   {/* Google Calendar */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">

@@ -24,6 +24,7 @@ import ReviewsPage, { ReviewsHighlight } from './components/ReviewsPage'
 import GiftCardsPage from './components/GiftCardsPage'
 import DefiIntuitionPage from './components/DefiIntuitionPage'
 import FormationParcoursPage from './components/FormationParcoursPage'
+import QuestionPage from './components/QuestionPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
 import DiscoverSection from './components/DiscoverSection'
@@ -117,7 +118,7 @@ const HOME_RAIL = [
   { id: 'praticiens', label: 'Praticiens' },
 ]
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onNavigate }) {
   return (
     <div id="top" className="cosmic-home bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -139,7 +140,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         </section>
 
         {/* ── Consulter ── */}
-        <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} />
+        <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} onOpenQuestion={onOpenQuestion} />
 
         {/* ── Avis clients (uniquement ceux validés) ── */}
         <ReviewsHighlight />
@@ -188,6 +189,7 @@ function pathToView(p) {
     : p === '/avis' || p.startsWith('/avis/') ? 'avis'
     : p === '/cartes-cadeaux' || p.startsWith('/carte-cadeau/') ? 'cartes-cadeaux'
     : p === '/defi-intuition' ? 'defi-intuition'
+    : p === '/question' ? 'question'
     : p === '/mentions' ? 'mentions'
     : p === '/confidentialite' ? 'confidentialite'
     : p === '/cgv-oracle' ? 'cgv-oracle'
@@ -215,6 +217,7 @@ export default function App() {
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
   const openRdvPublic   = (slug) => nav(`/rdv/${slug}`,  'rdv-public')
+  const openQuestion    = () => nav('/question',          'question')
   const backHome        = () => nav('/',                 'home')
 
   const legalNav = (p) => {
@@ -244,11 +247,12 @@ export default function App() {
   if (view === 'cartes-cadeaux') return <><GiftCardsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation-parcours') return <><FormationParcoursPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'defi-intuition') return <><DefiIntuitionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'question')      return <><QuestionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'avis')         return <><ReviewsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onNavigate={legalNav} />{guardian}</>
 }

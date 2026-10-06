@@ -31,6 +31,7 @@ for (const eagerImport of [
   `import ChronospherePage from './components/ChronospherePage'\n`,
   `import ChronosphereExamplePage from './components/ChronosphereExamplePage'\n`,
   `import ChronosphereMaxPage from './components/ChronosphereMaxPage'\n`,
+  `import QuestionPage from './components/QuestionPage'\n`,
 ]) {
   app = app.replace(eagerImport, '')
 }
@@ -48,6 +49,7 @@ const RdvCancellation = lazy(() => import('./components/rdv/RdvCancellation'))
 const ChronospherePage = lazy(() => import('./components/ChronospherePage'))
 const ChronosphereExamplePage = lazy(() => import('./components/ChronosphereExamplePage'))
 const ChronosphereMaxPage = lazy(() => import('./components/ChronosphereMaxPage'))
+const QuestionPage = lazy(() => import('./components/QuestionPage'))
 
 function DeferredRoute({ children }) {
   return (
@@ -66,8 +68,8 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {\n  return (`,
-  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])\n\n  return (`,
+  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onNavigate }) {\n  return (`,
+  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])\n\n  return (`,
   'home view metric',
 )
 
@@ -115,6 +117,10 @@ const routeReplacements = [
   [
     `  if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>`,
     `  if (view === 'chronosphere-max') return <DeferredRoute><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</DeferredRoute>`,
+  ],
+  [
+    `  if (view === 'question')      return <><QuestionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>`,
+    `  if (view === 'question')      return <DeferredRoute><QuestionPage onBack={backHome} onNavigate={legalNav} />{guardian}</DeferredRoute>`,
   ],
 ]
 

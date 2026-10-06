@@ -10,6 +10,7 @@ export default function ConsultationSection({
   onBookingRequest,
   bookingEnabled = false,
   onOpenRdv,
+  onOpenQuestion,
   id = 'consulter',
   compact = false,
 }) {
@@ -35,7 +36,7 @@ export default function ConsultationSection({
                 <h3 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{practitioner.name}</h3>
                 <p className="mt-1 font-georgia text-sm text-gold">{practitioner.role}</p>
                 <p className="mt-4 max-w-2xl font-georgia leading-relaxed text-mist">{practitioner.introduction}</p>
-                <div className="mt-6">
+                <div className="mt-6 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     disabled={!practitioner.rdvSlug || !onOpenRdv}
@@ -44,7 +45,16 @@ export default function ConsultationSection({
                   >
                     Prendre rendez-vous →
                   </button>
-                  <p className="mt-3 font-georgia text-xs text-mist">Disponibilités en temps réel dans l’agenda MediumIA.</p>
+                  {onOpenQuestion && practitioner.rdvSlug === 'sebastien-seguin' && (
+                    <button
+                      type="button"
+                      onClick={onOpenQuestion}
+                      className="rounded-lg border border-gold/40 bg-white px-6 py-3 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/10"
+                    >
+                      Poser une question par e-mail →
+                    </button>
+                  )}
+                  <p className="w-full font-georgia text-xs text-mist">Rendez-vous en direct ou réponse personnelle par e-mail, selon votre besoin.</p>
                 </div>
               </div>
             </article>

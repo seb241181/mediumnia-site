@@ -16,10 +16,12 @@ test('story links carry an anonymous source without personal data', () => {
 
 test('client metrics duplicate attributed steps without replacing product metrics', () => {
   const metrics = read('src/lib/mediumiaMetrics.js')
+  const attribution = read('src/lib/mediumiaAttribution.js')
   assert.match(metrics, /sendMetric\(event, eventSource\)/)
   assert.match(metrics, /sendMetric\('story_visit', attribution\)/)
   assert.match(metrics, /sendMetric\('story_attributed',/)
-  assert.match(metrics, /sessionStorage/)
+  assert.match(attribution, /sessionStorage/)
+  assert.match(attribution, /VALID = new Set\(\['story-oracle', 'story-quiz'\]\)/)
 })
 
 test('analytics accepts story attribution and Pilotage computes visits through purchases', () => {

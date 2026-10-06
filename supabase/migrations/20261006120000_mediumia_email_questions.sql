@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.mediumia_email_questions (
   first_name TEXT NOT NULL CHECK (char_length(first_name) BETWEEN 1 AND 80),
   email TEXT NOT NULL CHECK (char_length(email) BETWEEN 5 AND 254),
   birth_date DATE,
-  questions JSONB NOT NULL CHECK (jsonb_typeof(questions) = 'array'),
+  questions JSONB NOT NULL CHECK (jsonb_typeof(questions) = 'array' AND jsonb_array_length(questions) = question_count),
   status TEXT NOT NULL DEFAULT 'payment_pending'
     CHECK (status IN ('payment_pending','paid','in_progress','answered','refund_pending','refunded','manual_review')),
   due_at TIMESTAMPTZ,

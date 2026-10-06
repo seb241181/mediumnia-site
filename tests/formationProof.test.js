@@ -14,7 +14,7 @@ test('formation: first screen, payment choices, then expandable information and 
   assert.match(source, /Avant de recevoir, il faut avoir décidé d'être disponible\./)
   assert.match(source, /On commence toujours par la porte\. Pas par la technique/)
   assert.match(source, /data-formation-ux="progressive-first"/)
-  assert.match(source, /Commencer progressivement ou tout débloquer/)
+  assert.match(source, /Commencez par 29 € — continuez seulement si elle vous convient/)
   assert.match(source, /Ouvrir pour voir le contenu, les 84 exercices/)
 })
 
@@ -25,5 +25,7 @@ test('formation keeps the five-message assistant trial and paid offer intact', (
   assert.match(source, /<TrialChat \/>/)
   assert.match(source, /597 €/)
   assert.match(trial, /const MAX_MESSAGES = 5/)
-  assert.match(source, /Tester ensuite MediumIA/)
+  assert.match(source, /Commencer la Découverte à 29 €/)
+  assert.match(source, /L’assistant MediumIA est facultatif/)
+  assert.match(source, /data-formation-positioning="human-first-v1"/)
 })

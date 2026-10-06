@@ -66,6 +66,15 @@ test('le checkout public propose exactement q1 et q2', () => {
   assert.match(page, /interdiction de toute question d’ordre médical/)
 })
 
+test('les e-mails n’utilisent aucune boîte contact fictive et supportent Reply-To', () => {
+  const server = read('lib/emailQuestions.js')
+  const helper = read('lib/transactionalEmail.js')
+  assert.doesNotMatch(server, /contact@mediumia\.fr/)
+  assert.match(server, /EMAIL_QUESTIONS_OWNER_EMAIL/)
+  assert.match(server, /EMAIL_QUESTIONS_REPLY_TO/)
+  assert.match(helper, /payload\.reply_to = replyTo/)
+})
+
 test('l’administration est authentifiée via rdv-admin et offre réponse + remboursement', () => {
   const router = read('api/rdv-admin.js')
   const server = read('lib/emailQuestions.js')

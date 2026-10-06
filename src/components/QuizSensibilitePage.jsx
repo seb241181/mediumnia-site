@@ -31,12 +31,35 @@ function ChannelBars({ scores }) {
   )
 }
 
-function ShareResult({ dominant }) {
+function ShareResult({ dominant, scores }) {
   const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
   const text = quizShareText(dominant)
 
-  // Compté seulement quand le partage ou la copie aboutit (pas sur une annulation).
-  async function share() {
+  // Image « story » (Instagram, TikTok, Facebook) : le réseau prend une image,
+  // pas un texte venu du site. Comptée seulement si le partage ou le
+  // téléchargement aboutit (pas sur une annulation).
+  async function shareImage() {
+    setBusy(true)
+    setNote('')
+    try {
+      const { drawQuizImage } = await import('../lib/quizShareImage.js')
+      const { canvasToFile, shareImageFile } = await import('../lib/shareImage.js')
+      const file = await canvasToFile(await drawQuizImage(document.createElement('canvas'), { dominant, scores }), 'mon-canal-mediumia.png')
+      const outcome = await shareImageFile(file, text)
+      if (outcome === 'cancelled') return
+      trackMediumiaMetric('quiz_shared', 'quiz')
+      if (outcome === 'downloaded') setNote('Image enregistrée : ajoutez-la à votre story Instagram, TikTok ou Facebook.')
+    } catch {
+      setNote('L’image n’a pas pu être créée sur cet appareil. Utilisez « Copier le texte ».')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Repli texte, utile sur ordinateur ou pour coller dans un message.
+  async function shareText() {
+    setNote('')
     if (navigator.share) {
       try {
         await navigator.share({ text })
@@ -54,11 +77,14 @@ function ShareResult({ dominant }) {
   }
 
   return (
-    <div className="mt-5 text-center">
-      <button type="button" onClick={share} className="w-full rounded-xl border border-gold/40 bg-white px-5 py-3 font-georgia text-sm font-bold text-deep sm:w-auto">
-        Partager mon résultat ✦
+    <div className="mt-5 flex flex-col items-center gap-2">
+      <button type="button" onClick={shareImage} disabled={busy} className="w-full rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-bold text-gold transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto">
+        {busy ? 'Création de l’image…' : 'Partager en story ✦'}
       </button>
-      {note && <p role="status" className="mt-2 font-georgia text-xs text-mist">{note}</p>}
+      <button type="button" onClick={shareText} className="font-georgia text-xs text-mist underline decoration-gold/40 underline-offset-4 hover:text-deep">
+        Copier le texte à la place
+      </button>
+      {note && <p role="status" className="mt-1 text-center font-georgia text-xs text-mist">{note}</p>}
     </div>
   )
 }
@@ -269,7 +295,7 @@ export default function QuizSensibilitePage({ onBack, onNavigate, onOpenFormatio
               <p className="mt-2 font-georgia text-sm leading-relaxed text-deep">{profile.practice}</p>
             </div>
 
-            <ShareResult dominant={result.dominant} />
+            <ShareResult dominant={result.dominant} scores={result.scores} />
 
             <blockquote className="mt-10 border-l-2 border-gold pl-5 font-georgia text-base italic leading-relaxed text-deep/85">
               « Il est essentiel de ne pas vous enfermer dans une case prédéfinie. […] Dans la pratique, il y a toujours un canal qui est plus fluide que les autres, surtout au début. Et seule la pratique peut vous révéler lequel. »

@@ -34,6 +34,11 @@ test('Phase 3B : résolution et preview ne partent que d’un booking confirmé 
   assert.equal(buildBookingCancelPreview({ ...booking, booking_source: 'manual' }), null)
 })
 
+test('Phase 3B : fail closed si la garde carte cadeau manque dans un environnement', () => {
+  assert.match(migration, /to_regclass\('public\.gift_card_redemptions'\) IS NULL/i)
+  assert.match(migration, /gift_card_guard_unavailable/i)
+})
+
 test('Phase 3B : le SQL verrouille et refuse les états financiers à risque sans e-mail, Messages ou Google', () => {
   assert.match(migration, /create table if not exists public\.lumia_calendar_sync_jobs/i)
   assert.match(migration, /unique \(booking_id, operation\)/i)

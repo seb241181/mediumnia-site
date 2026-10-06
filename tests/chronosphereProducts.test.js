@@ -141,5 +141,7 @@ test('home presents ChronoSphère as a compact « Découvrir » card with its pa
   const discover = await readFile(new URL('../src/components/DiscoverSection.jsx', import.meta.url), 'utf8')
   assert.match(discover, /Pack conseillé : 9,90 € TTC pour 3 tirages/)
   assert.match(discover, /Entrer dans ChronoSphère/)
+  assert.match(discover, /Pas un tirage aléatoire du logiciel/)
+  assert.match(discover, /oracle de 58 cartes créé par Sébastien/i)
   assert.match(discover, /href="\/chronosphere\/exemple"/)
 })

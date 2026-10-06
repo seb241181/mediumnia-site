@@ -45,6 +45,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/question",
+      "destination": "/index.html"
+    },
+    {
       "source": "/oracle",
       "destination": "/index.html"
     },

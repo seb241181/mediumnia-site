@@ -93,8 +93,8 @@ test('Formation first screen: promise, audience, human-first positioning and Dis
   assert.match(top, /L’intelligence artificielle n’est pas la formation/)
   assert.match(top, /data-formation-positioning="human-first-v1"/)
   assert.match(top, /money\(offer\.discoveryCents\)/)
-  assert.match(top, /offer\.regularCount/)
-  assert.match(top, /Total maximum/)
+  assert.match(top, /money\(offer\.stepCents\)/)
+  assert.match(top, /parcours complet reste plafonné/)
   assert.match(top, /Commencer par la Découverte à/)
   // Only the validated installment phrase, nowhere the old detail.
   assert.doesNotMatch(page, /4X|6X|12X|24X/)

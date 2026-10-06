@@ -8,6 +8,7 @@ export const COSMIC_HOME_CONFIG = Object.freeze({
   emphasis: 'Consulter un médium.',
   description: 'MediumIA, c’est la Formation MediumIA de Sébastien Seguin, médium depuis plus de douze ans, et ses consultations : un chemin clair pour comprendre et développer votre sensibilité.',
   primaryAction: 'Découvrir la Formation',
+  quizAction: 'Pas encore sûr ? Découvrez votre canal de perception en 2 minutes',
 })
 
 const LIGHT_PARTICLES = [
@@ -37,7 +38,7 @@ function CosmicSphereAtmosphere() {
   )
 }
 
-export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir }) {
+export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenQuiz }) {
   const heroRef = useRef(null)
 
   // Ordered as a path: try for free, go deeper, learn, meet people; the
@@ -141,6 +142,18 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
               Prendre rendez-vous<span aria-hidden="true">→</span>
             </a>
           </div>
+
+          <a
+            className="cosmic-library__quiz cosmic-reveal cosmic-reveal--actions"
+            href="/quiz-sensibilite"
+            onClick={(event) => {
+              if (!onOpenQuiz || event.metaKey || event.ctrlKey || event.shiftKey) return
+              event.preventDefault()
+              onOpenQuiz()
+            }}
+          >
+            {COSMIC_HOME_CONFIG.quizAction}<span aria-hidden="true"> →</span>
+          </a>
         </div>
 
       </div>

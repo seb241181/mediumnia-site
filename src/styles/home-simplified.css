@@ -53,3 +53,30 @@
     inset: -14% -8%;
   }
 }
+
+/* Troisième porte du héros, discrète : le quiz des canaux pour qui hésite
+   encore entre se former et consulter. Lien souligné, pas un troisième bouton. */
+.cosmic-library__quiz {
+  margin-top: 0.95rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 254, 250, 0.72);
+  color: #101938;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.86rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 168, 76, 0.7);
+  text-underline-offset: 4px;
+  backdrop-filter: blur(8px);
+}
+.cosmic-library__quiz:hover,
+.cosmic-library__quiz:focus-visible {
+  color: #8a6512;
+}
+@media (max-width: 760px) {
+  .cosmic-library__quiz {
+    max-width: 340px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+}

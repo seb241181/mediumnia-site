@@ -205,7 +205,8 @@ dashboard = insertAfter(
   const quizStarted = Number(totals.quiz_started || 0)
   const quizCompleted = Number(totals.quiz_completed || 0)
   const quizShared = Number(totals.quiz_shared || 0)
-  const quizOptin = Number(totals.quiz_email_optin_completed || 0)`,
+  const quizOptin = Number(totals.quiz_email_optin_completed || 0)
+  const socialShares = oracleShared + quizShared`,
   'pilotage quiz values',
 )
 
@@ -222,6 +223,19 @@ dashboard = replaceRequired(
 
       <section className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">`,
   `      </section>
+
+      <section className="rounded-2xl border border-gold/25 bg-deep p-6 text-cream">
+        <div className="mb-5">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">PARTAGES SOCIAUX</p>
+          <h3 className="mt-1 font-georgia text-xl font-medium">Est-ce que MediumIA circule ?</h3>
+          <p className="mt-2 font-georgia text-xs leading-relaxed text-cream/70">Compteur agrégé des stories partagées depuis l’Oracle et le Quiz sur la période choisie.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <MetricCard eyebrow="Total partagé" value={socialShares} note={`Sur les ${days} derniers jours`} />
+          <MetricCard eyebrow="Stories Oracle" value={oracleShared} note={`${pct(oracleShared, oracleDrawCompleted)} des tirages obtenus`} />
+          <MetricCard eyebrow="Stories Quiz" value={quizShared} note={`${pct(quizShared, quizCompleted)} des résultats obtenus`} />
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-gold/20 bg-white/65 p-6">
         <div className="mb-6">

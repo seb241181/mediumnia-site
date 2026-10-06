@@ -58,7 +58,7 @@ const routeSeoHelpers = `const ROUTE_META = {
   },
   conferences: {
     title: 'Conférence offerte le 22 octobre — Et si la médiumnité devenait accessible ? | MediumIA',
-    description: 'Une heure en direct avec Sébastien Seguin, jeudi 22 octobre à 19 h sur Zoom. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
+    description: 'Je vous retrouve en direct jeudi 22 octobre à 19 h sur Zoom pour une conférence MediumIA. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
   },
   'cartes-cadeaux': {
     title: 'Cartes cadeaux MediumIA — Offrir une consultation ou ChronoSphère',

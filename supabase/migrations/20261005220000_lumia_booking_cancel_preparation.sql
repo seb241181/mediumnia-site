@@ -12,12 +12,12 @@ CREATE OR REPLACE FUNCTION public.booking_set_updated_at()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SET search_path = public, pg_temp
-AS $
+AS $body$
 BEGIN
   NEW.updated_at = clock_timestamp();
   RETURN NEW;
 END;
-$;
+$body$;
 
 CREATE TABLE IF NOT EXISTS public.lumia_calendar_sync_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

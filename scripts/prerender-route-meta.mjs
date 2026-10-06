@@ -33,6 +33,7 @@ const ROUTE_PATHS = {
   avis: '/avis',
   'cartes-cadeaux': '/cartes-cadeaux',
   'defi-intuition': '/defi-intuition',
+  'quiz-sensibilite': '/quiz-sensibilite',
 }
 
 // Routes with their own share visual (default: the site image).

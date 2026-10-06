@@ -207,58 +207,9 @@ BEGIN
       END IF;
   END IF;
 
-  IF v_failure IS NOT NULL THEN
-    v_result := jsonb_build_object(
-      'intent_id', v_intent.id, 'status', 'failed', 'executed', false,
-      'reason', v_failure
-    );
-    UPDATE public.lumia_action_intents
-    SET status = 'failed', executed_at = clock_timestamp(),
-        execution_result = v_result, updated_at = clock_timestamp()
-    WHERE id = v_intent.id;
-    INSERT INTO public.lumia_action_attempts(intent_id, owner_id, event_type, actor_type, actor_id, detail)
-    VALUES (v_intent.id, p_owner_id, 'finished', 'executor', p_owner_id,
-      jsonb_build_object('status', 'failed', 'reason', v_failure));
-    RETURN v_result;
-  END IF;
-
-  UPDATE public.bookings
-  SET status = 'cancelled', cancelled_at = clock_timestamp(),
-      cancel_reason = 'lumia_owner_confirmed', updated_at = clock_timestamp()
-  WHERE id = v_booking.id
-    AND status = 'confirmed'
-    AND updated_at = v_intent.expected_target_updated_at;
-  IF NOT FOUND THEN
-    -- Defensive fallback for a change after the locked snapshot; durable and
-    -- fail closed. No financial or external effect has been performed.
-    v_result := jsonb_build_object(
-      'intent_id', v_intent.id, 'status', 'failed', 'executed', false,
-      'reason', 'booking_changed_since_preview'
-    );
-    UPDATE public.lumia_action_intents
-    SET status = 'failed', executed_at = clock_timestamp(),
-        execution_result = v_result, updated_at = clock_timestamp()
-    WHERE id = v_intent.id;
-    INSERT INTO public.lumia_action_attempts(intent_id, owner_id, event_type, actor_type, actor_id, detail)
-    VALUES (v_intent.id, p_owner_id, 'finished', 'executor', p_owner_id,
-      jsonb_build_object('status', 'failed', 'reason', 'booking_changed_since_preview'));
-    RETURN v_result;
-  END IF;
-
-  IF v_booking.google_event_id IS NOT NULL THEN
-    IF NOT v_google_job_found THEN
-      INSERT INTO public.lumia_calendar_sync_jobs(
-        booking_id, practitioner_id, operation, status, google_event_id, idempotency_key
-      ) VALUES (
-        v_booking.id, v_booking.practitioner_id, 'cancel_projection', 'pending',
-        v_booking.google_event_id, 'lumia.google.cancel_projection:' || v_booking.id::TEXT
-      );
-    END IF;
-  END IF;
-
-  -- A stale completed/manual job for a different Google event must not let a
-  -- new cancellation claim that its projection is pending. This lock follows
-  -- every financial guard and is still acquired before the booking transition.
+  -- The Google projection must already be safely representable before the
+  -- business source of truth is changed. Lock any existing job *before* the
+  -- booking update; a done/manual/different-event job is a durable refusal.
   IF v_failure IS NULL AND v_booking.google_event_id IS NOT NULL THEN
     BEGIN
       SELECT * INTO v_google_job
@@ -274,6 +225,80 @@ BEGIN
          OR v_google_job.status NOT IN ('pending', 'retry', 'running')) THEN
       v_failure := 'google_sync_job_incoherent';
     END IF;
+  END IF;
+
+  -- Only after every guard (including the job guard) may the booking change.
+  -- The insert lives in the same subtransaction as this update. If another
+  -- transaction inserts the unique job first, unique_violation rolls this
+  -- update back before we reread and validate the winner.
+  IF v_failure IS NULL THEN
+    BEGIN
+      UPDATE public.bookings
+      SET status = 'cancelled', cancelled_at = clock_timestamp(),
+          cancel_reason = 'lumia_owner_confirmed', updated_at = clock_timestamp()
+      WHERE id = v_booking.id
+        AND status = 'confirmed'
+        AND updated_at = v_intent.expected_target_updated_at;
+      IF NOT FOUND THEN
+        v_failure := 'booking_changed_since_preview';
+      ELSIF v_booking.google_event_id IS NOT NULL AND NOT v_google_job_found THEN
+        INSERT INTO public.lumia_calendar_sync_jobs(
+          booking_id, practitioner_id, operation, status, google_event_id, idempotency_key
+        ) VALUES (
+          v_booking.id, v_booking.practitioner_id, 'cancel_projection', 'pending',
+          v_booking.google_event_id, 'lumia.google.cancel_projection:' || v_booking.id::TEXT
+        )
+        RETURNING * INTO v_google_job;
+        v_google_job_found := true;
+      END IF;
+    EXCEPTION WHEN unique_violation THEN
+      -- The subtransaction rollback leaves the booking confirmed. A concurrent
+      -- creator is acceptable only if its job is for this same event and still
+      -- needs sync. Otherwise the common durable failure path below is used.
+      v_google_job_found := false;
+      BEGIN
+        SELECT * INTO v_google_job
+        FROM public.lumia_calendar_sync_jobs
+        WHERE booking_id = v_booking.id AND operation = 'cancel_projection'
+        FOR UPDATE NOWAIT;
+        v_google_job_found := FOUND;
+      EXCEPTION WHEN lock_not_available THEN
+        v_failure := 'booking_or_payment_busy';
+      END;
+      IF v_failure IS NULL AND (NOT v_google_job_found
+          OR v_google_job.google_event_id <> v_booking.google_event_id
+          OR v_google_job.status NOT IN ('pending', 'retry', 'running')) THEN
+        v_failure := 'google_sync_job_incoherent';
+      END IF;
+      IF v_failure IS NULL THEN
+        UPDATE public.bookings
+        SET status = 'cancelled', cancelled_at = clock_timestamp(),
+            cancel_reason = 'lumia_owner_confirmed', updated_at = clock_timestamp()
+        WHERE id = v_booking.id
+          AND status = 'confirmed'
+          AND updated_at = v_intent.expected_target_updated_at;
+        IF NOT FOUND THEN
+          v_failure := 'booking_changed_since_preview';
+        END IF;
+      END IF;
+    END;
+  END IF;
+
+  -- All intentional business failures pass through this single durable path.
+  -- No exception is raised after the intent state and audit have been written.
+  IF v_failure IS NOT NULL THEN
+    v_result := jsonb_build_object(
+      'intent_id', v_intent.id, 'status', 'failed', 'executed', false,
+      'reason', v_failure
+    );
+    UPDATE public.lumia_action_intents
+    SET status = 'failed', executed_at = clock_timestamp(),
+        execution_result = v_result, updated_at = clock_timestamp()
+    WHERE id = v_intent.id;
+    INSERT INTO public.lumia_action_attempts(intent_id, owner_id, event_type, actor_type, actor_id, detail)
+    VALUES (v_intent.id, p_owner_id, 'finished', 'executor', p_owner_id,
+      jsonb_build_object('status', 'failed', 'reason', v_failure));
+    RETURN v_result;
   END IF;
 
   v_result := jsonb_build_object(

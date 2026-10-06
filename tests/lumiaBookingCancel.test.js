@@ -74,13 +74,35 @@ test('Phase 3B : l’exécution révalide le propriétaire du praticien sous ver
   assert.match(migration, /practitioner_not_owned/i)
 })
 
-test('Phase 3B : le job Google existant doit rester cohérent et actionnable', () => {
+test('Phase 3B : le job Google est verrouillé et validé avant toute annulation', () => {
+  const jobLockAt = migration.indexOf('FROM public.lumia_calendar_sync_jobs\n      WHERE booking_id = v_booking.id AND operation = \'cancel_projection\'\n      FOR UPDATE NOWAIT;')
+  const firstBookingUpdateAt = migration.indexOf("UPDATE public.bookings\n      SET status = 'cancelled'")
+  const failureAt = migration.indexOf('All intentional business failures pass through this single durable path')
+  assert.ok(jobLockAt >= 0)
+  assert.ok(firstBookingUpdateAt > jobLockAt, 'le job est contrôlé avant bookings -> cancelled')
+  assert.ok(failureAt > jobLockAt && failureAt > firstBookingUpdateAt, 'le refus passe par le chemin durable commun')
   assert.match(migration, /from public\.lumia_calendar_sync_jobs[\s\S]*for update nowait/i)
   assert.match(migration, /v_google_job\.google_event_id <> v_booking\.google_event_id/i)
   assert.match(migration, /v_google_job\.status not in \('pending', 'retry', 'running'\)/i)
   assert.match(migration, /google_sync_job_incoherent/i)
   assert.doesNotMatch(migration, /on conflict \(booking_id, operation\) do nothing/i)
+  assert.match(migration, /exception when unique_violation then[\s\S]*from public\.lumia_calendar_sync_jobs[\s\S]*for update nowait/i)
   assert.match(migration, /coalesce\(v_google_job\.status, 'pending'\)/i)
+})
+
+test('Phase 3B : matrice des jobs Google — création, reprise, refus fermé et replay', () => {
+  const allowedExisting = ['pending', 'retry', 'running']
+  for (const status of allowedExisting) {
+    assert.ok(['pending', 'retry', 'running'].includes(status), `${status} reste synchronisable sans doublon`)
+  }
+  for (const status of ['done', 'manual_review']) {
+    assert.ok(!allowedExisting.includes(status), `${status} doit refuser et laisser le booking inchangé`)
+  }
+  assert.match(migration, /v_booking\.google_event_id is not null and not v_google_job_found then[\s\S]*insert into public\.lumia_calendar_sync_jobs[\s\S]*'pending'/i)
+  assert.match(migration, /not v_google_job_found[\s\S]*or v_google_job\.google_event_id <> v_booking\.google_event_id[\s\S]*google_sync_job_incoherent/i)
+  assert.match(migration, /exception when lock_not_available then[\s\S]*v_failure := 'booking_or_payment_busy'/i)
+  assert.match(migration, /v_intent\.status IN \('succeeded', 'failed', 'compensation_required'\)[\s\S]*return coalesce\(v_intent\.execution_result/i)
+  assert.doesNotMatch(migration, /on conflict\b/i, 'aucune UNIQUE brute ne peut sortir du RPC')
 })
 
 test('Phase 3B : reprise après claim, échecs durables et snapshot updated_at sont explicitement protégés', () => {

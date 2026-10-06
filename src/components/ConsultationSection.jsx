@@ -51,10 +51,11 @@ export default function ConsultationSection({
                       onClick={onOpenQuestion}
                       className="rounded-lg border border-gold/40 bg-white px-6 py-3 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/10"
                     >
-                      Poser une question par e-mail →
+                      <span className="mr-2 inline-flex rounded-md bg-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-gold">Nouveau</span>
+                      Guidance par e-mail →
                     </button>
                   )}
-                  <p className="w-full font-georgia text-xs text-mist">Rendez-vous en direct ou réponse personnelle par e-mail, selon votre besoin.</p>
+                  <p className="w-full font-georgia text-xs text-mist">Rendez-vous en direct ou guidance personnelle par e-mail, selon votre besoin.</p>
                 </div>
               </div>
             </article>

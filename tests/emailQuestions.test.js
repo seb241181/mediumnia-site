@@ -5,6 +5,7 @@ import {
   EMAIL_QUESTION_DAILY_CAP,
   EMAIL_QUESTION_PACKS,
   EMAIL_QUESTION_TERMS_VERSION,
+  emailQuestionEnv,
   emailQuestionsOpen,
 } from '../lib/emailQuestions.js'
 
@@ -15,6 +16,26 @@ test('tarifs e-mail : 19,90 € pour 1 question et 29,90 € pour 2', () => {
   assert.deepEqual(EMAIL_QUESTION_PACKS.q2, { count: 2, amountCents: 2990, label: 'Deux questions' })
   assert.equal(EMAIL_QUESTION_DAILY_CAP, 5)
   assert.match(EMAIL_QUESTION_TERMS_VERSION, /^email-question-/)
+})
+
+test('PayPal reste obligatoirement en sandbox hors production', () => {
+  const beforeVercel = process.env.VERCEL_ENV
+  const beforePayPal = process.env.PAYPAL_ENV
+  process.env.VERCEL_ENV = 'preview'
+  process.env.PAYPAL_ENV = 'live'
+  assert.equal(emailQuestionEnv(), 'sandbox')
+
+  process.env.VERCEL_ENV = 'production'
+  process.env.PAYPAL_ENV = 'live'
+  assert.equal(emailQuestionEnv(), 'live')
+
+  process.env.PAYPAL_ENV = 'sandbox'
+  assert.throws(() => emailQuestionEnv(), /paypal_env_mismatch/)
+
+  if (beforeVercel == null) delete process.env.VERCEL_ENV
+  else process.env.VERCEL_ENV = beforeVercel
+  if (beforePayPal == null) delete process.env.PAYPAL_ENV
+  else process.env.PAYPAL_ENV = beforePayPal
 })
 
 test('production reste fermée sans interrupteur explicite', () => {

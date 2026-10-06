@@ -25,6 +25,9 @@ function previewAnalytics(days) {
     chronosphere_example_view: round(96),
     chronosphere_example_cta: round(41),
     chronosphere_payment_opened: round(24),
+    question_view: round(36),
+    question_payment_started: round(8),
+    question_purchase_completed: round(3),
   }
   const home_doors = {
     oracle: round(58),

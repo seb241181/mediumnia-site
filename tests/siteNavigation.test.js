@@ -83,17 +83,19 @@ test('shop: Formation MediumIA first, as the lead offer, at 597 € TTC; other p
   assert.match(shop, /\{spotlight && <SpotlightCard product=\{spotlight\}/)
 })
 
-test('Formation first screen: promise, audience, benefits and progressive payment are immediately visible', async () => {
+test('Formation first screen: promise, audience, human-first positioning and Discovery entry are immediately visible', async () => {
   const page = await read('src/components/FormationPage.jsx')
   const top = page.slice(page.indexOf('id="formation-top"'), page.indexOf('Ce parcours est pour vous si'))
   assert.match(top, /<h1[^>]*>Développer sa médiumnité, pas à pas<\/h1>/)
   assert.match(top, /Pour qui :/)
   assert.match(top, /HERO_APPORTS\.map/)
-  assert.match(top, /Paiement progressif/)
+  assert.match(top, /Commencer sans s’engager/)
+  assert.match(top, /L’intelligence artificielle n’est pas la formation/)
+  assert.match(top, /data-formation-positioning="human-first-v1"/)
   assert.match(top, /money\(offer\.discoveryCents\)/)
   assert.match(top, /offer\.regularCount/)
   assert.match(top, /Total maximum/)
-  assert.match(top, /Voir les options de paiement →/)
+  assert.match(top, /Commencer par la Découverte à/)
   // Only the validated installment phrase, nowhere the old detail.
   assert.doesNotMatch(page, /4X|6X|12X|24X/)
   // Details kept but folded.

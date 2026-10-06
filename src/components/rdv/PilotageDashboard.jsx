@@ -22,6 +22,9 @@ const LABELS = {
   chronosphere_example_view: 'Vues exemple Chronosphère',
   chronosphere_example_cta: 'Clics depuis l’exemple',
   chronosphere_payment_opened: 'Paiements Chronosphère ouverts',
+  question_view: 'Visites Questions e-mail',
+  question_payment_started: 'Paiements Questions e-mail ouverts',
+  question_purchase_completed: 'Questions e-mail commandées',
 }
 
 function authHeader(session) {
@@ -38,6 +41,9 @@ function makePreviewData(days) {
     chronosphere_example_view: round(96),
     chronosphere_example_cta: round(41),
     chronosphere_payment_opened: round(24),
+    question_view: round(36),
+    question_payment_started: round(8),
+    question_purchase_completed: round(3),
   }
   const home_doors = {
     oracle: round(58),
@@ -178,6 +184,9 @@ export default function PilotageDashboard({ session, demoMode = false }) {
   const exampleViews = Number(totals.chronosphere_example_view || 0)
   const exampleCta = Number(totals.chronosphere_example_cta || 0)
   const paymentOpened = Number(totals.chronosphere_payment_opened || 0)
+  const questionViews = Number(totals.question_view || 0)
+  const questionPaymentStarted = Number(totals.question_payment_started || 0)
+  const questionPurchases = Number(totals.question_purchase_completed || 0)
   const homeViews = Number(totals.home_view || 0)
 
   const keyRows = useMemo(() => (
@@ -256,14 +265,27 @@ export default function PilotageDashboard({ session, demoMode = false }) {
 
       {conferenceCard}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard eyebrow="Accueil" value={homeViews} note={`Sur les ${days} derniers jours`} />
         <MetricCard eyebrow="Chronosphère" value={chronoClicks} note={`${pct(chronoClicks, homeClicks)} des clics guidés de l’accueil`} />
         <MetricCard eyebrow="Exemple Chronosphère" value={exampleViews} note={`${exampleCta.toLocaleString('fr-FR')} clics vers le tirage`} />
         <MetricCard eyebrow="Paiement ouvert" value={paymentOpened} note={`${pct(paymentOpened, exampleCta || chronoClicks)} après l’étape précédente`} />
+        <MetricCard eyebrow="Questions e-mail" value={questionViews} note={`${questionPurchases.toLocaleString('fr-FR')} commande${questionPurchases > 1 ? 's' : ''} · ${pct(questionPurchases, questionViews)} des visites`} />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+        <article className="rounded-2xl border border-gold/20 bg-white/65 p-6 lg:col-span-2">
+          <div className="mb-6">
+            <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">QUESTIONS PAR E-MAIL</p>
+            <h3 className="mt-1 font-georgia text-xl font-medium text-deep">Visites et passage à la commande</h3>
+            <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Le compteur de visite se déclenche à l’ouverture de la page /question. Les chiffres restent agrégés et anonymes.</p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            <FunnelRow label="Visites de la page" value={questionViews} reference={questionViews} />
+            <FunnelRow label="Paiement commencé" value={questionPaymentStarted} reference={questionViews} detail={pct(questionPaymentStarted, questionViews)} />
+            <FunnelRow label="Commande finalisée" value={questionPurchases} reference={questionViews} detail={pct(questionPurchases, questionViews)} />
+          </div>
+        </article>
         <article className="rounded-2xl border border-gold/20 bg-white/65 p-6">
           <div className="mb-6">
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">PARCOURS CHRONOSPHÈRE</p>

@@ -56,8 +56,8 @@ function FeaturedAccompagnement({ onOpen }) {
           Formation MediumIA
         </h2>
         <p className="font-georgia text-cream/65 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
-          25 modules en 4 niveaux — des fondations à la pratique accomplie — avec un assistant IA dédié et 12 mois d'accès.
-          Une transmission née de plus de douze ans de pratique réelle.
+          J’ai construit cette formation en 25 modules et 4 niveaux à partir de plus de douze ans de pratique réelle.
+          L’assistant MediumIA est facultatif : il complète ma méthode, il ne la remplace pas.
         </p>
         {offer ? (
           <div className="mb-7 rounded-2xl border border-gold/30 bg-white/[0.06] p-5 max-w-xl">

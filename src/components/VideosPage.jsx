@@ -45,6 +45,10 @@ export default function VideosPage({ onBack, onNavigate }) {
           </div>
         </section>
 
+        <section className="border-t border-gold/15">
+          <VideoInterview id="videos-interview" compact />
+        </section>
+
         <section id="reponses" className="mx-auto max-w-5xl scroll-mt-28 px-6 py-12" aria-labelledby="videos-reponses-title">
           <div className="rounded-3xl border border-gold/30 bg-deep p-7 text-cream shadow-[0_18px_45px_rgba(26,21,53,.12)] md:p-10">
             <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Mes réponses</p>
@@ -58,9 +62,6 @@ export default function VideosPage({ onBack, onNavigate }) {
           </div>
         </section>
 
-        <section className="border-t border-gold/15">
-          <VideoInterview id="videos-interview" compact />
-        </section>
       </main>
 
       <LegalFooter onNavigate={onNavigate} />

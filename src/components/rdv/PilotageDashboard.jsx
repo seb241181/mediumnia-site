@@ -25,6 +25,10 @@ const LABELS = {
   question_view: 'Visites Guidances e-mail',
   question_payment_started: 'Paiements Guidances e-mail ouverts',
   question_purchase_completed: 'Guidances e-mail commandées',
+  rdv_view: 'Visites prise de rendez-vous',
+  rdv_booking_started: 'Prestations RDV choisies',
+  rdv_booking_completed: 'Rendez-vous réservés',
+  rdv_request_sent: 'Demandes RDV envoyées',
 }
 
 function authHeader(session) {
@@ -44,6 +48,10 @@ function makePreviewData(days) {
     question_view: round(36),
     question_payment_started: round(8),
     question_purchase_completed: round(3),
+    rdv_view: round(96),
+    rdv_booking_started: round(42),
+    rdv_booking_completed: round(24),
+    rdv_request_sent: round(4),
   }
   const home_doors = {
     oracle: round(58),
@@ -188,6 +196,10 @@ export default function PilotageDashboard({ session, demoMode = false }) {
   const questionPaymentStarted = Number(totals.question_payment_started || 0)
   const questionPurchases = Number(totals.question_purchase_completed || 0)
   const homeViews = Number(totals.home_view || 0)
+  const rdvViews = Number(totals.rdv_view || 0)
+  const rdvStarted = Number(totals.rdv_booking_started || 0)
+  const rdvCompleted = Number(totals.rdv_booking_completed || 0)
+  const rdvRequests = Number(totals.rdv_request_sent || 0)
 
   const keyRows = useMemo(() => (
     Object.entries(totals)
@@ -271,9 +283,23 @@ export default function PilotageDashboard({ session, demoMode = false }) {
         <MetricCard eyebrow="Exemple Chronosphère" value={exampleViews} note={`${exampleCta.toLocaleString('fr-FR')} clics vers le tirage`} />
         <MetricCard eyebrow="Paiement ouvert" value={paymentOpened} note={`${pct(paymentOpened, exampleCta || chronoClicks)} après l’étape précédente`} />
         <MetricCard eyebrow="Guidances e-mail" value={questionViews} note={`${questionPurchases.toLocaleString('fr-FR')} commande${questionPurchases > 1 ? 's' : ''} · ${pct(questionPurchases, questionViews)} des visites`} />
+        <MetricCard eyebrow="Rendez-vous" value={rdvCompleted} note={`${pct(rdvCompleted, rdvViews)} des visites RDV · ${rdvRequests.toLocaleString('fr-FR')} demande${rdvRequests > 1 ? 's' : ''} manuelle${rdvRequests > 1 ? 's' : ''}`} />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+        <article className="rounded-2xl border border-gold/20 bg-white/65 p-6 lg:col-span-2">
+          <div className="mb-6">
+            <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">RENDEZ-VOUS</p>
+            <h3 className="mt-1 font-georgia text-xl font-medium text-deep">De la visite à la réservation</h3>
+            <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Mesure agrégée et anonyme. L’origine du passage est conservée dans les compteurs pour comparer l’accueil, le bloc consultations, l’interview et les accès directs.</p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            <FunnelRow label="Visites de la page RDV" value={rdvViews} reference={rdvViews} />
+            <FunnelRow label="Prestation choisie" value={rdvStarted} reference={rdvViews} detail={pct(rdvStarted, rdvViews)} />
+            <FunnelRow label="Réservation confirmée" value={rdvCompleted} reference={rdvViews} detail={pct(rdvCompleted, rdvViews)} />
+          </div>
+        </article>
+
         <article className="rounded-2xl border border-gold/20 bg-white/65 p-6 lg:col-span-2">
           <div className="mb-6">
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">GUIDANCES PAR E-MAIL</p>

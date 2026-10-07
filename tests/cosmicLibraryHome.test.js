@@ -41,7 +41,8 @@ test('cosmic hero uses responsive monumental scenes with the simplified promise 
   assert.match(component, /mediumia-cosmic-library-hero-mobile\.webp/)
   assert.match(component, /Se former à la médiumnité\./)
   assert.match(component, /Consulter un médium\./)
-  assert.match(component, /Sébastien Seguin, médium depuis plus de douze ans/)
+  assert.match(component, /J’ai créé MediumIA/)
+  assert.match(component, /mes consultations/)
   assert.match(component, /primaryAction: 'Découvrir la Formation',/)
   assert.doesNotMatch(component, /Là où la conscience rencontre l’intelligence artificielle/)
   assert.ok(desktopScene.byteLength < 400_000)
@@ -56,7 +57,8 @@ test('simplified hero: no tiles, two clear actions (formation and booking)', asy
 
   assert.match(app, /<CosmicLibraryHero[\s\S]*onOpenFormation=\{onOpenFormation\}/)
   assert.match(component, /href="\/formation"/)
-  assert.match(component, /className="cosmic-library__secondary" href="#consulter"/)
+  assert.match(component, /href="\/rdv\/sebastien-seguin\?src=home-hero"/)
+  assert.match(component, /Voir mes disponibilités/)
   assert.doesNotMatch(component, /CosmicDock|cosmic-dock__item|href: '\/agents'/)
 })
 

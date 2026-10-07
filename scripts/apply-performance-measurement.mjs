@@ -68,8 +68,8 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onNavigate }) {\n  return (`,
-  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])\n\n  return (`,
+  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onOpenVideos, onNavigate }) {\n  return (`,
+  `function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onOpenVideos, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])\n\n  return (`,
   'home view metric',
 )
 

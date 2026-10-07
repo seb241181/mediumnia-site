@@ -30,6 +30,7 @@ const ROUTE_PATHS = {
   'reseau-dir': '/reseau',
   'reseau-form': '/reseau/rejoindre',
   conferences: '/conferences',
+  videos: '/videos',
   avis: '/avis',
   'cartes-cadeaux': '/cartes-cadeaux',
   'defi-intuition': '/defi-intuition',

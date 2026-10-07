@@ -35,7 +35,9 @@ test('MAX page speaks to customers, not in engineering terms', () => {
 test('home hero has no dock anymore and offers booking directly', () => {
   const hero = read('src/components/CosmicLibraryHero.jsx')
   assert.deepEqual([...hero.matchAll(/\{ label: '([^']+)'/g)].map((m) => m[1]), [])
-  assert.match(hero, /className="cosmic-library__secondary" href="#consulter"/)
+  assert.match(hero, /className="cosmic-library__secondary"/)
+  assert.match(hero, /href="\/rdv\/sebastien-seguin\?src=home-hero"/)
+  assert.match(hero, /Voir mes disponibilités/)
 })
 
 test('floating account button stays compact on phones', () => {

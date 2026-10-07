@@ -51,8 +51,8 @@ test('the homepage hero says what MediumIA is and where to click', async () => {
   ]) {
     assert.match(component, new RegExp(wording.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }
-  for (const href of ['/formation', '#consulter']) {
-    assert.match(component, new RegExp(href.replace('/', '\\/')))
+  for (const href of ['/formation', '/rdv/sebastien-seguin?src=home-hero']) {
+    assert.ok(component.includes(`href="${href}"`), `hero should link to ${href}`)
   }
 })
 

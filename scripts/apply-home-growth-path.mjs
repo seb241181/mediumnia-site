@@ -44,6 +44,7 @@ app = replaceRequired(
   { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
+  { id: 'videos', label: 'Vidéos' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
@@ -55,6 +56,7 @@ app = replaceRequired(
   { id: 'chemin', label: 'Chemin' },
   { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
+  { id: 'videos', label: 'Vidéos' },
   { id: 'arche', label: 'L’Arche' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
@@ -65,15 +67,15 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  "onOpenRdv, onOpenQuestion, onOpenConferences, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
-  "onOpenRdv, onOpenQuestion, onOpenConferences, onOpenQuiz, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
+  "onOpenRdv, onOpenQuestion, onOpenVideos, onOpenConferences, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
+  "onOpenRdv, onOpenQuestion, onOpenVideos, onOpenConferences, onOpenQuiz, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
   'home signature',
 )
 
 app = replaceRequired(
   app,
-  '          onOpenReseauDir={onOpenReseauDir}\n        />',
-  '          onOpenReseauDir={onOpenReseauDir}\n          onOpenQuiz={onOpenQuiz}\n        />',
+  '          onOpenReseauDir={onOpenReseauDir}\n          onOpenRdv={onOpenRdv}\n        />',
+  '          onOpenReseauDir={onOpenReseauDir}\n          onOpenRdv={onOpenRdv}\n          onOpenQuiz={onOpenQuiz}\n        />',
   'hero quiz door',
 )
 
@@ -99,8 +101,8 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  "        <VideoInterview id=\"interview\" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin') : undefined} />\n",
-  `        <VideoInterview id="interview" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin') : undefined} />
+  "        <VideoInterview id=\"videos\" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />\n",
+  `        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
 
         {/* ── L'Arche : le Codex et la Kénose ── */}
         <ArcheSection />
@@ -131,8 +133,8 @@ app = insertAfter(
 
 app = replaceRequired(
   app,
-  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenConferences={openConferences} onNavigate={legalNav} />{guardian}</>',
-  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenConferences={openConferences} onOpenQuiz={openQuiz} onNavigate={legalNav} />{guardian}</>',
+  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onOpenConferences={openConferences} onNavigate={legalNav} />{guardian}</>',
+  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onOpenConferences={openConferences} onOpenQuiz={openQuiz} onNavigate={legalNav} />{guardian}</>',
   'home quiz prop',
 )
 
@@ -305,8 +307,8 @@ admin = insertAfter(
 
 admin = replaceRequired(
   admin,
-  '  return { preview: true, days, totals, home_doors, oracle_next_steps, daily }',
-  '  return { preview: true, days, totals, home_doors, oracle_next_steps, story_attribution, daily }',
+  '  return { preview: true, days, totals, home_doors, oracle_next_steps, rdv_sources, daily }',
+  '  return { preview: true, days, totals, home_doors, oracle_next_steps, story_attribution, rdv_sources, daily }',
   'pilotage preview story attribution return',
 )
 
@@ -319,15 +321,15 @@ admin = insertAfter(
 
 admin = replaceRequired(
   admin,
-  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    dailyMap.set",
-  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.event_name === 'story_visit' && row.source in story_attribution) {\n      story_attribution[row.source].visits += count\n    }\n    if (row.event_name === 'story_attributed' && row.source?.startsWith('story-')) {\n      const separator = row.source.indexOf(':')\n      const story = separator > 0 ? row.source.slice(0, separator) : ''\n      const event = separator > 0 ? row.source.slice(separator + 1) : ''\n      if (story in story_attribution && event) {\n        story_attribution[story].events[event] = (story_attribution[story].events[event] || 0) + count\n      }\n    }\n    dailyMap.set",
+  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.source?.startsWith('rdv:') && ['rdv_view', 'rdv_booking_started', 'rdv_booking_completed', 'rdv_request_sent'].includes(row.event_name)) {\n      const source = row.source.slice(4)\n      const bucket = rdv_sources[source] || { views: 0, started: 0, completed: 0, requests: 0 }\n      if (row.event_name === 'rdv_view') bucket.views += count\n      else if (row.event_name === 'rdv_booking_started') bucket.started += count\n      else if (row.event_name === 'rdv_booking_completed') bucket.completed += count\n      else if (row.event_name === 'rdv_request_sent') bucket.requests += count\n      rdv_sources[source] = bucket\n    }\n    dailyMap.set",
+  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.event_name === 'story_visit' && row.source in story_attribution) {\n      story_attribution[row.source].visits += count\n    }\n    if (row.event_name === 'story_attributed' && row.source?.startsWith('story-')) {\n      const separator = row.source.indexOf(':')\n      const story = separator > 0 ? row.source.slice(0, separator) : ''\n      const event = separator > 0 ? row.source.slice(separator + 1) : ''\n      if (story in story_attribution && event) {\n        story_attribution[story].events[event] = (story_attribution[story].events[event] || 0) + count\n      }\n    }\n    if (row.source?.startsWith('rdv:') && ['rdv_view', 'rdv_booking_started', 'rdv_booking_completed', 'rdv_request_sent'].includes(row.event_name)) {\n      const source = row.source.slice(4)\n      const bucket = rdv_sources[source] || { views: 0, started: 0, completed: 0, requests: 0 }\n      if (row.event_name === 'rdv_view') bucket.views += count\n      else if (row.event_name === 'rdv_booking_started') bucket.started += count\n      else if (row.event_name === 'rdv_booking_completed') bucket.completed += count\n      else if (row.event_name === 'rdv_request_sent') bucket.requests += count\n      rdv_sources[source] = bucket\n    }\n    dailyMap.set",
   'pilotage story attribution aggregation',
 )
 
 admin = replaceRequired(
   admin,
-  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, daily })',
-  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, story_attribution, daily })',
+  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, rdv_sources, daily })',
+  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, story_attribution, rdv_sources, daily })',
   'pilotage live story attribution return',
 )
 

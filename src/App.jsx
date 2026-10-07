@@ -29,6 +29,7 @@ import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
 import DiscoverSection from './components/DiscoverSection'
 import VideoInterview from './components/VideoInterview'
+import VideosPage from './components/VideosPage'
 import PractitionersBand from './components/PractitionersBand'
 import { money, useParcoursOffer } from './lib/parcoursOffer.js'
 
@@ -113,12 +114,13 @@ const HOME_RAIL = [
   { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
+  { id: 'videos', label: 'Vidéos' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
 ]
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onNavigate }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onOpenVideos, onNavigate }) {
   return (
     <div id="top" className="cosmic-home bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -132,6 +134,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenOracle={onOpenOracle}
           onOpenChronosphere={onOpenChronosphere}
           onOpenReseauDir={onOpenReseauDir}
+          onOpenRdv={onOpenRdv}
         />
 
         {/* ── Formation MediumIA : l'offre principale, dès le premier défilement ── */}
@@ -146,7 +149,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         <ReviewsHighlight />
 
         {/* ── Sébastien en interview (vidéo chargée au clic) ── */}
-        <VideoInterview id="interview" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin') : undefined} />
+        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
 
         {/* ── Découvrir et expérimenter ── */}
         <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
@@ -190,6 +193,7 @@ function pathToView(p) {
     : p === '/cartes-cadeaux' || p.startsWith('/carte-cadeau/') ? 'cartes-cadeaux'
     : p === '/defi-intuition' ? 'defi-intuition'
     : p === '/question' ? 'question'
+    : p === '/videos' || p.startsWith('/videos/') ? 'videos'
     : p === '/mentions' ? 'mentions'
     : p === '/confidentialite' ? 'confidentialite'
     : p === '/cgv-oracle' ? 'cgv-oracle'
@@ -216,8 +220,9 @@ export default function App() {
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
-  const openRdvPublic   = (slug) => nav(`/rdv/${slug}`,  'rdv-public')
+  const openRdvPublic   = (slug, source = null) => nav(`/rdv/${slug}${source ? `?src=${encodeURIComponent(source)}` : ''}`, 'rdv-public')
   const openQuestion    = () => nav('/question',          'question')
+  const openVideos      = () => nav('/videos',            'videos')
   const backHome        = () => nav('/',                 'home')
 
   const legalNav = (p) => {
@@ -248,11 +253,12 @@ export default function App() {
   if (view === 'formation-parcours') return <><FormationParcoursPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'defi-intuition') return <><DefiIntuitionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'question')      return <><QuestionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'videos')        return <><VideosPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'avis')         return <><ReviewsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onNavigate={legalNav} />{guardian}</>
 }

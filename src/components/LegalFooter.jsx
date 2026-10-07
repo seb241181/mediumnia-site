@@ -21,6 +21,8 @@ export default function LegalFooter({ onNavigate }) {
         ))}
       </div>
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 font-georgia text-[11px] text-mist/60">
+        <a href="/videos" className="hover:text-gold transition-colors">Vidéos</a>
+        <span className="hidden sm:inline">·</span>
         <a href="/mentions" onClick={go('/mentions')} className="hover:text-gold transition-colors">Mentions légales</a>
         <span className="hidden sm:inline">·</span>
         <a href="/confidentialite" onClick={go('/confidentialite')} className="hover:text-gold transition-colors">Confidentialité</a>

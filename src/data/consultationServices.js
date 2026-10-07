@@ -13,7 +13,7 @@ export const consultationPractitioners = [
     rdvSlug: 'sebastien-seguin',
     portrait: '/sebastien.jpg',
     portraitAlt: 'Portrait de Sébastien Seguin',
-    introduction: "Médium professionnel depuis plus de douze ans, Sébastien accompagne avec une présence attentive et directe. Ses consultations explorent les perceptions, les liens avec les défunts et les messages qui cherchent à se dire — dans un espace de clarté, sans mystère inutile.",
+    introduction: "Je suis médium professionnel depuis plus de douze ans. Je vous accompagne avec une présence attentive et directe ; mes consultations explorent les perceptions, les liens avec les défunts et les messages qui cherchent à se dire — dans un espace de clarté, sans mystère inutile.",
     intention: 'Médiumnité, guidance intuitive et accompagnement autour des perceptions.',
     detailsLabel: 'Découvrir les consultations',
     statusLabel: null,

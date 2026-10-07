@@ -43,6 +43,10 @@ test('pilotage UI provides useful ranges, funnel and privacy explanation', async
   assert.match(pilotage, /question_view/)
   assert.match(pilotage, /question_payment_started/)
   assert.match(pilotage, /question_purchase_completed/)
+  assert.match(pilotage, /ORIGINE DES RENDEZ-VOUS/)
+  assert.match(pilotage, /Google Business/)
+  assert.match(pilotage, /Solocal/)
+  assert.match(pilotage, /Bing/)
 })
 
 test('analytics dashboard reuses authenticated rdv-admin and protects production access', async () => {
@@ -61,6 +65,8 @@ test('pilotage returns aggregate counters rather than visitor records', async ()
   assert.doesNotMatch(analytics, /customer_email|customer_phone|ip_address|visitor_id|session_id/)
   assert.doesNotMatch(pilotage, /localStorage|sessionStorage|document\.cookie/)
   assert.match(analytics, /event_date, event_name, source, event_count/)
+  assert.match(analytics, /rdv_sources/)
+  assert.match(analytics, /row\.source\?\.startsWith\('rdv:'\)/)
 })
 
 test('preview demo can be reviewed without Supabase credentials and never exposes live data', async () => {

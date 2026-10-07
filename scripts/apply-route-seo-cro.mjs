@@ -58,7 +58,7 @@ const routeSeoHelpers = `const ROUTE_META = {
   },
   conferences: {
     title: 'Conférence offerte le 22 octobre — Et si la médiumnité devenait accessible ? | MediumIA',
-    description: 'Une heure en direct avec Sébastien Seguin, jeudi 22 octobre à 19 h sur Zoom. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
+    description: 'Je vous retrouve en direct jeudi 22 octobre à 19 h sur Zoom pour une conférence MediumIA. Inscription gratuite, carnet de préparation offert et une formation complète à gagner parmi les présents.',
   },
   'cartes-cadeaux': {
     title: 'Cartes cadeaux MediumIA — Offrir une consultation ou ChronoSphère',
@@ -67,6 +67,10 @@ const routeSeoHelpers = `const ROUTE_META = {
   'defi-intuition': {
     title: 'Défi Intuition — Exercice d’intuition du jour | MediumIA',
     description: 'Un exercice d’intuition gratuit chaque jour : cinq cartes, une seule cache l’Étoile. Écoutez votre premier ressenti, gardez votre série et partagez votre score.',
+  },
+  videos: {
+    title: 'Vidéos sur la médiumnité — Sébastien Seguin | MediumIA',
+    description: 'Je réponds en vidéo aux questions qui reviennent sur la médiumnité, les ressentis, l’intuition, les défunts et le déroulement d’une guidance.',
   },
   avis: {
     title: 'Avis clients — MediumIA',

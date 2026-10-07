@@ -28,12 +28,23 @@ function previewAnalytics(days) {
     question_view: round(36),
     question_payment_started: round(8),
     question_purchase_completed: round(3),
+    rdv_view: round(96),
+    rdv_booking_started: round(42),
+    rdv_booking_completed: round(24),
+    rdv_request_sent: round(4),
   }
   const home_doors = {
     oracle: round(58),
     chronosphere: round(67),
     reseau: round(24),
     formation: round(24),
+  }
+  const rdv_sources = {
+    'home-hero': { views: round(28), started: round(14), completed: round(8), requests: round(1) },
+    'home-consultations': { views: round(24), started: round(13), completed: round(8), requests: round(1) },
+    'google-business': { views: round(17), started: round(7), completed: round(4), requests: 0 },
+    solocal: { views: round(11), started: round(5), completed: round(2), requests: 0 },
+    direct: { views: round(16), started: round(3), completed: round(2), requests: round(2) },
   }
   const daily = []
   const today = new Date()
@@ -43,7 +54,7 @@ function previewAnalytics(days) {
     const wave = 9 + ((offset * 7 + days) % 11)
     daily.push({ date: date.toISOString().slice(0, 10), total: wave })
   }
-  return { preview: true, days, totals, home_doors, daily }
+  return { preview: true, days, totals, home_doors, rdv_sources, daily }
 }
 
 async function handleAnalytics(req, res, supabase, userId) {
@@ -83,6 +94,7 @@ async function handleAnalytics(req, res, supabase, userId) {
 
   const totals = {}
   const home_doors = { oracle: 0, chronosphere: 0, reseau: 0, formation: 0 }
+  const rdv_sources = {}
   const dailyMap = new Map()
 
   for (const row of rows || []) {
@@ -91,6 +103,15 @@ async function handleAnalytics(req, res, supabase, userId) {
     if (row.event_name === 'home_door_click' && row.source?.startsWith('home:')) {
       const target = row.source.slice(5)
       if (target in home_doors) home_doors[target] += count
+    }
+    if (row.source?.startsWith('rdv:') && ['rdv_view', 'rdv_booking_started', 'rdv_booking_completed', 'rdv_request_sent'].includes(row.event_name)) {
+      const source = row.source.slice(4)
+      const bucket = rdv_sources[source] || { views: 0, started: 0, completed: 0, requests: 0 }
+      if (row.event_name === 'rdv_view') bucket.views += count
+      else if (row.event_name === 'rdv_booking_started') bucket.started += count
+      else if (row.event_name === 'rdv_booking_completed') bucket.completed += count
+      else if (row.event_name === 'rdv_request_sent') bucket.requests += count
+      rdv_sources[source] = bucket
     }
     dailyMap.set(row.event_date, (dailyMap.get(row.event_date) || 0) + count)
   }
@@ -103,7 +124,7 @@ async function handleAnalytics(req, res, supabase, userId) {
     daily.push({ date: key, total: dailyMap.get(key) || 0 })
   }
 
-  return res.status(200).json({ preview: false, days, totals, home_doors, daily })
+  return res.status(200).json({ preview: false, days, totals, home_doors, rdv_sources, daily })
 }
 
 `

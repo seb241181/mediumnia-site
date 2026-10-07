@@ -6,7 +6,7 @@ import '../styles/home-simplified.css'
 export const COSMIC_HOME_CONFIG = Object.freeze({
   title: 'Se former à la médiumnité.',
   emphasis: 'Consulter un médium.',
-  description: 'MediumIA, c’est la Formation MediumIA de Sébastien Seguin, médium depuis plus de douze ans, et ses consultations : un chemin clair pour comprendre et développer votre sensibilité.',
+  description: 'J’ai créé MediumIA pour réunir ma formation à la médiumnité et mes consultations : un chemin clair, construit à partir de plus de douze ans de pratique, pour comprendre et développer votre sensibilité.',
   primaryAction: 'Découvrir la Formation',
   quizAction: 'Pas encore sûr ? Découvrez votre canal de perception en 2 minutes',
 })
@@ -38,7 +38,7 @@ function CosmicSphereAtmosphere() {
   )
 }
 
-export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenQuiz }) {
+export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenQuiz, onOpenRdv }) {
   const heroRef = useRef(null)
 
   // Ordered as a path: try for free, go deeper, learn, meet people; the
@@ -138,8 +138,16 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
             >
               {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
             </a>
-            <a className="cosmic-library__secondary" href="#consulter">
-              Prendre rendez-vous<span aria-hidden="true">→</span>
+            <a
+              className="cosmic-library__secondary"
+              href="/rdv/sebastien-seguin?src=home-hero"
+              onClick={(event) => {
+                if (!onOpenRdv || event.metaKey || event.ctrlKey || event.shiftKey) return
+                event.preventDefault()
+                onOpenRdv('sebastien-seguin', 'home-hero')
+              }}
+            >
+              Voir mes disponibilités<span aria-hidden="true">→</span>
             </a>
           </div>
 

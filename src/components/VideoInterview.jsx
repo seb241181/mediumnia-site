@@ -37,7 +37,7 @@ export function SocialIcon({ id, className }) {
   return null
 }
 
-export default function VideoInterview({ id = 'interview', onOpenRdv, compact = false }) {
+export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVideos, compact = false, showResponsesPreview = false }) {
   const video = FEATURED_INTERVIEW
   const [start, setStart] = useState(null)
   const playing = start !== null
@@ -50,9 +50,9 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, compact = 
   return (
     <section id={id} className={`mx-auto max-w-6xl scroll-mt-28 px-6 ${compact ? 'pt-14' : 'py-14'}`} aria-labelledby={`${id}-title`}>
       <div className={compact ? '' : 'mx-auto mb-8 max-w-2xl text-center'}>
-        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Sébastien en interview</p>
+        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">{compact ? 'Mon interview' : 'Mes vidéos'}</p>
         <h2 id={`${id}-title`} className={`mt-2 font-georgia font-medium leading-tight text-deep ${compact ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>
-          {compact ? 'Découvrez sa façon de travailler' : 'Écoutez Sébastien parler de la médiumnité'}
+          {compact ? 'Découvrez ma façon de travailler' : 'Je vous parle de la médiumnité'}
         </h2>
         {!compact && (
           <p className="mt-3 font-georgia leading-relaxed text-mist">
@@ -108,11 +108,20 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, compact = 
           <div className="mt-5 flex flex-col gap-3">
             {onOpenRdv && (
               <button type="button" onClick={onOpenRdv} className="rounded-full bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold">
-                Prendre rendez-vous avec Sébastien →
+                Prendre rendez-vous avec moi →
               </button>
             )}
+            {onOpenVideos && (
+              <a
+                href="/videos"
+                onClick={(event) => { event.preventDefault(); onOpenVideos() }}
+                className="self-start font-georgia text-sm font-bold text-deep underline decoration-gold/40 underline-offset-4 hover:text-gold"
+              >
+                Voir toutes mes vidéos →
+              </a>
+            )}
             <a href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" className="self-start font-georgia text-xs text-mist underline decoration-gold/40 underline-offset-4 hover:text-deep">Voir l’interview sur YouTube ↗</a>
-            <p className="border-t border-gold/15 pt-3 font-georgia text-xs text-mist">Suivre Sébastien :</p>
+            <p className="border-t border-gold/15 pt-3 font-georgia text-xs text-mist">Me suivre :</p>
             <div className="-mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 font-georgia text-xs text-mist">
               {SOCIAL_LINKS.map((link) => (
                 <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 underline decoration-gold/40 underline-offset-4 hover:text-deep">
@@ -123,6 +132,29 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, compact = 
           </div>
         </div>
       </div>
+
+      {showResponsesPreview && (
+        <div className="mt-7 rounded-3xl border border-gold/25 bg-deep p-6 text-cream md:p-8" data-video-responses-preview="v1">
+          <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Vos questions · mes réponses</p>
+          <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <h3 className="font-georgia text-2xl font-medium leading-tight md:text-3xl">La prochaine vidéo partira de vos questions</h3>
+              <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/70 md:text-base">
+                Je laisse les réponses arriver pendant quelques jours, puis je publie ici mon retour. Les prochaines vidéos seront ajoutées dans cette même rubrique, à côté de l’interview déjà présente.
+              </p>
+            </div>
+            {onOpenVideos && (
+              <a
+                href="/videos"
+                onClick={(event) => { event.preventDefault(); onOpenVideos() }}
+                className="shrink-0 self-start rounded-lg border border-gold/45 px-5 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-white/10 md:self-auto"
+              >
+                Ouvrir la rubrique Vidéos →
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   )
 }

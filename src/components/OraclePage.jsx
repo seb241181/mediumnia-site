@@ -29,7 +29,7 @@ export default function OraclePage({ onBack, onNavigate }) {
               />
             </div>
             <div className="flex-1">
-              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-3">Sébastien Seguin · Création originale</p>
+              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-3">Ma création originale</p>
               <h1 className="font-georgia font-medium text-3xl md:text-5xl leading-tight mb-2">Oracle Au-delà de l'Âme</h1>
               <p className="font-georgia text-mist text-base mb-1">Jeu de 45 Cartes d'Éveil Intuitif</p>
               <p className="font-georgia text-xs text-gold italic mb-6">Guidance · Développement personnel · Connexion intérieure</p>

@@ -25,6 +25,10 @@ const LABELS = {
   question_view: 'Visites Guidances e-mail',
   question_payment_started: 'Paiements Guidances e-mail ouverts',
   question_purchase_completed: 'Guidances e-mail commandées',
+  rdv_view: 'Visites prise de rendez-vous',
+  rdv_booking_started: 'Prestations RDV choisies',
+  rdv_booking_completed: 'Rendez-vous réservés',
+  rdv_request_sent: 'Demandes RDV envoyées',
 }
 
 function authHeader(session) {
@@ -44,12 +48,23 @@ function makePreviewData(days) {
     question_view: round(36),
     question_payment_started: round(8),
     question_purchase_completed: round(3),
+    rdv_view: round(96),
+    rdv_booking_started: round(42),
+    rdv_booking_completed: round(24),
+    rdv_request_sent: round(4),
   }
   const home_doors = {
     oracle: round(58),
     chronosphere: round(67),
     reseau: round(24),
     formation: round(24),
+  }
+  const rdv_sources = {
+    'home-hero': { views: round(28), started: round(14), completed: round(8), requests: round(1) },
+    'home-consultations': { views: round(24), started: round(13), completed: round(8), requests: round(1) },
+    'google-business': { views: round(17), started: round(7), completed: round(4), requests: 0 },
+    solocal: { views: round(11), started: round(5), completed: round(2), requests: 0 },
+    direct: { views: round(16), started: round(3), completed: round(2), requests: round(2) },
   }
   const daily = []
   const today = new Date()
@@ -58,7 +73,7 @@ function makePreviewData(days) {
     date.setUTCDate(date.getUTCDate() - offset)
     daily.push({ date: date.toISOString().slice(0, 10), total: 9 + ((offset * 7 + days) % 11) })
   }
-  return { preview: true, days, totals, home_doors, daily }
+  return { preview: true, days, totals, home_doors, rdv_sources, daily }
 }
 
 // Une décimale sous 10 % : « 0 % » ne masque plus 3 paiements sur 400 visites.
@@ -177,6 +192,7 @@ export default function PilotageDashboard({ session, demoMode = false }) {
 
   const totals = data?.totals || {}
   const homeDoors = data?.home_doors || {}
+  const rdvSources = data?.rdv_sources || {}
   const daily = data?.daily || []
 
   const homeClicks = Object.values(homeDoors).reduce((sum, value) => sum + Number(value || 0), 0)
@@ -188,6 +204,10 @@ export default function PilotageDashboard({ session, demoMode = false }) {
   const questionPaymentStarted = Number(totals.question_payment_started || 0)
   const questionPurchases = Number(totals.question_purchase_completed || 0)
   const homeViews = Number(totals.home_view || 0)
+  const rdvViews = Number(totals.rdv_view || 0)
+  const rdvStarted = Number(totals.rdv_booking_started || 0)
+  const rdvCompleted = Number(totals.rdv_booking_completed || 0)
+  const rdvRequests = Number(totals.rdv_request_sent || 0)
 
   const keyRows = useMemo(() => (
     Object.entries(totals)
@@ -265,15 +285,64 @@ export default function PilotageDashboard({ session, demoMode = false }) {
 
       {conferenceCard}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <MetricCard eyebrow="Accueil" value={homeViews} note={`Sur les ${days} derniers jours`} />
         <MetricCard eyebrow="Chronosphère" value={chronoClicks} note={`${pct(chronoClicks, homeClicks)} des clics guidés de l’accueil`} />
         <MetricCard eyebrow="Exemple Chronosphère" value={exampleViews} note={`${exampleCta.toLocaleString('fr-FR')} clics vers le tirage`} />
         <MetricCard eyebrow="Paiement ouvert" value={paymentOpened} note={`${pct(paymentOpened, exampleCta || chronoClicks)} après l’étape précédente`} />
         <MetricCard eyebrow="Guidances e-mail" value={questionViews} note={`${questionPurchases.toLocaleString('fr-FR')} commande${questionPurchases > 1 ? 's' : ''} · ${pct(questionPurchases, questionViews)} des visites`} />
+        <MetricCard eyebrow="Rendez-vous" value={rdvCompleted} note={`${pct(rdvCompleted, rdvViews)} des visites RDV · ${rdvRequests.toLocaleString('fr-FR')} demande${rdvRequests > 1 ? 's' : ''} manuelle${rdvRequests > 1 ? 's' : ''}`} />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+        <article className="rounded-2xl border border-gold/20 bg-white/65 p-6 lg:col-span-2">
+          <div className="mb-6">
+            <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">RENDEZ-VOUS</p>
+            <h3 className="mt-1 font-georgia text-xl font-medium text-deep">De la visite à la réservation</h3>
+            <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Mesure agrégée et anonyme. L’origine du passage est conservée dans les compteurs pour comparer l’accueil, le bloc consultations, l’interview et les accès directs.</p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            <FunnelRow label="Visites de la page RDV" value={rdvViews} reference={rdvViews} />
+            <FunnelRow label="Prestation choisie" value={rdvStarted} reference={rdvViews} detail={pct(rdvStarted, rdvViews)} />
+            <FunnelRow label="Réservation confirmée" value={rdvCompleted} reference={rdvViews} detail={pct(rdvCompleted, rdvViews)} />
+          </div>
+          {Object.keys(rdvSources).length > 0 && (
+            <div className="mt-7 border-t border-gold/15 pt-6">
+              <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">ORIGINE DES RENDEZ-VOUS</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {Object.entries(rdvSources)
+                  .sort((a, b) => Number(b[1]?.completed || 0) - Number(a[1]?.completed || 0))
+                  .map(([source, stats]) => {
+                    const labels = {
+                      'home-hero': 'Accueil · bouton principal',
+                      'home-consultations': 'Accueil · consultations',
+                      'home-interview': 'Accueil · interview',
+                      'facebook-organic': 'Facebook',
+                      'instagram-organic': 'Instagram',
+                      'tiktok-organic': 'TikTok',
+                      'google-profile': 'Google',
+                      'google-business': 'Google Business',
+                      solocal: 'Solocal',
+                      pagesjaunes: 'PagesJaunes',
+                      'apple-business': 'Apple Business',
+                      'bing-business': 'Bing',
+                      trustpilot: 'Trustpilot',
+                      direct: 'Accès direct / non attribué',
+                    }
+                    return (
+                      <div key={source} className="rounded-xl border border-gold/15 bg-cream/45 px-4 py-3">
+                        <p className="font-georgia text-xs font-semibold text-deep">{labels[source] || source}</p>
+                        <p className="mt-1 font-georgia text-[11px] leading-relaxed text-mist">
+                          {Number(stats?.views || 0).toLocaleString('fr-FR')} visites · {Number(stats?.started || 0).toLocaleString('fr-FR')} choix · <strong className="text-deep">{Number(stats?.completed || 0).toLocaleString('fr-FR')} réservations</strong>
+                        </p>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+        </article>
+
         <article className="rounded-2xl border border-gold/20 bg-white/65 p-6 lg:col-span-2">
           <div className="mb-6">
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">GUIDANCES PAR E-MAIL</p>

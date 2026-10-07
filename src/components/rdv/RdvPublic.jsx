@@ -10,7 +10,7 @@ import { trackMediumiaMetric } from '../../lib/mediumiaMetrics.js'
 
 const MODALITY_LABELS = { video: 'Vidéo', phone: 'Téléphone', 'in-person': 'Présentiel' }
 
-const RDV_SOURCES = new Set(['home-hero', 'home-consultations', 'home-interview', 'facebook-organic', 'instagram-organic', 'tiktok-organic', 'google-profile', 'direct'])
+const RDV_SOURCES = new Set(['home-hero', 'home-consultations', 'home-interview', 'facebook-organic', 'instagram-organic', 'tiktok-organic', 'google-profile', 'google-business', 'solocal', 'pagesjaunes', 'apple-business', 'bing-business', 'trustpilot', 'direct'])
 function readRdvMetricSource() {
   const raw = new URLSearchParams(window.location.search).get('src')
   return `rdv:${RDV_SOURCES.has(raw) ? raw : 'direct'}`

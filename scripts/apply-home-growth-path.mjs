@@ -44,6 +44,7 @@ app = replaceRequired(
   { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
+  { id: 'videos', label: 'Vidéos' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
@@ -55,6 +56,7 @@ app = replaceRequired(
   { id: 'chemin', label: 'Chemin' },
   { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
+  { id: 'videos', label: 'Vidéos' },
   { id: 'arche', label: 'L’Arche' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
@@ -65,15 +67,15 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  "onOpenRdv, onOpenQuestion, onOpenConferences, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
-  "onOpenRdv, onOpenQuestion, onOpenConferences, onOpenQuiz, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
+  "onOpenRdv, onOpenQuestion, onOpenVideos, onOpenConferences, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
+  "onOpenRdv, onOpenQuestion, onOpenVideos, onOpenConferences, onOpenQuiz, onNavigate }) {\n  useEffect(() => { trackMediumiaMetric('home_view', 'home') }, [])",
   'home signature',
 )
 
 app = replaceRequired(
   app,
-  '          onOpenReseauDir={onOpenReseauDir}\n        />',
-  '          onOpenReseauDir={onOpenReseauDir}\n          onOpenQuiz={onOpenQuiz}\n        />',
+  '          onOpenReseauDir={onOpenReseauDir}\n          onOpenRdv={onOpenRdv}\n        />',
+  '          onOpenReseauDir={onOpenReseauDir}\n          onOpenRdv={onOpenRdv}\n          onOpenQuiz={onOpenQuiz}\n        />',
   'hero quiz door',
 )
 
@@ -99,8 +101,8 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  "        <VideoInterview id=\"interview\" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin') : undefined} />\n",
-  `        <VideoInterview id="interview" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin') : undefined} />
+  "        <VideoInterview id=\"videos\" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />\n",
+  `        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
 
         {/* ── L'Arche : le Codex et la Kénose ── */}
         <ArcheSection />
@@ -131,8 +133,8 @@ app = insertAfter(
 
 app = replaceRequired(
   app,
-  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenConferences={openConferences} onNavigate={legalNav} />{guardian}</>',
-  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenConferences={openConferences} onOpenQuiz={openQuiz} onNavigate={legalNav} />{guardian}</>',
+  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onOpenConferences={openConferences} onNavigate={legalNav} />{guardian}</>',
+  'onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onOpenConferences={openConferences} onOpenQuiz={openQuiz} onNavigate={legalNav} />{guardian}</>',
   'home quiz prop',
 )
 

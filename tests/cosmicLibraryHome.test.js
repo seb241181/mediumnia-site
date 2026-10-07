@@ -56,7 +56,8 @@ test('simplified hero: no tiles, two clear actions (formation and booking)', asy
 
   assert.match(app, /<CosmicLibraryHero[\s\S]*onOpenFormation=\{onOpenFormation\}/)
   assert.match(component, /href="\/formation"/)
-  assert.match(component, /className="cosmic-library__secondary" href="#consulter"/)
+  assert.match(component, /href="\/rdv\/sebastien-seguin\?src=home-hero"/)
+  assert.match(component, /Voir mes disponibilités/)
   assert.doesNotMatch(component, /CosmicDock|cosmic-dock__item|href: '\/agents'/)
 })
 

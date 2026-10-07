@@ -26,6 +26,8 @@ test('appointment funnel keeps anonymous source attribution', () => {
   assert.match(page, /home-hero/)
   assert.match(page, /home-consultations/)
   assert.match(page, /home-interview/)
+  assert.match(page, /facebook-organic/)
+  assert.match(page, /instagram-organic/)
   assert.match(analytics, /RDV_SOURCE_RE/)
   assert.match(analytics, /rdv_booking_completed/)
 })

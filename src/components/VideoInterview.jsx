@@ -37,7 +37,7 @@ export function SocialIcon({ id, className }) {
   return null
 }
 
-export default function VideoInterview({ id = 'interview', onOpenRdv, compact = false }) {
+export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVideos, compact = false }) {
   const video = FEATURED_INTERVIEW
   const [start, setStart] = useState(null)
   const playing = start !== null
@@ -110,6 +110,15 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, compact = 
               <button type="button" onClick={onOpenRdv} className="rounded-full bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold">
                 Prendre rendez-vous avec moi →
               </button>
+            )}
+            {onOpenVideos && (
+              <a
+                href="/videos"
+                onClick={(event) => { event.preventDefault(); onOpenVideos() }}
+                className="self-start font-georgia text-sm font-bold text-deep underline decoration-gold/40 underline-offset-4 hover:text-gold"
+              >
+                Voir toutes mes vidéos →
+              </a>
             )}
             <a href={youtubeWatchUrl(video.youtubeId)} target="_blank" rel="noopener noreferrer" className="self-start font-georgia text-xs text-mist underline decoration-gold/40 underline-offset-4 hover:text-deep">Voir l’interview sur YouTube ↗</a>
             <p className="border-t border-gold/15 pt-3 font-georgia text-xs text-mist">Me suivre :</p>

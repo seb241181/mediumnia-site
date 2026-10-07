@@ -307,8 +307,8 @@ admin = insertAfter(
 
 admin = replaceRequired(
   admin,
-  '  return { preview: true, days, totals, home_doors, oracle_next_steps, daily }',
-  '  return { preview: true, days, totals, home_doors, oracle_next_steps, story_attribution, daily }',
+  '  return { preview: true, days, totals, home_doors, oracle_next_steps, rdv_sources, daily }',
+  '  return { preview: true, days, totals, home_doors, oracle_next_steps, story_attribution, rdv_sources, daily }',
   'pilotage preview story attribution return',
 )
 
@@ -321,15 +321,15 @@ admin = insertAfter(
 
 admin = replaceRequired(
   admin,
-  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    dailyMap.set",
-  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.event_name === 'story_visit' && row.source in story_attribution) {\n      story_attribution[row.source].visits += count\n    }\n    if (row.event_name === 'story_attributed' && row.source?.startsWith('story-')) {\n      const separator = row.source.indexOf(':')\n      const story = separator > 0 ? row.source.slice(0, separator) : ''\n      const event = separator > 0 ? row.source.slice(separator + 1) : ''\n      if (story in story_attribution && event) {\n        story_attribution[story].events[event] = (story_attribution[story].events[event] || 0) + count\n      }\n    }\n    dailyMap.set",
+  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.source?.startsWith('rdv:') && ['rdv_view', 'rdv_booking_started', 'rdv_booking_completed', 'rdv_request_sent'].includes(row.event_name)) {\n      const source = row.source.slice(4)\n      const bucket = rdv_sources[source] || { views: 0, started: 0, completed: 0, requests: 0 }\n      if (row.event_name === 'rdv_view') bucket.views += count\n      else if (row.event_name === 'rdv_booking_started') bucket.started += count\n      else if (row.event_name === 'rdv_booking_completed') bucket.completed += count\n      else if (row.event_name === 'rdv_request_sent') bucket.requests += count\n      rdv_sources[source] = bucket\n    }\n    dailyMap.set",
+  "    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.event_name === 'story_visit' && row.source in story_attribution) {\n      story_attribution[row.source].visits += count\n    }\n    if (row.event_name === 'story_attributed' && row.source?.startsWith('story-')) {\n      const separator = row.source.indexOf(':')\n      const story = separator > 0 ? row.source.slice(0, separator) : ''\n      const event = separator > 0 ? row.source.slice(separator + 1) : ''\n      if (story in story_attribution && event) {\n        story_attribution[story].events[event] = (story_attribution[story].events[event] || 0) + count\n      }\n    }\n    if (row.source?.startsWith('rdv:') && ['rdv_view', 'rdv_booking_started', 'rdv_booking_completed', 'rdv_request_sent'].includes(row.event_name)) {\n      const source = row.source.slice(4)\n      const bucket = rdv_sources[source] || { views: 0, started: 0, completed: 0, requests: 0 }\n      if (row.event_name === 'rdv_view') bucket.views += count\n      else if (row.event_name === 'rdv_booking_started') bucket.started += count\n      else if (row.event_name === 'rdv_booking_completed') bucket.completed += count\n      else if (row.event_name === 'rdv_request_sent') bucket.requests += count\n      rdv_sources[source] = bucket\n    }\n    dailyMap.set",
   'pilotage story attribution aggregation',
 )
 
 admin = replaceRequired(
   admin,
-  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, daily })',
-  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, story_attribution, daily })',
+  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, rdv_sources, daily })',
+  '  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, story_attribution, rdv_sources, daily })',
   'pilotage live story attribution return',
 )
 

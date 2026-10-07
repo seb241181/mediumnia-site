@@ -22,7 +22,7 @@ test('public commercial copy uses Sebastian first-person voice', () => {
   assert.match(conference, /Je vous propose une heure en direct/)
   assert.match(live, /POSEZ-MOI VOTRE QUESTION/)
   assert.match(interview, /Mon interview/)
-  assert.match(interview, /Écoutez-moi parler de la médiumnité/)
+  assert.match(interview, /Je vous parle de la médiumnité/)
   assert.match(booking, /Je vous recontacterai/)
   assert.match(booking, /Je vous ai proposé ce créneau/)
   assert.match(oracle, /Ma création originale/)

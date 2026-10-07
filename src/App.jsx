@@ -132,6 +132,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenOracle={onOpenOracle}
           onOpenChronosphere={onOpenChronosphere}
           onOpenReseauDir={onOpenReseauDir}
+          onOpenRdv={onOpenRdv}
         />
 
         {/* ── Formation MediumIA : l'offre principale, dès le premier défilement ── */}
@@ -146,7 +147,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         <ReviewsHighlight />
 
         {/* ── Sébastien en interview (vidéo chargée au clic) ── */}
-        <VideoInterview id="interview" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin') : undefined} />
+        <VideoInterview id="interview" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} />
 
         {/* ── Découvrir et expérimenter ── */}
         <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
@@ -216,7 +217,7 @@ export default function App() {
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
-  const openRdvPublic   = (slug) => nav(`/rdv/${slug}`,  'rdv-public')
+  const openRdvPublic   = (slug, source = null) => nav(`/rdv/${slug}${source ? `?src=${encodeURIComponent(source)}` : ''}`, 'rdv-public')
   const openQuestion    = () => nav('/question',          'question')
   const backHome        = () => nav('/',                 'home')
 

@@ -38,7 +38,7 @@ function CosmicSphereAtmosphere() {
   )
 }
 
-export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenQuiz }) {
+export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenReseauDir, onOpenQuiz, onOpenRdv }) {
   const heroRef = useRef(null)
 
   // Ordered as a path: try for free, go deeper, learn, meet people; the
@@ -138,8 +138,16 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
             >
               {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
             </a>
-            <a className="cosmic-library__secondary" href="#consulter">
-              Prendre rendez-vous<span aria-hidden="true">→</span>
+            <a
+              className="cosmic-library__secondary"
+              href="/rdv/sebastien-seguin?src=home-hero"
+              onClick={(event) => {
+                if (!onOpenRdv || event.metaKey || event.ctrlKey || event.shiftKey) return
+                event.preventDefault()
+                onOpenRdv('sebastien-seguin', 'home-hero')
+              }}
+            >
+              Voir mes disponibilités<span aria-hidden="true">→</span>
             </a>
           </div>
 

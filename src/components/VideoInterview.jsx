@@ -37,7 +37,7 @@ export function SocialIcon({ id, className }) {
   return null
 }
 
-export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVideos, compact = false }) {
+export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVideos, compact = false, showResponsesPreview = false }) {
   const video = FEATURED_INTERVIEW
   const [start, setStart] = useState(null)
   const playing = start !== null
@@ -50,9 +50,9 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVide
   return (
     <section id={id} className={`mx-auto max-w-6xl scroll-mt-28 px-6 ${compact ? 'pt-14' : 'py-14'}`} aria-labelledby={`${id}-title`}>
       <div className={compact ? '' : 'mx-auto mb-8 max-w-2xl text-center'}>
-        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">Mon interview</p>
+        <p className="font-georgia text-[11px] uppercase tracking-[0.22em] text-gold">{compact ? 'Mon interview' : 'Mes vidéos'}</p>
         <h2 id={`${id}-title`} className={`mt-2 font-georgia font-medium leading-tight text-deep ${compact ? 'text-2xl' : 'text-3xl md:text-4xl'}`}>
-          {compact ? 'Découvrez ma façon de travailler' : 'Écoutez-moi parler de la médiumnité'}
+          {compact ? 'Découvrez ma façon de travailler' : 'Je vous parle de la médiumnité'}
         </h2>
         {!compact && (
           <p className="mt-3 font-georgia leading-relaxed text-mist">
@@ -132,6 +132,29 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVide
           </div>
         </div>
       </div>
+
+      {showResponsesPreview && (
+        <div className="mt-7 rounded-3xl border border-gold/25 bg-deep p-6 text-cream md:p-8" data-video-responses-preview="v1">
+          <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Vos questions · mes réponses</p>
+          <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <h3 className="font-georgia text-2xl font-medium leading-tight md:text-3xl">La prochaine vidéo partira de vos questions</h3>
+              <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/70 md:text-base">
+                Je laisse les réponses arriver pendant quelques jours, puis je publie ici mon retour. Les prochaines vidéos seront ajoutées dans cette même rubrique, à côté de l’interview déjà présente.
+              </p>
+            </div>
+            {onOpenVideos && (
+              <a
+                href="/videos"
+                onClick={(event) => { event.preventDefault(); onOpenVideos() }}
+                className="shrink-0 self-start rounded-lg border border-gold/45 px-5 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-white/10 md:self-auto"
+              >
+                Ouvrir la rubrique Vidéos →
+              </a>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -110,38 +110,38 @@ await writeFile(trialPath, trial)
 let admin = await readFile(adminPath, 'utf8')
 admin = replaceRequired(
   admin,
-  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n  }`,
-  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    oracle_shared: round(11),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    rdv_view: round(96),\n    rdv_booking_started: round(42),\n    rdv_booking_completed: round(24),\n    rdv_request_sent: round(4),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    rdv_view: round(96),\n    rdv_booking_started: round(42),\n    rdv_booking_completed: round(24),\n    rdv_request_sent: round(4),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    oracle_shared: round(11),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
   'server preview funnel totals',
 )
 admin = replaceRequired(
   admin,
-  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const daily = []`,
-  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const oracle_next_steps = {\n    chronosphere: round(12),\n    reseau: round(7),\n    formation: round(9),\n  }\n  const daily = []`,
+  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const rdv_sources = {`,
+  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const oracle_next_steps = {\n    chronosphere: round(12),\n    reseau: round(7),\n    formation: round(9),\n  }\n  const rdv_sources = {`,
   'server preview Oracle next steps',
 )
 admin = replaceRequired(
   admin,
-  `  return { preview: true, days, totals, home_doors, daily }`,
-  `  return { preview: true, days, totals, home_doors, oracle_next_steps, daily }`,
+  `  return { preview: true, days, totals, home_doors, rdv_sources, daily }`,
+  `  return { preview: true, days, totals, home_doors, oracle_next_steps, rdv_sources, daily }`,
   'server preview return',
 )
 admin = replaceRequired(
   admin,
-  `  const home_doors = { oracle: 0, chronosphere: 0, reseau: 0, formation: 0 }\n  const dailyMap = new Map()`,
-  `  const home_doors = { oracle: 0, chronosphere: 0, reseau: 0, formation: 0 }\n  const oracle_next_steps = { chronosphere: 0, reseau: 0, formation: 0 }\n  const dailyMap = new Map()`,
+  `  const home_doors = { oracle: 0, chronosphere: 0, reseau: 0, formation: 0 }\n  const rdv_sources = {}\n  const dailyMap = new Map()`,
+  `  const home_doors = { oracle: 0, chronosphere: 0, reseau: 0, formation: 0 }\n  const oracle_next_steps = { chronosphere: 0, reseau: 0, formation: 0 }\n  const rdv_sources = {}\n  const dailyMap = new Map()`,
   'live Oracle next-step accumulator',
 )
 admin = replaceRequired(
   admin,
-  `    if (row.event_name === 'home_door_click' && row.source?.startsWith('home:')) {\n      const target = row.source.slice(5)\n      if (target in home_doors) home_doors[target] += count\n    }\n    dailyMap.set`,
-  `    if (row.event_name === 'home_door_click' && row.source?.startsWith('home:')) {\n      const target = row.source.slice(5)\n      if (target in home_doors) home_doors[target] += count\n    }\n    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    dailyMap.set`,
+  `    if (row.event_name === 'home_door_click' && row.source?.startsWith('home:')) {\n      const target = row.source.slice(5)\n      if (target in home_doors) home_doors[target] += count\n    }\n    if (row.source?.startsWith('rdv:') && ['rdv_view', 'rdv_booking_started', 'rdv_booking_completed', 'rdv_request_sent'].includes(row.event_name)) {\n      const source = row.source.slice(4)\n      const bucket = rdv_sources[source] || { views: 0, started: 0, completed: 0, requests: 0 }\n      if (row.event_name === 'rdv_view') bucket.views += count\n      else if (row.event_name === 'rdv_booking_started') bucket.started += count\n      else if (row.event_name === 'rdv_booking_completed') bucket.completed += count\n      else if (row.event_name === 'rdv_request_sent') bucket.requests += count\n      rdv_sources[source] = bucket\n    }\n    dailyMap.set`,
+  `    if (row.event_name === 'home_door_click' && row.source?.startsWith('home:')) {\n      const target = row.source.slice(5)\n      if (target in home_doors) home_doors[target] += count\n    }\n    if (row.event_name === 'ecosystem_door_click' && row.source?.startsWith('oracle:')) {\n      const target = row.source.slice(7)\n      if (target in oracle_next_steps) oracle_next_steps[target] += count\n    }\n    if (row.source?.startsWith('rdv:') && ['rdv_view', 'rdv_booking_started', 'rdv_booking_completed', 'rdv_request_sent'].includes(row.event_name)) {\n      const source = row.source.slice(4)\n      const bucket = rdv_sources[source] || { views: 0, started: 0, completed: 0, requests: 0 }\n      if (row.event_name === 'rdv_view') bucket.views += count\n      else if (row.event_name === 'rdv_booking_started') bucket.started += count\n      else if (row.event_name === 'rdv_booking_completed') bucket.completed += count\n      else if (row.event_name === 'rdv_request_sent') bucket.requests += count\n      rdv_sources[source] = bucket\n    }\n    dailyMap.set`,
   'live Oracle next-step aggregation',
 )
 admin = replaceRequired(
   admin,
-  `  return res.status(200).json({ preview: false, days, totals, home_doors, daily })`,
-  `  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, daily })`,
+  `  return res.status(200).json({ preview: false, days, totals, home_doors, rdv_sources, daily })`,
+  `  return res.status(200).json({ preview: false, days, totals, home_doors, oracle_next_steps, rdv_sources, daily })`,
   'live analytics return',
 )
 await writeFile(adminPath, admin)
@@ -155,32 +155,32 @@ pilotage = replaceRequired(
 )
 pilotage = replaceRequired(
   pilotage,
-  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n  }`,
-  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    oracle_shared: round(11),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    rdv_view: round(96),\n    rdv_booking_started: round(42),\n    rdv_booking_completed: round(24),\n    rdv_request_sent: round(4),\n  }`,
+  `    chronosphere_payment_opened: round(24),\n    question_view: round(36),\n    question_payment_started: round(8),\n    question_purchase_completed: round(3),\n    rdv_view: round(96),\n    rdv_booking_started: round(42),\n    rdv_booking_completed: round(24),\n    rdv_request_sent: round(4),\n    oracle_free_view: round(71),\n    oracle_free_draw_started: round(48),\n    oracle_free_draw_completed: round(39),\n    oracle_shared: round(11),\n    formation_view: round(52),\n    formation_proof_view: round(31),\n    formation_assistant_started: round(18),\n    formation_payment_started: round(7),\n    formation_purchase_completed: round(3),\n    conference_page_view: round(28),\n    conference_interest_click: round(11),\n  }`,
   'client preview funnel totals',
 )
 pilotage = replaceRequired(
   pilotage,
-  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const daily = []`,
-  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const oracle_next_steps = {\n    chronosphere: round(12),\n    reseau: round(7),\n    formation: round(9),\n  }\n  const daily = []`,
+  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const rdv_sources = {`,
+  `  const home_doors = {\n    oracle: round(58),\n    chronosphere: round(67),\n    reseau: round(24),\n    formation: round(24),\n  }\n  const oracle_next_steps = {\n    chronosphere: round(12),\n    reseau: round(7),\n    formation: round(9),\n  }\n  const rdv_sources = {`,
   'client preview Oracle next steps',
 )
 pilotage = replaceRequired(
   pilotage,
-  `  return { preview: true, days, totals, home_doors, daily }`,
-  `  return { preview: true, days, totals, home_doors, oracle_next_steps, daily }`,
+  `  return { preview: true, days, totals, home_doors, rdv_sources, daily }`,
+  `  return { preview: true, days, totals, home_doors, oracle_next_steps, rdv_sources, daily }`,
   'client preview return',
 )
 pilotage = replaceRequired(
   pilotage,
-  `  const homeDoors = data?.home_doors || {}\n  const daily = data?.daily || []`,
-  `  const homeDoors = data?.home_doors || {}\n  const oracleNextSteps = data?.oracle_next_steps || {}\n  const daily = data?.daily || []`,
+  `  const homeDoors = data?.home_doors || {}\n  const rdvSources = data?.rdv_sources || {}\n  const daily = data?.daily || []`,
+  `  const homeDoors = data?.home_doors || {}\n  const oracleNextSteps = data?.oracle_next_steps || {}\n  const rdvSources = data?.rdv_sources || {}\n  const daily = data?.daily || []`,
   'pilotage Oracle next steps data',
 )
 pilotage = replaceRequired(
   pilotage,
-  `  const homeViews = Number(totals.home_view || 0)\n\n  const keyRows`,
-  `  const homeViews = Number(totals.home_view || 0)\n  const oracleFreeViews = Number(totals.oracle_free_view || 0)\n  const oracleDrawStarted = Number(totals.oracle_free_draw_started || 0)\n  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleShared = Number(totals.oracle_shared || 0)\n  const oracleNextClicks = Object.values(oracleNextSteps).reduce((sum, value) => sum + Number(value || 0), 0)\n  const formationViews = Number(totals.formation_view || 0)\n  const formationProofViews = Number(totals.formation_proof_view || 0)\n  const formationAssistantStarted = Number(totals.formation_assistant_started || 0)\n  const formationPaymentStarted = Number(totals.formation_payment_started || 0)\n  const formationPurchaseCompleted = Number(totals.formation_purchase_completed || 0)\n\n  const keyRows`,
+  `  const homeViews = Number(totals.home_view || 0)\n  const rdvViews = Number(totals.rdv_view || 0)\n  const rdvStarted = Number(totals.rdv_booking_started || 0)\n  const rdvCompleted = Number(totals.rdv_booking_completed || 0)\n  const rdvRequests = Number(totals.rdv_request_sent || 0)\n\n  const keyRows`,
+  `  const homeViews = Number(totals.home_view || 0)\n  const oracleFreeViews = Number(totals.oracle_free_view || 0)\n  const oracleDrawStarted = Number(totals.oracle_free_draw_started || 0)\n  const oracleDrawCompleted = Number(totals.oracle_free_draw_completed || 0)\n  const oracleShared = Number(totals.oracle_shared || 0)\n  const oracleNextClicks = Object.values(oracleNextSteps).reduce((sum, value) => sum + Number(value || 0), 0)\n  const formationViews = Number(totals.formation_view || 0)\n  const formationProofViews = Number(totals.formation_proof_view || 0)\n  const formationAssistantStarted = Number(totals.formation_assistant_started || 0)\n  const formationPaymentStarted = Number(totals.formation_payment_started || 0)\n  const formationPurchaseCompleted = Number(totals.formation_purchase_completed || 0)\n  const rdvViews = Number(totals.rdv_view || 0)\n  const rdvStarted = Number(totals.rdv_booking_started || 0)\n  const rdvCompleted = Number(totals.rdv_booking_completed || 0)\n  const rdvRequests = Number(totals.rdv_request_sent || 0)\n\n  const keyRows`,
   'pilotage funnel values',
 )
 pilotage = replaceRequired(

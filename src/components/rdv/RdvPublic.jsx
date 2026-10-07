@@ -4,10 +4,17 @@ import RdvDepositCheckout from './RdvDepositCheckout'
 import { GoogleReviewCard, Stars, useGoogleReviews } from '../ReviewsPage'
 import { commonDepositCents, descriptionParagraphs, groupServices } from '../../lib/rdvServiceGroups.js'
 import VideoInterview from '../VideoInterview'
+import { trackMediumiaMetric } from '../../lib/mediumiaMetrics.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const MODALITY_LABELS = { video: 'Vidéo', phone: 'Téléphone', 'in-person': 'Présentiel' }
+
+const RDV_SOURCES = new Set(['home-hero', 'home-consultations', 'home-interview', 'direct'])
+function readRdvMetricSource() {
+  const raw = new URLSearchParams(window.location.search).get('src')
+  return `rdv:${RDV_SOURCES.has(raw) ? raw : 'direct'}`
+}
 
 function formatService(svc) {
   return {
@@ -872,6 +879,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const [checkoutId, setCheckoutId] = useState(null)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError]     = useState(null)
+  const metricSource = readRdvMetricSource()
+  const startedMetricSent = useRef(false)
+  const completedMetricSent = useRef(false)
 
   const [dayAvail, setDayAvail] = useState({})
   // Lien personnel (créneau d'urgence) : mediumia.fr/rdv/<slug>#offre=<jeton>
@@ -885,6 +895,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
   useEffect(() => { if (flowRef.current && flowRef.current.getBoundingClientRect().top < 0) revealSoftly(flowRef.current, 'start') }, [step])
   useEffect(() => { if (date) revealSoftly(slotsRef.current, 'start') }, [date])
   useEffect(() => { if (time) revealSoftly(continueRef.current) }, [time])
+  useEffect(() => { trackMediumiaMetric('rdv_view', metricSource) }, [metricSource])
 
   useEffect(() => {
     fetch(`/api/rdv-config?practitioner=${encodeURIComponent(slug)}`)
@@ -961,6 +972,10 @@ export default function RdvPublic({ onBack, onNavigate }) {
   function selectService(svc) {
     setService(svc); setDate(null); setTime(null); setBookingError(null)
     setDayAvail({})
+    if (!startedMetricSent.current) {
+      startedMetricSent.current = true
+      trackMediumiaMetric('rdv_booking_started', metricSource)
+    }
     if (svc.bookingMode === 'request') {
       setStep('request-form')
     } else {
@@ -1002,6 +1017,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
         setBookingError(data.error || "Erreur lors de l'envoi. Réessayez.")
         return
       }
+      trackMediumiaMetric('rdv_request_sent', metricSource)
       setStep('request-sent')
     } catch {
       setBookingError('Erreur réseau. Vérifiez votre connexion et réessayez.')
@@ -1052,6 +1068,10 @@ export default function RdvPublic({ onBack, onNavigate }) {
         return
       }
 
+      if (!completedMetricSent.current) {
+        completedMetricSent.current = true
+        trackMediumiaMetric('rdv_booking_completed', metricSource)
+      }
       setBookingResult(data)
       setStep(4)
     } catch {
@@ -1063,6 +1083,10 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   function handlePaidComplete(result) {
     if (checkoutStorageKey) sessionStorage.removeItem(checkoutStorageKey)
+    if (!completedMetricSent.current) {
+      completedMetricSent.current = true
+      trackMediumiaMetric('rdv_booking_completed', metricSource)
+    }
     setBookingResult({
       ...result,
       amountCents: result.amountCents ?? service.reservationPaymentCents,

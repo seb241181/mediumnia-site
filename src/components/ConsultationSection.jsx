@@ -21,9 +21,14 @@ export default function ConsultationSection({
   if (compact) {
     return (
       <section className="mx-auto max-w-6xl scroll-mt-28 px-6 py-16" id={id} aria-labelledby={`${id}-title`}>
-        <div className="mb-8 max-w-2xl">
-          <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">Consulter</p>
-          <h2 id={`${id}-title`} className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">{visiblePractitioners.length > 1 ? 'Consulter un praticien MediumIA' : 'Une consultation avec un médium'}</h2>
+        <div className="mb-8 max-w-3xl">
+          <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">{visiblePractitioners.length > 1 ? 'Consulter' : 'Mes consultations · agenda ouvert'}</p>
+          <h2 id={`${id}-title`} className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">{visiblePractitioners.length > 1 ? 'Consulter un praticien MediumIA' : 'Je vous reçois en consultation'}</h2>
+          {visiblePractitioners.length === 1 && (
+            <p className="mt-3 font-georgia text-base leading-relaxed text-mist md:text-lg">
+              Vous pouvez consulter mes disponibilités en temps réel et réserver directement votre créneau, en présence ou en visio selon la prestation.
+            </p>
+          )}
         </div>
         <div className="grid gap-5">
           {visiblePractitioners.map((practitioner) => (
@@ -36,14 +41,28 @@ export default function ConsultationSection({
                 <h3 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{practitioner.name}</h3>
                 <p className="mt-1 font-georgia text-sm text-gold">{practitioner.role}</p>
                 <p className="mt-4 max-w-2xl font-georgia leading-relaxed text-mist">{practitioner.introduction}</p>
+                {practitioner.rdvSlug === 'sebastien-seguin' && (
+                  <div className="mt-5 grid max-w-xl gap-3 sm:grid-cols-2" data-rdv-relance="human-first-v1">
+                    <div className="rounded-2xl border border-gold/25 bg-cream/70 px-5 py-4">
+                      <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Guidance</p>
+                      <p className="mt-1 font-georgia text-2xl font-medium text-deep">70 €</p>
+                      <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Chemin de vie, médiumnité, ressentis et éclairage de votre situation.</p>
+                    </div>
+                    <div className="rounded-2xl border border-gold/25 bg-cream/70 px-5 py-4">
+                      <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Désenvoûtement</p>
+                      <p className="mt-1 font-georgia text-2xl font-medium text-deep">80 €</p>
+                      <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Une prestation dédiée lorsque vous ressentez le besoin d’un travail spécifique.</p>
+                    </div>
+                  </div>
+                )}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     disabled={!practitioner.rdvSlug || !onOpenRdv}
-                    onClick={() => practitioner.rdvSlug && onOpenRdv?.(practitioner.rdvSlug)}
+                    onClick={() => practitioner.rdvSlug && onOpenRdv?.(practitioner.rdvSlug, 'home-consultations')}
                     className="rounded-lg bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90 disabled:opacity-50"
                   >
-                    Prendre rendez-vous →
+                    Voir mes disponibilités →
                   </button>
                   {onOpenQuestion && practitioner.rdvSlug === 'sebastien-seguin' && (
                     <button

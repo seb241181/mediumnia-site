@@ -114,6 +114,7 @@ const HOME_RAIL = [
   { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
+  { id: 'videos', label: 'Vidéos' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
@@ -148,7 +149,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         <ReviewsHighlight />
 
         {/* ── Sébastien en interview (vidéo chargée au clic) ── */}
-        <VideoInterview id="interview" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} />
+        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
 
         {/* ── Découvrir et expérimenter ── */}
         <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />

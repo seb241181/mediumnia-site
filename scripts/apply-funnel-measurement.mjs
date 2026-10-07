@@ -17,8 +17,8 @@ function replaceRequired(source, before, after, label) {
 let analytics = await readFile(analyticsPath, 'utf8')
 analytics = replaceRequired(
   analytics,
-  `  'chronosphere_payment_opened',\n  'chronosphere_purchase_completed',\n  'story_visit',\n  'story_attributed',\n  'question_view',\n  'question_payment_started',\n  'question_purchase_completed',\n])`,
-  `  'chronosphere_payment_opened',\n  'chronosphere_purchase_completed',\n  'story_visit',\n  'story_attributed',\n  'question_view',\n  'question_payment_started',\n  'question_purchase_completed',\n  'oracle_free_view',\n  'oracle_free_draw_started',\n  'oracle_free_draw_completed',\n  'oracle_shared',\n  'formation_view',\n  'formation_proof_view',\n  'formation_assistant_started',\n  'formation_payment_started',\n  'formation_purchase_completed',\n  'conference_page_view',\n  'conference_interest_click',\n])`,
+  `  'chronosphere_payment_opened',\n  'chronosphere_purchase_completed',\n  'story_visit',\n  'story_attributed',\n  'question_view',\n  'question_payment_started',\n  'question_purchase_completed',\n  'rdv_view',\n  'rdv_booking_started',\n  'rdv_booking_completed',\n  'rdv_request_sent',\n])`,
+  `  'chronosphere_payment_opened',\n  'chronosphere_purchase_completed',\n  'story_visit',\n  'story_attributed',\n  'question_view',\n  'question_payment_started',\n  'question_purchase_completed',\n  'rdv_view',\n  'rdv_booking_started',\n  'rdv_booking_completed',\n  'rdv_request_sent',\n  'oracle_free_view',\n  'oracle_free_draw_started',\n  'oracle_free_draw_completed',\n  'oracle_shared',\n  'formation_view',\n  'formation_proof_view',\n  'formation_assistant_started',\n  'formation_payment_started',\n  'formation_purchase_completed',\n  'conference_page_view',\n  'conference_interest_click',\n])`,
   'analytics allowlist',
 )
 analytics = replaceRequired(

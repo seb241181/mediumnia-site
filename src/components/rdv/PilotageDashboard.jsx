@@ -277,7 +277,7 @@ export default function PilotageDashboard({ session, demoMode = false }) {
 
       {conferenceCard}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <MetricCard eyebrow="Accueil" value={homeViews} note={`Sur les ${days} derniers jours`} />
         <MetricCard eyebrow="Chronosphère" value={chronoClicks} note={`${pct(chronoClicks, homeClicks)} des clics guidés de l’accueil`} />
         <MetricCard eyebrow="Exemple Chronosphère" value={exampleViews} note={`${exampleCta.toLocaleString('fr-FR')} clics vers le tirage`} />

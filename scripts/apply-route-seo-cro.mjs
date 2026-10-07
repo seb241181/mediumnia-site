@@ -68,6 +68,10 @@ const routeSeoHelpers = `const ROUTE_META = {
     title: 'Défi Intuition — Exercice d’intuition du jour | MediumIA',
     description: 'Un exercice d’intuition gratuit chaque jour : cinq cartes, une seule cache l’Étoile. Écoutez votre premier ressenti, gardez votre série et partagez votre score.',
   },
+  videos: {
+    title: 'Vidéos sur la médiumnité — Sébastien Seguin | MediumIA',
+    description: 'Je réponds en vidéo aux questions qui reviennent sur la médiumnité, les ressentis, l’intuition, les défunts et le déroulement d’une guidance.',
+  },
   avis: {
     title: 'Avis clients — MediumIA',
     description: 'Avis vérifiés et modérés sur les consultations, la formation, l’Oracle et ChronoSphère MediumIA. Positifs comme négatifs, publiés du plus récent au plus ancien.',

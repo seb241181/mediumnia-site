@@ -16,6 +16,10 @@ test('public videos hub is routed and discoverable', () => {
   assert.match(page, /Je réponds à vos questions sur la médiumnité/)
   assert.match(page, /La première vidéo est en préparation/)
   assert.match(interview, /Voir toutes mes vidéos/)
+  assert.match(interview, /data-video-responses-preview="v1"/)
+  assert.match(interview, /à côté de l’interview déjà présente/)
+  assert.match(app, /id="videos"/)
+  assert.match(app, /label: 'Vidéos'/)
   assert.match(footer, /href="\/videos"/)
 })
 

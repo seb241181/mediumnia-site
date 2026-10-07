@@ -32,8 +32,9 @@ test('social shortcuts: Facebook, Instagram and TikTok, in the footer of every p
 
 test('the interview sits after the reviews on the home page and on Sébastien’s booking page', () => {
   const app = read('src/App.jsx')
-  assert.ok(app.indexOf('<ReviewsHighlight />') < app.indexOf('<VideoInterview id="interview"'))
-  assert.ok(app.indexOf('<VideoInterview id="interview"') < app.indexOf('<DiscoverSection id="decouvrir"'))
-  assert.match(app, /onOpenRdv\('sebastien-seguin'\)/)
+  assert.ok(app.indexOf('<ReviewsHighlight />') < app.indexOf('<VideoInterview id="videos"'))
+  assert.ok(app.indexOf('<VideoInterview id="videos"') < app.indexOf('<DiscoverSection id="decouvrir"'))
+  assert.match(app, /onOpenRdv\('sebastien-seguin', 'home-interview'\)/)
+  assert.match(app, /showResponsesPreview/)
   assert.match(read('src/components/rdv/RdvPublic.jsx'), /slug === 'sebastien-seguin' && <div className="-mx-6"><VideoInterview id="interview-rdv" compact \/>/)
 })

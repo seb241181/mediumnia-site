@@ -57,7 +57,7 @@ function FeaturedAccompagnement({ onOpen }) {
           Formation MediumIA
         </h2>
         <p className="font-georgia text-cream/65 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
-          J’ai construit cette formation en 25 modules et 4 niveaux à partir de plus de douze ans de pratique réelle.
+          J’ai construit cette formation en 25 modules et 4 niveaux à partir de ma pratique.
           L’assistant MediumIA est facultatif : il complète ma méthode, il ne la remplace pas.
         </p>
         {offer ? (

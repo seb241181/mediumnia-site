@@ -14,9 +14,9 @@ function openWith(onOpen, metric) {
 }
 
 const PILLARS = [
-  { mark: 'I', title: 'L’intention d’abord', text: 'Chaque pratique commence par une intention claire. Elle ouvre la porte, et elle protège.', module: 'Module 1 · L’Intention comme Porte' },
-  { mark: 'II', title: 'Percevoir avant d’interpréter', text: 'Recevoir le signal brut, sans le recouvrir d’une histoire. Le sens vient ensuite.', module: 'Module 2 · La Perception Pure' },
-  { mark: 'III', title: 'Douter juste', text: 'Distinguer ce qui vient de vous de ce que vous captez. Accueillir, vérifier, ou rejeter.', module: 'Module 5 · Le Discernement Vibratoire' },
+  { mark: 'I', title: 'L’intention d’abord', text: 'Savoir pourquoi l’on ouvre la porte.' },
+  { mark: 'II', title: 'Percevoir avant d’interpréter', text: 'Recevoir avant de chercher à comprendre.' },
+  { mark: 'III', title: 'Douter juste', text: 'Accueillir, vérifier, discerner.' },
 ]
 
 export function ManifestoBand() {
@@ -25,10 +25,10 @@ export function ManifestoBand() {
       <div className="max-w-3xl">
         <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">La médiumnité consciente</p>
         <h2 id="approche-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">
-          Une pratique juste, sécurisée, sans mise en scène.
+          Une pratique juste, claire, sans mise en scène.
         </h2>
         <p className="mt-4 font-georgia text-lg leading-relaxed text-mist">
-          La médiumnité ne s’apprend pas. Elle se découvre. MediumIA vous donne les fondations pour la vivre avec clarté : pas de promesses, pas de formules toutes faites, mais une méthode éprouvée par douze années de séances.
+          La médiumnité ne s’apprend pas comme une technique. Elle se découvre, se pratique et s’affine.
         </p>
       </div>
       <ol className="mt-10 grid gap-5 md:grid-cols-3">
@@ -37,13 +37,12 @@ export function ManifestoBand() {
             <p className="font-georgia text-2xl text-gold" aria-hidden="true">{pillar.mark}</p>
             <h3 className="mt-3 font-georgia text-xl font-medium leading-tight text-deep">{pillar.title}</h3>
             <p className="mt-2 font-georgia leading-relaxed text-mist">{pillar.text}</p>
-            <p className="mt-4 font-georgia text-[11px] uppercase tracking-[0.16em] text-gold/80">{pillar.module}</p>
           </li>
         ))}
       </ol>
       <blockquote className="mt-10 max-w-3xl border-l-2 border-gold pl-5 font-georgia text-lg italic leading-relaxed text-deep/85">
-        « Ce que je transmets aujourd’hui n’est pas issu d’un livre mais un condensé d’années à recevoir des gens en souffrance, […] et à observer ce qui fonctionne vraiment, honnêtement, au-delà des mises en scène et des formules toutes faites. »
-        <footer className="mt-2 text-sm not-italic text-mist">Sébastien Seguin, avant-propos de la Formation MediumIA</footer>
+        « Ce que je transmets est un condensé d’années de pratique et de ce qui fonctionne vraiment, au-delà des mises en scène et des formules toutes faites. »
+        <footer className="mt-2 text-sm not-italic text-mist">— Sébastien Seguin</footer>
       </blockquote>
     </section>
   )
@@ -99,8 +98,8 @@ export function QuizInvite({ onOpenQuiz }) {
 export function PathLadder({ onOpenQuiz, onOpenFormation, onOpenReseauForm }) {
   const steps = [
     {
-      label: 'Explorer', price: 'Gratuit', title: 'Faire connaissance avec votre sensibilité',
-      text: 'Le quiz des canaux, le Défi Intuition du jour ou un tirage de l’Oracle offert.',
+      label: 'Explorer', price: 'Gratuit', title: 'Découvrir votre sensibilité',
+      text: 'Quiz, Défi Intuition ou tirage offert.',
       links: [
         { label: 'Le quiz', href: '/quiz-sensibilite', onOpen: onOpenQuiz, metric: 'quiz' },
         { label: 'Défi Intuition', href: '/defi-intuition' },
@@ -108,23 +107,23 @@ export function PathLadder({ onOpenQuiz, onOpenFormation, onOpenReseauForm }) {
       ],
     },
     {
-      label: 'Pratiquer', price: 'Gratuit', title: 'Trois exercices par e-mail',
-      text: 'L’Intention quotidienne, Le Souffle de vérité, Feu Rouge / Feu Vert : trois exercices issus de la Formation, en 3 e-mails seulement.',
+      label: 'Pratiquer', price: 'Gratuit', title: '3 exercices par e-mail',
+      text: 'Trois exercices issus de la Formation.',
       links: [{ label: 'Recevoir les exercices', href: '/formation#formation-exercices-gratuits' }],
     },
     {
       label: 'Commencer', price: '29 €', title: 'La Découverte',
-      text: 'L’Introduction, le Module 1, ses exercices et le coach MediumIA pendant 30 jours. Les 29 € sont déduits si vous poursuivez.',
+      text: 'Module 1, exercices et 30 jours avec MediumIA.',
       links: [{ label: 'Voir la Découverte', href: '/formation', onOpen: onOpenFormation, metric: 'formation' }],
     },
     {
-      label: 'Se former', price: 'Formation complète', title: '25 modules, 4 niveaux',
-      text: 'Des fondations à la pratique accomplie : 84 exercices guidés, carnet de pratique et 12 mois d’accès à l’application.',
+      label: 'Se former', price: 'Formation complète', title: '25 modules · 84 exercices',
+      text: '4 niveaux pour aller jusqu’à une pratique autonome.',
       links: [{ label: 'Découvrir la Formation', href: '/formation', onOpen: onOpenFormation, metric: 'formation' }],
     },
     {
       label: 'Transmettre', price: 'Praticiens', title: 'Rejoindre le Réseau',
-      text: 'Présenter votre pratique et rejoindre les praticiens du Réseau MediumIA.',
+      text: 'Présenter votre pratique dans le Réseau MediumIA.',
       links: [{ label: 'Rejoindre le réseau', href: '/reseau/rejoindre', onOpen: onOpenReseauForm, metric: 'reseau' }],
     },
   ]
@@ -132,9 +131,8 @@ export function PathLadder({ onOpenQuiz, onOpenFormation, onOpenReseauForm }) {
   return (
     <section id="chemin" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16" aria-labelledby="chemin-title">
       <div className="max-w-2xl">
-        <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">Le chemin</p>
-        <h2 id="chemin-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">Avancer à votre rythme, une marche après l’autre</h2>
-        <p className="mt-3 font-georgia text-lg leading-relaxed text-mist">Vous n’avez rien à décider aujourd’hui. Commencez gratuitement, et allez plus loin seulement si cela résonne.</p>
+        <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">Votre chemin</p>
+        <h2 id="chemin-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">Avancez simplement, à votre rythme.</h2>
       </div>
       <ol className="mt-10 grid gap-4 md:grid-cols-5">
         {steps.map((step, index) => (

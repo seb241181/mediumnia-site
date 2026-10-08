@@ -23,7 +23,7 @@ export const boutiqueProducts = [
     priceLabel: '597 € TTC',
     paymentNote: 'Paiement en plusieurs fois disponible avec PayPal selon éligibilité.',
     summary: "J’ai construit cette formation en 25 modules et 4 niveaux pour développer votre médiumnité. L’assistant MediumIA est facultatif ; l’accès à l’application dure 12 mois.",
-    description: "J’ai construit cet accompagnement progressif à partir de plus de douze ans de pratique réelle, des fondations jusqu’à une pratique autonome.",
+    description: "J’ai construit cet accompagnement progressif à partir de ma pratique, des fondations jusqu’à une pratique autonome.",
     highlights: ["25 modules PDF (269 pages)", "84 exercices guidés", "Assistant MediumIA facultatif", "12 mois d'accès"],
     coverImage: '/images/boutique/formation-mediumia-couverture.webp',
     artwork: 'formation',

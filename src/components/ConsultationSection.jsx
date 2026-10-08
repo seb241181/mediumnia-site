@@ -41,20 +41,6 @@ export default function ConsultationSection({
                 <h3 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{practitioner.name}</h3>
                 <p className="mt-1 font-georgia text-sm text-gold">{practitioner.role}</p>
                 <p className="mt-4 max-w-2xl font-georgia leading-relaxed text-mist">{practitioner.introduction}</p>
-                {practitioner.rdvSlug === 'sebastien-seguin' && (
-                  <div className="mt-5 grid max-w-xl gap-3 sm:grid-cols-2" data-rdv-relance="human-first-v1">
-                    <div className="rounded-2xl border border-gold/25 bg-cream/70 px-5 py-4">
-                      <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Guidance</p>
-                      <p className="mt-1 font-georgia text-2xl font-medium text-deep">70 €</p>
-                      <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Chemin de vie, médiumnité, ressentis et éclairage de votre situation.</p>
-                    </div>
-                    <div className="rounded-2xl border border-gold/25 bg-cream/70 px-5 py-4">
-                      <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Désenvoûtement</p>
-                      <p className="mt-1 font-georgia text-2xl font-medium text-deep">80 €</p>
-                      <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">Une prestation dédiée lorsque vous ressentez le besoin d’un travail spécifique.</p>
-                    </div>
-                  </div>
-                )}
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <button
                     type="button"

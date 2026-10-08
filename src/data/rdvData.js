@@ -18,7 +18,7 @@ export const rdvPractitioners = {
     role: 'Médium professionnel',
     photo: '/sebastien.jpg',
     tagline: 'Médiumnité & guidance intuitive',
-    intro: 'Médium professionnel depuis plus de douze ans. Ses consultations explorent les perceptions, les liens avec les défunts et les messages qui cherchent à se dire — dans un espace de clarté, sans mystère inutile.',
+    intro: 'Je vous accompagne avec une présence attentive pour vous éclairer sur ce que vous traversez et explorer les différentes lignes de temps qui peuvent s’ouvrir à vous. Si vous êtes dans la découverte de votre médiumnité, je peux également vous aider à mieux comprendre vos ressentis, vos perceptions et votre fonctionnement, afin d’avancer avec davantage de repères et de confiance. Selon votre besoin, je propose aussi des séances de désenvoûtement et de dégagement énergétique de lieux, dans une approche claire et bienveillante.',
     services: [
       {
         id: 'consultation-mediumnite',

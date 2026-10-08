@@ -103,6 +103,36 @@ dashboard = replaceRequired(
   'dashboard Lumia button',
 )
 
+
+// Dans l'espace Rendez-vous, les demandes entrantes et les prochains RDV
+// doivent précéder les réglages techniques. Appliqué APRÈS les patchs historiques.
+function moveRdvPrioritiesFirst(source) {
+  const emailPanel = "                  {activePractitioner.slug === 'sebastien-seguin' && <EmailQuestionsPanel session={session} />}"
+  const requests = '                  {/* Demandes de déplacement et demandes reçues par message (Lumia) */}'
+  const upcoming = '                  {/* Upcoming bookings */}'
+  const exceptions = '                  {/* Exceptions / congés */}'
+  const emailIndex = source.indexOf(emailPanel)
+  const requestsIndex = source.indexOf(requests)
+  const upcomingIndex = source.indexOf(upcoming)
+  const exceptionsIndex = source.indexOf(exceptions)
+
+  if ([emailIndex, requestsIndex, upcomingIndex, exceptionsIndex].some(index => index < 0)) {
+    throw new Error('Lumia dashboard ordering drift: anchor missing')
+  }
+  // Idempotence : une seconde exécution ne réordonne pas les blocs.
+  if (requestsIndex < upcomingIndex && upcomingIndex < emailIndex) return source
+  if (!(emailIndex < requestsIndex && requestsIndex < upcomingIndex && upcomingIndex < exceptionsIndex)) {
+    throw new Error('Lumia dashboard ordering drift: unexpected section order')
+  }
+
+  const priorityBlock = source.slice(requestsIndex, exceptionsIndex).trimEnd()
+  const withoutPriority = source.slice(0, requestsIndex) + source.slice(exceptionsIndex)
+  const insertionIndex = withoutPriority.indexOf(emailPanel)
+  return withoutPriority.slice(0, insertionIndex) + priorityBlock + '\n\n' + withoutPriority.slice(insertionIndex)
+}
+
+dashboard = moveRdvPrioritiesFirst(dashboard)
+
 await writeFile(dashboardPath, dashboard)
 
 console.log('Lumia assistant console: private RDV route and button applied')

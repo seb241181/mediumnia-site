@@ -132,10 +132,6 @@ export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVide
           </div>
         </div>
       </div>
-
-          </div>
-        </div>
-      )}
     </section>
   )
 }

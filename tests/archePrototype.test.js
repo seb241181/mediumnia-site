@@ -74,3 +74,18 @@ test('L’Arche reprend la palette MediumIA et indique le compte commun requis',
   assert.doesNotMatch(page, /#315e52|#284c3d|#34594e|#305a4c/i)
   assert.doesNotMatch(page, /signInWithPassword|signUp\(|\.auth\.|createUser|emailRedirectTo/)
 })
+
+test('Toc toc reste une simulation consentie, désactivable et sans notification réelle', () => {
+  const page = read('src/components/ArchePage.jsx')
+  assert.match(page, /const \[acceptsTocToc, setAcceptsTocToc\] = useState\(true\)/)
+  assert.match(page, /const \[tocTocReceived, setTocTocReceived\] = useState\(false\)/)
+  assert.match(page, /checked=\{acceptsTocToc\}/)
+  assert.match(page, /setAcceptsTocToc\(event\.target\.checked\)/)
+  assert.match(page, /disabled=\{!acceptsTocToc \|\| tocTocReceived\}/)
+  assert.match(page, /onClick=\{\(\) => setTocTocReceived\(true\)\}/)
+  assert.match(page, /Toc toc ! Une petite pensée pour toi\./)
+  assert.match(page, /motion-reduce:animate-none/)
+  assert.match(page, /Aucune notification ni vibration n’est envoyée ici/)
+  assert.match(page, /En version réelle : uniquement entre contacts acceptés/)
+  assert.doesNotMatch(page, /new Notification\(|navigator\.vibrate|Audio\(/)
+})

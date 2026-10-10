@@ -49,7 +49,7 @@ test('messages privés seulement après invitation acceptée et Toc toc contrôl
   assert.match(page,/contact==='accepted'/)
   assert.match(page,/contact!=='accepted'/)
   assert.match(page,/contact==='blocked'/)
-  assert.match(page,/const \[allowToc,setAllowToc\]/)
+  assert.match(page,/const \[allowToc,setAllowToc\]=useState\(false\)/)
   assert.match(page,/!allowToc\|\|contact!=='accepted'\|\|Date\.now\(\)-lastToc<10000/)
   assert.match(page,/typeof navigator\.vibrate==='function'/)
   assert.match(page,/navigator\.vibrate\(\[90,45,90\]\)/)

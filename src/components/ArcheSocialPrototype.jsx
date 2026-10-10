@@ -31,11 +31,13 @@ function Initial({ name, big=false }) {
 function Heading({ label, title, description }) {
   return <div className="mb-6"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.19em] text-[#9B640B]">{label}</p><h2 className="font-georgia text-3xl text-[#1A1535]">{title}</h2><p className="mt-2 text-sm leading-6 text-[#4A3F6B]">{description}</p></div>
 }
-export function ArcheLoginPreview({ onEnter }) {
+export function ArcheLoginPreview({ onEnter, onBack }) {
   const [mode,setMode]=useState('existing')
   const [pseudo,setPseudo]=useState('Étoile du Nord')
   const [ack,setAck]=useState(false)
-  return <section id="connexion" className="scroll-mt-24 border-y border-[#E2D7BE] bg-[#FAFAF7] px-5 py-20 md:px-8">
+  return <div className="min-h-screen bg-[#FAFAF7]">
+    <header className="border-b border-[#E2D7BE] px-5 py-4 md:px-8"><div className="mx-auto flex max-w-6xl items-center justify-between gap-3"><p className="font-georgia text-xl text-[#1A1535]">L’ARCHE</p><button type="button" onClick={onBack} className={secondary}>← Revenir à la découverte</button></div></header>
+    <section id="connexion" className="px-5 py-20 md:px-8">
     <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_440px]">
       <div>
         <p className="mb-4 text-xs font-bold uppercase tracking-[.2em] text-[#9B640B]">Après la découverte, la communauté</p>
@@ -55,7 +57,8 @@ export function ArcheLoginPreview({ onEnter }) {
         </form>
       </div>
     </div>
-  </section>
+    </section>
+  </div>
 }
 export function ArcheAppPreview({ nickname, onExit }) {
   const [view,setView]=useState('feed')

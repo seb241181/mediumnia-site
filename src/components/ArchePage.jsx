@@ -113,6 +113,8 @@ function Demonstration() {
   const [requestAccepted, setRequestAccepted] = useState(false)
   const [dmDraft, setDmDraft] = useState('')
   const [dmMessages, setDmMessages] = useState([])
+  const [acceptsTocToc, setAcceptsTocToc] = useState(true)
+  const [tocTocReceived, setTocTocReceived] = useState(false)
   const [feedback, setFeedback] = useState('')
 
   const tabs = [
@@ -250,12 +252,36 @@ function Demonstration() {
                           <p className="text-sm leading-relaxed text-[#4A3F6B]"><strong>Membre C :</strong> « Bonjour, j’aimerais échanger sur nos façons de méditer, si vous en avez envie. »</p>
                           {dmMessages.map((message) => <p key={message.id} className="mt-3 break-words border-l-2 border-[#B9A77E] pl-3 text-sm leading-relaxed text-[#1A1535]"><strong>Vous (local) :</strong> {message.text}</p>)}
                         </div>
+                        <div className="mt-4 rounded-lg border border-[#E2D7BE] bg-white p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <h4 className="font-georgia text-lg text-[#1A1535]">Un petit « Toc toc »</h4>
+                              <p className="mt-1 text-xs leading-relaxed text-[#4A3F6B]">Un clin d’œil aux messageries de notre jeunesse, avec une animation originale et discrète.</p>
+                            </div>
+                            <span className="rounded-md border border-[#C9A84C] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Prototype</span>
+                          </div>
+                          <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm text-[#1A1535]">
+                            <input type="checkbox" checked={acceptsTocToc} onChange={(event) => { setAcceptsTocToc(event.target.checked); setTocTocReceived(false) }} className="mt-1 h-4 w-4 accent-[#1A1535]" />
+                            <span>J’accepte les petits signaux de mes contacts.</span>
+                          </label>
+                          {tocTocReceived && (
+                            <div role="status" aria-live="polite" className="motion-safe:animate-pulse mt-4 flex items-center gap-3 rounded-lg border border-[#C9A84C] bg-[#FAFAF7] p-4 motion-reduce:animate-none">
+                              <span aria-hidden="true" className="font-georgia text-2xl text-[#9B640B]">✦</span>
+                              <p className="text-sm font-semibold text-[#1A1535]">Toc toc ! Une petite pensée pour toi.</p>
+                            </div>
+                          )}
+                          <div className="mt-4 flex flex-wrap items-center gap-3">
+                            <button type="button" disabled={!acceptsTocToc || tocTocReceived} onClick={() => setTocTocReceived(true)} className="min-h-11 rounded-lg bg-[#1A1535] px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Envoyer un Toc toc de démonstration</button>
+                            {tocTocReceived && <button type="button" onClick={() => setTocTocReceived(false)} className="min-h-11 rounded-lg border border-[#B9A77E] px-4 py-3 text-xs font-semibold text-[#1A1535]">Recommencer</button>}
+                          </div>
+                          <p className="mt-3 text-xs leading-relaxed text-[#4A3F6B]">Un seul signal à la fois dans cette maquette. En version réelle : uniquement entre contacts acceptés, accord du destinataire, délai anti-spam et option de désactivation. Aucune notification ni vibration n’est envoyée ici.</p>
+                        </div>
                         <form onSubmit={addDm} className="mt-4 flex flex-col gap-2 sm:flex-row">
                           <label htmlFor="arche-dm-draft" className="sr-only">Écrire une réponse de démonstration</label>
                           <input id="arche-dm-draft" maxLength={240} value={dmDraft} onChange={(e) => setDmDraft(e.target.value)} placeholder="Réponse de démonstration..." className="min-h-11 flex-1 rounded-lg border border-[#B9A77E] bg-white px-3 py-3 text-sm outline-none focus:border-[#1A1535]" />
                           <button disabled={!dmDraft.trim()} type="submit" className="rounded-lg bg-[#1A1535] px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">Afficher localement</button>
                         </form>
-                        <button type="button" className="mt-4 text-xs font-semibold text-[#4A3F6B] underline underline-offset-4" onClick={() => { setRequestAccepted(false); setDmMessages([]); setDmDraft('') }}>Réinitialiser l’exemple de conversation</button>
+                        <button type="button" className="mt-4 text-xs font-semibold text-[#4A3F6B] underline underline-offset-4" onClick={() => { setRequestAccepted(false); setDmMessages([]); setDmDraft(''); setTocTocReceived(false) }}>Réinitialiser l’exemple de conversation</button>
                       </div>
                     )}
                   </div>

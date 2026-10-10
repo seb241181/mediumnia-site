@@ -16,14 +16,13 @@ test('route arche conservée séparément et noindex avant ouverture', () => {
 
 test('parcours séparé : découverte puis connexion puis application sociale', () => {
   const page = read('src/components/ArchePage.jsx')
-  const app = read('src/components/ArcheSocialPrototype.jsx')
   assert.match(page, /data-arche-prototype="v2"/)
+  assert.match(page, /function LoginScreen/)
   assert.match(page, /setScreen\('login'\)/)
   assert.match(page, /screen === 'login'/)
-  assert.match(page, /ArcheLoginPreview onBack=/)
   assert.match(page, /screen === 'app'/)
-  assert.match(page, /ArcheAppPreview nickname=\{appNickname\}/)
-  assert.match(app, /Je comprends qu’aucun compte, message ou profil réel/)
+  assert.match(page, /ArcheAppPreview nickname=\{nickname \|\| 'Étoile du Nord'\}/)
+  assert.match(page, /Je comprends qu’il s’agit d’une simulation locale/)
 })
 
 test('base blanche, crème subtil et or uniquement en accent lisible', () => {

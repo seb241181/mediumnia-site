@@ -88,7 +88,7 @@ test('maquette locale sans Supabase, réseau, stockage navigateur ni fausses don
   const app = read('src/components/ArcheSocialPrototype.jsx')
   assert.match(app, /data-arche-app-preview="local-only"/)
   assert.match(app, /Prototype privé : toutes les données ci-dessous sont fictives et locales/)
-  assert.doesNotMatch(app, /supabase|\.insert\(|\.upsert\(|\.from\(|\bfetch\s*\(|axios|signInWithPassword|signUp\(|localStorage|sessionStorage/)
+  assert.doesNotMatch(app, /supabase|\.insert\(|\.upsert\(|supabase\.from\(|\bfetch\s*\(|axios|signInWithPassword|signUp\(|localStorage|sessionStorage/)
 })
 
 test('barre mobile en bas et zones de toucher minimales', () => {

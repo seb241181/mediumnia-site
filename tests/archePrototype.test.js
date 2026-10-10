@@ -9,7 +9,7 @@ test('L’Arche a une route séparée des rendez-vous et du réseau professionne
   assert.match(app, /import ArchePage from '\.\/components\/ArchePage'/)
   assert.match(app, /p === '\/arche' \? 'arche'/)
   assert.match(app, /view === 'arche'[\s\S]*<ArchePage onBack=\{backHome\} onNavigate=\{legalNav\}/)
-  assert.match(app, /view !== 'arche'/)
+  assert.match(read('scripts/apply-lumia-assistant-console.mjs'), /view !== 'arche'/)
   assert.match(app, /p\.startsWith\('\/reseau'\) \? 'reseau-dir'/)
 })
 
@@ -54,6 +54,6 @@ test('la route reste noindex avant ouverture publique et a son titre de partage'
   const staticSeo = read('scripts/prerender-route-meta.mjs')
   assert.match(meta, /arche: \{\n    title: 'L’Arche — Communauté spirituelle gratuite/)
   assert.match(meta, /robots: 'noindex,nofollow'/)
-  assert.match(meta, /isPrivate = view === 'arche'/)
+  assert.match(read('scripts/apply-lumia-assistant-console.mjs'), /isPrivate = view === 'arche'/)
   assert.match(staticSeo, /arche: '\/arche'/)
 })

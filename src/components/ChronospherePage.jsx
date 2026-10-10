@@ -850,7 +850,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               Un éclairage sur vos choix, pas une promesse sur l'avenir.
             </p>
             <p className="mx-auto mt-3 max-w-2xl font-georgia text-sm leading-relaxed text-deep/75 md:text-base">
-              Vous choisissez trois nombres, qui correspondent à trois cartes de mon Oracle. ChronoSphère les relie à votre thème natal et au ciel du moment pour explorer plusieurs chemins possibles.
+              Vous choisissez trois nombres, qui correspondent à trois cartes de mon Oracle. ChronoSphère les relie à votre thème natal et au ciel du moment pour explorer plusieurs lignes de temps possibles.
             </p>
             <p className="mt-4 font-georgia text-sm font-semibold text-deep">
               1 tirage à {singlePrice || '5,00 € TTC'} · 3 tirages à {packPrice || '9,90 € TTC'}
@@ -922,9 +922,9 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               Comment mon Oracle et le ciel de naissance sont-ils reliés ?
             </summary>
             <div className="space-y-3 border-t border-gold/20 px-5 py-5 font-georgia text-sm leading-relaxed text-deep/80">
-              <p><strong className="text-deep">Les cartes :</strong> les 58 cartes de l'Oracle des Lignes de Temps existent déjà. Vos trois nombres entre 1 et 58 désignent directement les cartes ; l'IA ne les choisit pas.</p>
+              <p><strong className="text-deep">Les cartes :</strong> Mon Oracle des Lignes de Temps contient 58 cartes déjà créées. Vos trois nombres entre 1 et 58 désignent directement ces cartes ; l'IA ne les choisit pas.</p>
               <p><strong className="text-deep">Les calculs :</strong> votre date, votre heure exacte et votre lieu de naissance servent au thème natal ; le ciel du moment permet d'examiner des fenêtres temporelles.</p>
-              <p><strong className="text-deep">La lecture :</strong> l'IA relie les cartes, les calculs astrologiques et votre question pour formuler des pistes d'interprétation. Elle ne crée pas l'oracle et ne prédit pas un avenir certain.</p>
+              <p><strong className="text-deep">La lecture :</strong> L’IA intervient ensuite pour relier vos cartes, les calculs astrologiques et votre question. Elle ne choisit ni n’invente les cartes et ne prédit pas un avenir certain.</p>
             </div>
           </details>
         </section>

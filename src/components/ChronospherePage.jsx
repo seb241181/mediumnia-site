@@ -814,11 +814,16 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
   const packPrice = formatChronospherePrice(paypalConfig?.products?.pack3?.displayAmount || paypalConfig?.products?.pack3?.amount)
   const maxPrice = formatChronospherePrice(paypalConfig?.products?.max3?.displayAmount || paypalConfig?.products?.max3?.amount)
   const offersVisible = !result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken
-  // L'encadré « Pack conseillé » mène directement aux offres, pack présélectionné.
-  function choosePack() {
-    if (offersVisible && paypalConfig) setSelectedProduct('pack3')
+  // Les choix proposés dès le premier écran pré-sélectionnent l'offre, puis ouvrent le formulaire.
+  // Aucun changement au parcours de paiement, aux jetons ni à la reprise des tirages.
+  function chooseOffer(product) {
+    if (!offersVisible || !paypalConfig?.products?.[product]) return
+    setSelectedProduct(product)
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    offersRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+    document.getElementById('chronosphere-start')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  }
+  function choosePack() {
+    chooseOffer('pack3')
   }
   const creditsLabel = creditState?.creditsRemaining === 1 ? '1 tirage disponible' : `${creditState?.creditsRemaining || 0} tirages disponibles`
 
@@ -828,92 +833,100 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
       <PublicPageNav current="decouvrir" onHome={onBack} />
 
       <main>
-        {/* Hero */}
-        <section className="mx-auto max-w-4xl px-6 pb-8 pt-14 text-center md:pt-20">
-          <img
-            src="/images/brand/MEDIUMIA_symbol_header.png"
-            alt=""
-            aria-hidden="true"
-            className="mx-auto mb-6 h-10 w-auto opacity-50"
-          />
-          <p className="mb-4 font-georgia text-xs uppercase tracking-[0.28em] text-gold">
-            Cycles · lignes de temps · thème astral
-          </p>
-          <h1 className="mb-5 font-georgia text-4xl font-medium leading-tight md:text-6xl">
-            ChronoSphère 999
-          </h1>
-          <p className="mx-auto max-w-2xl font-bodoni text-lg italic leading-relaxed text-deep/80 md:text-xl">
-            « Votre naissance pose le socle ; le moment présent ouvre la fenêtre. »
-          </p>
+        {/* Une première lecture simple de l'offre, avant les champs obligatoires. */}
+        <section data-chronosphere-ux="clair-v1" className="mx-auto max-w-4xl px-5 pb-8 pt-9 md:px-6 md:pt-16">
+          <div className="mx-auto max-w-3xl text-center">
+            <img
+              src="/images/brand/MEDIUMIA_symbol_header.png"
+              alt=""
+              aria-hidden="true"
+              className="mx-auto mb-4 h-9 w-auto opacity-50"
+            />
+            <p className="font-georgia text-[11px] uppercase tracking-[0.19em] text-gold">
+              Mon Oracle des Lignes de Temps · votre ciel de naissance
+            </p>
+            <h1 className="mt-3 font-georgia text-4xl font-medium leading-tight md:text-6xl">ChronoSphère 999</h1>
+            <p className="mx-auto mt-3 max-w-2xl font-georgia text-lg leading-relaxed text-deep md:text-xl">
+              Un éclairage sur vos choix, pas une promesse sur l'avenir.
+            </p>
+            <p className="mx-auto mt-3 max-w-2xl font-georgia text-sm leading-relaxed text-deep/75 md:text-base">
+              Vous choisissez trois nombres, qui correspondent à trois cartes de mon Oracle. ChronoSphère les relie à votre thème natal et au ciel du moment pour explorer plusieurs lignes de temps possibles.
+            </p>
+            <p className="mt-4 font-georgia text-sm font-semibold text-deep">
+              1 tirage à {singlePrice || '5,00 € TTC'} · 3 tirages à {packPrice || '9,90 € TTC'}
+            </p>
+          </div>
 
-          <div data-chronosphere-positioning="oracle-first-v1" className="mx-auto mt-7 max-w-3xl rounded-3xl border-2 border-gold/45 bg-white/80 p-6 text-left shadow-[0_14px_38px_rgba(26,21,53,.07)] md:p-8">
-            <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Ce qu’est réellement ChronoSphère</p>
-            <h2 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">
-              Mon Oracle des Lignes de Temps, relié à votre thème natal
+          <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-gold/35 bg-white/85 p-5 shadow-[0_10px_30px_rgba(26,21,53,.05)] md:p-7">
+            <p className="font-georgia text-[11px] uppercase tracking-[0.15em] text-gold">Ce que vous recevez</p>
+            <h2 className="mt-2 font-georgia text-xl font-medium leading-snug text-deep md:text-2xl">
+              Une lecture complète, avec des pistes concrètes
             </h2>
-            <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/80 md:text-base">
-              ChronoSphère ne génère pas trois cartes au hasard. <strong className="text-deep">Les 58 cartes de l’Oracle des Lignes de Temps existent déjà</strong>, avec leur nom, leur symbolique et leur structure. Vous choisissez trois nombres entre 1 et 58 : chacun correspond directement à une carte de l’oracle que j’ai créé.
+            <ul className="mt-4 grid gap-2 font-georgia text-sm leading-relaxed text-deep/85 sm:grid-cols-2">
+              <li>— Une synthèse de votre situation et de vos trois cartes</li>
+              <li>— Deux chemins possibles à explorer</li>
+              <li>— Des périodes à observer dans les mois à venir</li>
+              <li>— Trois leviers pour éclairer vos prochains choix</li>
+            </ul>
+            <p className="mt-4 border-t border-gold/20 pt-3 font-georgia text-xs leading-relaxed text-mist">
+              Lecture affichée à l'écran après paiement, avec une copie envoyée par e-mail. Cette interprétation symbolique reste ouverte à vos décisions.
             </p>
-            <p className="mt-3 font-georgia text-sm leading-relaxed text-deep/80 md:text-base">
-              Ces trois cartes sont ensuite croisées avec <strong className="text-deep">votre date, votre heure et votre lieu de naissance</strong>, puis avec le ciel du moment et des fenêtres calculées sur les mois à venir. L’objectif n’est pas de figer un avenir unique, mais d’explorer des <strong className="text-deep">lignes de temps possibles</strong> : ce qui est porteur, ce qui demande préparation, ce qui peut évoluer selon vos choix.
-            </p>
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-4">
-                <p className="font-georgia text-[10px] uppercase tracking-[0.15em] text-gold">1 · L’Oracle</p>
-                <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">J’ai créé 58 cartes, chacune avec sa propre architecture symbolique.</p>
-              </div>
-              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-4">
-                <p className="font-georgia text-[10px] uppercase tracking-[0.15em] text-gold">2 · Votre ciel</p>
-                <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">Thème natal, angles, maisons, transits et fenêtres temporelles calculés à partir de vos données.</p>
-              </div>
-              <div className="rounded-2xl border border-gold/20 bg-cream/70 p-4">
-                <p className="font-georgia text-[10px] uppercase tracking-[0.15em] text-gold">3 · L’interprétation</p>
-                <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/80">L’IA intervient ensuite pour relier les cartes et les données calculées. Elle ne choisit ni n’invente les cartes.</p>
-              </div>
+          </div>
+
+          {offersVisible && (
+            <div className="mx-auto mt-5 grid max-w-3xl gap-3 sm:grid-cols-2" aria-label="Choisir un tirage ChronoSphère">
+              <button
+                type="button"
+                disabled={!paypalConfig}
+                aria-pressed={selectedProduct === 'single'}
+                onClick={() => chooseOffer('single')}
+                className="rounded-2xl border-2 border-gold/30 bg-white/80 p-5 text-left transition-colors hover:border-gold disabled:opacity-60 aria-pressed:border-deep"
+              >
+                <span className="block font-georgia text-[11px] uppercase tracking-[0.13em] text-gold">Pour découvrir</span>
+                <span className="mt-2 block font-georgia text-lg font-semibold text-deep">Un tirage complet</span>
+                <span className="mt-1 block font-georgia text-2xl text-deep">{singlePrice || '5,00 € TTC'}</span>
+                <span className="mt-3 block font-georgia text-xs leading-relaxed text-mist">Une question, trois cartes et votre lecture personnelle.</span>
+                <span className="mt-3 block font-georgia text-sm font-bold text-deep underline decoration-gold/60 underline-offset-4">Préparer mon tirage →</span>
+              </button>
+              <button
+                type="button"
+                disabled={!paypalConfig}
+                aria-pressed={selectedProduct === 'pack3'}
+                onClick={choosePack}
+                className="rounded-2xl border-2 border-gold/60 bg-gold/[.08] p-5 text-left transition-colors hover:border-gold disabled:opacity-60 aria-pressed:border-deep"
+              >
+                <span className="block font-georgia text-[11px] uppercase tracking-[0.13em] text-gold">Pour prendre son temps</span>
+                <span className="mt-2 block font-georgia text-lg font-semibold text-deep">Pack conseillé : {packPrice || '9,90 € TTC'}</span>
+                <span className="mt-1 block font-georgia text-sm text-deep">3 tirages complets</span>
+                <span className="mt-3 block font-georgia text-xs leading-relaxed text-mist">Un maintenant, les autres quand vous le souhaitez, dans les 6 mois. Reprise grâce à votre lien personnel.</span>
+                <span className="mt-3 block font-georgia text-sm font-bold text-deep underline decoration-gold/60 underline-offset-4">Choisir le pack →</span>
+              </button>
             </div>
+          )}
+
+          <div className="mx-auto mt-5 max-w-3xl rounded-2xl border border-gold/35 bg-white/75 p-5 md:flex md:items-center md:justify-between md:gap-6">
+            <div>
+              <p className="font-georgia text-[11px] uppercase tracking-[0.13em] text-gold">Avant d'acheter · exemple fictif</p>
+              <p className="mt-2 font-georgia text-base leading-relaxed text-deep">
+                « Une ouverture se présente, mais elle demande un choix clair plutôt qu'un simple espoir. »
+              </p>
+              <p className="mt-2 font-georgia text-xs text-mist">Extrait adapté de notre démonstration fictive, et non d'un tirage client.</p>
+            </div>
+            <a href="/chronosphere/exemple" className="mt-4 inline-flex shrink-0 rounded-lg border border-gold/60 px-4 py-3 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/10 md:mt-0">
+              Voir une lecture exemple →
+            </a>
           </div>
 
-          <button
-            type="button"
-            onClick={choosePack}
-            className="mx-auto mt-6 block w-full max-w-md rounded-2xl border border-gold/40 bg-white/70 px-5 py-4 text-center shadow-[0_10px_30px_rgba(26,21,53,.06)] transition-colors hover:border-gold hover:bg-white"
-          >
-            <span className="block font-georgia text-lg font-medium text-deep">
-              Pack conseillé : {packPrice || '9,90 € TTC'}
-            </span>
-            <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">
-              3 lectures complètes, à faire maintenant ou plus tard (dans les 6 mois).
-            </span>
-            <span className="mt-2 inline-block font-georgia text-xs font-bold text-deep underline decoration-gold/60 underline-offset-4">Choisir ce pack →</span>
-          </button>
-
-          <div className="mx-auto mt-8 grid max-w-3xl gap-3 text-left md:grid-cols-3">
-            <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
-              <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">1 · Socle</p>
-              <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Empreinte de naissance</h2>
-              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Date, heure et lieu posent la base astrologique utilisée par le tirage.</p>
-            </article>
-            <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
-              <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">2 · Passage</p>
-              <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Énergie actuelle</h2>
-              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">ChronoSphère éclaire les fenêtres temporelles et la dynamique du moment.</p>
-            </article>
-            <article className="rounded-2xl border border-gold/25 bg-white/65 p-5">
-              <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">3 · Oracle</p>
-              <h2 className="mt-2 font-georgia text-lg font-medium text-deep">Résonances chiffrées</h2>
-              <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Trois nombres choisis par vous correspondent directement à trois cartes de mon Oracle des Lignes de Temps.</p>
-            </article>
-          </div>
-
-          <div className="mx-auto mt-5 max-w-3xl rounded-2xl border border-gold/30 bg-white/70 p-5 text-left md:p-6">
-            <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">Ce que vous recevez</p>
-            <p className="mt-2 font-georgia text-sm leading-relaxed text-deep">
-              Votre lecture s’affiche à l’écran juste après le paiement, et une copie vous est envoyée par e-mail.
-            </p>
-            <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">
-              Elle réunit une synthèse en 30 secondes, votre socle calculé (Ascendant, Milieu du Ciel), la photographie du moment, vos trois fréquences, votre ligne de temps, deux chemins possibles, trois leviers concrets et une question miroir.
-            </p>
-          </div>
+          <details className="mx-auto mt-4 max-w-3xl rounded-2xl border border-gold/25 bg-white/55">
+            <summary className="cursor-pointer px-5 py-4 font-georgia text-sm font-semibold text-deep">
+              Comment mon Oracle et le ciel de naissance sont-ils reliés ?
+            </summary>
+            <div className="space-y-3 border-t border-gold/20 px-5 py-5 font-georgia text-sm leading-relaxed text-deep/80">
+              <p><strong className="text-deep">Les cartes :</strong> Mon Oracle des Lignes de Temps contient 58 cartes déjà créées. Vos trois nombres entre 1 et 58 désignent directement ces cartes ; l'IA ne les choisit pas.</p>
+              <p><strong className="text-deep">Les calculs :</strong> votre date, votre heure exacte et votre lieu de naissance servent au thème natal ; le ciel du moment permet d'examiner des fenêtres temporelles.</p>
+              <p><strong className="text-deep">La lecture :</strong> L’IA intervient ensuite pour relier vos cartes, les calculs astrologiques et votre question. Elle ne choisit ni n’invente les cartes et ne prédit pas un avenir certain.</p>
+            </div>
+          </details>
         </section>
 
         {/* Form + Payment + Results */}
@@ -928,19 +941,16 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
             </div>
           )}
 
-          <div className="mb-5 rounded-2xl border border-gold/25 bg-white/55 px-5 py-4 text-center md:flex md:items-center md:justify-between md:gap-6 md:text-left">
-            <div>
-              <p className="font-georgia text-sm font-semibold text-deep">Vous voulez voir le résultat avant de remplir ?</p>
-              <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">L’exemple public est fictif, mais il montre la structure réelle d’une lecture Chronosphère.</p>
-            </div>
-            <a href="/chronosphere/exemple" className="mt-3 inline-flex shrink-0 rounded-lg border border-gold/45 px-4 py-2.5 font-georgia text-xs font-bold text-deep transition-colors hover:bg-gold/10 md:mt-0">Voir un exemple complet avant de remplir →</a>
-          </div>
-
           {/* Form — always visible */}
           <form
+            id="chronosphere-start"
             onSubmit={hasToken ? handleSubmit : handleValidateAndPay}
-            className="rounded-3xl border-2 border-gold/25 bg-white/60 p-6 shadow-sm md:p-9"
+            className="scroll-mt-24 rounded-3xl border-2 border-gold/25 bg-white/60 p-6 shadow-sm md:p-9"
           >
+            <h2 className="mb-2 font-georgia text-2xl font-medium text-deep">Préparez votre lecture</h2>
+            <p className="mb-6 font-georgia text-sm leading-relaxed text-mist">
+              Vos informations de naissance, votre thème et trois nombres suffisent. Vous vérifierez l'offre choisie avant de payer.
+            </p>
 
             {/* Birth profile */}
             <p className="mb-1 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">

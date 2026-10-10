@@ -111,7 +111,7 @@ function applyRouteMeta(view) {
   const pathname = window.location.pathname
   const canonicalPath = pathname === '/' ? '/' : (pathname.endsWith('/') ? pathname.slice(0, -1) : pathname)
   const canonicalUrl = 'https://mediumia.fr' + canonicalPath
-  const isPrivate = view === 'arche' || view === 'rdv-dashboard' || view === 'rdv-cancellation' || pathname.startsWith('/avis/moderation') || pathname.startsWith('/carte-cadeau/')
+  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation' || pathname.startsWith('/avis/moderation') || pathname.startsWith('/carte-cadeau/')
 
   document.title = meta.title
 

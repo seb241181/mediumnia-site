@@ -235,7 +235,7 @@ export default function App() {
   }
 
   // Sur la réservation, les bulles flottantes masquaient titres et récapitulatif.
-  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere' && view !== 'arche'
+  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere'
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 

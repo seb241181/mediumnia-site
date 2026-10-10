@@ -20,6 +20,11 @@ app = replaceRequired(
 )
 
 const routeSeoHelpers = `const ROUTE_META = {
+  arche: {
+    title: 'L’Arche — Communauté spirituelle gratuite | Projet de Sébastien Seguin',
+    description: 'L’Arche se prépare : un réseau gratuit et bienveillant pour échanger sur la spiritualité, explorer ses questionnements et se rencontrer sans jugement.',
+    robots: 'noindex,nofollow',
+  },
   home: {
     title: 'MediumIA — Médiumnité, formation, consultations & réseau',
     description: 'MediumIA réunit formation à la médiumnité, consultations, Chronosphère, Oracle Au-delà de l’Âme et réseau de praticiens du spirituel et du bien-être.',
@@ -106,7 +111,7 @@ function applyRouteMeta(view) {
   const pathname = window.location.pathname
   const canonicalPath = pathname === '/' ? '/' : (pathname.endsWith('/') ? pathname.slice(0, -1) : pathname)
   const canonicalUrl = 'https://mediumia.fr' + canonicalPath
-  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation' || pathname.startsWith('/avis/moderation') || pathname.startsWith('/carte-cadeau/')
+  const isPrivate = view === 'arche' || view === 'rdv-dashboard' || view === 'rdv-cancellation' || pathname.startsWith('/avis/moderation') || pathname.startsWith('/carte-cadeau/')
 
   document.title = meta.title
 

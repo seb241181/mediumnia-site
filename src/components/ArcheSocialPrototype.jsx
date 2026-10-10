@@ -160,4 +160,3 @@ export function ArcheAppPreview({ nickname, onExit }) {
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-2 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"> <div className="grid grid-cols-5 gap-1">{MENU.map((item) => <button key={item.id} onClick={() => setView(item.id)} aria-current={view === item.id ? 'page' : undefined} className={'relative min-h-14 rounded-2xl text-[11px] font-semibold '+(view === item.id ? 'bg-[#1A1535] text-white' : 'text-[#4A3F6B]')}>{item.label}{item.badge > 0 && <span className="absolute right-2 top-1 rounded-full bg-[#C9A84C] px-1.5 py-0.5 text-[10px] text-[#1A1535]">{item.badge}</span>}</button>)}</div></nav>
   </div>
 }
-export { ArcheLoginPreview }

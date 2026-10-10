@@ -87,18 +87,16 @@ test('Formation first screen: promise, audience, human-first positioning and Dis
   const page = await read('src/components/FormationPage.jsx')
   const top = page.slice(page.indexOf('id="formation-top"'), page.indexOf('Ce parcours est pour vous si'))
   assert.match(top, /<h1[^>]*>Développer sa médiumnité, pas à pas<\/h1>/)
-  assert.match(top, /Pour qui :/)
-  assert.match(top, /HERO_APPORTS\.map/)
-  assert.match(top, /Commencer sans s’engager/)
-  assert.match(top, /L’intelligence artificielle n’est pas la formation/)
+  // Premier écran simplifié : ce qu'on apprend, ce que l'on reçoit pour 29 €, comment commencer.
   assert.match(top, /J’ai conçu et écrit cette méthode/)
-  assert.match(top, /pour découvrir réellement ma méthode/)
-  assert.match(top, /Je suis Sébastien Seguin/)
+  assert.match(top, /Pour commencer/)
+  assert.match(top, /La Découverte : l’introduction, le Module 1 complet et ses exercices\./)
+  assert.match(top, /Sans obligation de poursuivre\./)
+  assert.match(top, /Commencer ma découverte — 29&nbsp;€/)
   assert.match(top, /data-formation-positioning="human-first-v1"/)
-  assert.match(top, /money\(offer\.discoveryCents\)/)
-  assert.match(top, /money\(offer\.stepCents\)/)
-  assert.match(top, /parcours complet reste plafonné/)
-  assert.match(top, /Commencer par la Découverte à/)
+  assert.match(top, /Ce qui rend cette méthode particulière/)
+  // Plus de tableau de chiffres au premier écran : mensualités et plafond en section secondaire.
+  assert.doesNotMatch(top, /money\(offer\.|par mois|plafonné|48 €/)
   // Only the validated installment phrase, nowhere the old detail.
   assert.doesNotMatch(page, /4X|6X|12X|24X/)
   // Details kept but folded.

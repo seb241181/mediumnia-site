@@ -53,7 +53,9 @@ test('checkouts say plainly that a card works without a PayPal account', () => {
   assert.match(rdv, /Pas de compte PayPal \?/)
   assert.match(rdv, /en une fois ou en 4 fois sans frais avec PayPal/)
   assert.match(rdv, /Pourquoi cette case \?/)
-  assert.match(read('src/components/FormationPage.jsx'), /pas besoin de compte PayPal pour payer par carte/)
+  // Formation : pas de promesse « carte sans compte » tant qu'elle n'est pas vérifiée en Live.
+  assert.match(read('src/components/FormationPage.jsx'), /Quand PayPal le propose, vous pouvez aussi payer par carte bancaire/)
+  assert.doesNotMatch(read('src/components/FormationPage.jsx'), /sans compte PayPal|pas besoin de compte PayPal/)
   assert.match(read('lib/rdvFullPaymentApiHandler.js'), /TERMS_VERSION = 'rdv-arrhes-2026-09-24-v2'/)
   assert.match(read('lib/rdvDepositApiHandler.js'), /TERMS_VERSION = 'rdv-arrhes-2026-09-24-v2'/)
 })

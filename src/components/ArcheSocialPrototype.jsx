@@ -1,112 +1,174 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
-// Maquette uniquement : aucune connexion, publication ou notification réelle.
+// Prototype privé : toutes les données ci-dessous sont fictives et locales.
+const PEOPLE = [
+  { id: 'lueur', name: 'Lueur', status: 'online', note: 'Disponible', unread: 1 },
+  { id: 'nuage', name: 'Nuage Bleu', status: 'online', note: 'Dans le Salon', unread: 0 },
+  { id: 'plume', name: 'Plume d’Or', status: 'away', note: 'Revient plus tard', unread: 2 },
+  { id: 'chemin', name: 'Chemin Libre', status: 'busy', note: 'Préférer lire', unread: 0 },
+]
 const CIRCLES = [
-  { id: 'decouverte', title: 'Les Découvertes', description: 'Pour commencer, poser des questions et rencontrer les autres.' },
-  { id: 'intuition', title: 'Intuition & ressentis', description: 'Partager des impressions et des expériences personnelles.' },
-  { id: 'reves', title: 'Rêves & symboles', description: 'Explorer des interprétations, sans certitudes imposées.' },
-  { id: 'questions', title: 'Les Grandes Questions', description: 'Un dialogue entre curieux, croyants et sceptiques.' },
+  { id: 'decouverte', title: 'Les Découvertes', unread: 4, members: '18', description: 'Commencer sans jargon, avec questions simples.' },
+  { id: 'intuition', title: 'Intuition', unread: 2, members: '12', description: 'Ressentis, impressions et expériences.' },
+  { id: 'reves', title: 'Rêves', unread: 0, members: '9', description: 'Symboles, rêves marquants, questions.' },
+  { id: 'questions', title: 'Grandes Questions', unread: 1, members: '15', description: 'Croire, douter, débattre calmement.' },
 ]
-const EXAMPLE_POSTS = [
-  { id: 'p1', author: 'Plume d’Or', circle: 'Les Découvertes', text: 'Peut-on s’intéresser à la spiritualité sans avoir de croyance particulière ? Je suis curieuse de connaître vos avis.' },
-  { id: 'p2', author: 'Chemin Libre', circle: 'Intuition & ressentis', text: 'Comment différenciez-vous une intuition d’une émotion ? J’aimerais mieux comprendre.' },
+const START_POSTS = [
+  { id: 'post-1', author: 'Plume d’Or', circle: 'Les Découvertes', time: 'il y a 2 h', text: 'Peut-on s’intéresser à la spiritualité sans adhérer à une croyance particulière ? J’aimerais lire vos façons de voir.', replies: 3 },
+  { id: 'post-2', author: 'Chemin Libre', circle: 'Intuition', time: 'il y a 5 h', text: 'Comment différenciez-vous une intuition d’une émotion ? Je découvre le sujet et je trouve la frontière parfois fine.', replies: 1 },
+  { id: 'post-3', author: 'Nuage Bleu', circle: 'Rêves', time: 'hier', text: 'Je garde un carnet de rêves depuis une semaine. C’est fou comme certains détails reviennent quand on relit calmement.', replies: 2 },
 ]
-const EXAMPLE_CHAT = [
-  { id: 'c1', author: 'Lueur', text: 'Bonsoir à tous ! Vous aimeriez discuter de quel sujet ?' },
-  { id: 'c2', author: 'Nuage Bleu', text: 'Des rêves ! Je viens de découvrir le Cercle qui en parle.' },
+const LIVE_MESSAGES = [
+  { id: 'm1', author: 'Lueur', text: 'Bonsoir, la Veillée commence doucement. Quel sujet vous appelle ce soir ?', time: '20:04' },
+  { id: 'm2', author: 'Nuage Bleu', text: 'Les rêves, clairement. J’ai l’impression qu’ils deviennent plus précis.', time: '20:06' },
+  { id: 'm3', author: 'Plume d’Or', text: 'Je lis tranquillement pour l’instant, mais je suis là.', time: '20:07' },
 ]
 const MENU = [
-  { id: 'feed', title: 'Le Fil' },
-  { id: 'live', title: 'Grand Salon' },
-  { id: 'circles', title: 'Les Cercles' },
-  { id: 'messages', title: 'Rencontres' },
-  { id: 'profile', title: 'Mon profil' },
+  { id: 'feed', label: 'Fil', badge: 0 },
+  { id: 'live', label: 'Salon', badge: 5 },
+  { id: 'circles', label: 'Cercles', badge: 3 },
+  { id: 'messages', label: 'Messages', badge: 2 },
+  { id: 'profile', label: 'Moi', badge: 0 },
 ]
-const primary = 'min-h-11 rounded-lg bg-[#1A1535] px-4 py-3 text-sm font-semibold text-white hover:bg-[#2B254D] disabled:cursor-not-allowed disabled:opacity-40'
-const secondary = 'min-h-11 rounded-lg border border-[#E2D7BE] bg-white px-4 py-3 text-sm font-semibold text-[#1A1535] hover:bg-[#F3EFE6]'
-const field = 'min-h-11 w-full rounded-lg border border-[#D9D1C0] bg-[#FAFAF7] px-3 py-3 text-sm text-[#1A1535] outline-none focus:border-[#C9A84C]'
-function Initial({ name, big=false }) {
-  return <span aria-hidden="true" className={'flex shrink-0 items-center justify-center rounded-xl border border-[#C9A84C] bg-[#F3EFE6] font-georgia text-[#1A1535] '+(big?'h-16 w-16 text-2xl':'h-10 w-10 text-lg')}>{name?.charAt(0).toUpperCase()||'A'}</span>
+const primary = 'min-h-11 rounded-full bg-[#1A1535] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#2B254D] disabled:cursor-not-allowed disabled:opacity-40'
+const softButton = 'min-h-10 rounded-full bg-[#F3EFE6] px-4 py-2 text-xs font-semibold text-[#1A1535] transition hover:bg-[#E8E0CF]'
+const inputClass = 'min-h-11 w-full rounded-2xl border border-[#E2D7BE] bg-[#FAFAF7] px-4 py-3 text-sm text-[#1A1535] outline-none transition focus:border-[#C9A84C]'
+
+function initials(name) {
+  return (name || 'A').split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase()
 }
-function Heading({ label, title, description }) {
-  return <div className="mb-6"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.19em] text-[#9B640B]">{label}</p><h2 className="font-georgia text-3xl text-[#1A1535]">{title}</h2><p className="mt-2 text-sm leading-6 text-[#4A3F6B]">{description}</p></div>
+function Presence({ status = 'offline', small = false }) {
+  const label = { online: 'Disponible', away: 'Absent', busy: 'Occupé', offline: 'Invisible' }[status] || 'Invisible'
+  const shape = status === 'online' ? 'bg-[#C9A84C]' : status === 'away' ? 'bg-[#C9A84C]/60' : status === 'busy' ? 'bg-[#1A1535]' : 'border border-[#C9A84C] bg-[#FAFAF7]'
+  return <span title={label} aria-label={label} className={(small ? 'h-2.5 w-2.5' : 'h-3 w-3') + ' inline-flex rounded-full ' + shape} />
 }
+function Avatar({ name, status, size = 'md' }) {
+  const sizeClass = size === 'lg' ? 'h-14 w-14 text-lg' : size === 'sm' ? 'h-9 w-9 text-xs' : 'h-11 w-11 text-sm'
+  return <span className="relative inline-flex shrink-0"><span className={sizeClass + ' flex items-center justify-center rounded-full bg-[#1A1535] font-semibold text-[#C9A84C]'}>{initials(name)}</span>{status && <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-[#FAFAF7] p-0.5"><Presence status={status} small /></span>}</span>
+}
+function Badge({ children }) {
+  return <span className="ml-auto rounded-full bg-[#C9A84C] px-2 py-0.5 text-[10px] font-bold text-[#1A1535]">{children}</span>
+}
+
 export function ArcheLoginPreview({ onEnter, onBack }) {
-  const [mode,setMode]=useState('existing')
-  const [pseudo,setPseudo]=useState('Étoile du Nord')
-  const [ack,setAck]=useState(false)
-  return <div className="min-h-screen bg-[#FAFAF7]">
-    <header className="border-b border-[#E2D7BE] px-5 py-4 md:px-8"><div className="mx-auto flex max-w-6xl items-center justify-between gap-3"><p className="font-georgia text-xl text-[#1A1535]">L’ARCHE</p><button type="button" onClick={onBack} className={secondary}>← Revenir à la découverte</button></div></header>
-    <section id="connexion" className="px-5 py-20 md:px-8">
-    <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_440px]">
-      <div>
-        <p className="mb-4 text-xs font-bold uppercase tracking-[.2em] text-[#9B640B]">Après la découverte, la communauté</p>
-        <h2 className="font-georgia text-4xl leading-tight text-[#1A1535] md:text-5xl">Entrez dans L’Arche.<br/><em>Faites comme chez vous.</em></h2>
-        <p className="mt-6 max-w-xl text-base leading-8 text-[#4A3F6B]">Une page de connexion, puis une application complète : votre fil de publications, les Cercles, le Grand Salon façon messagerie et vos contacts.</p>
-        <div className="mt-6 space-y-3 text-sm leading-6 text-[#4A3F6B]"><p>• Un compte MediumIA gratuit, pour tout l’écosystème.</p><p>• Une fiche L’Arche séparée et visible uniquement par les membres.</p><p>• Pas de démarchage, ni d’obligation de publier.</p></div>
-      </div>
-      <div className="overflow-hidden rounded-2xl border border-[#E2D7BE] bg-white shadow-[0_18px_45px_rgba(26,21,53,.08)]">
-        <div className="bg-[#1A1535] p-7 text-center text-white"><p className="text-xs font-semibold uppercase tracking-[.24em] text-[#C9A84C]">L’ARCHE · ACCÈS MEMBRES</p><h3 className="mt-3 font-georgia text-3xl">Bienvenue chez vous.</h3><p className="mt-2 text-sm text-[#E2D7BE]">Aperçu de la future connexion</p></div>
-        <form onSubmit={event=>{event.preventDefault();if(pseudo.trim()&&ack)onEnter(pseudo.trim())}} className="space-y-5 p-6 sm:p-7">
-          <div className="grid grid-cols-2 gap-2" role="group" aria-label="Type de compte envisagé"><button type="button" className={mode==='existing'?primary:secondary} aria-pressed={mode==='existing'} onClick={()=>setMode('existing')}>J’ai un compte</button><button type="button" className={mode==='new'?primary:secondary} aria-pressed={mode==='new'} onClick={()=>setMode('new')}>Créer un compte</button></div>
-          <p className="text-sm leading-6 text-[#4A3F6B]">{mode==='existing'?'Le compte MediumIA existant donnera accès à L’Arche après adhésion.':'Un nouveau compte MediumIA sera gratuit, puis l’adhésion à L’Arche restera facultative.'}</p>
-          <label className="block text-sm font-semibold">Votre pseudonyme de démonstration<input autoComplete="off" maxLength={32} required value={pseudo} onChange={event=>setPseudo(event.target.value)} className={'mt-2 '+field} placeholder="Pseudonyme fictif"/></label>
-          <label className="flex items-start gap-3 text-xs leading-5 text-[#4A3F6B]"><input required type="checkbox" checked={ack} onChange={event=>setAck(event.target.checked)} className="mt-1 h-4 w-4 accent-[#1A1535]"/><span>Je comprends que cet accès est une simulation locale : aucun compte n’est créé, aucun message n’est envoyé.</span></label>
-          <button type="submit" disabled={!ack||!pseudo.trim()} className={primary+' w-full'}>Entrer dans l’application de démo →</button>
-          <p className="text-center text-xs leading-5 text-[#4A3F6B]">Ne saisissez aucun vrai mot de passe ici. L’authentification sécurisée sera développée et testée séparément.</p>
+  const [mode, setMode] = useState('existing')
+  const [pseudo, setPseudo] = useState('Étoile du Nord')
+  const [ack, setAck] = useState(false)
+  return <div className="min-h-screen bg-[#FAFAF7] text-[#1A1535]">
+    <header className="border-b border-[#E2D7BE] bg-white/80 px-5 py-4 backdrop-blur md:px-8"><div className="mx-auto flex max-w-6xl items-center justify-between gap-3"><p className="font-georgia text-xl tracking-[.08em]">L’ARCHE</p><button type="button" onClick={onBack} className={softButton}>← Découverte</button></div></header>
+    <main id="connexion" className="px-5 py-14 md:px-8 md:py-20">
+      <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_420px]">
+        <section>
+          <p className="mb-4 text-xs font-bold uppercase tracking-[.22em] text-[#9B640B]">Accès membres · simulation</p>
+          <h1 className="font-georgia text-4xl leading-tight md:text-6xl">Entrez dans L’Arche.</h1>
+          <p className="mt-6 max-w-xl text-base leading-8 text-[#4A3F6B]">Après la page de découverte, les membres arrivent dans une vraie application sociale : fil, salon, cercles, proches et messages.</p>
+          <div className="mt-8 flex flex-wrap gap-3 text-xs font-semibold text-[#4A3F6B]"><span className="rounded-full bg-white px-4 py-2 shadow-sm">Compte MediumIA gratuit</span><span className="rounded-full bg-white px-4 py-2 shadow-sm">Profil L’Arche séparé</span><span className="rounded-full bg-white px-4 py-2 shadow-sm">Démo locale</span></div>
+        </section>
+        <form onSubmit={(event) => { event.preventDefault(); if (pseudo.trim() && ack) onEnter(pseudo.trim()) }} className="rounded-[2rem] border border-[#E2D7BE] bg-white p-6 shadow-[0_24px_70px_rgba(26,21,53,.09)]">
+          <div className="mb-6 text-center"><span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1A1535] font-georgia text-2xl text-[#C9A84C]">A</span><h2 className="mt-4 font-georgia text-3xl">Connexion</h2><p className="mt-2 text-xs text-[#4A3F6B]">Aucun vrai identifiant demandé ici.</p></div>
+          <div className="mb-5 grid grid-cols-2 gap-2" role="group" aria-label="Parcours d’accès simulé"><button type="button" onClick={() => setMode('existing')} aria-pressed={mode === 'existing'} className={mode === 'existing' ? primary : softButton}>J’ai un compte</button><button type="button" onClick={() => setMode('new')} aria-pressed={mode === 'new'} className={mode === 'new' ? primary : softButton}>Créer</button></div>
+          <p className="mb-5 rounded-2xl bg-[#F3EFE6] p-4 text-sm leading-6 text-[#4A3F6B]">{mode === 'existing' ? 'Dans la version réelle, connexion avec le compte MediumIA existant puis adhésion à L’Arche.' : 'Dans la version réelle, création gratuite d’un compte MediumIA puis choix du profil communautaire.'}</p>
+          <label className="block text-sm font-semibold">Pseudonyme de démonstration<input autoComplete="off" maxLength={32} required value={pseudo} onChange={(event) => setPseudo(event.target.value)} className={inputClass + ' mt-2'} placeholder="Pseudonyme fictif" /></label>
+          <label className="mt-4 flex items-start gap-3 text-xs leading-5 text-[#4A3F6B]"><input required type="checkbox" checked={ack} onChange={(event) => setAck(event.target.checked)} className="mt-1 h-4 w-4 accent-[#1A1535]" /><span>Je comprends que cette démo ne crée aucun compte et n’envoie aucun message.</span></label>
+          <button type="submit" disabled={!ack || !pseudo.trim()} className={primary + ' mt-6 w-full'}>Entrer dans l’application →</button>
         </form>
       </div>
-    </div>
-    </section>
+    </main>
   </div>
 }
-export function ArcheAppPreview({ nickname, onExit }) {
-  const [view,setView]=useState('feed')
-  const [posts,setPosts]=useState(EXAMPLE_POSTS)
-  const [draft,setDraft]=useState('')
-  const [likes,setLikes]=useState([])
-  const [replyId,setReplyId]=useState('')
-  const [replyDraft,setReplyDraft]=useState('')
-  const [replies,setReplies]=useState({})
-  const [chat,setChat]=useState(EXAMPLE_CHAT)
-  const [chatDraft,setChatDraft]=useState('')
-  const [circle,setCircle]=useState('decouverte')
-  const [joined,setJoined]=useState(['decouverte'])
-  const [contact,setContact]=useState('request')
-  const [dm,setDm]=useState([])
-  const [dmDraft,setDmDraft]=useState('')
-  const [allowToc,setAllowToc]=useState(false)
-  const [toc,setToc]=useState(false)
-  const [lastToc,setLastToc]=useState(0)
-  const [presence,setPresence]=useState('invisible')
-  const [notice,setNotice]=useState('')
-  const open=id=>{setView(id);setNotice('')}
-  const submitPost=event=>{event.preventDefault();if(!draft.trim())return;setPosts(x=>[{id:'local-'+Date.now(),author:nickname,circle:'Le Fil',text:draft.trim()},...x]);setDraft('');setNotice('Votre publication est visible seulement dans cette démonstration.')}
-  const submitChat=event=>{event.preventDefault();if(!chatDraft.trim())return;setChat(x=>[...x.slice(-12),{id:'local-'+Date.now(),author:nickname,text:chatDraft.trim()}]);setChatDraft('')}
-  const submitDm=event=>{event.preventDefault();if(contact!=='accepted'||!dmDraft.trim())return;setDm(x=>[...x,{id:'dm-'+Date.now(),text:dmDraft.trim()}]);setDmDraft('')}
-  function poke(){
-    if(!allowToc||contact!=='accepted'||Date.now()-lastToc<10000)return
-    setLastToc(Date.now());setToc(true)
-    let vibration=false
-    try{if(typeof navigator!=='undefined'&&typeof navigator.vibrate==='function')vibration=navigator.vibrate([90,45,90])}catch{vibration=false}
-    setNotice(vibration?'Toc toc simulé : demande de vibration acceptée par le navigateur.':'Toc toc simulé : animation visible, mais vibration non disponible sur ce navigateur.')
-  }
-  return <div data-arche-app-preview="local-only" className="min-h-screen bg-[#FAFAF7] text-[#1A1535]">
-    <style>{'@keyframes arche-poke{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}.arche-poke{animation:arche-poke .6s ease-in-out}@media(prefers-reduced-motion:reduce){.arche-poke{animation:none}}'}</style>
-    <div role="status" className="bg-[#C9A84C] px-4 py-2 text-center text-[11px] font-semibold text-[#1A1535]">APPLICATION DE DÉMONSTRATION — aucun vrai membre, aucune donnée enregistrée ou envoyée</div>
-    <header className="sticky top-0 z-10 border-b border-[#E2D7BE] bg-[#FAFAF7]"><div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1A1535] font-georgia text-xl text-[#C9A84C]">A</span><div><h1 className="font-georgia text-xl">L’ARCHE</h1><p className="text-[10px] uppercase tracking-widest text-[#4A3F6B]">La communauté</p></div></div><button type="button" onClick={onExit} className={secondary}>← Retour à la découverte</button></div></header>
-    <div className="mx-auto grid max-w-7xl gap-5 px-3 pb-20 pt-6 sm:px-5 lg:grid-cols-[210px_minmax(0,1fr)_220px]">
-      <aside className="hidden self-start lg:sticky lg:top-24 lg:block"><div className="space-y-1 rounded-xl border border-[#E2D7BE] bg-white p-3">{MENU.map(item=><button key={item.id} type="button" aria-current={view===item.id?'page':undefined} onClick={()=>open(item.id)} className={'min-h-11 w-full rounded-lg px-4 py-3 text-left text-sm '+(view===item.id?'bg-[#1A1535] font-semibold text-white':'text-[#4A3F6B] hover:bg-[#F3EFE6]')}>{item.title}</button>)}</div><div className="mt-4 rounded-xl bg-[#1A1535] p-5 text-xs leading-6 text-[#FAFAF7]"><p className="font-georgia text-lg">Un espace libre.</p><p className="mt-2 text-[#E2D7BE]">Aucune hiérarchie de l’éveil, pas de pression pour publier et aucun démarchage.</p></div></aside>
-      <main className="min-w-0">
-        <nav className="mb-5 grid grid-cols-5 gap-1 rounded-xl border border-[#E2D7BE] bg-white p-1 lg:hidden" aria-label="Menu de l’application">{MENU.map(item=><button type="button" key={item.id} aria-current={view===item.id?'page':undefined} onClick={()=>open(item.id)} className={'min-h-14 rounded-lg px-1 text-center text-[10px] leading-tight '+(view===item.id?'bg-[#1A1535] text-white':'text-[#4A3F6B]')}>{item.id==='messages'?'Messages':item.id==='profile'?'Profil':item.id==='live'?'Salon':item.id==='circles'?'Cercles':'Fil'}</button>)}</nav>
-        {notice&&<p role="status" className="mb-4 rounded-lg border border-[#C9A84C] bg-[#F3EFE6] p-3 text-xs">{notice}</p>}
-        {view==='feed'&&<><Heading label="La communauté" title="Le Fil" description="Partagez à votre rythme. Les publications et réactions suivantes sont entièrement fictives."/><form onSubmit={submitPost} className="mb-5 rounded-xl border border-[#E2D7BE] bg-white p-5"><div className="mb-3 flex items-center gap-3"><Initial name={nickname}/><strong className="text-sm">{nickname}</strong><span className="ml-auto text-xs text-[#4A3F6B]">Membres seulement</span></div><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication de démo</label><textarea id="arche-post-draft" value={draft} onChange={e=>setDraft(e.target.value)} maxLength={420} rows={3} placeholder="Qu’aimeriez-vous partager ?" className={field}/><div className="mt-3 text-right"><button type="submit" disabled={!draft.trim()} className={primary}>Publier dans la démo</button></div></form><div className="space-y-4">{posts.map(p=><article key={p.id} className="rounded-xl border border-[#E2D7BE] bg-white p-5"><div className="flex items-center gap-3"><Initial name={p.author}/><div className="flex-1"><strong className="text-sm">{p.author}</strong><p className="text-xs text-[#4A3F6B]">{p.circle} · Exemple fictif</p></div><button type="button" onClick={()=>setNotice('Signalement fictif : la modération réelle sera activée seulement après tests.')} className="text-xs text-[#4A3F6B] underline">Signaler</button></div><p className="mt-4 whitespace-pre-wrap break-words text-sm leading-7">{p.text}</p><div className="mt-4 flex gap-5 border-t border-[#E2D7BE] pt-4"><button type="button" className="min-h-11 text-xs font-semibold" aria-pressed={likes.includes(p.id)} onClick={()=>setLikes(v=>v.includes(p.id)?v.filter(x=>x!==p.id):[...v,p.id])}>{likes.includes(p.id)?'Merci envoyé':'Merci'}</button><button type="button" className="min-h-11 text-xs font-semibold" onClick={()=>setReplyId(replyId===p.id?'':p.id)}>Répondre</button></div>{(replies[p.id]||[]).map((text,i)=><p key={i} className="mt-2 rounded-lg bg-[#F3EFE6] p-3 text-xs"><strong>{nickname} :</strong> {text}</p>)}{replyId===p.id&&<form className="mt-3 flex gap-2" onSubmit={e=>{e.preventDefault();if(!replyDraft.trim())return;setReplies(x=>({...x,[p.id]:[...(x[p.id]||[]),replyDraft.trim()]}));setReplyDraft('');setReplyId('')}}><label className="sr-only" htmlFor={'arche-reply-'+p.id}>Réponse fictive</label><input id={'arche-reply-'+p.id} maxLength={240} value={replyDraft} onChange={e=>setReplyDraft(e.target.value)} className={field} placeholder="Votre réponse..."/><button type="submit" disabled={!replyDraft.trim()} className={primary}>Répondre</button></form>}</article>)}</div></>}
-        {view==='live'&&<><Heading label="Un moment ensemble" title="Le Grand Salon" description="Un chat commun pour discuter spontanément. Aucun message n’est envoyé à de véritables membres."/><div className="overflow-hidden rounded-xl border border-[#E2D7BE] bg-white"><div className="flex justify-between bg-[#F3EFE6] p-4"><strong>Salon commun</strong><span className="text-xs text-[#4A3F6B]">Simulation locale</span></div><div aria-live="polite" className="max-h-[430px] min-h-[300px] space-y-4 overflow-y-auto p-4">{chat.map(m=><div key={m.id} className="flex items-start gap-3"><Initial name={m.author}/><div className="min-w-0 flex-1 rounded-lg bg-[#FAFAF7] p-3"><strong className="text-xs">{m.author}</strong><p className="mt-2 break-words text-sm leading-6">{m.text}</p></div></div>)}</div><form onSubmit={submitChat} className="flex gap-2 border-t border-[#E2D7BE] p-4"><label htmlFor="arche-chat-draft" className="sr-only">Message de salon fictif</label><input id="arche-chat-draft" maxLength={240} value={chatDraft} onChange={e=>setChatDraft(e.target.value)} className={field} placeholder="Écrire dans le salon..."/><button type="submit" disabled={!chatDraft.trim()} className={primary}>Envoyer</button></form></div><p className="mt-3 text-xs text-[#4A3F6B]">Le salon réel sera modéré et ouvert progressivement, après les tests et ton GO.</p></>}
-        {view==='circles'&&<><Heading label="Vos centres d’intérêt" title="Les Cercles" description="Découvrez les thèmes qui vous attirent, sans obligation d’y participer."/><div className="grid gap-3 sm:grid-cols-2">{CIRCLES.map(c=><button type="button" key={c.id} onClick={()=>setCircle(c.id)} aria-pressed={circle===c.id} className={'rounded-xl border p-5 text-left '+(circle===c.id?'border-[#C9A84C] bg-[#F3EFE6]':'border-[#E2D7BE] bg-white')}><p className="font-georgia text-xl">{c.title}</p><p className="mt-3 text-xs leading-6 text-[#4A3F6B]">{c.description}</p></button>)}</div><div className="mt-5 rounded-xl border border-[#E2D7BE] bg-white p-5"><p className="text-xs text-[#9B640B]">Cercle sélectionné</p><h3 className="mt-2 font-georgia text-2xl">{CIRCLES.find(c=>c.id===circle)?.title}</h3><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">Les membres pourront proposer d’autres Cercles à valider par l’équipe.</p><button type="button" className={primary+' mt-4'} onClick={()=>setJoined(x=>x.includes(circle)?x.filter(v=>v!==circle):[...x,circle])}>{joined.includes(circle)?'Quitter ce Cercle (démo)':'Rejoindre ce Cercle (démo)'}</button></div></>}
-        {view==='messages'&&<><Heading label="Les échanges à deux" title="Mes Rencontres" description="Les messages privés commenceront uniquement après acceptation d’une invitation. Ils resteront fermés pendant le premier pilote."/><div className="overflow-hidden rounded-xl border border-[#E2D7BE] bg-white"><div className="flex items-center gap-3 bg-[#F3EFE6] p-4"><Initial name="Étoile du Nord"/><div><strong>Étoile du Nord</strong><p className="text-xs text-[#4A3F6B]">Personne fictive · Intérêt pour les rêves</p></div></div><div className="p-5">{contact==='request'&&<><p className="text-sm leading-6">Cette personne souhaite discuter avec vous. Acceptez, ignorez ou bloquez, sans avoir à vous justifier.</p><div className="mt-4 flex flex-wrap gap-2"><button onClick={()=>setContact('accepted')} className={primary}>Accepter</button><button onClick={()=>setContact('ignored')} className={secondary}>Ignorer</button><button onClick={()=>setContact('blocked')} className={secondary}>Bloquer</button></div></>}{contact==='accepted'&&<><div className="min-h-24 rounded-lg bg-[#FAFAF7] p-4"><p className="text-sm"><strong>Étoile du Nord :</strong> Bonjour ! J’aimerais échanger au sujet des rêves, si vous en avez envie.</p>{dm.map(m=><p key={m.id} className="mt-3 text-sm"><strong>{nickname} :</strong> {m.text}</p>)}</div><form onSubmit={submitDm} className="mt-3 flex gap-2"><label className="sr-only" htmlFor="arche-dm-sample">Message privé fictif</label><input id="arche-dm-sample" maxLength={240} value={dmDraft} onChange={e=>setDmDraft(e.target.value)} className={field} placeholder="Votre réponse..."/><button type="submit" disabled={!dmDraft.trim()} className={primary}>Envoyer</button></form><div className="mt-6 rounded-lg border border-[#C9A84C] bg-[#FAFAF7] p-5"><h3 className="font-georgia text-xl">Toc toc !</h3><p className="mt-2 text-xs leading-6 text-[#4A3F6B]">Notre clin d’œil aux messageries de jeunesse, avec un effet original et discret.</p><label className="mt-3 flex items-center gap-2 text-xs"><input type="checkbox" checked={allowToc} onChange={e=>{setAllowToc(e.target.checked);setToc(false)}} className="accent-[#1A1535]"/> Autoriser les petits signaux de mes contacts</label>{toc&&<div key={lastToc} role="status" className="arche-poke mt-4 rounded-lg border border-[#C9A84C] bg-white p-4 text-center font-georgia">Toc toc ! Une pensée pour toi.</div>}<div className="mt-4"><button type="button" disabled={!allowToc} className={primary} onClick={poke}>Essayer le Toc toc</button></div><p className="mt-3 text-xs leading-6 text-[#4A3F6B]">Une courte vibration est tentée seulement après votre clic et si l’appareil le permet. Les ordinateurs et certains navigateurs iPhone ne vibrent pas. Limite de démonstration : un essai toutes les 10 secondes ; limite réelle à définir plus strictement.</p></div><button type="button" className="mt-4 text-xs underline" onClick={()=>{setContact('blocked');setDm([]);setToc(false)}}>Bloquer le contact (démo)</button></>}{(contact==='ignored'||contact==='blocked')&&<><p className="text-sm">{contact==='blocked'?'Contact bloqué, conversation masquée.':'Invitation ignorée : aucune conversation ouverte.'}</p><button type="button" className={secondary+' mt-4'} onClick={()=>{setContact('request');setToc(false);setDm([])}}>Recommencer</button></>}</div></div></>}
-        {view==='profile'&&<><Heading label="Votre place parmi nous" title="Mon profil" description="Seuls les membres de L’Arche pourront consulter votre fiche. Aucun nom réel ou donnée de compte MediumIA n’est exposé."/><div className="rounded-xl border border-[#E2D7BE] bg-white p-6"><div className="flex items-center gap-4"><Initial name={nickname} big/><div><h3 className="font-georgia text-2xl">{nickname}</h3><p className="text-xs text-[#4A3F6B]">Profil fictif · Photo facultative plus tard</p></div></div><label className="mt-6 block text-sm font-semibold">Mon statut de présence<select className={field+' mt-2'} value={presence} onChange={e=>setPresence(e.target.value)}><option value="disponible">Disponible</option><option value="absent">Absent</option><option value="occupe">Occupé</option><option value="invisible">Invisible (par défaut)</option></select></label><p className="mt-4 rounded-lg bg-[#F3EFE6] p-4 text-xs leading-6">Statut simulé : <strong>{presence}</strong>. Le mode invisible ne publiera ni connexion ni dernière activité.</p><p className="mt-4 text-xs leading-6 text-[#4A3F6B]">La fiche finale permettra un avatar ou une photo facultative contrôlée, des centres d’intérêt et une présentation libre.</p></div></>}
-      </main>
-      <aside className="hidden self-start space-y-4 lg:sticky lg:top-24 lg:block"><div className="rounded-xl border border-[#E2D7BE] bg-white p-5"><p className="text-xs font-semibold uppercase tracking-[.12em] text-[#9B640B]">Une question pour se rencontrer</p><p className="mt-3 font-georgia text-lg leading-7">Qu’est-ce qui a éveillé votre curiosité pour la spiritualité ?</p><button onClick={()=>open('feed')} type="button" className="mt-4 text-xs underline">Partager ma réflexion</button></div><div className="rounded-xl border border-[#E2D7BE] bg-white p-5"><strong className="text-sm">Se sentir à sa place</strong><p className="mt-3 text-xs leading-6 text-[#4A3F6B]">Aucune hiérarchie de l’éveil. Signalement, blocage, modération humaine assistée par IA à concevoir avant l’ouverture.</p></div></aside>
+
+function TopBar({ nickname, onExit, notifications = 3 }) {
+  return <header className="sticky top-0 z-30 border-b border-[#E2D7BE] bg-white/95 backdrop-blur">
+    <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-3 sm:px-5">
+      <div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1A1535] font-georgia text-xl text-[#C9A84C]">A</span><span className="hidden font-georgia text-xl tracking-[.08em] text-[#1A1535] sm:inline">L’ARCHE</span><span className="rounded-full border border-[#C9A84C] px-2 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-[#9B640B]">Démo</span></div>
+      <label className="relative mx-auto hidden max-w-xl flex-1 md:block"><span className="sr-only">Rechercher un membre ou un Cercle</span><input className="h-11 w-full rounded-full border border-[#E2D7BE] bg-[#FAFAF7] px-5 text-sm outline-none focus:border-[#C9A84C]" placeholder="Rechercher un membre ou un Cercle" /></label>
+      <button type="button" className="relative min-h-11 rounded-full bg-[#F3EFE6] px-4 text-sm font-semibold">🔔{notifications > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-[#C9A84C] px-1.5 text-[10px]">{notifications}</span>}</button>
+      <button type="button" onClick={onExit} className="hidden min-h-11 rounded-full bg-[#F3EFE6] px-4 text-xs font-semibold text-[#1A1535] hover:bg-[#E8E0CF] sm:inline-flex sm:items-center">Quitter la démo</button>
+      <div className="flex items-center gap-2 rounded-full bg-[#F3EFE6] px-2 py-1"><Avatar name={nickname} status="offline" size="sm" /><span className="hidden max-w-[120px] truncate text-xs font-semibold sm:inline">{nickname}</span></div>
     </div>
+  </header>
+}
+function Sidebar({ view, setView }) {
+  return <aside className="hidden w-[244px] shrink-0 lg:block"><div className="sticky top-20 space-y-5">
+    <nav className="rounded-3xl border border-[#E2D7BE] bg-white p-3 shadow-sm" aria-label="Navigation L’Arche">
+      {MENU.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? 'page' : undefined} className={(view === item.id ? 'bg-[#1A1535] text-white' : 'text-[#4A3F6B] hover:bg-[#F3EFE6]') + ' mb-1 flex min-h-11 w-full items-center rounded-2xl px-4 text-left text-sm font-semibold'}><span>{item.label}</span>{item.badge > 0 && <Badge>{item.badge}</Badge>}</button>)}
+    </nav>
+    <section className="rounded-3xl border border-[#E2D7BE] bg-white p-5 shadow-sm"><p className="mb-3 text-xs font-bold uppercase tracking-[.16em] text-[#9B640B]">Mes Cercles</p>{CIRCLES.slice(0, 3).map((circle) => <button key={circle.id} type="button" onClick={() => setView('circles')} className="mb-2 flex w-full items-center rounded-2xl px-3 py-2 text-left text-sm hover:bg-[#F3EFE6]"><span className="truncate">{circle.title}</span>{circle.unread > 0 && <Badge>{circle.unread}</Badge>}</button>)}<button type="button" onClick={() => setView('circles')} className="mt-1 text-xs font-semibold text-[#9B640B]">+ Explorer</button></section>
+  </div></aside>
+}
+function RightRail({ setView }) {
+  return <aside className="hidden w-[264px] shrink-0 xl:block"><div className="sticky top-20 space-y-4">
+    <section className="rounded-3xl border border-[#E2D7BE] bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#9B640B]">Mes proches</p><button type="button" onClick={() => setView('messages')} className="text-xs font-semibold text-[#1A1535]">Voir</button></div>{PEOPLE.map((person) => <button key={person.id} type="button" onClick={() => setView('messages')} className="mb-3 flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-[#F3EFE6]"><Avatar name={person.name} status={person.status} size="sm" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{person.name}</span><span className="block truncate text-xs text-[#4A3F6B]">{person.note}</span></span>{person.unread > 0 && <Badge>{person.unread}</Badge>}</button>)}</section>
+    <section className="rounded-3xl border border-[#E2D7BE] bg-white p-5 shadow-sm"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#9B640B]">Grand Salon</p><div className="mt-3 flex -space-x-2">{PEOPLE.slice(0, 4).map((p) => <Avatar key={p.id} name={p.name} status={p.status} size="sm" />)}</div><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">5 présents · Veillée douce</p><button type="button" onClick={() => setView('live')} className={softButton + ' mt-3 w-full'}>Rejoindre</button></section>
+    <section className="rounded-3xl bg-[#1A1535] p-5 text-[#FAFAF7]"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#C9A84C]">Question du soir</p><p className="mt-3 font-georgia text-lg leading-7">Qu’est-ce qui a éveillé votre curiosité spirituelle ?</p></section>
+  </div></aside>
+}
+function MobileTabs({ view, setView }) {
+  return <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E2D7BE] bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1 backdrop-blur lg:hidden" aria-label="Navigation mobile L’Arche"><div className="grid grid-cols-5">{MENU.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? 'page' : undefined} className={(view === item.id ? 'text-[#1A1535]' : 'text-[#4A3F6B]') + ' relative flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-semibold'}><span className={(view === item.id ? 'bg-[#1A1535]' : 'bg-[#E8E0CF]') + ' h-1.5 w-1.5 rounded-full'} />{item.label}{item.badge > 0 && <span className="absolute right-4 top-1 rounded-full bg-[#C9A84C] px-1.5 text-[10px] text-[#1A1535]">{item.badge}</span>}</button>)}</div></nav>
+}
+function PeopleStrip({ setView }) {
+  return <div className="mb-4 overflow-x-auto rounded-3xl border border-[#E2D7BE] bg-white p-3 shadow-sm lg:hidden"><div className="flex min-w-max gap-4">{PEOPLE.map((person) => <button key={person.id} type="button" onClick={() => setView('messages')} className="flex w-16 flex-col items-center gap-2 text-center text-[11px]"><Avatar name={person.name} status={person.status} /><span className="line-clamp-1">{person.name}</span></button>)}</div></div>
+}
+
+function Composer({ nickname, draft, setDraft, onSubmit }) {
+  return <form onSubmit={onSubmit} className="rounded-3xl border border-[#E2D7BE] bg-white p-4 shadow-sm"><div className="flex gap-3"><Avatar name={nickname} status="offline" /><div className="min-w-0 flex-1"><label htmlFor="arche-feed-composer" className="sr-only">Partager quelque chose</label><textarea id="arche-feed-composer" value={draft} onChange={(event) => setDraft(event.target.value)} rows={2} maxLength={420} placeholder="Partager quelque chose…" className="w-full resize-none rounded-2xl border border-[#E2D7BE] bg-[#FAFAF7] px-4 py-3 text-sm outline-none focus:border-[#C9A84C]" /><div className="mt-3 flex items-center justify-between"><select aria-label="Choisir un Cercle" className="rounded-full border border-[#E2D7BE] bg-white px-3 py-2 text-xs"><option>Le Fil de L’Arche</option><option>Les Découvertes</option><option>Intuition</option></select><button type="submit" disabled={!draft.trim()} className={primary}>Publier</button></div></div></div></form>
+}
+function PostCard({ post, liked, onLike, onReply, replyOpen, replyDraft, setReplyDraft, addReply, replies, setNotice }) {
+  return <article className="rounded-3xl border border-[#E2D7BE] bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start gap-3"><Avatar name={post.author} status={post.author === 'Plume d’Or' ? 'away' : 'online'} /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-x-2"><strong className="text-sm">{post.author}</strong><span className="text-xs text-[#4A3F6B]">· {post.circle}</span><span className="text-xs text-[#4A3F6B]">· {post.time || 'à l’instant'}</span></div><p className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-7 text-[#1A1535]">{post.text}</p></div><button type="button" onClick={() => setNotice('Menu de modération fictif : Masquer, Signaler, Bloquer.')} className="min-h-10 rounded-full px-3 text-xl leading-none text-[#4A3F6B] hover:bg-[#F3EFE6]" aria-label="Menu de publication">…</button></div><div className="mt-4 flex flex-wrap gap-2 border-t border-[#E2D7BE] pt-3"><button type="button" onClick={onLike} aria-pressed={liked} className={softButton}>{liked ? 'Merci envoyé' : 'Merci'}</button><button type="button" className={softButton}>Je te comprends</button><button type="button" onClick={onReply} className={softButton}>Répondre · {post.replies + replies.length}</button></div>{(post.replies > 0 || replies.length > 0) && <button type="button" onClick={onReply} className="mt-3 text-xs font-semibold text-[#9B640B]">Voir les {post.replies + replies.length} réponses</button>}{replyOpen && <form onSubmit={addReply} className="mt-3 flex gap-2"><label className="sr-only" htmlFor={'reply-' + post.id}>Réponse</label><input id={'reply-' + post.id} value={replyDraft} onChange={(event) => setReplyDraft(event.target.value)} maxLength={240} placeholder="Votre réponse…" className={inputClass} /><button type="submit" disabled={!replyDraft.trim()} className={primary}>OK</button></form>}{replies.map((reply, index) => <p key={index} className="mt-3 rounded-2xl bg-[#F3EFE6] px-4 py-3 text-sm"><strong>Vous :</strong> {reply}</p>)}</article>
+}
+
+function FeedView({ nickname, posts, setPosts, notice, setNotice }) {
+  const [draft, setDraft] = useState('')
+  const [liked, setLiked] = useState([])
+  const [replyOpen, setReplyOpen] = useState('')
+  const [replyDraft, setReplyDraft] = useState('')
+  const [replies, setReplies] = useState({})
+  function publish(event) { event.preventDefault(); const text = draft.trim(); if (!text) return; setPosts((items) => [{ id: 'local-' + Date.now(), author: nickname, circle: 'Le Fil', time: 'à l’instant', text, replies: 0 }, ...items]); setDraft(''); setNotice('Publication ajoutée à la démo locale.') }
+  function addReply(event, postId) { event.preventDefault(); const text = replyDraft.trim(); if (!text) return; setReplies((old) => ({ ...old, [postId]: [...(old[postId] || []), text] })); setReplyDraft('') }
+  return <section className="mx-auto max-w-[680px] space-y-4"><PeopleStrip setView={() => {}} />{notice && <p role="status" className="rounded-2xl border border-[#C9A84C] bg-[#F3EFE6] p-3 text-xs text-[#1A1535]">{notice}</p>}<Composer nickname={nickname} draft={draft} setDraft={setDraft} onSubmit={publish} />{posts.map((post) => <PostCard key={post.id} post={post} liked={liked.includes(post.id)} onLike={() => setLiked((items) => items.includes(post.id) ? items.filter((id) => id !== post.id) : [...items, post.id])} onReply={() => setReplyOpen(replyOpen === post.id ? '' : post.id)} replyOpen={replyOpen === post.id} replyDraft={replyDraft} setReplyDraft={setReplyDraft} addReply={(event) => addReply(event, post.id)} replies={replies[post.id] || []} setNotice={setNotice} />)}</section>
+}
+function LiveView({ nickname, chat, setChat }) {
+  const [draft, setDraft] = useState('')
+  function send(event) { event.preventDefault(); const text = draft.trim(); if (!text) return; setChat((items) => [...items.slice(-14), { id: 'live-' + Date.now(), author: nickname, text, time: 'maintenant' }]); setDraft('') }
+  return <section className="mx-auto max-w-[760px] overflow-hidden rounded-3xl border border-[#E2D7BE] bg-white shadow-sm"><header className="flex items-center justify-between border-b border-[#E2D7BE] bg-[#F3EFE6] p-4"><div><h2 className="font-georgia text-2xl">Le Grand Salon</h2><p className="text-xs text-[#4A3F6B]">5 présents · Lueur écrit…</p></div><div className="flex -space-x-2">{PEOPLE.slice(0, 4).map((p) => <Avatar key={p.id} name={p.name} status={p.status} size="sm" />)}</div></header><div className="max-h-[62vh] min-h-[420px] space-y-4 overflow-y-auto p-4" aria-live="polite">{chat.map((message) => <div key={message.id} className="flex gap-3"><Avatar name={message.author} status="online" size="sm" /><div className="min-w-0 flex-1 rounded-3xl bg-[#FAFAF7] px-4 py-3"><div className="flex items-center gap-2"><strong className="text-xs">{message.author}</strong><span className="text-[11px] text-[#4A3F6B]">{message.time}</span></div><p className="mt-1 break-words text-sm leading-6">{message.text}</p></div></div>)}</div><form onSubmit={send} className="flex gap-2 border-t border-[#E2D7BE] p-4"><label htmlFor="arche-live-message" className="sr-only">Message du Salon</label><input id="arche-live-message" value={draft} onChange={(event) => setDraft(event.target.value)} maxLength={240} className={inputClass} placeholder="Écrire au Grand Salon…" /><button type="submit" disabled={!draft.trim()} className={primary}>Envoyer</button></form></section>
+}
+function CirclesView() {
+  return <section className="mx-auto max-w-[900px]"><div className="mb-4 grid gap-3 sm:grid-cols-2">{CIRCLES.map((circle) => <article key={circle.id} className="rounded-3xl border border-[#E2D7BE] bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-[#9B640B]">{circle.members} membres</p><h2 className="mt-2 font-georgia text-2xl">{circle.title}</h2></div>{circle.unread > 0 && <Badge>{circle.unread}</Badge>}</div><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">{circle.description}</p><button type="button" className={softButton + ' mt-4'}>Ouvrir le Cercle</button></article>)}</div><div className="rounded-3xl border border-dashed border-[#C9A84C] bg-[#F3EFE6] p-5"><p className="font-georgia text-xl">Proposer un Cercle</p><p className="mt-2 text-sm text-[#4A3F6B]">Dans la version réelle, une proposition sera relue avant d’être ouverte.</p></div></section>
+}
+function MessagesView({ nickname, setNotice }) {
+  const [selected, setSelected] = useState('lueur')
+  const [accepted, setAccepted] = useState(false)
+  const [message, setMessage] = useState('')
+  const [thread, setThread] = useState([{ id: 't1', from: 'Lueur', text: 'Bonsoir, j’ai vu votre réponse dans le Fil. On peut échanger sur les rêves ?' }])
+  const [allowGlow, setAllowGlow] = useState(false)
+  const [glow, setGlow] = useState(false)
+  const [lastGlow, setLastGlow] = useState(0)
+  const person = PEOPLE.find((p) => p.id === selected) || PEOPLE[0]
+  function send(event) { event.preventDefault(); const text = message.trim(); if (!text || !accepted) return; setThread((items) => [...items, { id: 'local-' + Date.now(), from: nickname, text }]); setMessage('') }
+  function sendGlow() { if (!allowGlow || !accepted || Date.now() - lastGlow < 10000) return; setGlow(true); setLastGlow(Date.now()); let vibration = false; try { if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') vibration = navigator.vibrate([80, 45, 80]) } catch { vibration = false } setNotice(vibration ? 'Lueur envoyée : vibration demandée au navigateur.' : 'Lueur envoyée : animation visible, vibration non disponible ici.') }
+  return <section className="mx-auto grid max-w-[980px] overflow-hidden rounded-3xl border border-[#E2D7BE] bg-white shadow-sm md:grid-cols-[280px_minmax(0,1fr)]"><aside className="border-b border-[#E2D7BE] bg-[#FAFAF7] p-3 md:border-b-0 md:border-r"><p className="px-3 py-2 text-xs font-bold uppercase tracking-[.14em] text-[#9B640B]">Demandes</p><button type="button" onClick={() => setSelected('lueur')} className="mb-2 flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm"><Avatar name="Lueur" status="online" /><span className="min-w-0 flex-1"><strong className="block text-sm">Lueur</strong><span className="block truncate text-xs text-[#4A3F6B]">Demande de contact</span></span><Badge>1</Badge></button><p className="px-3 py-2 text-xs font-bold uppercase tracking-[.14em] text-[#9B640B]">Conversations</p>{PEOPLE.slice(1).map((p) => <button key={p.id} type="button" onClick={() => setSelected(p.id)} className="mb-1 flex w-full items-center gap-3 rounded-2xl p-3 text-left hover:bg-white"><Avatar name={p.name} status={p.status} /><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{p.name}</strong><span className="block truncate text-xs text-[#4A3F6B]">Aucun message réel</span></span>{p.unread > 0 && <Badge>{p.unread}</Badge>}</button>)}</aside><div className="flex min-h-[560px] flex-col"><header className="flex items-center justify-between border-b border-[#E2D7BE] p-4"><div className="flex items-center gap-3"><Avatar name={person.name} status={person.status} /><div><h2 className="font-semibold">{person.name}</h2><p className="text-xs text-[#4A3F6B]">{person.note}</p></div></div>{accepted && <button type="button" onClick={sendGlow} disabled={!allowGlow} className={softButton}>Lueur ✧</button>}</header>{!accepted ? <div className="m-auto max-w-sm p-6 text-center"><p className="font-georgia text-2xl">Nouvelle demande</p><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">La conversation privée commence seulement si vous acceptez cette invitation.</p><div className="mt-6 flex justify-center gap-2"><button type="button" onClick={() => setAccepted(true)} className={primary}>Accepter</button><button type="button" onClick={() => setNotice('Demande ignorée dans la démo.')} className={softButton}>Ignorer</button></div></div> : <><div className="flex-1 space-y-3 overflow-y-auto bg-[#FAFAF7] p-4">{thread.map((item) => <p key={item.id} className={(item.from === nickname ? 'ml-auto bg-[#1A1535] text-white' : 'mr-auto bg-white text-[#1A1535]') + ' max-w-[78%] rounded-3xl px-4 py-3 text-sm leading-6 shadow-sm'}><strong className="block text-[11px] opacity-70">{item.from}</strong>{item.text}</p>)}{glow && <p key={lastGlow} role="status" className="arche-glow mx-auto rounded-full border border-[#C9A84C] bg-white px-5 py-3 text-center font-georgia text-[#9B640B]">✧ Lueur pense à toi</p>}</div><div className="border-t border-[#E2D7BE] bg-white p-4"><label className="mb-3 flex items-center gap-2 text-xs text-[#4A3F6B]"><input type="checkbox" checked={allowGlow} onChange={(event) => { setAllowGlow(event.target.checked); setGlow(false) }} className="accent-[#1A1535]" /> Autoriser les Lueurs de mes proches</label><form onSubmit={send} className="flex gap-2"><label className="sr-only" htmlFor="arche-private-message">Message privé fictif</label><input id="arche-private-message" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={240} className={inputClass} placeholder="Votre message…" /><button type="submit" disabled={!message.trim()} className={primary}>Envoyer</button></form></div></>}</div></section>
+}
+function ProfileView({ nickname, onExit }) {
+  const [presence, setPresence] = useState('offline')
+  return <section className="mx-auto max-w-[760px] rounded-3xl border border-[#E2D7BE] bg-white p-6 shadow-sm"><div className="flex flex-wrap items-center gap-5"><Avatar name={nickname} status={presence} size="lg" /><div><h2 className="font-georgia text-3xl">{nickname}</h2><p className="text-sm text-[#4A3F6B]">Fiche visible uniquement par les membres de L’Arche.</p></div></div><div className="mt-7 grid gap-4 sm:grid-cols-2"><label className="block text-sm font-semibold">Présence<select value={presence} onChange={(event) => setPresence(event.target.value)} className={inputClass + ' mt-2'}><option value="offline">Invisible par défaut</option><option value="online">Disponible</option><option value="away">Absent</option><option value="busy">Occupé</option></select></label><div className="rounded-3xl bg-[#F3EFE6] p-5 text-sm leading-6 text-[#4A3F6B]"><strong className="text-[#1A1535]">Confidentialité</strong><br />Pas de dernière activité publique, pas de liste de proches visible par les autres.</div></div><div className="mt-6 flex flex-wrap gap-3"><button type="button" className={softButton}>Gérer mes blocages</button><button type="button" className={softButton}>Aide et sécurité</button><button type="button" onClick={onExit} className={primary}>Quitter la démo</button></div></section>
+}
+
+export function ArcheAppPreview({ nickname, onExit }) {
+  const [view, setView] = useState('feed')
+  const [posts, setPosts] = useState(START_POSTS)
+  const [chat, setChat] = useState(LIVE_MESSAGES)
+  const [notice, setNotice] = useState('')
+  const content = useMemo(() => {
+    if (view === 'live') return <LiveView nickname={nickname} chat={chat} setChat={setChat} />
+    if (view === 'circles') return <CirclesView />
+    if (view === 'messages') return <MessagesView nickname={nickname} setNotice={setNotice} />
+    if (view === 'profile') return <ProfileView nickname={nickname} onExit={onExit} />
+    return <FeedView nickname={nickname} posts={posts} setPosts={setPosts} notice={notice} setNotice={setNotice} />
+  }, [view, nickname, posts, chat, notice, onExit])
+  return <div data-arche-app-preview="social-shell" className="min-h-screen bg-[#FAFAF7] text-[#1A1535]">
+    <style>{'@keyframes arche-glow{0%,100%{box-shadow:0 0 0 rgba(201,168,76,0);transform:scale(1)}50%{box-shadow:0 0 28px rgba(201,168,76,.65);transform:scale(1.02)}}.arche-glow{animation:arche-glow .85s ease-in-out}@media(prefers-reduced-motion:reduce){.arche-glow{animation:none}}'}</style>
+    <TopBar nickname={nickname} onExit={onExit} />
+    <div className="mx-auto flex max-w-[1400px] gap-5 px-3 pb-24 pt-5 sm:px-5 lg:pb-8"><Sidebar view={view} setView={setView} /><main className="min-w-0 flex-1"><PeopleStrip setView={setView} />{notice && view !== 'feed' && <p role="status" className="mx-auto mb-4 max-w-[760px] rounded-2xl border border-[#C9A84C] bg-[#F3EFE6] p-3 text-xs text-[#1A1535]">{notice}</p>}{content}</main><RightRail setView={setView} /></div>
+    <MobileTabs view={view} setView={setView} />
   </div>
 }

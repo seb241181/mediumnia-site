@@ -112,20 +112,19 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
 
   // ── Premier écran : la Découverte, en quelques secondes ──
   page = replaceBetween(page, '        {/* ── Premier écran : quoi, pour qui, ce que ça apporte, prix, comment rejoindre ── */}', '        <section id="offre"', `        {/* ── Premier écran : ce qu'on apprend, ce que l'on reçoit pour 29 €, comment commencer ── */}
-        <section id="formation-top" data-formation-positioning="human-first-v1" className="px-6 pt-6 pb-10 md:pt-12 md:pb-16">
+        <section id="formation-top" data-formation-positioning="human-first-v1" className="px-6 pt-6 pb-8 md:pt-12 md:pb-16">
           <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
             <div>
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Formation MediumIA · en ligne</p>
               <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-[1.08] mb-5">Développer sa médiumnité, pas à pas</h1>
               <p className="font-georgia text-lg md:text-xl text-deep/85 leading-relaxed">J’ai conçu et écrit cette méthode à partir de plus de douze ans de pratique, pour vous aider à comprendre ce que vous percevez, dans la clarté et à votre rythme.</p>
             </div>
-            <aside className="rounded-2xl border-2 border-gold/55 bg-white/90 p-6 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="Commencer par la Découverte">
+            <aside className="rounded-2xl border-2 border-gold/55 bg-white/90 p-5 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="La Découverte en bref">
               <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold mb-2">Pour commencer</p>
               <p className="font-georgia text-deep leading-none mb-3"><span className="text-5xl font-medium">29 €</span></p>
               <p className="font-georgia text-base text-deep leading-relaxed">La Découverte : l’introduction, le Module 1 complet et ses exercices.</p>
-              <p className="font-georgia text-sm text-mist mt-1 mb-5">Sans obligation de poursuivre.</p>
-              <button onClick={() => goTo('offre')} className="w-full font-georgia px-7 py-4 rounded-lg bg-deep text-gold font-bold">Commencer ma découverte — 29&nbsp;€</button>
-              <button onClick={() => { const programme = document.getElementById('programme'); if (programme) programme.open = true; goTo('programme') }} className="mt-3 w-full font-georgia text-sm text-deep underline decoration-gold/60 underline-offset-4">Voir le programme complet</button>
+              <p className="font-georgia text-sm text-mist mt-1 mb-3">Sans obligation de poursuivre.</p>
+              <button onClick={() => { const programme = document.getElementById('programme'); if (programme) programme.open = true; goTo('programme') }} className="font-georgia text-sm text-deep underline decoration-gold/60 underline-offset-4">Voir le programme complet</button>
             </aside>
           </div>
         </section>

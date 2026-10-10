@@ -92,7 +92,8 @@ test('Formation first screen: promise, audience, human-first positioning and Dis
   assert.match(top, /Pour commencer/)
   assert.match(top, /La Découverte : l’introduction, le Module 1 complet et ses exercices\./)
   assert.match(top, /Sans obligation de poursuivre\./)
-  assert.match(top, /Commencer ma découverte — 29&nbsp;€/)
+  // Un seul bouton d'achat : celui de la carte Découverte (pas de bouton qui ne fait que défiler).
+  assert.doesNotMatch(top.slice(0, top.indexOf('id="offre"')), /Commencer ma découverte/)
   assert.match(top, /data-formation-positioning="human-first-v1"/)
   assert.match(top, /Ce qui rend cette méthode particulière/)
   // Plus de tableau de chiffres au premier écran : mensualités et plafond en section secondaire.

@@ -358,6 +358,24 @@ test('a failed PayPal capture releases the Découverte for a new order', async (
   assert.equal(pp.orders[retry.body.id].purchase_units[0].amount.value, '568.00')
 })
 
+test('a refused Découverte capture stays unpaid and keeps only a technical cause, without personal data', async () => {
+  live()
+  const db = makeDb(); __paypalFormationTest.useSupabase(db)
+  const pp = makePayPal()
+  const discovery = { termsAccepted: true, immediateAccessAccepted: true, product: 'discovery' }
+  const created = await call('create', { body: discovery, query: { product: 'discovery' } })
+  assert.equal(created.statusCode, 201, JSON.stringify(created.body))
+  pp.failCapture = true
+  const failed = await call('capture', { body: { orderId: created.body.id, product: 'discovery' }, query: { product: 'discovery' } })
+  assert.equal(failed.body.error, 'paypal_capture_failed')
+  const intent = db.t.mediumia_paypal_order_intents.find((i) => i.paypal_order_id === created.body.id)
+  assert.equal(intent.status, 'created', 'never marked as paid')
+  assert.equal(intent.last_error, 'paypal_capture_failed:INSTRUMENT_DECLINED')
+  assert.doesNotMatch(intent.last_error, /@|claire/i)
+  assert.equal((db.t.mediumia_paypal_purchases || []).length, 0, 'no purchase, no access')
+  assert.equal(pp.orders[created.body.id].status, 'APPROVED', 'nothing captured')
+})
+
 test('597 € is the public price and stays valid for existing orders; 568 € only exists with a Découverte', () => {
   live()
   const full = __paypalFormationTest.runtimeConfig(null, 'full')

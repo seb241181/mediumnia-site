@@ -43,15 +43,19 @@ test('Formation page lead reuses the existing Oracle Lambda route', () => {
   assert.doesNotMatch(patch, /api\/formation-email/i)
 })
 
-test('Formation lead UI is optional, non-prechecked and grouped with the free trials', () => {
+test('Formation lead UI is optional, non-prechecked and visible right after the Discovery offer', () => {
   const patch = read('scripts/apply-formation-email-lead.mjs')
   assert.match(patch, /const \[consent, setConsent\] = useState\(false\)/)
   assert.match(patch, /disabled=\{!consent \|\| loading \|\| done\}/)
   assert.match(patch, /3 e-mails seulement/)
   assert.match(patch, /ne vous inscrit pas automatiquement à une newsletter générale/)
   const page = read('src/components/FormationPage.jsx')
-  assert.match(page, /<TrialChat \/>[\s\S]*<\/section>\n\n        <FormationExerciseLead \/>/)
-  assert.ok(page.indexOf('id="essayer"') < page.indexOf('<FormationExerciseLead />'))
+  // Sortis de l'accordéon de l'assistant : une première expérience, visible sans clic.
+  assert.equal(page.split('<FormationExerciseLead />').length, 2, 'rendered once')
+  assert.ok(page.indexOf('id="offre"') < page.indexOf('<FormationExerciseLead />'))
+  assert.ok(page.indexOf('<FormationExerciseLead />') < page.indexOf('id="essayer"'))
+  assert.doesNotMatch(page, /<TrialChat \/>[\s\S]*<\/section>\n\n        <FormationExerciseLead \/>/)
+  assert.match(page, /la formation, elle, va beaucoup plus loin/)
 })
 
 test('Formation lead measures view and completed opt-in separately', () => {

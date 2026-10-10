@@ -24,7 +24,7 @@ test('ChronoSphère présente sa valeur, les deux prix et un exemple avant le fo
   assert.match(hero, /href="\/chronosphere\/exemple"/)
   assert.match(hero, /exemple fictif/i)
   assert.match(hero, /<details[\s\S]*Comment mon Oracle/)
-  assert.match(hero, /les 58 cartes de l'Oracle des Lignes de Temps existent déjà/i)
+  assert.match(hero, /Mon Oracle des Lignes de Temps contient 58 cartes déjà créées/i)
   assert.match(hero, /l'IA ne les choisit pas/i)
 })
 

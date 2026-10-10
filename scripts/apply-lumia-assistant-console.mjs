@@ -47,7 +47,7 @@ app = insertAfter(
 app = replaceRequired(
   app,
   "  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere'",
-  "  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-lumia' && view !== 'rdv-public' && view !== 'chronosphere'",
+  "  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-lumia' && view !== 'rdv-public' && view !== 'chronosphere' && view !== 'arche'", 
   'guardian exclusion',
 )
 
@@ -62,7 +62,7 @@ app = replaceRequired(
 app = replaceRequired(
   app,
   "  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation'",
-  "  const isPrivate = view === 'rdv-dashboard' || view === 'rdv-cancellation' || view === 'rdv-lumia'",
+  "  const isPrivate = view === 'arche' || view === 'rdv-dashboard' || view === 'rdv-cancellation' || view === 'rdv-lumia'",
   'private route meta',
 )
 

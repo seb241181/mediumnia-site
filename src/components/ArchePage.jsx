@@ -72,7 +72,9 @@ function AccountPreview() {
 
 export default function ArchePage({ onBack, onNavigate }) {
   const [appNickname, setAppNickname] = useState(null)
-  if (appNickname) return <ArcheAppPreview nickname={appNickname} onExit={() => setAppNickname(null)} />
+  const [screen, setScreen] = useState('landing')
+  if (screen === 'login') return <ArcheLoginPreview onBack={() => setScreen('landing')} onEnter={(nickname) => { setAppNickname(nickname); setScreen('app') }} />
+  if (screen === 'app') return <ArcheAppPreview nickname={appNickname} onExit={() => setScreen('landing')} />
   return (
     <div data-arche-prototype="v2" className="min-h-screen bg-[#FAFAF7] text-[#1A1535]">
       <header className="border-b border-[#E2D7BE] bg-[#FAFAF7]">
@@ -84,7 +86,7 @@ export default function ArchePage({ onBack, onNavigate }) {
           <nav aria-label="Navigation de L'Arche" className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs font-semibold md:text-sm">
             <a href="#vision" className="hover:underline">La vision</a>
             <a href="#compte" className="hover:underline">Le compte</a>
-            <a href="#connexion" className="hover:underline">Se connecter</a>
+            <button type="button" onClick={() => setScreen('login')} className="hover:underline">Se connecter</button>
             <a href="#charte" className="hover:underline">Nos engagements</a>
             <a href="/" onClick={(event) => { if (!event.metaKey && !event.ctrlKey && onBack) { event.preventDefault(); onBack() } }} className="border border-[#B9A77E] bg-white px-4 py-3 transition-colors hover:bg-[#F3EFE6]">MediumIA ↗</a>
           </nav>
@@ -101,7 +103,7 @@ export default function ArchePage({ onBack, onNavigate }) {
             <p className="mt-7 max-w-xl font-georgia text-lg leading-relaxed text-[#1A1535] md:text-xl">Pour celles et ceux qui ont parfois l’impression de ne pouvoir parler à personne de leurs ressentis, de leurs questions ou de leur spiritualité.</p>
             <p className="mt-4 max-w-xl text-sm leading-[1.85] text-[#4A3F6B]">L’Arche est imaginée comme un lieu où l’on peut se présenter, rencontrer d’autres personnes, partager librement et apprendre les uns des autres. Sans devoir convaincre. Sans se faire juger. Sans rien acheter pour appartenir à la communauté.</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a href="#connexion" className="inline-flex min-h-12 items-center justify-center bg-[#1A1535] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#2B254D]">Découvrir l’application →</a>
+              <button type="button" onClick={() => setScreen('login')} className="inline-flex min-h-12 items-center justify-center bg-[#1A1535] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#2B254D]">Se connecter à L’Arche →</button>
               <a href="#charte" className="inline-flex min-h-12 items-center justify-center border border-[#B9A77E] px-6 py-3 font-semibold text-[#1A1535] transition-colors hover:bg-[#F3EFE6]">Notre engagement</a>
             </div>
             <p className="mt-6 text-xs leading-relaxed text-[#4A3F6B]">Une initiative de Sébastien Seguin, créateur de MediumIA. Pas encore ouverte aux inscriptions.</p>
@@ -130,7 +132,12 @@ export default function ArchePage({ onBack, onNavigate }) {
 
         <AccountPreview />
 
-        <ArcheLoginPreview onEnter={setAppNickname} />
+        <section id="connexion" className="border-y border-[#E2D7BE] bg-[#FAFAF7] px-5 py-16 md:px-8">
+          <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+            <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#9B640B]">Découvrez l’application</p><h2 className="mt-2 font-georgia text-3xl text-[#1A1535]">Après la découverte, votre espace communautaire.</h2><p className="mt-3 max-w-2xl text-sm leading-7 text-[#4A3F6B]">Accédez à une page de connexion de démonstration, puis explorez le Fil, le Grand Salon, les Cercles et les conversations privées fictives.</p></div>
+            <button type="button" onClick={() => setScreen('login')} className="min-h-12 shrink-0 bg-[#1A1535] px-6 py-3 text-sm font-semibold text-white hover:bg-[#2B254D]">Essayer l’application →</button>
+          </div>
+        </section>
 
         <section id="charte" className="scroll-mt-24 px-5 py-20 md:px-8">
           <div className="mx-auto max-w-6xl">

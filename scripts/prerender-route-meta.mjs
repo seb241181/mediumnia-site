@@ -21,6 +21,7 @@ export function readRouteMeta(appSource) {
 }
 
 const ROUTE_PATHS = {
+  arche: '/arche',
   formation: '/formation',
   oracle: '/oracle',
   chronosphere: '/chronosphere',

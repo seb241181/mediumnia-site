@@ -28,6 +28,7 @@ import QuestionPage from './components/QuestionPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
 import DiscoverSection from './components/DiscoverSection'
+import ArchePage from './components/ArchePage'
 import VideoInterview from './components/VideoInterview'
 import VideosPage from './components/VideosPage'
 import PractitionersBand from './components/PractitionersBand'
@@ -186,6 +187,7 @@ function pathToView(p) {
     : p.startsWith('/chronosphere/exemple') ? 'chronosphere-example'
     : p.startsWith('/chronosphere') ? 'chronosphere'
     : p.startsWith('/oracle') ? 'oracle'
+    : p === '/arche' ? 'arche'
     : p.startsWith('/pass/mediumia/') ? 'conference-pass'
     : p.startsWith('/reseau/rejoindre') ? 'reseau-form'
     : p.startsWith('/reseau') ? 'reseau-dir'
@@ -233,7 +235,7 @@ export default function App() {
   }
 
   // Sur la réservation, les bulles flottantes masquaient titres et récapitulatif.
-  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere'
+  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere' && view !== 'arche'
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 
@@ -244,6 +246,7 @@ export default function App() {
   if (view === 'retractation')   return <><Retractation onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'pro')           return <><ProWaitlistPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'arche')        return <ArchePage onBack={backHome} onNavigate={legalNav} />
   if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'conference-pass') return <><ConferencePassPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>

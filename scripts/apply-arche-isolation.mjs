@@ -11,6 +11,31 @@ function replaceOnce(before, after, label) {
   app = app.replace(before, after)
 }
 
+// Le code source App.jsx est laissé intact : la route est assemblée après Lumia.
+const pathAnchor = "    : p.startsWith('/oracle') ? 'oracle'"
+const archePath = "    : p === '/arche' ? 'arche'"
+if (!app.includes(archePath)) {
+  if (!app.includes(pathAnchor)) throw new Error('Arche isolation patch drift: pathToView oracle anchor')
+  app = app.replace(pathAnchor, pathAnchor + '\n' + archePath)
+}
+const renderAnchor = "  if (view === 'oracle')       return "
+const archeRender = "  if (view === 'arche')        return <DeferredRoute><ArchePage onBack={backHome} onNavigate={legalNav} /></DeferredRoute>"
+if (!app.includes(archeRender)) {
+  const where = app.indexOf(renderAnchor)
+  if (where < 0) throw new Error('Arche isolation patch drift: render anchor')
+  app = app.slice(0, where) + archeRender + '\n' + app.slice(where)
+}
+const guardianLine = app.split('\n').find(line => line.startsWith('  const showGuardian ='))
+if (!guardianLine) throw new Error('Arche isolation patch drift: guardian line')
+if (!guardianLine.includes("view !== 'arche'")) {
+  app = app.replace(guardianLine, guardianLine + " && view !== 'arche'")
+}
+const privateLine = app.split('\n').find(line => line.startsWith('  const isPrivate ='))
+if (!privateLine) throw new Error('Arche isolation patch drift: private meta line')
+if (!privateLine.includes("view === 'arche'")) {
+  app = app.replace(privateLine, privateLine.replace('= ', "= view === 'arche' || "))
+}
+
 if (app.includes("import ArchePage from './components/ArchePage'")) {
   app = app.replace("import ArchePage from './components/ArchePage'\n", '')
 }
@@ -21,12 +46,6 @@ if (!app.includes("const ArchePage = lazy(() => import('./components/ArchePage')
   if (!app.includes(lazyAnchor)) throw new Error('Arche lazy anchor drift')
   app = app.replace(lazyAnchor, lazyAnchor+"\nconst ArchePage = lazy(() => import('./components/ArchePage'))")
 }
-replaceOnce(
-  "  if (view === 'arche')        return <ArchePage onBack={backHome} onNavigate={legalNav} />",
-  "  if (view === 'arche')        return <DeferredRoute><ArchePage onBack={backHome} onNavigate={legalNav} /></DeferredRoute>",
-  'isolate route via Suspense fallback',
-)
-
 replaceOnce(
   "robots.setAttribute('content', isPrivate ? 'noindex,follow' : 'index,follow,max-image-preview:large')",
   "robots.setAttribute('content', meta.robots || (isPrivate ? 'noindex,follow' : 'index,follow,max-image-preview:large'))",

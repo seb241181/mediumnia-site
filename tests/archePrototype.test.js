@@ -149,7 +149,7 @@ test('Le signalement de conversation et les autres protections restent accessibl
 test('Changer d’onglet ne démonte pas les publications, les conversations ou leurs états', () => {
   const source = read('src/components/ArcheSocialPrototype.jsx')
   for (const id of ['feed', 'salon', 'cercles', 'messages', 'profile']) {
-    assert.match(source, new RegExp('<div hidden=\\{view !== \\'' + id + '\\'\\}>'))
+    assert.ok(source.includes("<div hidden={view !== '"+id+"'}>"), 'Vue toujours montée : '+id)
   }
   assert.doesNotMatch(source, /view==='messages'&&<MessagesView/)
 })

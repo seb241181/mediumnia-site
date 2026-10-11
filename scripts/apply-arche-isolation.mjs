@@ -33,4 +33,22 @@ replaceOnce(
   'honor route robots noindex,nofollow',
 )
 await writeFile(appPath, app)
-console.log('Arche: lazy-loaded isolated route, route robots respected')
+
+// GlobalAccount est monté dans main.jsx, hors de App et de ses gardes visuels.
+// Masquer à la source son bouton flottant et toute fenêtre déjà ouverte sur /arche.
+const globalAccountPath = new URL('../src/components/GlobalAccount.jsx', import.meta.url)
+let globalAccount = await readFile(globalAccountPath, 'utf8')
+const hideBefore = "  const hideLauncher = pathname.startsWith('/rdv/')"
+const hideAfter = "  const hideLauncher = pathname.startsWith('/rdv/') || pathname === '/arche'"
+if (!globalAccount.includes(hideAfter)) {
+  if (!globalAccount.includes(hideBefore)) throw new Error('Arche GlobalAccount patch drift: launcher guard')
+  globalAccount = globalAccount.replace(hideBefore, hideAfter)
+}
+const modalBefore = "      {open && ("
+const modalAfter = "      {open && !hideLauncher && ("
+if (!globalAccount.includes(modalAfter)) {
+  if (!globalAccount.includes(modalBefore)) throw new Error('Arche GlobalAccount patch drift: modal guard')
+  globalAccount = globalAccount.replace(modalBefore, modalAfter)
+}
+await writeFile(globalAccountPath, globalAccount)
+console.log('Arche: lazy route, correct robots, GlobalAccount launcher/modal hidden on /arche')

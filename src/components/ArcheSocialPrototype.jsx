@@ -174,14 +174,69 @@ function SalonView({ nickname }) {
 function CirclesView() {
   return <div className="grid gap-3 md:grid-cols-2">{CIRCLES.map((circle) => <article key={circle.id} className="rounded-3xl border border-[#ECEAF2] bg-white p-5 shadow-[0_10px_30px_rgba(26,21,53,.04)]"><div className="flex items-center justify-between"><h2 className="font-georgia text-xl text-[#1A1535]">{circle.title}</h2>{circle.unread > 0 && <span className="rounded-full bg-[#C9A84C] px-2 py-1 text-xs font-bold text-[#1A1535]">{circle.unread}</span>}</div><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">{circle.description}</p><button className={secondary+' mt-5'}>Explorer</button></article>)}</div>
 }
-function MessagesView() {
-  const [accepted, setAccepted] = useState(false)
-  const [allowLueur, setAllowLueur] = useState(false)
-  const [lueur, setLueur] = useState(false)
-  return <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]"><aside className="rounded-3xl border border-[#ECEAF2] bg-white p-3">{PEOPLE.slice(0,3).map((person) => <button key={person.id} className="flex min-h-16 w-full items-center gap-3 rounded-2xl px-3 text-left hover:bg-[#FAFAF7]"><Avatar name={person.name} status={person.status} lueur={person.id === 'aurore' && lueur}/><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{person.name}</strong><span className="block truncate text-xs text-[#4A3F6B]">{person.note}</span></span>{person.unread > 0 && <span className="rounded-full bg-[#1A1535] px-2 py-1 text-[11px] font-bold text-white">{person.unread}</span>}</button>)}</aside><section className="rounded-3xl border border-[#ECEAF2] bg-white shadow-[0_12px_36px_rgba(26,21,53,.05)]"><header className="flex items-center justify-between border-b border-[#ECEAF2] p-4"><div className="flex items-center gap-3"><Avatar name="Aurore" status="online" lueur={lueur}/><div><h2 className="font-semibold">Aurore</h2><p className="text-xs text-[#4A3F6B]">Visible par les proches uniquement</p></div></div>{accepted && <button disabled={!allowLueur} onClick={() => setLueur(true)} className={secondary}>Envoyer une Lueur</button>}</header><div className="min-h-[340px] space-y-3 p-5">{!accepted ? <div className="rounded-3xl bg-[#FAFAF7] p-5"><p className="text-sm leading-6">Aurore souhaite entrer dans vos proches. Vous pouvez accepter, ignorer ou bloquer.</p><button onClick={() => setAccepted(true)} className={primary+' mt-4'}>Accepter</button></div> : <><p className="max-w-[70%] rounded-3xl bg-[#FAFAF7] px-4 py-3 text-sm">Bonsoir, je voulais juste échanger tranquillement.</p><p className="ml-auto max-w-[70%] rounded-3xl bg-[#EEEAF6] px-4 py-3 text-sm">Avec plaisir.</p>{lueur && <p className="mx-auto w-fit rounded-full bg-[#FFF8E8] px-4 py-2 text-sm font-semibold text-[#1A1535]">✧ Aurore pense à toi</p>}</>}</div><footer className="border-t border-[#ECEAF2] p-4"><label className="flex items-center gap-2 text-xs text-[#4A3F6B]"><input type="checkbox" checked={allowLueur} onChange={(event) => { setAllowLueur(event.target.checked); if (!event.target.checked) setLueur(false) }} className="accent-[#1A1535]"/> Autoriser les Lueurs de mes proches</label></footer></section></div>
+
+function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
+  const [selected, setSelected] = useState('aurore')
+  const [mobileThread, setMobileThread] = useState(false)
+  const [request, setRequest] = useState('pending')
+  const [messages, setMessages] = useState([{ who: 'them', text: 'Bonsoir ! Je voudrais parler des rêves, si vous en avez envie.' }])
+  const [draft, setDraft] = useState('')
+  const [sentLueur, setSentLueur] = useState(false)
+  const [receivedLueur, setReceivedLueur] = useState(false)
+  const [lastSent, setLastSent] = useState(0)
+  const person = PEOPLE.find(p => p.id === selected) || PEOPLE[0]
+  const contactBlocked = blocked.includes(person.name) || (request === 'blocked' && selected === 'aurore')
+  // Consentement reçu de l'autre personne : valeur de scénario fictif, jamais modifiable par l'expéditeur.
+  const recipientAcceptsLueur = selected === 'aurore'
+  const canChat = request === 'accepted' && selected === 'aurore' && !contactBlocked
+  function blockContact() {
+    setBlocked(v => [...new Set([...v, person.name])])
+    if (selected === 'aurore') setRequest('blocked')
+    setSentLueur(false); setReceivedLueur(false); setMobileThread(false)
+    onNotice('Contact fictif bloqué. Historique masqué, aucun signalement réel transmis.')
+  }
+  function sendLueur() {
+    if (!canChat || !recipientAcceptsLueur || Date.now()-lastSent < 10000) return
+    setLastSent(Date.now()); setSentLueur(true)
+    onNotice('Lueur envoyée dans la simulation uniquement. Aucun appareil distant contacté.')
+  }
+  function simulateReceivedLueur() {
+    if (!canChat || !incomingLueur) return
+    setReceivedLueur(true)
+    try { if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(70) } catch { /* vibration facultative */ }
+    onNotice('Lueur reçue dans la simulation avec votre autorisation.')
+  }
+  return <div className="mx-auto grid max-w-[900px] gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
+    <aside className={(mobileThread ? 'hidden ' : '')+'rounded-2xl border border-[#ECEAF2] bg-white p-3 md:block'}>
+      <h2 className="px-3 py-2 text-base font-semibold">Mes rencontres</h2>
+      {PEOPLE.filter(p => !blocked.includes(p.name)).slice(0,3).map(p => <button type="button" key={p.id} onClick={() => { setSelected(p.id); setMobileThread(true); setSentLueur(false); setReceivedLueur(false) }} className={'flex min-h-16 w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-[#FAFAF7] '+(p.id === selected ? 'bg-[#FAFAF7]' : '')}><Avatar name={p.name} status={p.status}/><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{p.name}</strong><span className="block truncate text-xs text-[#4A3F6B]">{p.note}</span></span></button>)}
+      <p className="mt-3 border-t border-[#ECEAF2] p-3 text-xs text-[#4A3F6B]">Profils et conversations fictifs. Messages privés non ouverts pendant le pilote.</p>
+    </aside>
+    <section className={(mobileThread ? 'flex ' : 'hidden ')+'min-h-[480px] flex-col overflow-hidden rounded-2xl border border-[#ECEAF2] bg-white md:flex'}>
+      <header className="flex items-center gap-2 border-b border-[#ECEAF2] p-3"><button type="button" onClick={() => setMobileThread(false)} aria-label="Revenir aux rencontres" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl md:hidden">←</button><Avatar name={person.name} status={person.status} lueur={receivedLueur}/><div className="min-w-0 flex-1"><h2 className="text-sm font-semibold">{person.name}</h2><p className="text-xs text-[#4A3F6B]">Conversation de démonstration</p></div></header>
+      <div className="min-h-[310px] flex-1 space-y-3 overflow-y-auto p-4">
+        {contactBlocked ? <p className="text-sm">Contact bloqué. Historique masqué dans la démonstration.</p> : selected !== 'aurore' ? <p className="text-sm text-[#4A3F6B]">Aucune conversation ouverte. Une invitation acceptée sera nécessaire.</p> : request === 'pending' ? <div className="rounded-xl bg-[#FAFAF7] p-4"><p className="text-sm leading-6">Aurore souhaite entrer en contact avec vous. Vous pouvez accepter, ignorer ou bloquer sans justification.</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={primary} onClick={() => setRequest('accepted')}>Accepter</button><button type="button" className={secondary} onClick={() => setRequest('ignored')}>Ignorer</button><button type="button" className={secondary} onClick={blockContact}>Bloquer</button></div></div> : request === 'ignored' ? <div><p className="text-sm">Invitation ignorée. Aucune conversation privée ouverte.</p><button type="button" className={secondary+' mt-3'} onClick={() => setRequest('pending')}>Réinitialiser l’exemple</button></div> : <>
+          {messages.map((m,index) => <div key={index} className={'flex '+(m.who === 'me' ? 'justify-end' : 'justify-start')}><p className={'max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 '+(m.who === 'me' ? 'bg-[#EEEAF6]' : 'bg-[#FAFAF7]')}>{m.text}</p></div>)}
+          {sentLueur && <p role="status" className="mx-auto w-fit rounded-xl bg-[#FFF8E8] px-4 py-2 text-xs">✧ Vous avez envoyé une Lueur à Aurore (démo)</p>}
+          {receivedLueur && <p role="status" className="mx-auto w-fit rounded-xl bg-[#FFF8E8] px-4 py-2 text-xs">✧ Aurore vous envoie une Lueur (démo)</p>}
+          <div className="flex flex-wrap gap-2 pt-4"><button type="button" disabled={!recipientAcceptsLueur} onClick={sendLueur} className={secondary}>Envoyer une Lueur</button><button type="button" disabled={!incomingLueur} onClick={simulateReceivedLueur} className={secondary}>Simuler une Lueur reçue</button><button type="button" onClick={blockContact} className={secondary}>Bloquer</button></div>
+          <p className="text-xs leading-5 text-[#4A3F6B]">Aurore autorise les Lueurs dans ce scénario. Pour recevoir les vôtres, choisissez dans Moi → Confidentialité. La vibration peut ne pas fonctionner sur iPhone.</p>
+        </>}
+      </div>
+      {canChat && <form onSubmit={event => { event.preventDefault(); if (!draft.trim()) return; setMessages(v => [...v,{ who:'me',text:draft.trim() }]); setDraft('') }} className="flex gap-2 border-t border-[#ECEAF2] p-3"><label className="sr-only" htmlFor="arche-dm-draft">Écrire un message fictif</label><input id="arche-dm-draft" className={field} maxLength={240} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Votre message…"/><button type="submit" disabled={!draft.trim()} className={primary}>Envoyer</button></form>}
+    </section>
+  </div>
 }
-function ProfileView({ nickname }) {
-  return <section className="rounded-3xl border border-[#ECEAF2] bg-white p-6 shadow-[0_12px_36px_rgba(26,21,53,.05)]"><div className="flex items-center gap-4"><Avatar name={nickname} status="invisible" large/><div><h2 className="font-georgia text-2xl">{nickname}</h2><p className="text-sm text-[#4A3F6B]">Invisible par défaut · Profil réservé aux membres</p><p className="mt-1 text-sm text-[#4A3F6B]">Phrase d’humeur : « Je découvre doucement »</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-3"><button className={secondary}>Statut</button><button className={secondary}>Confidentialité</button><button className={secondary}>Quitter la démo</button></div></section>
+
+function ProfileView({ nickname, presence, setPresence, mood, setMood, incomingLueur, setIncomingLueur, blocked, setBlocked, onExit }) {
+  const [privacyOpen, setPrivacyOpen] = useState(true)
+  return <section className="mx-auto max-w-[660px] rounded-2xl border border-[#ECEAF2] bg-white p-5"><div className="flex items-center gap-4"><Avatar name={nickname} status={presence} large/><div><h2 className="font-georgia text-2xl">{nickname}</h2><p className="text-sm text-[#4A3F6B]">Invisible par défaut · Profil réservé aux membres</p></div></div>
+    <label className="mt-5 block text-sm font-semibold">Phrase d’humeur (visible par vos proches seulement)<input maxLength={60} value={mood} onChange={event => setMood(event.target.value)} className={field+' mt-2'} placeholder="Votre humeur…"/></label>
+    <label className="mt-4 block text-sm font-semibold">Statut de présence (vos proches seulement)<select value={presence} onChange={event => setPresence(event.target.value)} className={field+' mt-2'}><option value="invisible">Invisible (par défaut)</option><option value="online">Disponible</option><option value="away">Absent</option><option value="busy">Occupé</option></select></label>
+    <button type="button" aria-expanded={privacyOpen} onClick={() => setPrivacyOpen(v => !v)} className={secondary+' mt-5 w-full text-left'}>Confidentialité {privacyOpen ? '−' : '+'}</button>
+    {privacyOpen && <div className="mt-3 rounded-xl bg-[#FAFAF7] p-4 text-sm"><label className="flex items-start gap-3"><input type="checkbox" checked={incomingLueur} onChange={event => setIncomingLueur(event.target.checked)} className="mt-1 h-4 w-4 accent-[#1A1535]"/><span>J’autorise mes proches à m’envoyer des Lueurs (désactivé par défaut).</span></label><p className="mt-2 text-xs leading-6 text-[#4A3F6B]">C’est la personne qui reçoit qui choisit. Jamais de lecture automatique des messages privés.</p><p className="mt-4 text-xs font-semibold">Contacts bloqués dans la démonstration</p>{blocked.length === 0 ? <p className="mt-1 text-xs">Aucun.</p> : blocked.map(name => <div key={name} className="mt-2 flex items-center justify-between gap-2"><span>{name}</span><button className={secondary} type="button" onClick={() => setBlocked(v => v.filter(item => item !== name))}>Débloquer</button></div>)}</div>}
+    <button onClick={onExit} type="button" className={secondary+' mt-5'}>Quitter la démo</button>
+  </section>
 }
 function RightRail() {
   return <aside className="hidden space-y-4 xl:block"><section className="rounded-3xl border border-[#ECEAF2] bg-white p-4"><h2 className="text-sm font-bold">Mes proches</h2><div className="mt-3 space-y-2">{PEOPLE.map((person) => <div key={person.id} className="flex items-center gap-3"><Avatar name={person.name} status={person.status}/><div className="min-w-0"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-[#4A3F6B]">{person.note}</p></div></div>)}</div></section><section className="rounded-3xl border border-[#ECEAF2] bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[#4A3F6B]">Question du soir</p><p className="mt-3 text-sm leading-6 text-[#1A1535]">Qu’est-ce qui vous a donné envie d’explorer la spiritualité ?</p></section></aside>

@@ -10,6 +10,7 @@ import { handleLumiaBookingCancelApi } from '../lib/lumiaBookingCancelApi.js'
 import { handleEmailQuestionsAdmin } from '../lib/emailQuestions.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
+import { listBalanceWatch, restoreBalanceBooking, rotateBalanceLink, setBalanceDecision } from '../lib/rdvBalanceReviewAdmin.js'
 /**
  * /api/rdv-admin?action=<action>
  * En-tête requis : Authorization: Bearer <supabase_access_token>
@@ -880,6 +881,17 @@ export default async function handler(req, res) {
       // authenticated request and never trusts ownership from the body.
       if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
       const result = await handleLumiaBookingCancelApi({ db: supabase, userId, input: req.body || {} })
+      return res.status(result.status).json(result.body)
+    }
+    case 'balance-watch': {
+      // Soldes des visios (#147) : alerte, décision du propriétaire, restauration.
+      const input = req.body || {}
+      let result
+      if (req.method === 'GET') result = await listBalanceWatch({ supabase, userId, practitionerId: String(req.query.practitioner_id || '') })
+      else if (req.method === 'POST' && input.op === 'decision') result = await setBalanceDecision({ supabase, userId, input })
+      else if (req.method === 'POST' && input.op === 'restore') result = await restoreBalanceBooking({ supabase, userId, input })
+      else if (req.method === 'POST' && input.op === 'rotate') result = await rotateBalanceLink({ supabase, userId, input })
+      else result = { status: 400, body: { error: 'invalid_request' } }
       return res.status(result.status).json(result.body)
     }
     default:             return res.status(400).json({ error: `action inconnue: ${action}` })

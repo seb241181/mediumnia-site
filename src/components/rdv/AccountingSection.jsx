@@ -3,6 +3,7 @@ import DailyPayments from './DailyPayments.jsx'
 import ChronosphereIncome from './ChronosphereIncome.jsx'
 import SlotOfferModal from './SlotOfferModal.jsx'
 import DepositSettlements from './DepositSettlements.jsx'
+import RdvBalanceWatch from './RdvBalanceWatch.jsx'
 
 function authHeader(session) {
   return session ? { Authorization: `Bearer ${session.access_token}` } : {}
@@ -255,6 +256,8 @@ export default function AccountingSection({ practitionerId, session }) {
       {slotOfferOpen && <SlotOfferModal practitionerId={practitionerId} session={session} onClose={() => setSlotOfferOpen(false)} />}
 
       <DailyPayments practitionerId={practitionerId} session={session} onSaved={() => setDayNonce(value => value + 1)} />
+
+      <RdvBalanceWatch practitionerId={practitionerId} session={session} />
 
       <DepositSettlements practitionerId={practitionerId} session={session} onChanged={() => setDayNonce(value => value + 1)} />
 

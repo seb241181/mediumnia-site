@@ -86,8 +86,8 @@ function themeForPost(post) {
 function FeedAvatar({ name, status = 'invisible' }) {
   const identity = useContext(IdentityContext)
   if (name === identity?.nickname) return <Avatar name={name} status={status}/>
-  const initials = { 'Aurore': 'Au', 'Nuage Bleu': 'NB', 'Plume d’Or': 'P', 'Chemin Libre': 'CL' }[name] || name.slice(0, 2)
-  return <span role="img" aria-label={'Avatar de '+name} data-person={getPerson(name).id} className="arche-feed-avatar"><span aria-hidden="true">{initials}</span><PresenceDot status={status}/></span>
+  const signature = { 'Aurore': '☀️', 'Nuage Bleu': '☁️', 'Plume d’Or': '🪶', 'Chemin Libre': '🧭' }[name] || name.slice(0, 2)
+  return <span role="img" aria-label={'Avatar de '+name} data-person={getPerson(name).id} className="arche-feed-avatar"><span aria-hidden="true">{signature}</span><PresenceDot status={status}/></span>
 }
 function PostComposer({ nickname, onCreate }) {
   const [draft, setDraft] = useState('')
@@ -104,7 +104,7 @@ function PostComposer({ nickname, onCreate }) {
     setDraft(''); setTheme('clear'); setFormat('normal'); setReplyPolicy('everyone'); setMore(false)
   }
   return <form onSubmit={submit} className="arche-composer rounded-2xl border border-[#ECEAF2] bg-white p-4 shadow-sm">
-    <p className="arche-section-kicker">Et vous, aujourd’hui ?</p><div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication fictive</label><textarea id="arche-post-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={1} maxLength={420} className="w-full resize-none rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 placeholder:text-[#4A3F6B] outline-none focus:border-[#4A3F6B]" placeholder="Partager quelque chose…"/></div></div>
+    <p className="arche-section-kicker">Et vous, aujourd’hui ?</p><div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication fictive</label><textarea id="arche-post-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={1} maxLength={420} className="w-full resize-none rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 placeholder:text-[#4A3F6B] outline-none focus:border-[#4A3F6B]" placeholder="Un petit mot, une pensée…"/></div></div>
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#ECEAF2] pt-3">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Ambiances de publication">
         {Object.entries(POST_THEMES).map(([id, data]) => <button key={id} type="button" disabled={draft.length > 160 || format !== 'normal'} onClick={() => setTheme(id)} aria-label={'Ambiance '+data.label} title={data.label} aria-pressed={effectiveTheme === id} className={'flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 disabled:opacity-35 '+(effectiveTheme === id ? 'border-[#1A1535]' : 'border-[#ECEAF2]')}><span aria-hidden="true" className="h-7 w-7 rounded-full border border-[#DDD7EA]" style={{ background: data.label === 'Nuit' ? '#1A1535' : data.label === 'Doux' ? '#FFF8E8' : data.label === 'Brume' ? '#EEEAF6' : '#FFFFFF' }}/></button>)}
@@ -135,7 +135,7 @@ function PostCard({ post, nickname, reactions, onReact, replies, onReply, onMode
   const night = theme === POST_THEMES.nuit
   return <article data-ambiance={theme.label} data-format={post.format} className={'arche-post overflow-visible rounded-2xl border bg-white shadow-[0_6px_24px_rgba(26,21,53,.035)] '+(isQuestion ? 'border-l-4 border-l-[#C9A84C]' : 'border-[#ECEAF2]')} style={theme.style}>
     <div className="p-4 sm:p-5">
-      <div className="flex items-start gap-3"><FeedAvatar name={post.author} status={isClose ? person.status : 'invisible'}/><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm" style={{ color: theme.style.color }}>{post.author}</strong>{isQuestion && <span className="rounded-lg border-l-2 border-[#C9A84C] bg-[#FFF8E8] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Question</span>}{isSensitive && <span className="rounded-lg bg-[#EEEAF6] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Sujet sensible</span>}</div><p className="mt-1 text-xs" style={{ color: night ? '#E2D7BE' : '#4A3F6B' }}>{post.circle} · {post.time}</p></div>
+      <div className="flex items-start gap-3"><FeedAvatar name={post.author} status={isClose ? person.status : 'invisible'}/><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm" style={{ color: theme.style.color }}>{post.author}</strong>{isQuestion && <span className="rounded-lg border-l-2 border-[#C9A84C] bg-[#FFF8E8] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Question</span>}{isSensitive && <span className="rounded-lg bg-[#EEEAF6] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Sujet sensible</span>}</div><p className="arche-post-context mt-1 text-xs" style={{ color: night ? '#E2D7BE' : '#4A3F6B' }}>{post.circle} · {post.time}</p>{isClose && person.note && <p className="arche-author-mood" style={{ color: night ? "#E2D7BE" : "#58627A" }}>{person.note}<span className="sr-only"> · humeur visible par ses proches</span></p>}</div>
         <div className="relative"><button type="button" onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-label={'Options de la publication de '+post.author} className="min-h-11 min-w-11 rounded-lg text-xl" style={{ color: theme.style.color }}>···</button>
           {menuOpen && <div className="absolute right-0 top-11 z-20 w-44 rounded-xl border border-[#ECEAF2] bg-white p-1 text-[#1A1535] shadow-lg">
             {['Masquer','Signaler',...(post.author !== nickname ? ['Bloquer'] : [])].map(action => <button type="button" key={action} className="min-h-11 w-full rounded-lg px-3 text-left text-sm hover:bg-[#FAFAF7]" onClick={() => { onModerate(action, post); setMenuOpen(false) }}>{action}</button>)}
@@ -165,7 +165,7 @@ function FeedView({ nickname, blocked, setBlocked, onNotice }) {
     if (action === 'Bloquer') { setBlocked(v => [...new Set([...v, post.author])]); onNotice('Contact fictif bloqué. Ses publications ne sont plus visibles.') }
   }
   const shown = posts.filter(post => !hidden.includes(post.id) && !blocked.includes(post.author))
-  return <div className="arche-feed mx-auto max-w-[640px] space-y-3"><header className="arche-feed-title"><div><p className="arche-section-kicker">L’Arche · entre nous</p><h2>Le fil des liens<span aria-hidden="true">.</span></h2></div><p>Partages fictifs<br/>Un espace pour se retrouver</p></header>
+  return <div className="arche-feed mx-auto max-w-[640px] space-y-3"><header className="arche-feed-title"><div><p className="arche-section-kicker">Les petits liens du quotidien</p><h2>Entre nous <span aria-hidden="true">✦</span></h2></div><p>Bienvenue, {nickname}<br/>Partages fictifs</p></header>
     <PostComposer nickname={nickname} onCreate={createPost}/>
     {lastHidden && <button type="button" className="min-h-11 w-full text-sm text-[#4A3F6B] underline" onClick={() => { setHidden(v => v.filter(id => id !== lastHidden)); setLastHidden(null) }}>Annuler le masquage de la dernière publication</button>}
     {shown.length === 0 && <p className="rounded-lg bg-white p-5 text-sm">Aucune publication visible pour le moment.</p>}

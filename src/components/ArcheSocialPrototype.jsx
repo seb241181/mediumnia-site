@@ -26,11 +26,11 @@ const REACTIONS = [
   { id: 'aussi', label: 'Moi aussi', icon: '⟡' },
 ]
 const MENU = [
-  { id: 'feed', label: 'Fil', badge: 0 },
-  { id: 'salon', label: 'Salon', badge: 0 },
-  { id: 'cercles', label: 'Cercles', badge: 0 },
-  { id: 'messages', label: 'Messages', badge: 0 },
-  { id: 'profile', label: 'Moi', badge: 0 },
+  { id: 'feed', label: 'Fil', icon: 'home' },
+  { id: 'salon', label: 'Salon', icon: 'chat' },
+  { id: 'cercles', label: 'Cercles', icon: 'circles' },
+  { id: 'messages', label: 'Messages', icon: 'mail' },
+  { id: 'profile', label: 'Moi', icon: 'user' },
 ]
 const INITIAL_POSTS = [
   { id: 'p1', author: 'Plume d’Or', circle: 'Les Découvertes', time: 'il y a 12 min', text: 'Avez-vous déjà senti que votre intuition disait oui alors que votre tête disait non ?', theme: 'brume', format: 'question', repliesOpen: true },
@@ -41,6 +41,18 @@ const INITIAL_POSTS = [
 const primary = 'min-h-11 rounded-full bg-[#1A1535] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#2B254D] disabled:cursor-not-allowed disabled:opacity-40'
 const secondary = 'min-h-11 rounded-full border border-[#ECEAF2] bg-white px-4 py-2 text-sm font-semibold text-[#1A1535] transition hover:bg-[#FAFAF7]'
 const field = 'min-h-11 w-full rounded-2xl border border-[#ECEAF2] bg-white px-4 py-3 text-sm text-[#1A1535] placeholder:text-[#4A3F6B] outline-none transition focus:border-[#4A3F6B]'
+function AppIcon({ name, size = 20 }) {
+  const paths = {
+    home: <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/>,
+    chat: <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 1 1 16.1-4Z"/>,
+    circles: <><circle cx="8" cy="8" r="3"/><path d="M2 19v-2a6 6 0 0 1 12 0v2H2ZM16 5a3 3 0 0 1 0 6M16 14a5 5 0 0 1 5 5"/></>,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></>,
+    user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
+    bell: <><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></>,
+  }
+  return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]||paths.chat}</svg>
+}
+
 function colorIndex(name) {
   return Array.from(name || 'A').reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_PALETTE.length
 }
@@ -255,13 +267,13 @@ export function ArcheAppPreview({ nickname, onExit }) {
     <style>{'@keyframes soft-pop{0%{transform:scale(.92)}100%{transform:scale(1)}}.reaction-button[aria-pressed="true"]{animation:soft-pop .24s ease-out}@keyframes arche-lueur-glow{0%{box-shadow:0 0 0 rgba(201,168,76,0)}100%{box-shadow:0 0 26px rgba(201,168,76,.45)}}.arche-lueur{animation:arche-lueur-glow .45s ease-out}@media(prefers-reduced-motion:reduce){.reaction-button[aria-pressed="true"],.arche-lueur{animation:none}}'}</style>
     <header className="sticky top-0 z-30 border-b border-[#ECEAF2] bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5"><div className="flex shrink-0 items-center gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A1535] font-georgia text-lg text-white">A</span><strong className="font-georgia text-xl">L’ARCHE</strong><span className="rounded-md bg-[#C9A84C] px-2 py-1 text-[10px] font-semibold text-[#1A1535]">Démo</span></div>
       <label htmlFor="arche-member-search" className="sr-only">Rechercher un proche fictif</label><input id="arche-member-search" className="hidden min-h-11 min-w-0 flex-1 rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 text-sm md:block" placeholder="Rechercher un proche…" value={search} onChange={event=>setSearch(event.target.value)}/>
-      <button type="button" aria-label="Notifications fictives" aria-expanded={showNotifications} onClick={()=>setShowNotifications(v=>!v)} className="ml-auto min-h-11 min-w-11 rounded-xl border border-[#ECEAF2]">♧</button>
+      <button type="button" aria-label="Notifications fictives" aria-expanded={showNotifications} onClick={()=>setShowNotifications(v=>!v)} className="ml-auto flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-[#ECEAF2]"><AppIcon name="bell"/></button>
       <button type="button" onClick={()=>setView('profile')} aria-label="Ouvrir mon profil" className="flex min-h-11 items-center gap-2 rounded-xl px-2 hover:bg-[#FAFAF7]"><Avatar name={nickname}/><span className="hidden text-sm lg:inline">{nickname}</span></button>
     </div>{showNotifications&&<p className="border-t border-[#ECEAF2] bg-[#FAFAF7] p-3 text-center text-xs">Aucune notification réelle, aucune statistique inventée.</p>}</header>
     {notice&&<div role="status" className="mx-auto mt-3 max-w-[720px] rounded-xl border border-[#ECEAF2] bg-[#FFF8E8] p-3 text-sm">{notice}<button type="button" onClick={()=>setNotice('')} className="ml-3 font-semibold underline">Fermer</button></div>}
     {search.trim()&&<div className="mx-auto max-w-[720px] border-b border-[#ECEAF2] p-3 text-sm"><p className="text-xs text-[#4A3F6B]">Recherche locale parmi les proches fictifs</p>{matching.length===0?'Aucun résultat.':matching.map(p=><p key={p.id} className="mt-2">{p.name}</p>)}</div>}
     <div className="mx-auto grid max-w-7xl gap-4 px-3 pb-28 pt-4 sm:px-5 lg:grid-cols-[205px_minmax(0,700px)] xl:grid-cols-[205px_minmax(0,700px)_250px]">
-      <aside className="hidden lg:block"><nav className="sticky top-20 space-y-1">{MENU.map(item=><button key={item.id} type="button" aria-current={view===item.id?'page':undefined} onClick={()=>setView(item.id)} className={'flex min-h-12 w-full items-center rounded-xl px-4 text-left text-sm '+(view===item.id?'bg-[#EEEAF6] font-semibold text-[#1A1535]':'text-[#4A3F6B] hover:bg-[#FAFAF7]')}>{item.label}</button>)}<button type="button" onClick={onExit} className="min-h-11 w-full px-4 text-left text-sm text-[#4A3F6B]">Quitter la démo</button></nav></aside>
+      <aside className="hidden lg:block"><nav className="sticky top-20 space-y-1">{MENU.map(item=><button key={item.id} type="button" aria-current={view===item.id?'page':undefined} onClick={()=>setView(item.id)} className={'flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-left text-sm '+(view===item.id?'bg-[#EEEAF6] font-semibold text-[#1A1535]':'text-[#4A3F6B] hover:bg-[#FAFAF7]')}><AppIcon name={item.icon}/>{item.label}</button>)}<button type="button" onClick={onExit} className="min-h-11 w-full px-4 text-left text-sm text-[#4A3F6B]">Quitter la démo</button></nav></aside>
       <main className="min-w-0">
         <div hidden={view !== 'feed'}><FeedView nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/></div>
         <div hidden={view !== 'salon'}><SalonView nickname={nickname}/></div>
@@ -270,6 +282,6 @@ export function ArcheAppPreview({ nickname, onExit }) {
         <div hidden={view !== 'profile'}><ProfileView nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/></div>
       </main><RightRail blocked={blocked}/>
     </div>
-    <nav aria-label="Navigation principale L’Arche" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"><div className="grid grid-cols-5 gap-1">{MENU.map((item,index)=><button key={item.id} type="button" onClick={()=>setView(item.id)} aria-label={item.label} aria-current={view===item.id?'page':undefined} className={'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 px-1 text-[10px] font-semibold '+(view===item.id?'border-[#1A1535] text-[#1A1535]':'border-transparent text-[#4A3F6B]')}><span aria-hidden="true" className="text-lg leading-none">{['⌂','◉','◎','✉','◯'][index]}</span>{item.label}</button>)}</div></nav>
+    <nav aria-label="Navigation principale L’Arche" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"><div className="grid grid-cols-5 gap-1">{MENU.map(item=><button key={item.id} type="button" onClick={()=>setView(item.id)} aria-label={item.label} aria-current={view===item.id?'page':undefined} className={'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 px-1 text-[10px] font-semibold '+(view===item.id?'border-[#1A1535] text-[#1A1535]':'border-transparent text-[#4A3F6B]')}><AppIcon name={item.icon} size={20}/>{item.label}</button>)}</div></nav>
   </div>
 }

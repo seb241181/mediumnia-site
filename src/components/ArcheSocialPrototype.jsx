@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 // Prototype privé : toutes les données ci-dessous sont fictives et locales.
+import ArcheRencontres from './ArcheRencontres'
 const PEOPLE = [
   { id: 'aurore', name: 'Aurore', status: 'online', note: 'Disponible ce soir' },
   { id: 'nuage', name: 'Nuage Bleu', status: 'online', note: 'Je relis mes rêves' },
@@ -29,6 +30,7 @@ const MENU = [
   { id: 'feed', label: 'Fil', icon: 'home' },
   { id: 'salon', label: 'Salon', icon: 'chat' },
   { id: 'cercles', label: 'Cercles', icon: 'circles' },
+  { id: 'rencontres', label: 'Rencontres', icon: 'meet' },
   { id: 'messages', label: 'Messages', icon: 'mail' },
   { id: 'profile', label: 'Moi', icon: 'user' },
 ]
@@ -49,6 +51,7 @@ function AppIcon({ name, size = 20 }) {
     mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></>,
     user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
     bell: <><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></>,
+    meet: <><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></>,
   }
   return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]||paths.chat}</svg>
 }
@@ -278,6 +281,7 @@ export function ArcheAppPreview({ nickname, onExit }) {
     <div className="mx-auto grid max-w-7xl gap-4 px-3 pb-28 pt-4 sm:px-5 lg:grid-cols-[205px_minmax(0,700px)] xl:grid-cols-[205px_minmax(0,700px)_250px]">
       <aside className="hidden lg:block"><nav aria-label="Navigation latérale L’Arche" className="sticky top-20 space-y-1">{MENU.map(item=><button key={item.id} type="button" aria-current={view===item.id?'page':undefined} onClick={()=>navigateTo(item.id)} className={'flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-left text-sm '+(view===item.id?'bg-[#EEEAF6] font-semibold text-[#1A1535]':'text-[#4A3F6B] hover:bg-[#FAFAF7]')}><AppIcon name={item.icon}/>{item.label}</button>)}<button type="button" onClick={onExit} className="min-h-11 w-full px-4 text-left text-sm text-[#4A3F6B]">Quitter la démo</button></nav></aside>
       <main className="min-w-0">
+        <div hidden={view !== 'rencontres'}><ArcheRencontres nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/></div>
         <div hidden={view !== 'feed'}><FeedView nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/></div>
         <div hidden={view !== 'salon'}><SalonView nickname={nickname}/></div>
         <div hidden={view !== 'cercles'}><CirclesView/></div>
@@ -285,6 +289,6 @@ export function ArcheAppPreview({ nickname, onExit }) {
         <div hidden={view !== 'profile'}><ProfileView nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/></div>
       </main><RightRail blocked={blocked}/>
     </div>
-    <nav aria-label="Navigation principale L’Arche" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"><div className="grid grid-cols-5 gap-1">{MENU.map(item=><button key={item.id} type="button" onClick={()=>navigateTo(item.id)} aria-label={item.label} aria-current={view===item.id?'page':undefined} className={'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 px-1 text-[10px] font-semibold '+(view===item.id?'border-[#1A1535] text-[#1A1535]':'border-transparent text-[#4A3F6B]')}><AppIcon name={item.icon} size={20}/>{item.label}</button>)}</div></nav>
+    <nav aria-label="Navigation principale L’Arche" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"><div className="grid grid-cols-6">{MENU.map(item=><button key={item.id} type="button" onClick={()=>navigateTo(item.id)} aria-label={item.label} aria-current={view===item.id?'page':undefined} className={'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 px-0 text-[10px] font-semibold tracking-[-0.01em] '+(view===item.id?'border-[#1A1535] text-[#1A1535]':'border-transparent text-[#4A3F6B]')}><AppIcon name={item.icon} size={20}/>{item.label}</button>)}</div></nav>
   </div>
 }

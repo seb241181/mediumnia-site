@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import './ArcheSocialPrototype.css'
 import ArcheBrand from './ArcheLogoPreview'
 
 // Prototype privé : toutes les données ci-dessous sont fictives et locales.
+const IdentityContext = createContext(null)
+const AVATAR_MODELS = [{ id: 'lunettes', label: 'Illustré à lunettes' }, { id: 'portrait', label: 'Portrait illustré' }, { id: 'etoile', label: 'Emoji étoile' }, { id: 'lune', label: 'Emoji lune' }, { id: 'sourire', label: 'Emoji sourire' }]
+const BUBBLE_COLORS = { ciel: 'Ciel', rose: 'Rose', lavande: 'Lavande', menthe: 'Menthe', peche: 'Pêche', nuit: 'Nuit' }
 const PEOPLE = [
   { id: 'aurore', name: 'Aurore', status: 'online', note: 'Disponible ce soir' },
   { id: 'nuage', name: 'Nuage Bleu', status: 'online', note: 'Je relis mes rêves' },
@@ -10,16 +13,16 @@ const PEOPLE = [
   { id: 'chemin', name: 'Chemin Libre', status: 'busy', note: 'Je préfère lire' },
 ]
 const CIRCLES = [
-  { id: 'decouverte', title: 'Les Découvertes', description: 'Questions simples, premiers pas et accueil.' },
-  { id: 'intuition', title: 'Intuition', description: 'Ressentis, impressions et discernement.' },
-  { id: 'reves', title: 'Rêves', description: 'Symboles, nuits marquantes et récits.' },
-  { id: 'questions', title: 'Grandes Questions', description: 'Croire, douter, nuancer et dialoguer.' },
+  { id: 'decouverte', title: 'Les Découvertes', icon: 'chat', tint: 'ciel', invitation: 'Un premier pas, ensemble', description: 'Questions simples, premiers pas et accueil.' },
+  { id: 'intuition', title: 'Intuition', icon: 'user', tint: 'menthe', invitation: 'Écouter ce qui résonne', description: 'Ressentis, impressions et discernement.' },
+  { id: 'reves', title: 'Rêves', icon: 'bell', tint: 'lavande', invitation: 'Les histoires de nos nuits', description: 'Symboles, nuits marquantes et récits.' },
+  { id: 'questions', title: 'Grandes Questions', icon: 'circles', tint: 'rose', invitation: 'Faire une place au doute', description: 'Croire, douter, nuancer et dialoguer.' },
 ]
 const POST_THEMES = {
   clear: { label: 'Clair', style: { background: '#FFFFFF', color: '#1A1535', borderColor: '#ECEAF2' }, accent: '#ECEAF2' },
-  doux: { label: 'Doux', style: { background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF8E8 100%)', color: '#1A1535', borderColor: '#F0DFC1' }, accent: '#C9A84C' },
+  doux: { label: 'Doux', style: { background: 'linear-gradient(135deg, #FFFFFF 0%, #FBE1EC 100%)', color: '#1A1535', borderColor: '#EAC8DA' }, accent: '#C9A84C' },
   nuit: { label: 'Nuit', style: { background: 'radial-gradient(circle at top right, rgba(201,168,76,.34), transparent 32%), #1A1535', color: '#FFFFFF', borderColor: '#1A1535' }, accent: '#C9A84C' },
-  brume: { label: 'Brume', style: { background: 'linear-gradient(135deg, #FFFFFF 0%, #EEEAF6 100%)', color: '#1A1535', borderColor: '#DDD7EA' }, accent: '#4A3F6B' },
+  brume: { label: 'Brume', style: { background: 'linear-gradient(135deg, #FFFFFF 0%, #E4ECFC 100%)', color: '#1A1535', borderColor: '#DDD7EA' }, accent: '#4A3F6B' },
 }
 const AVATAR_PALETTE = ['#EEEAF6', '#FFF1CC', '#E7EEF8', '#F8E9EB', '#EAF3E8', '#F3E7D9', '#E9F4F5', '#F2EAF1']
 const REACTIONS = [
@@ -40,7 +43,7 @@ const INITIAL_POSTS = [
   { id: 'p3', author: 'Nuage Bleu', circle: 'Rêves', time: 'il y a 1 h', text: 'J’ai noté trois rêves cette semaine. Celui de lundi revient encore dans ma tête.', theme: 'nuit', format: 'normal' },
   { id: 'p4', author: 'Chemin Libre', circle: 'Les Découvertes', time: 'hier', text: 'Sujet sensible : je parle d’un moment de solitude et de deuil. J’aimerais seulement être lu avec douceur, sans conseil immédiat.', theme: 'clear', format: 'sensitive', topic: 'Deuil', replyPolicy: 'contacts' },
 ]
-const primary = 'min-h-11 rounded-full bg-[#1A1535] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#2B254D] disabled:cursor-not-allowed disabled:opacity-40'
+const primary = 'min-h-11 rounded-full bg-[#17233F] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#2F486C] disabled:cursor-not-allowed disabled:opacity-40'
 const secondary = 'min-h-11 rounded-full border border-[#ECEAF2] bg-white px-4 py-2 text-sm font-semibold text-[#1A1535] transition hover:bg-[#FAFAF7]'
 const field = 'min-h-11 w-full rounded-2xl border border-[#ECEAF2] bg-white px-4 py-3 text-sm text-[#1A1535] placeholder:text-[#4A3F6B] outline-none transition focus:border-[#4A3F6B]'
 function AppIcon({ name, size = 20 }) {
@@ -69,10 +72,8 @@ function PresenceDot({ status }) {
   </span>
 }
 function Avatar({ name, status = 'invisible', lueur = false, large = false }) {
-  const bg = AVATAR_PALETTE[colorIndex(name)]
-  return <span className={'relative inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-[#1A1535] '+(large ? 'h-14 w-14 text-xl' : 'h-11 w-11 text-sm')+(lueur ? ' arche-lueur ring-4 ring-[#C9A84C]/35 shadow-[0_0_26px_rgba(201,168,76,.45)]' : '')} style={{ background: bg }}>
-    {name?.charAt(0)?.toUpperCase() || 'A'}<PresenceDot status={status}/>
-  </span>
+  const identity = useContext(IdentityContext)
+  return <span className={(large ? 'arche-avatar-large' : 'arche-avatar-shared')+(lueur ? ' arche-lueur ring-4 ring-[#C9A84C]/35 rounded-full' : '')}><MessageAvatar name={name} status={status} lueur={lueur} self={name === identity?.nickname} model={identity?.avatarModel}/></span>
 }
 function getPerson(name) {
   return PEOPLE.find((person) => person.name === name) || { name, status: 'invisible', note: '' }
@@ -96,8 +97,8 @@ function PostComposer({ nickname, onCreate }) {
     onCreate({ text: draft.trim(), theme: effectiveTheme, format, topic: format === 'sensitive' ? topic : null, replyPolicy })
     setDraft(''); setTheme('clear'); setFormat('normal'); setReplyPolicy('everyone'); setMore(false)
   }
-  return <form onSubmit={submit} className="rounded-2xl border border-[#ECEAF2] bg-white p-4 shadow-sm">
-    <div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication fictive</label><textarea id="arche-post-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={2} maxLength={420} className="w-full resize-none rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 placeholder:text-[#4A3F6B] outline-none focus:border-[#4A3F6B]" placeholder="Partager quelque chose…"/></div></div>
+  return <form onSubmit={submit} className="arche-composer rounded-2xl border border-[#ECEAF2] bg-white p-4 shadow-sm">
+    <p className="arche-section-kicker">Un mot, une rencontre</p><div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication fictive</label><textarea id="arche-post-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={2} maxLength={420} className="w-full resize-none rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 placeholder:text-[#4A3F6B] outline-none focus:border-[#4A3F6B]" placeholder="Partager quelque chose…"/></div></div>
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#ECEAF2] pt-3">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Ambiances de publication">
         {Object.entries(POST_THEMES).map(([id, data]) => <button key={id} type="button" disabled={draft.length > 160 || format !== 'normal'} onClick={() => setTheme(id)} aria-label={'Ambiance '+data.label} title={data.label} aria-pressed={effectiveTheme === id} className={'flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 disabled:opacity-35 '+(effectiveTheme === id ? 'border-[#1A1535]' : 'border-[#ECEAF2]')}><span aria-hidden="true" className="h-7 w-7 rounded-full border border-[#DDD7EA]" style={{ background: data.label === 'Nuit' ? '#1A1535' : data.label === 'Doux' ? '#FFF8E8' : data.label === 'Brume' ? '#EEEAF6' : '#FFFFFF' }}/></button>)}
@@ -126,7 +127,7 @@ function PostCard({ post, nickname, reactions, onReact, replies, onReply, onMode
   const existingReplies = replies[post.id] || []
   const localReactions = reactions[post.id] || []
   const night = theme === POST_THEMES.nuit
-  return <article className={'overflow-visible rounded-2xl border bg-white shadow-[0_6px_24px_rgba(26,21,53,.035)] '+(isQuestion ? 'border-l-4 border-l-[#C9A84C]' : 'border-[#ECEAF2]')} style={theme.style}>
+  return <article className={'arche-post overflow-visible rounded-2xl border bg-white shadow-[0_6px_24px_rgba(26,21,53,.035)] '+(isQuestion ? 'border-l-4 border-l-[#C9A84C]' : 'border-[#ECEAF2]')} style={theme.style}>
     <div className="p-4 sm:p-5">
       <div className="flex items-start gap-3"><Avatar name={post.author} status={isClose ? person.status : 'invisible'}/><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm" style={{ color: theme.style.color }}>{post.author}</strong>{isQuestion && <span className="rounded-lg border-l-2 border-[#C9A84C] bg-[#FFF8E8] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Question</span>}{isSensitive && <span className="rounded-lg bg-[#EEEAF6] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Sujet sensible</span>}</div><p className="mt-1 text-xs" style={{ color: night ? '#E2D7BE' : '#4A3F6B' }}>{post.circle} · {post.time}</p></div>
         <div className="relative"><button type="button" onClick={() => setMenuOpen(v => !v)} aria-expanded={menuOpen} aria-label={'Options de la publication de '+post.author} className="min-h-11 min-w-11 rounded-lg text-xl" style={{ color: theme.style.color }}>···</button>
@@ -158,7 +159,7 @@ function FeedView({ nickname, blocked, setBlocked, onNotice }) {
     if (action === 'Bloquer') { setBlocked(v => [...new Set([...v, post.author])]); onNotice('Contact fictif bloqué. Ses publications ne sont plus visibles.') }
   }
   const shown = posts.filter(post => !hidden.includes(post.id) && !blocked.includes(post.author))
-  return <div className="mx-auto max-w-[640px] space-y-3">
+  return <div className="arche-feed mx-auto max-w-[640px] space-y-3"><SpaceHeading icon="home" eyebrow="Les petits liens du quotidien" title="Votre Fil" description="Des voix, des questions et une place pour la vôtre. Publications fictives."/>
     <PostComposer nickname={nickname} onCreate={createPost}/>
     {lastHidden && <button type="button" className="min-h-11 w-full text-sm text-[#4A3F6B] underline" onClick={() => { setHidden(v => v.filter(id => id !== lastHidden)); setLastHidden(null) }}>Annuler le masquage de la dernière publication</button>}
     {shown.length === 0 && <p className="rounded-lg bg-white p-5 text-sm">Aucune publication visible pour le moment.</p>}
@@ -166,20 +167,25 @@ function FeedView({ nickname, blocked, setBlocked, onNotice }) {
   </div>
 }
 
-function SalonView({ nickname }) {
+function SpaceHeading({ icon, eyebrow, title, description }) {
+  return <header className="arche-space-heading"><span className="arche-message-symbol"><AppIcon name={icon}/></span><div><p className="arche-section-kicker">{eyebrow}</p><h2>{title}</h2><p>{description}</p></div></header>
+}
+function SalonView({ nickname, blocked }) {
+  const identity = useContext(IdentityContext)
   const [messages, setMessages] = useState([{ author:'Aurore',text:'Bienvenue dans le Grand Salon !' },{ author:'Nuage Bleu',text:'Je suis là aussi, je profite du calme.' }])
   const [draft, setDraft] = useState('')
-  return <section className="mx-auto max-w-[720px] overflow-hidden rounded-2xl border border-[#ECEAF2] bg-white">
-    <header className="border-b border-[#ECEAF2] px-4 py-3"><h2 className="text-base font-semibold">Grand Salon</h2><p className="text-xs text-[#4A3F6B]">Messages fictifs · aucun membre réel en ligne</p></header>
-    <div aria-live="polite" className="max-h-[60vh] min-h-[340px] space-y-3 overflow-y-auto p-4">{messages.map((message,index) => <div key={index} className="flex gap-3"><Avatar name={message.author}/><p className="max-w-[80%] rounded-xl bg-[#FAFAF7] px-4 py-3 text-sm leading-6"><strong>{message.author}</strong><span className="block">{message.text}</span></p></div>)}</div>
-    <form onSubmit={event => { event.preventDefault(); if (!draft.trim()) return; setMessages(current => [...current,{ author:nickname,text:draft.trim() }]); setDraft('') }} className="flex gap-2 border-t border-[#ECEAF2] p-3"><label className="sr-only" htmlFor="arche-salon-draft">Écrire dans le Salon fictif</label><input id="arche-salon-draft" maxLength={240} value={draft} onChange={event => setDraft(event.target.value)} className={field} placeholder="Écrire au Salon…"/><button disabled={!draft.trim()} className={primary}>Envoyer</button></form>
+  return <section data-bubble-palette={identity.bubblePalette} className="arche-salon arche-messages mx-auto max-w-[720px] overflow-hidden rounded-2xl border border-[#ECEAF2] bg-white">
+    <SpaceHeading icon="chat" eyebrow="Une place pour chaque voix" title="Grand Salon" description="Échanges collectifs fictifs · aucun membre réel en ligne"/>
+    <div className="arche-salon-welcome"><span aria-hidden="true">✧</span> Entrez, prenez le temps. Ici, on se répond avec douceur.</div>
+    <div aria-live="polite" className="arche-salon-transcript space-y-4">{messages.filter(message => !blocked.includes(message.author)).map((message,index) => <div key={index} className={'arche-message-row flex '+(message.author === nickname ? 'justify-end' : 'justify-start')}>{message.author !== nickname && <Avatar name={message.author}/>}<div className="arche-bubble"><strong className="arche-salon-author">{message.author}</strong><p>{message.text}</p><span className="arche-message-time" aria-label="Heure fictive">20:{String(10 + index % 50).padStart(2,'0')}</span></div>{message.author === nickname && <Avatar name={nickname}/>}</div>)}</div>
+    <form onSubmit={event => { event.preventDefault(); if (!draft.trim()) return; setMessages(current => [...current,{ author:nickname,text:draft.trim() }]); setDraft('') }} className="arche-salon-compose flex gap-2 p-3"><label className="sr-only" htmlFor="arche-salon-draft">Écrire dans le Salon fictif</label><input id="arche-salon-draft" maxLength={240} value={draft} onChange={event => setDraft(event.target.value)} className={field} placeholder="Un petit mot pour le Salon…"/><button disabled={!draft.trim()} className={primary}>Envoyer</button></form>
   </section>
 }
 
 function CirclesView() {
   const [selected,setSelected]=useState(null)
   const [joined,setJoined]=useState(['decouverte'])
-  return <div className="mx-auto max-w-[720px]"><h2 className="mb-4 font-georgia text-2xl">Les Cercles</h2><div className="grid gap-3 sm:grid-cols-2">{CIRCLES.map(circle => <article key={circle.id} className="rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="text-base font-semibold">{circle.title}</h3><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">{circle.description}</p><button type="button" className={secondary+' mt-4'} onClick={()=>setSelected(circle.id)}>Explorer</button></article>)}</div>
+  return <div className="arche-circles mx-auto max-w-[720px]"><SpaceHeading icon="circles" eyebrow="Se retrouver autour de ce qui nous lie" title="Les Cercles" description="Choisissez un espace qui vous ressemble. Exploration fictive."/><div className="grid gap-3 sm:grid-cols-2">{CIRCLES.map(circle => <article key={circle.id} data-tint={circle.tint} className="arche-circle-card rounded-2xl border border-[#ECEAF2] bg-white p-5"><div className="arche-circle-art"><span className="arche-circle-icon"><AppIcon name={circle.icon} size={30}/></span><span className="arche-circle-orbit" aria-hidden="true">✧</span></div><p className="arche-section-kicker">{circle.invitation}</p><h3 className="text-base font-semibold">{circle.title}</h3><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">{circle.description}</p><button type="button" className={secondary+' mt-4'} onClick={()=>setSelected(circle.id)}>Explorer</button></article>)}</div>
     {selected && <div className="mt-4 rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="font-semibold">{CIRCLES.find(c=>c.id===selected)?.title}</h3><p className="mt-2 text-sm text-[#4A3F6B]">Découvrez les échanges du Cercle.</p><button type="button" className={primary+' mt-4'} onClick={()=>setJoined(list=>list.includes(selected)?list.filter(id=>id!==selected):[...list,selected])}>{joined.includes(selected)?'Quitter ce Cercle':'Rejoindre ce Cercle'}</button></div>}
   </div>
 }
@@ -190,10 +196,8 @@ function MessageAvatar({ name, status = 'invisible', lueur = false, self = false
     {self && emoji ? <span aria-hidden="true" className="arche-avatar-emoji">{emoji}</span> : self && model !== 'portrait' ? <svg aria-hidden="true" viewBox="0 0 64 64"><path d="M5 64c1-19 12-26 27-26s26 7 27 26" fill="#395F97"/><ellipse cx="32" cy="27" rx="13" ry="16" fill="#EAC29F"/><path d="M19 23c-5-23 33-23 27 0l-4-7-7 2-10-4Z" fill="#3A3548"/><g fill="none" stroke="#394660" strokeWidth="2"><rect x="21" y="24" width="10" height="7" rx="3"/><rect x="33" y="24" width="10" height="7" rx="3"/><path d="M31 27h2M27 35q5 4 10 0"/></g><path d="m32 48 2 4 5 1-4 3 1 5-4-3-4 3 1-5-4-3 5-1Z" fill="#F6DC99"/></svg> : <svg aria-hidden="true" viewBox="0 0 64 64"><path d="M6 64c0-20 12-27 26-27s26 7 26 27" fill={['#628DAA','#9B82BD','#6EAB96','#C884A1'][index]}/><path d="M16 31c-5-25 38-29 33 1l4 14H12Z" fill="#343451"/><ellipse cx="32" cy="27" rx="13" ry="16" fill={['#EDC5AC','#BD886D','#E3B493','#D6A082'][index]}/><path d="M18 22c0-20 28-20 28 0-8-1-14-5-18-10-1 5-5 8-10 10" fill="#343451"/><circle cx="27" cy="26" r="1.2" fill="#343451"/><circle cx="37" cy="26" r="1.2" fill="#343451"/><path d="M27 33q5 4 10 0" stroke="#875743" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}<PresenceDot status={status}/>
   </span>
 }
-function MessagesView({ blocked, setBlocked, incomingLueur, onNotice, nickname, mood, setMood, setIncomingLueur }) {
+function MessagesView({ bubblePalette, setBubblePalette, avatarModel, setAvatarModel, blocked, setBlocked, incomingLueur, onNotice, nickname, mood, setMood, setIncomingLueur }) {
   const [selected, setSelected] = useState('aurore')
-  const [bubblePalette, setBubblePalette] = useState('ciel')
-  const [avatarModel, setAvatarModel] = useState('lunettes')
   const [personalizeOpen, setPersonalizeOpen] = useState(false)
   const [lueurPulse, setLueurPulse] = useState(null)
   const [sendCooling, setSendCooling] = useState(false)
@@ -263,17 +267,17 @@ function MessagesView({ blocked, setBlocked, incomingLueur, onNotice, nickname, 
 
         </>}
       </div>
-      {canChat && <div className="arche-palette-bar"><span>Votre couleur</span><div role="group" aria-label="Couleur de vos bulles">{['ciel','rose','lavande','menthe','peche','nuit'].map(color => <button key={color} type="button" aria-label={'Bulles '+color} title={{ ciel: 'Ciel', rose: 'Rose', lavande: 'Lavande', menthe: 'Menthe', peche: 'Pêche', nuit: 'Nuit' }[color]} aria-pressed={bubblePalette === color} onClick={() => setBubblePalette(color)} className={'arche-palette-choice arche-palette-'+color}><span aria-hidden="true"/></button>)}</div><button type="button" className="arche-personalize-toggle" aria-expanded={personalizeOpen} onClick={() => setPersonalizeOpen(v => !v)}>Mon style</button></div>}
+      {canChat && <div className="arche-palette-bar"><span>Votre couleur</span><div role="group" aria-label="Couleur de vos bulles">{Object.keys(BUBBLE_COLORS).map(color => <button key={color} type="button" aria-label={'Bulles '+color} title={BUBBLE_COLORS[color]} aria-pressed={bubblePalette === color} onClick={() => setBubblePalette(color)} className={'arche-palette-choice arche-palette-'+color}><span aria-hidden="true"/></button>)}</div><button type="button" className="arche-personalize-toggle" aria-expanded={personalizeOpen} onClick={() => setPersonalizeOpen(v => !v)}>Mon style</button></div>}
       {canChat && <div className="arche-self-presence"><MessageAvatar name={nickname} self model={avatarModel}/><span><strong>{nickname}</strong><span>{mood}</span></span></div>}
-      {canChat && personalizeOpen && <section className="arche-personalization" aria-label="Personnaliser la messagerie"><p className="arche-menu-title">Votre petite signature</p><div role="group" aria-label="Choisir mon avatar">{[{ id: 'lunettes', label: 'Illustré à lunettes' },{ id: 'portrait', label: 'Portrait illustré' },{ id: 'etoile', label: 'Emoji étoile' },{ id: 'lune', label: 'Emoji lune' },{ id: 'sourire', label: 'Emoji sourire' }].map(model => <button type="button" key={model.id} aria-label={model.label} aria-pressed={avatarModel === model.id} onClick={() => setAvatarModel(model.id)}><MessageAvatar name={nickname} self model={model.id}/></button>)}</div><button type="button" disabled className="arche-photo-placeholder">Photo de profil · bientôt</button><p>Aucun import de photo dans cette maquette.</p><label>Ma phrase d’humeur<input aria-label="Ma phrase d’humeur" maxLength={60} value={mood} onChange={event => setMood(event.target.value)} placeholder="Quelques mots, juste pour vos proches…"/></label><span className="arche-mood-count">{mood.length}/60 · visible par vos proches seulement</span><button type="button" className="arche-personalization-done" onClick={() => setPersonalizeOpen(false)}>Terminé</button></section>}
+      {canChat && personalizeOpen && <section className="arche-personalization" aria-label="Personnaliser la messagerie"><p className="arche-menu-title">Votre petite signature</p><div role="group" aria-label="Choisir mon avatar">{AVATAR_MODELS.map(model => <button type="button" key={model.id} aria-label={model.label} aria-pressed={avatarModel === model.id} onClick={() => setAvatarModel(model.id)}><MessageAvatar name={nickname} self model={model.id}/></button>)}</div><button type="button" disabled className="arche-photo-placeholder">Photo de profil · bientôt</button><p>Aucun import de photo dans cette maquette.</p><label>Ma phrase d’humeur<input aria-label="Ma phrase d’humeur" maxLength={60} value={mood} onChange={event => setMood(event.target.value)} placeholder="Quelques mots, juste pour vos proches…"/></label><span className="arche-mood-count">{mood.length}/60 · visible par vos proches seulement</span><button type="button" className="arche-personalization-done" onClick={() => setPersonalizeOpen(false)}>Terminé</button></section>}
       {canChat && <form onSubmit={event => { event.preventDefault(); if (!draft.trim()) return; setMessages(v => [...v,{ who:'me',text:draft.trim() }]); setDraft('') }} className="flex gap-2 border-t border-[#ECEAF2] p-3"><label className="sr-only" htmlFor="arche-dm-draft">Écrire un message fictif</label><input id="arche-dm-draft" className={field} maxLength={240} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Un petit mot pour Aurore…"/><button type="submit" disabled={!draft.trim()} className={primary+' shrink-0 px-5'}>Envoyer</button></form>}
     </section>
   </div>
 }
 
-function ProfileView({ nickname, presence, setPresence, mood, setMood, incomingLueur, setIncomingLueur, blocked, setBlocked, onExit }) {
+function ProfileView({ bubblePalette, setBubblePalette, avatarModel, setAvatarModel, nickname, presence, setPresence, mood, setMood, incomingLueur, setIncomingLueur, blocked, setBlocked, onExit }) {
   const [privacyOpen, setPrivacyOpen] = useState(true)
-  return <section className="mx-auto max-w-[660px] rounded-2xl border border-[#ECEAF2] bg-white p-5"><div className="flex items-center gap-4"><Avatar name={nickname} status={presence} large/><div><h2 className="font-georgia text-2xl">{nickname}</h2><p className="text-sm text-[#4A3F6B]">Invisible par défaut · Profil réservé aux membres</p></div></div>
+  return <section data-bubble-palette={bubblePalette} className="arche-profile arche-messages mx-auto max-w-[660px] rounded-2xl border border-[#ECEAF2] bg-white p-5"><div className="arche-profile-cover"><p className="arche-section-kicker">Votre petite signature</p><span aria-hidden="true">✧</span></div><div className="flex items-center gap-4"><Avatar name={nickname} status={presence} large/><div><h2 className="font-georgia text-2xl">{nickname}</h2><p className="arche-profile-mood">{mood || "Quelques mots pour vos proches…"}</p><p className="text-xs text-[#4A3F6B]">Profil réservé aux membres · présence privée</p></div></div><section className="arche-personalization" aria-label="Personnaliser mon profil"><div role="group" aria-label="Choisir mon avatar">{AVATAR_MODELS.map(model => <button type="button" key={model.id} aria-label={model.label} aria-pressed={avatarModel === model.id} onClick={() => setAvatarModel(model.id)}><MessageAvatar name={nickname} self model={model.id}/></button>)}</div><button type="button" disabled className="arche-photo-placeholder">Photo de profil · bientôt</button><p>Aucun import de photo dans cette maquette.</p><p className="arche-menu-title">La couleur de mes échanges</p><div role="group" aria-label="Couleur de vos bulles">{Object.entries(BUBBLE_COLORS).map(([color,label]) => <button key={color} type="button" aria-label={"Bulles "+color} title={label} aria-pressed={bubblePalette === color} onClick={() => setBubblePalette(color)} className={"arche-palette-choice arche-palette-"+color}><span aria-hidden="true"/></button>)}</div><div className="arche-message-row justify-end"><p className="arche-bubble">Un petit signe, un vrai lien.</p></div></section>
     <label className="mt-5 block text-sm font-semibold">Phrase d’humeur (visible par vos proches seulement)<input maxLength={60} value={mood} onChange={event => setMood(event.target.value)} className={field+' mt-2'} placeholder="Votre humeur…"/></label>
     <label className="mt-4 block text-sm font-semibold">Statut de présence (vos proches seulement)<select value={presence} onChange={event => setPresence(event.target.value)} className={field+' mt-2'}><option value="invisible">Invisible (par défaut)</option><option value="online">Disponible</option><option value="away">Absent</option><option value="busy">Occupé</option></select></label>
     <button type="button" aria-expanded={privacyOpen} onClick={() => setPrivacyOpen(v => !v)} className={secondary+' mt-5 w-full text-left'}>Confidentialité {privacyOpen ? '−' : '+'}</button>
@@ -287,6 +291,8 @@ function RightRail({ blocked }) {
 }
 
 export function ArcheAppPreview({ nickname, onExit }) {
+  const [bubblePalette, setBubblePalette] = useState('ciel')
+  const [avatarModel, setAvatarModel] = useState('lunettes')
   const [view, setView] = useState('feed')
   const [blocked, setBlocked] = useState([])
   const [presence, setPresence] = useState('invisible')
@@ -299,7 +305,7 @@ export function ArcheAppPreview({ nickname, onExit }) {
   // Les données en mémoire des onglets restent intactes.
   function navigateTo(nextView) { setNotice(''); setView(nextView) }
   const matching = PEOPLE.filter(p => !blocked.includes(p.name) && p.name.toLowerCase().includes(search.toLowerCase()))
-  return <div data-arche-app-preview="local-only" style={{ fontFamily: 'system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif' }} className="min-h-screen bg-white text-[#1A1535]">
+  return <IdentityContext.Provider value={{ nickname, avatarModel, bubblePalette }}><div data-arche-app-preview="local-only" style={{ fontFamily: 'system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif' }} className="min-h-screen bg-white text-[#1A1535]">
     <style>{'@keyframes soft-pop{0%{transform:scale(.92)}100%{transform:scale(1)}}.reaction-button[aria-pressed="true"]{animation:soft-pop .24s ease-out}@keyframes arche-lueur-glow{0%{box-shadow:0 0 0 rgba(201,168,76,0)}100%{box-shadow:0 0 26px rgba(201,168,76,.45)}}.arche-lueur{animation:arche-lueur-glow .45s ease-out}@media(prefers-reduced-motion:reduce){.reaction-button[aria-pressed="true"],.arche-lueur{animation:none}}'}</style>
     <header className="sticky top-0 z-30 border-b border-[#ECEAF2] bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5"><ArcheBrand demo/>
       <label htmlFor="arche-member-search" className="sr-only">Rechercher un proche fictif</label><input id="arche-member-search" className="hidden min-h-11 min-w-0 flex-1 rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 text-sm placeholder:text-[#4A3F6B] md:block" placeholder="Rechercher un proche…" value={search} onChange={event=>setSearch(event.target.value)}/>
@@ -312,12 +318,12 @@ export function ArcheAppPreview({ nickname, onExit }) {
       <aside className="hidden lg:block"><nav aria-label="Navigation latérale L’Arche" className="sticky top-20 space-y-1">{MENU.map(item=><button key={item.id} type="button" aria-current={view===item.id?'page':undefined} onClick={()=>navigateTo(item.id)} className={'flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-left text-sm '+(view===item.id?'bg-[#EEEAF6] font-semibold text-[#1A1535]':'text-[#4A3F6B] hover:bg-[#FAFAF7]')}><AppIcon name={item.icon}/>{item.label}</button>)}<button type="button" onClick={onExit} className="min-h-11 w-full px-4 text-left text-sm text-[#4A3F6B]">Quitter la démo</button></nav></aside>
       <main className="min-w-0">
         <div hidden={view !== 'feed'}><FeedView nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/></div>
-        <div hidden={view !== 'salon'}><SalonView nickname={nickname}/></div>
+        <div hidden={view !== 'salon'}><SalonView nickname={nickname} blocked={blocked}/></div>
         <div hidden={view !== 'cercles'}><CirclesView/></div>
-        <div hidden={view !== 'messages'}><MessagesView blocked={blocked} setBlocked={setBlocked} incomingLueur={incomingLueur} onNotice={setNotice} nickname={nickname} mood={mood} setMood={setMood} setIncomingLueur={setIncomingLueur}/></div>
-        <div hidden={view !== 'profile'}><ProfileView nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/></div>
+        <div hidden={view !== 'messages'}><MessagesView bubblePalette={bubblePalette} setBubblePalette={setBubblePalette} avatarModel={avatarModel} setAvatarModel={setAvatarModel} blocked={blocked} setBlocked={setBlocked} incomingLueur={incomingLueur} onNotice={setNotice} nickname={nickname} mood={mood} setMood={setMood} setIncomingLueur={setIncomingLueur}/></div>
+        <div hidden={view !== 'profile'}><ProfileView bubblePalette={bubblePalette} setBubblePalette={setBubblePalette} avatarModel={avatarModel} setAvatarModel={setAvatarModel} nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/></div>
       </main><RightRail blocked={blocked}/>
     </div>
     <nav aria-label="Navigation principale L’Arche" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"><div className="grid grid-cols-5 gap-1">{MENU.map(item=><button key={item.id} type="button" onClick={()=>navigateTo(item.id)} aria-label={item.label} aria-current={view===item.id?'page':undefined} className={'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 px-1 text-[10px] font-semibold '+(view===item.id?'border-[#1A1535] text-[#1A1535]':'border-transparent text-[#4A3F6B]')}><AppIcon name={item.icon} size={20}/>{item.label}</button>)}</div></nav>
-  </div>
+  </div></IdentityContext.Provider>
 }

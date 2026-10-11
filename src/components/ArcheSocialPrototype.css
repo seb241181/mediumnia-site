@@ -23,10 +23,10 @@
 .arche-contact-mood { margin-top: 4px; font-size: 11px; }
 .arche-contact-status { display: block; margin-top: 5px; font-size: 10px; color: #52657a; }
 .arche-messages > aside > p:last-child { font-size: 10px; line-height: 1.7; border-color: #dce6f0; }
-.arche-messages > section { border-radius: 24px; border-color: #dce1ef; box-shadow: 0 12px 36px #3349650b; min-height: 650px; }
-.arche-messages > section > header { padding: 20px 16px; gap: 12px; background: #edf0fc; border-color: #dce1ef; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section { border-radius: 24px; border-color: #dce1ef; box-shadow: 0 12px 36px #3349650b; min-height: 650px; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > header { padding: 20px 16px; gap: 12px; background: #edf0fc; border-color: #dce1ef; }
 .arche-conversation-name { font-size: 18px; margin-bottom: 5px; }
-.arche-messages > section > header p { font-size: 11px; line-height: 1.6; color: #52617b; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > header p { font-size: 11px; line-height: 1.6; color: #52617b; }
 .arche-header-lueur { min-height: 48px; min-width: 48px; border-radius: 16px; padding: 6px 12px; background: #fff3d4; border: 1px solid #e6d6a8; display: flex; align-items: center; gap: 6px; color: #715832; font-size: 11px; font-weight: 700; box-shadow: 0 3px 10px #a6873b0a; }
 .arche-header-lueur > span:first-child { font-size: 28px; }
 .arche-header-lueur:disabled { opacity: .4; }
@@ -55,19 +55,19 @@
 .arche-palette-menthe span { background: #dff2e9; }
 .arche-palette-choice[aria-pressed=true] span { box-shadow: 0 0 0 3px white,0 0 0 5px #65728f; }
 .arche-private-label { margin-left: auto; font-size: 9px; }
-.arche-messages > section > form { background: white; border-color: #e6e9f0; padding: 14px; align-items: center; }
-.arche-messages > section > form input { background: #f5f7fc; border-color: #e1e5ef; border-radius: 17px; min-width: 0; }
-.arche-messages > section > form button { background: #334b72; border-radius: 16px; padding-inline: 16px; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > form { background: white; border-color: #e6e9f0; padding: 14px; align-items: center; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > form input { background: #f5f7fc; border-color: #e1e5ef; border-radius: 17px; min-width: 0; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > form button { background: #334b72; border-radius: 16px; padding-inline: 16px; }
 @keyframes arche-message-in { from { opacity: .5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media(prefers-reduced-motion:reduce) { .arche-messages * { animation: none !important; transition: none !important; } }
 @media(min-width:1280px) {
- div:has(> main > div:not([hidden]) > .arche-messages).grid { grid-template-columns: 170px minmax(0,1fr) 220px; }
+ div:has(> main > div:not([hidden]) > .arche-messages:not(.arche-salon):not(.arche-profile)).grid { grid-template-columns: 170px minmax(0,1fr) 220px; }
 }
 @media(max-width:767px) {
- main > div:not([hidden]) > .arche-messages { margin: -4px -12px -28px; gap: 0; }
- .arche-messages > section { border-radius: 0; border-inline: 0; min-height: calc(100dvh - 150px); }
- .arche-messages > section > header { padding: 14px 12px; gap: 10px; }
- .arche-messages > section > header > .arche-message-avatar { width: 46px; height: 46px; border-radius: 16px; }
+ main > div:not([hidden]) > .arche-messages:not(.arche-salon):not(.arche-profile) { margin: -4px -12px -28px; gap: 0; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section { border-radius: 0; border-inline: 0; min-height: calc(100dvh - 150px); }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header { padding: 14px 12px; gap: 10px; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header > .arche-message-avatar { width: 46px; height: 46px; border-radius: 16px; }
  .arche-conversation-name { font-size: 16px; }
  .arche-header-lueur { padding: 4px 8px; flex-direction: column; gap: 0; font-size: 9px; }
  .arche-header-lueur > span:first-child { font-size: 24px; line-height: 24px; }
@@ -91,8 +91,8 @@
 .arche-contact { border-radius: 20px; }
 .arche-message-avatar { border-radius: 50%; border-width: 3px; box-shadow: 0 0 0 1px #d6cce9,0 4px 12px #5b659415; }
 .arche-message-avatar svg, .arche-message-row > .arche-message-avatar svg { border-radius: 50%; }
-.arche-messages > section { border-radius: 32px; border: 1px solid #e2d8ed; background: #eef5ff; box-shadow: 0 16px 40px #666e9814,inset 0 1px 0 white; }
-.arche-messages > section > header { background: linear-gradient(110deg,#f8d9ec,#e4ddf8 48%,#cdeffa); border-bottom: 1px solid #ffffffa0; padding: 22px 20px; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section { border-radius: 32px; border: 1px solid #e2d8ed; background: #eef5ff; box-shadow: 0 16px 40px #666e9814,inset 0 1px 0 white; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > header { background: linear-gradient(110deg,#f8d9ec,#e4ddf8 48%,#cdeffa); border-bottom: 1px solid #ffffffa0; padding: 22px 20px; }
 .arche-conversation-body { background: linear-gradient(115deg,#fce8f2 0%,#f0eafb 45%,#def2fb 100%); }
 .arche-transcript-label { background: #ffffff70; border: 1px solid #fff8; border-radius: 100px; width: fit-content; margin: 0 auto 28px; padding: 8px 14px; color: #555673; }
 .arche-bubble { background: #fff5f8; border-color: #ffffffc0; border-radius: 25px 25px 25px 9px; box-shadow: 0 5px 18px #927ca812,inset 0 1px 0 white; padding: 15px 18px; font-size: 14px; }
@@ -101,14 +101,14 @@
 .arche-header-lueur { background: #fff1c9; border-radius: 50px; border-color: #fffaf0; box-shadow: 0 5px 14px #b9a06c1a; }
 .arche-conversation-safety summary { border-color: #fff9; color: #555673; }
 .arche-palette-bar { background: #e9edfa; border-color: #fff9; }
-.arche-messages > section > form { background: #e9edfa; border-top: 0; padding-top: 5px; padding-bottom: 18px; }
-.arche-messages > section > form input { border-radius: 100px; background: #ffffffc9; border-color: white; min-height: 48px; }
-.arche-messages > section > form button { border-radius: 100px; background: #456ba5; min-height: 48px; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > form { background: #e9edfa; border-top: 0; padding-top: 5px; padding-bottom: 18px; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > form input { border-radius: 100px; background: #ffffffc9; border-color: white; min-height: 48px; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > form button { border-radius: 100px; background: #456ba5; min-height: 48px; }
 .arche-invitation { background: #ffffffb5; border-color: white; border-radius: 25px; }
 @media(max-width:767px) {
- .arche-messages > section { border-radius: 0; border-inline: 0; }
- .arche-messages > section > header { padding: 14px 12px; }
- .arche-messages > section > header > .arche-message-avatar { border-radius: 50%; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section { border-radius: 0; border-inline: 0; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header { padding: 14px 12px; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header > .arche-message-avatar { border-radius: 50%; }
  .arche-message-row { gap: 7px; }
  .arche-message-row > .arche-message-avatar { width: 28px; height: 28px; }
  .arche-bubble { max-width: 84%; font-size: 13px; padding: 14px 16px; }
@@ -121,7 +121,7 @@
 .arche-avatar-self { background: #d9eaff; box-shadow: 0 0 0 1px #9bbde5,0 4px 12px #5b659415; }
 .arche-message-time { display: block; margin-top: 5px; text-align: right; font-size: 10px; font-variant-numeric: tabular-nums; color: #58607a; line-height: 1.3; }
 .arche-message-row.justify-end .arche-message-time { color: #39516f; }
-.arche-messages > section > header { position: relative; }
+.arche-messages:not(.arche-profile):not(.arche-salon) > section > header { position: relative; }
 .arche-conversation-menu { position: relative; flex-shrink: 0; }
 .arche-conversation-menu > summary { display: grid; place-items: center; list-style: none; cursor: pointer; width: 44px; height: 44px; border-radius: 50%; background: #ffffff7a; color: #3f4c70; font-size: 24px; font-weight: 700; }
 .arche-conversation-menu > summary::-webkit-details-marker { display: none; }
@@ -133,10 +133,10 @@
 .arche-conversation-menu-panel button { text-align: left; font-size: 12px; min-height: 44px; }
 .arche-conversation-menu-panel > p:last-child { margin-top: 12px; font-size: 10px !important; line-height: 1.6 !important; }
 @media(max-width:767px) {
- .arche-messages > section > header { gap: 8px; }
- .arche-messages > section > header > .arche-message-avatar { width: 40px; height: 40px; }
- .arche-messages > section > header > div { min-width: 0; }
- .arche-messages > section > header p { font-size: 10px; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header { gap: 8px; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header > .arche-message-avatar { width: 40px; height: 40px; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header > div { min-width: 0; }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section > header p { font-size: 10px; }
  .arche-conversation-body { padding-top: 14px; padding-bottom: 14px; }
  .arche-transcript-label { margin-bottom: 18px; }
  .arche-bubble { padding: 12px 14px; }
@@ -186,6 +186,77 @@
  .arche-palette-choice { width: 44px; }
  .arche-personalize-toggle { min-width: 60px; padding: 0 7px; }
  .arche-self-presence { padding: 0 14px 8px; }
- .arche-messages > section { min-height: calc(100dvh - 150px); }
+ .arche-messages:not(.arche-profile):not(.arche-salon) > section { min-height: calc(100dvh - 150px); }
  .arche-conversation-body { min-height: 260px; }
 }
+/* L'Arche : même famille visuelle, des espaces blancs pour respirer. */
+[data-arche-app-preview] { --arche-ink: #17233f; background: #fbfcff; color: var(--arche-ink); }
+[data-arche-app-preview] :is(button,summary,input,textarea,select):focus-visible { outline: 3px solid #567ba4; outline-offset: 3px; }
+[data-arche-app-preview] button { touch-action: manipulation; }
+[data-arche-app-preview] > header { box-shadow: 0 4px 24px #566f9510; }
+[data-arche-app-preview] nav button[aria-current=page] { background: linear-gradient(110deg,#f7e2ef,#e4edfc); border-radius: 16px; color: #17233f; }
+.arche-section-kicker { color: #52617b; font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
+.arche-space-heading { display: flex; align-items: center; gap: 15px; padding: 23px; border: 1px solid #e1e4f0; border-radius: 26px; background: linear-gradient(110deg,#f8e2ef,#ede6fa 55%,#ddf3fc); margin-bottom: 18px; }
+.arche-space-heading h2 { font-size: 24px; font-weight: 700; letter-spacing: -.035em; line-height: 1.3; color: #17233f; }
+.arche-space-heading div > p:last-child { font-size: 12px; line-height: 1.7; color: #52617b; margin-top: 6px; }
+.arche-avatar-shared { display: inline-flex; flex-shrink: 0; }
+.arche-avatar-shared .arche-message-avatar { width: 44px; height: 44px; }
+.arche-avatar-large .arche-message-avatar { width: 84px; height: 84px; box-shadow: 0 0 0 6px white,0 0 0 7px #dadfee; }
+.arche-avatar-large .arche-avatar-emoji { font-size: 46px; }
+.arche-composer { border-radius: 26px; padding: 20px; border-color: #e0e5ef; box-shadow: 0 8px 24px #50678f09; }
+.arche-composer > .arche-section-kicker { margin-bottom: 14px; }
+.arche-composer textarea { background: #f7f8fd; border-radius: 18px; }
+.arche-composer button[aria-pressed=true] { border-color: #456ba5; background: #edf3fc; }
+.arche-post { border-radius: 26px; box-shadow: 0 8px 28px #58678a0b; }
+.arche-post .reaction-button { border-radius: 100px; padding-inline: 10px; }
+.arche-post .reaction-button[aria-pressed=true] { background: #f6deed; color: #263653; box-shadow: inset 0 0 0 1px #e9c4da; }
+.arche-post .reaction-button span { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #ffffff25; font-size: 16px; }
+.arche-salon { border-radius: 30px; box-shadow: 0 12px 36px #50678f0c; }
+.arche-salon > .arche-space-heading { border-radius: 0; margin: 0; border: 0; }
+.arche-salon-welcome { padding: 15px 22px; background: #fff9e8; color: #655536; font-size: 12px; line-height: 1.7; }
+.arche-salon-welcome span { font-size: 19px; margin-right: 7px; }
+.arche-salon-transcript { min-height: 350px; max-height: 60vh; overflow-y: auto; padding: 25px 20px; background: #faf9fe; }
+.arche-salon .arche-bubble { max-width: 82%; }
+.arche-salon-author { display: block; font-size: 11px; margin-bottom: 4px; }
+.arche-salon .arche-message-row > .arche-avatar-shared .arche-message-avatar { width: 36px; height: 36px; }
+.arche-salon-compose { background: #edf0fa; border-top: 1px solid white; padding: 16px; }
+.arche-salon-compose input { border-radius: 100px; min-width: 0; }
+.arche-salon-compose button { background: #456ba5; }
+.arche-circle-card { --circle-bg: #e0f1fc; --circle-ink: #335b83; border-radius: 26px; border-color: #e0e5ef; box-shadow: 0 8px 24px #50678f08; }
+.arche-circle-card[data-tint=menthe] { --circle-bg: #dff2e9; --circle-ink: #346453; }
+.arche-circle-card[data-tint=lavande] { --circle-bg: #e8e1f8; --circle-ink: #625186; }
+.arche-circle-card[data-tint=rose] { --circle-bg: #f7dfeb; --circle-ink: #85516b; }
+.arche-circle-art { height: 104px; display: flex; align-items: center; justify-content: space-between; background: var(--circle-bg); color: var(--circle-ink); border-radius: 20px; padding: 20px; margin-bottom: 20px; overflow: hidden; }
+.arche-circle-icon { background: #ffffffb0; border: 1px solid white; width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; }
+.arche-circle-orbit { font-size: 56px; font-weight: 300; opacity: .7; }
+.arche-circle-card h3 { font-size: 19px; color: #17233f; }
+.arche-circle-card button { background: var(--circle-bg); color: var(--circle-ink); border-color: transparent; }
+.arche-profile { overflow: hidden; border-radius: 30px; box-shadow: 0 12px 36px #50678f0c; }
+.arche-profile-cover { display: flex; justify-content: space-between; align-items: center; padding: 24px 25px 45px; margin: -20px -20px 0; background: linear-gradient(110deg,#f8d9ec,#e4ddf8 48%,#cdeffa); }
+.arche-profile-cover > span { color: #877447; font-size: 42px; }
+.arche-profile > .flex { margin-top: -24px; position: relative; padding-bottom: 20px; }
+.arche-profile h2 { font-family: inherit; font-weight: 700; font-size: 23px; letter-spacing: -.03em; }
+.arche-profile-mood { font-size: 14px; line-height: 1.7; margin: 6px 0; color: #52617b; overflow-wrap: anywhere; }
+.arche-profile .arche-personalization { border-radius: 22px; background: #f8f9fd; padding: 16px; }
+.arche-profile .arche-personalization .arche-palette-choice { width: 44px; height: 44px; }
+.arche-profile .arche-personalization .arche-palette-choice[aria-pressed=true] { outline: none; }
+.arche-profile .arche-personalization .arche-message-row { margin: 15px 0 0; }
+.arche-profile .arche-personalization .arche-bubble { font-size: 12px; }
+@media(max-width:767px) {
+ .arche-space-heading { padding: 20px 16px; gap: 12px; border-radius: 22px; }
+ .arche-space-heading h2 { font-size: 22px; }
+ .arche-space-heading .arche-section-kicker { font-size: 9px; letter-spacing: .04em; }
+ .arche-composer { padding: 16px; }
+ .arche-post .reaction-button { padding-inline: 6px; font-size: 11px; }
+ .arche-circle-art { height: 88px; }
+ .arche-salon-transcript { min-height: 340px; padding: 20px 14px; }
+ .arche-profile > .flex { gap: 15px; align-items: flex-start; }
+ .arche-avatar-large .arche-message-avatar { width: 68px; height: 68px; }
+ .arche-profile h2 { font-size: 20px; }
+ .arche-profile-mood { font-size: 12px; }
+}
+@media(prefers-reduced-motion:reduce) { [data-arche-app-preview] * { animation: none !important; transition: none !important; } }
+
+.arche-profile .arche-personalization > div[role=group] { gap: 5px; }
+.arche-profile .arche-personalization > div[aria-label="Choisir mon avatar"] > button { width: 48px; height: 48px; }
+.arche-profile .arche-personalization > div[aria-label="Choisir mon avatar"] .arche-message-avatar { width: 42px; height: 42px; }

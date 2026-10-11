@@ -1,16 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 // Prototype privé : toutes les données ci-dessous sont fictives et locales.
 const PEOPLE = [
-  { id: 'aurore', name: 'Aurore', status: 'online', note: 'Disponible ce soir', unread: 1 },
-  { id: 'nuage', name: 'Nuage Bleu', status: 'online', note: 'Je relis mes rêves', unread: 0 },
-  { id: 'plume', name: 'Plume d’Or', status: 'away', note: 'Revient plus tard', unread: 2 },
-  { id: 'chemin', name: 'Chemin Libre', status: 'busy', note: 'Je préfère lire', unread: 0 },
+  { id: 'aurore', name: 'Aurore', status: 'online', note: 'Disponible ce soir' },
+  { id: 'nuage', name: 'Nuage Bleu', status: 'online', note: 'Je relis mes rêves' },
+  { id: 'plume', name: 'Plume d’Or', status: 'away', note: 'Revient plus tard' },
+  { id: 'chemin', name: 'Chemin Libre', status: 'busy', note: 'Je préfère lire' },
 ]
 const CIRCLES = [
   { id: 'decouverte', title: 'Les Découvertes', description: 'Questions simples, premiers pas et accueil.' },
   { id: 'intuition', title: 'Intuition', description: 'Ressentis, impressions et discernement.' },
-  { id: 'reves', title: 'Rêves', unread: 0, description: 'Symboles, nuits marquantes et récits.' },
+  { id: 'reves', title: 'Rêves', description: 'Symboles, nuits marquantes et récits.' },
   { id: 'questions', title: 'Grandes Questions', description: 'Croire, douter, nuancer et dialoguer.' },
 ]
 const POST_THEMES = {
@@ -246,7 +246,6 @@ export function ArcheAppPreview({ nickname, onExit }) {
   const [notice, setNotice] = useState('')
   const [showNotifications, setShowNotifications] = useState(false)
   const [search, setSearch] = useState('')
-  const current = useMemo(() => MENU.find(item => item.id === view) || MENU[0], [view])
   const matching = PEOPLE.filter(p => !blocked.includes(p.name) && p.name.toLowerCase().includes(search.toLowerCase()))
   return <div data-arche-app-preview="local-only" style={{ fontFamily: 'system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif' }} className="min-h-screen bg-white text-[#1A1535]">
     <style>{'@keyframes soft-pop{0%{transform:scale(.92)}100%{transform:scale(1)}}.reaction-button[aria-pressed="true"]{animation:soft-pop .24s ease-out}@keyframes arche-lueur-glow{0%{box-shadow:0 0 0 rgba(201,168,76,0)}100%{box-shadow:0 0 26px rgba(201,168,76,.45)}}.arche-lueur{animation:arche-lueur-glow .45s ease-out}@media(prefers-reduced-motion:reduce){.reaction-button[aria-pressed="true"],.arche-lueur{animation:none}}'}</style>

@@ -11,11 +11,10 @@ function replaceOnce(before, after, label) {
   app = app.replace(before, after)
 }
 
-replaceOnce(
-  "import ArchePage from './components/ArchePage'\n",
-  '',
-  'remove eager Arche import',
-)
+if (app.includes("import ArchePage from './components/ArchePage'")) {
+  app = app.replace("import ArchePage from './components/ArchePage'\n", '')
+}
+if (app.includes("import ArchePage from './components/ArchePage'")) throw new Error('Arche eager import persists')
 
 const lazyAnchor = "const ChronosphereMaxPage = lazy(() => import('./components/ChronosphereMaxPage'))"
 if (!app.includes("const ArchePage = lazy(() => import('./components/ArchePage'))")) {

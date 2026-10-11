@@ -82,24 +82,36 @@ function ArcheLoginPreview({ onEnter, onBack }) {
     </div></section>
   </div>
 }
+
 function PostComposer({ nickname, onCreate }) {
   const [draft, setDraft] = useState('')
   const [theme, setTheme] = useState('clear')
   const [format, setFormat] = useState('normal')
+  const [topic, setTopic] = useState('Deuil')
+  const [replyPolicy, setReplyPolicy] = useState('everyone')
+  const [more, setMore] = useState(false)
   const effectiveTheme = draft.length > 160 || format !== 'normal' ? 'clear' : theme
-  return <form onSubmit={(event) => { event.preventDefault(); if (!draft.trim()) return; onCreate({ text: draft.trim(), theme: effectiveTheme, format }); setDraft(''); setTheme('clear'); setFormat('normal') }} className="rounded-3xl border border-[#ECEAF2] bg-white p-4 shadow-[0_12px_36px_rgba(26,21,53,.05)]">
-    <div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={3} maxLength={420} className="w-full resize-none rounded-2xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 outline-none focus:border-[#4A3F6B]" placeholder="Partager quelque chose…"/></div></div>
+  function submit(event) {
+    event.preventDefault()
+    if (!draft.trim()) return
+    onCreate({ text: draft.trim(), theme: effectiveTheme, format, topic: format === 'sensitive' ? topic : null, replyPolicy })
+    setDraft(''); setTheme('clear'); setFormat('normal'); setReplyPolicy('everyone'); setMore(false)
+  }
+  return <form onSubmit={submit} className="rounded-2xl border border-[#ECEAF2] bg-white p-4 shadow-sm">
+    <div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication fictive</label><textarea id="arche-post-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={2} maxLength={420} className="w-full resize-none rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 outline-none focus:border-[#4A3F6B]" placeholder="Partager quelque chose…"/></div></div>
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#ECEAF2] pt-3">
-      {Object.entries(POST_THEMES).map(([id, data]) => <button key={id} type="button" disabled={draft.length > 160 || format !== 'normal'} onClick={() => setTheme(id)} aria-pressed={effectiveTheme === id} className={'min-h-11 rounded-full border px-3 text-xs font-semibold '+(effectiveTheme === id ? 'border-[#1A1535] bg-[#1A1535] text-white' : 'border-[#ECEAF2] bg-white text-[#4A3F6B] disabled:opacity-35')}>{data.label}</button>)}
-      <span className="mx-1 hidden h-6 w-px bg-[#ECEAF2] sm:block"/>
-      <button type="button" onClick={() => setFormat(format === 'question' ? 'normal' : 'question')} className={'min-h-11 rounded-full border px-3 text-xs font-semibold '+(format === 'question' ? 'border-[#C9A84C] bg-[#FFF8E8] text-[#1A1535]' : 'border-[#ECEAF2] bg-white text-[#4A3F6B]')}>Question</button>
-      <button type="button" onClick={() => setFormat(format === 'sensitive' ? 'normal' : 'sensitive')} className={'min-h-11 rounded-full border px-3 text-xs font-semibold '+(format === 'sensitive' ? 'border-[#4A3F6B] bg-[#EEEAF6] text-[#1A1535]' : 'border-[#ECEAF2] bg-white text-[#4A3F6B]')}>Sujet sensible</button>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Ambiances de publication">
+        {Object.entries(POST_THEMES).map(([id, data]) => <button key={id} type="button" disabled={draft.length > 160 || format !== 'normal'} onClick={() => setTheme(id)} aria-label={'Ambiance '+data.label} title={data.label} aria-pressed={effectiveTheme === id} className={'flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 disabled:opacity-35 '+(effectiveTheme === id ? 'border-[#1A1535]' : 'border-[#ECEAF2]')}><span aria-hidden="true" className="h-7 w-7 rounded-full border border-[#DDD7EA]" style={{ background: data.label === 'Nuit' ? '#1A1535' : data.label === 'Doux' ? '#FFF8E8' : data.label === 'Brume' ? '#EEEAF6' : '#FFFFFF' }}/></button>)}
+      </div>
+      <button type="button" aria-expanded={more} aria-label="Choisir un format supplémentaire" onClick={() => setMore(v => !v)} className={secondary}>+ <span className="hidden sm:inline">Format</span></button>
       <button disabled={!draft.trim()} className={primary+' ml-auto'}>Publier</button>
     </div>
-    {draft.length > 160 && <p className="mt-2 text-xs text-[#4A3F6B]">Les ambiances colorées sont réservées aux textes courts. Ce post repassera en Clair.</p>}
+    {more && <div className="mt-3 flex flex-wrap gap-2"><button type="button" aria-pressed={format === 'question'} onClick={() => setFormat(format === 'question' ? 'normal' : 'question')} className={format === 'question' ? primary : secondary}>Question</button><button type="button" aria-pressed={format === 'sensitive'} onClick={() => setFormat(format === 'sensitive' ? 'normal' : 'sensitive')} className={format === 'sensitive' ? primary : secondary}>Sujet sensible</button></div>}
+    {format === 'sensitive' && <label className="mt-3 block text-xs font-semibold">Sujet indiqué aux lecteurs<select className={field+' mt-2'} value={topic} onChange={event => setTopic(event.target.value)}><option>Deuil</option><option>Émotion difficile</option><option>Autre sujet sensible</option></select></label>}
+    {(more || format === 'sensitive') && <label className="mt-3 block text-xs font-semibold">Qui peut répondre ?<select className={field+' mt-2'} value={replyPolicy} onChange={event => setReplyPolicy(event.target.value)}><option value="everyone">Tous les membres</option><option value="contacts">Mes proches uniquement</option><option value="closed">Personne — réponses fermées</option></select></label>}
+    {draft.length > 160 && <p className="mt-2 text-xs text-[#4A3F6B]">Texte long : l’ambiance revient automatiquement à Clair.</p>}
   </form>
 }
-
 function PostCard({ post, nickname, reactions, onReact, replies, onReply, onModerate, isClose }) {
   const person = getPerson(post.author)
   const [showSensitive, setShowSensitive] = useState(false)

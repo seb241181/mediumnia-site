@@ -159,13 +159,13 @@ function FeedView({ nickname, blocked, setBlocked, onNotice }) {
   return <div className="mx-auto max-w-[640px] space-y-3">
     <PostComposer nickname={nickname} onCreate={createPost}/>
     {lastHidden && <button type="button" className="min-h-11 w-full text-sm text-[#4A3F6B] underline" onClick={() => { setHidden(v => v.filter(id => id !== lastHidden)); setLastHidden(null) }}>Annuler le masquage de la dernière publication</button>}
-    {shown.length === 0 && <p className="rounded-lg bg-white p-5 text-sm">Aucune publication visible dans cette démo.</p>}
+    {shown.length === 0 && <p className="rounded-lg bg-white p-5 text-sm">Aucune publication visible pour le moment.</p>}
     {shown.map(post => <PostCard key={post.id} post={post} nickname={nickname} reactions={reactions} replies={replies} onReact={react} onReply={reply} onModerate={moderate} isClose={PEOPLE.some(p => p.name === post.author && !blocked.includes(p.name))}/>)}
   </div>
 }
 
 function SalonView({ nickname }) {
-  const [messages, setMessages] = useState([{ author:'Aurore',text:'Bienvenue dans ce salon de démonstration.' },{ author:'Nuage Bleu',text:'Je suis là aussi, je profite du calme.' }])
+  const [messages, setMessages] = useState([{ author:'Aurore',text:'Bienvenue dans le Grand Salon !' },{ author:'Nuage Bleu',text:'Je suis là aussi, je profite du calme.' }])
   const [draft, setDraft] = useState('')
   return <section className="mx-auto max-w-[720px] overflow-hidden rounded-2xl border border-[#ECEAF2] bg-white">
     <header className="border-b border-[#ECEAF2] px-4 py-3"><h2 className="text-base font-semibold">Grand Salon</h2><p className="text-xs text-[#4A3F6B]">Messages fictifs · aucun membre réel en ligne</p></header>
@@ -244,7 +244,7 @@ function ProfileView({ nickname, presence, setPresence, mood, setMood, incomingL
     <label className="mt-5 block text-sm font-semibold">Phrase d’humeur (visible par vos proches seulement)<input maxLength={60} value={mood} onChange={event => setMood(event.target.value)} className={field+' mt-2'} placeholder="Votre humeur…"/></label>
     <label className="mt-4 block text-sm font-semibold">Statut de présence (vos proches seulement)<select value={presence} onChange={event => setPresence(event.target.value)} className={field+' mt-2'}><option value="invisible">Invisible (par défaut)</option><option value="online">Disponible</option><option value="away">Absent</option><option value="busy">Occupé</option></select></label>
     <button type="button" aria-expanded={privacyOpen} onClick={() => setPrivacyOpen(v => !v)} className={secondary+' mt-5 w-full text-left'}>Confidentialité {privacyOpen ? '−' : '+'}</button>
-    {privacyOpen && <div className="mt-3 rounded-xl bg-[#FAFAF7] p-4 text-sm"><label className="flex items-start gap-3"><input type="checkbox" checked={incomingLueur} onChange={event => setIncomingLueur(event.target.checked)} className="mt-1 h-4 w-4 accent-[#1A1535]"/><span>J’autorise mes proches à m’envoyer des Lueurs (désactivé par défaut).</span></label><p className="mt-2 text-xs leading-6 text-[#4A3F6B]">C’est la personne qui reçoit qui choisit. Jamais de lecture automatique des messages privés.</p><p className="mt-4 text-xs font-semibold">Contacts bloqués dans la démonstration</p>{blocked.length === 0 ? <p className="mt-1 text-xs">Aucun.</p> : blocked.map(name => <div key={name} className="mt-2 flex items-center justify-between gap-2"><span>{name}</span><button className={secondary} type="button" onClick={() => setBlocked(v => v.filter(item => item !== name))}>Débloquer</button></div>)}</div>}
+    {privacyOpen && <div className="mt-3 rounded-xl bg-[#FAFAF7] p-4 text-sm"><label className="flex items-start gap-3"><input type="checkbox" checked={incomingLueur} onChange={event => setIncomingLueur(event.target.checked)} className="mt-1 h-4 w-4 accent-[#1A1535]"/><span>J’autorise mes proches à m’envoyer des Lueurs (désactivé par défaut).</span></label><p className="mt-2 text-xs leading-6 text-[#4A3F6B]">C’est la personne qui reçoit qui choisit. Jamais de lecture automatique des messages privés.</p><p className="mt-4 text-xs font-semibold">Contacts bloqués</p>{blocked.length === 0 ? <p className="mt-1 text-xs">Aucun.</p> : blocked.map(name => <div key={name} className="mt-2 flex items-center justify-between gap-2"><span>{name}</span><button className={secondary} type="button" onClick={() => setBlocked(v => v.filter(item => item !== name))}>Débloquer</button></div>)}</div>}
     <button onClick={onExit} type="button" className={secondary+' mt-5'}>Quitter la démo</button>
   </section>
 }

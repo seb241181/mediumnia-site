@@ -16,8 +16,9 @@ appliqué automatiquement.
 Jusqu'ici la durée n'était déclarée nulle part : elle dépendait du réglage
 par défaut du projet, invisible depuis l'API. Elle est maintenant explicite.
 Vercel refuse un `maxDuration` supérieur à la limite du plan au moment du
-build. La Preview de la branche (état READY) confirme donc que 300 s sont
-acceptés pour ce projet.
+build. **Vérifié le 11/10/2026** : la Preview du commit `9d2db3d`
+(déploiement `dpl_J5PtqWPMfrx9fnsptg4xZ7EwQEmf`) est à l'état READY avec
+cette déclaration. Les 300 s sont donc acceptées pour ce projet.
 
 ### Budget du cron
 

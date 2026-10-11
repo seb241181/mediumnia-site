@@ -318,3 +318,9 @@
  .arche-feed .arche-post[data-ambiance=Doux] > div > p { font-size: 20px; }
  .arche-feed .arche-post .reaction-button { font-size: 11px; padding-inline: 4px; }
 }
+/* Avatar déjà choisi dans Rencontres, réutilisé à la taille de Messages. */
+.arche-encounter-avatar { display: inline-flex; flex-shrink: 0; }
+.arche-encounter-avatar > span { width: 52px; height: 52px; }
+.arche-message-row .arche-encounter-avatar > span { width: 36px; height: 36px; }
+.arche-message-row .arche-encounter-avatar svg { width: 20px; height: 20px; }
+@media(max-width:767px) { .arche-messages > section > header .arche-encounter-avatar > span { width: 40px; height: 40px; } }

@@ -6,7 +6,7 @@
 // Terminal 2 : npx playwright test tests/e2e/arche-touch.spec.mjs --workers=1
 // Pour le serveur "npm run dev", définir ARCHE_BASE_URL=http://127.0.0.1:5173.
 // Aucune écriture distante, aucun véritable compte.
-import { test, expect } from '@playwright/test'
+import { test, expect } from './arche-test-fixtures.mjs'
 
 test.use({ baseURL: process.env.ARCHE_BASE_URL || 'http://127.0.0.1:4173' })
 
@@ -22,7 +22,7 @@ test('iPhone : les cinq onglets captent chacun le toucher au centre, sans launch
   await page.setViewportSize({ width: 390, height: 844 })
   await enterDemo(page)
   const nav = page.getByRole('navigation', { name: /Navigation principale L’Arche/i })
-  for (const title of ['Fil', 'Salon', 'Cercles', 'Messages', 'Moi']) {
+  for (const title of ['Fil', 'Cercles', 'Rencontres', 'Messages', 'Moi']) {
     const button = nav.getByRole('button', { name: title, exact: true })
     const box = await button.boundingBox()
     expect(box, 'onglet '+title+' introuvable').not.toBeNull()

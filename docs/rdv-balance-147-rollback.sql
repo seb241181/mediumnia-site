@@ -11,8 +11,16 @@
 -- Niveau 2 — fonctions d'avant (définitions PROD relevées le 11/10/2026),
 -- puis suppression des nouvelles fonctions. Les colonnes et tables ajoutées
 -- sont conservées (journal d'audit, sans effet sur l'ancien code).
--- Prérequis : redéployer d'abord le code de main (sans le panneau ni l'action
--- « balance-watch »), sinon l'interface appelle des fonctions absentes.
+-- Prérequis : redéployer d'abord le code de main (sans le panneau, l'action
+-- « balance-watch », la reprise des restaurations dans le cron, ni le
+-- rattachement PayPal par attach_rdv_balance_paypal_order dans handleCreate),
+-- sinon le code appelle des fonctions absentes et le paiement du solde échoue.
+--
+-- Avant le niveau 2, vérifier qu'aucune restauration n'est en attente :
+--   SELECT id, booking_id, attempts, last_error FROM public.rdv_balance_restorations
+--   WHERE status = 'google_pending';
+-- S'il y en a : « Reprendre » depuis le tableau de bord (ou décision manuelle
+-- après contrôle de Google Agenda) AVANT de supprimer les fonctions de reprise.
 
 CREATE OR REPLACE FUNCTION public.claim_rdv_balance_auto_cancel(p_booking_id uuid, p_now timestamp with time zone DEFAULT now())
  RETURNS jsonb
@@ -101,8 +109,10 @@ BEGIN
 END;
 $function$;
 
--- create_or_get_rdv_balance_payment et claim_rdv_balance_capture : seule la
--- borne horaire avait changé. Retour à la borne H-48 seule :
+-- create_or_get_rdv_balance_payment et claim_rdv_balance_capture : la borne
+-- horaire avait changé ; create_or_get refuse aussi une annulation revendiquée
+-- (balance_cancel_in_progress) et rafraîchit updated_at. Retour aux définitions
+-- d'origine (le refus d'annulation revendiquée de claim_capture existait déjà) :
 --   remplacer  now() >= COALESCE(v_booking.balance_late_payment_until, v_booking.starts_at - INTERVAL '48 hours')
 --   par        now() >= v_booking.starts_at - INTERVAL '48 hours'
 -- dans les définitions de supabase/migrations/20260917114500_rdv_balance_reminders_and_payment.sql
@@ -110,6 +120,10 @@ $function$;
 -- Attention : une visio rétablie dont le lien tardif est en cours ne pourrait
 -- alors plus être réglée ; vérifier qu'aucune n'est en cours avant ce retour.
 
+DROP FUNCTION IF EXISTS public.record_rdv_balance_restore_failure(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.claim_rdv_balance_restore_resume(UUID, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS public.attach_rdv_balance_paypal_order(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.release_stale_rdv_balance_cancel_claims(TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.rdv_balance_watch(UUID, TIMESTAMPTZ, INTEGER);
 DROP FUNCTION IF EXISTS public.rotate_rdv_balance_restore_token(UUID, UUID, UUID, TEXT);
 DROP FUNCTION IF EXISTS public.record_rdv_balance_restore_email(UUID, TEXT);
@@ -122,3 +136,5 @@ DROP FUNCTION IF EXISTS public.finalize_rdv_balance_owner_alert(UUID, TEXT, TEXT
 DROP FUNCTION IF EXISTS public.claim_rdv_balance_owner_alert(UUID, TEXT, TEXT, TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.rdv_balance_cancel_blocker(UUID, TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.rdv_balance_external_payment_cents(UUID);
+-- Colonnes de reprise (resume_claimed_at, attempts, last_error, google_event_id)
+-- et type d'alerte « restore » : conservés (journal, sans effet sur l'ancien code).

@@ -70,6 +70,10 @@ CREATE TABLE IF NOT EXISTS public.rdv_balance_owner_alerts (
 ALTER TABLE public.rdv_balance_owner_alerts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.rdv_balance_owner_alerts FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.rdv_balance_owner_alerts TO service_role;
+-- Type « restore » : rétablissement interrompu ou abandonné (une alerte par visio).
+ALTER TABLE public.rdv_balance_owner_alerts DROP CONSTRAINT IF EXISTS rdv_balance_owner_alerts_kind_check;
+ALTER TABLE public.rdv_balance_owner_alerts ADD CONSTRAINT rdv_balance_owner_alerts_kind_check
+  CHECK (kind IN ('pre_cancel', 'review', 'restore'));
 
 -- ── 4. Journal des décisions et contrôles ─────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.rdv_balance_review_events (
@@ -107,6 +111,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_rdv_balance_restorations_pending
 ALTER TABLE public.rdv_balance_restorations ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.rdv_balance_restorations FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.rdv_balance_restorations TO service_role;
+-- Reprise après interruption (coupure, délai dépassé, Google incertain).
+ALTER TABLE public.rdv_balance_restorations
+  ADD COLUMN IF NOT EXISTS resume_claimed_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_error TEXT,
+  ADD COLUMN IF NOT EXISTS google_event_id TEXT;
 
 -- ── 6. Paiement externe déjà enregistré pour ce rendez-vous ───────────────
 -- Un paiement manuel non rattaché (facture PayPal, virement) saisi pour le
@@ -150,9 +160,15 @@ BEGIN
   IF v_booking.balance_late_payment_until IS NOT NULL AND p_now < v_booking.balance_late_payment_until THEN
     RETURN 'late_payment_window';
   END IF;
+  IF EXISTS (SELECT 1 FROM public.rdv_balance_restorations r WHERE r.booking_id = v_booking.id AND r.status = 'google_pending') THEN
+    RETURN 'restore_pending';
+  END IF;
 
   SELECT * INTO v_payment FROM public.rdv_balance_payments WHERE booking_id = v_booking.id;
   IF v_payment.id IS NOT NULL AND v_payment.status IN ('captured', 'capture_in_progress') THEN RETURN 'payment_uncertain'; END IF;
+  IF v_payment.id IS NOT NULL AND v_payment.status = 'order_pending' AND v_payment.updated_at > p_now - INTERVAL '30 minutes' THEN
+    RETURN 'payment_in_progress';
+  END IF;
   IF public.rdv_balance_external_payment_cents(v_booking.id) > 0 THEN RETURN 'external_payment_recorded'; END IF;
 
   IF v_booking.balance_owner_decision IS DISTINCT FROM 'cancel' THEN
@@ -253,9 +269,11 @@ AS $$
 DECLARE
   v_booking public.bookings;
   v_paid INTEGER;
+  v_blocker TEXT;
 BEGIN
   SELECT * INTO v_booking FROM public.bookings WHERE id = p_booking_id FOR UPDATE;
   IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'error', 'booking_not_found'); END IF;
+  PERFORM 1 FROM public.rdv_balance_payments WHERE booking_id = v_booking.id FOR UPDATE;
 
   v_paid := public.rdv_booking_paid_cents(v_booking.id);
   IF v_booking.status <> 'confirmed'
@@ -263,11 +281,15 @@ BEGIN
      OR v_booking.starts_at > p_now + INTERVAL '48 hours'
      OR COALESCE(v_booking.booked_price_cents, 0) <= v_paid
      OR v_booking.balance_paid_at IS NOT NULL
-     OR v_booking.balance_owner_decision = 'hold'
-     OR (v_booking.balance_late_payment_until IS NOT NULL AND p_now < v_booking.balance_late_payment_until)
-     OR public.rdv_balance_external_payment_cents(v_booking.id) > 0
   THEN
     RETURN jsonb_build_object('ok', false, 'error', 'booking_no_longer_due_for_balance_cancel');
+  END IF;
+
+  v_blocker := public.rdv_balance_cancel_blocker(v_booking.id, p_now);
+  IF v_blocker IS NOT NULL THEN
+    INSERT INTO public.rdv_balance_review_events(booking_id, event, detail)
+    VALUES (v_booking.id, 'auto_cancel_aborted', jsonb_build_object('reason', v_blocker, 'at', p_now));
+    RETURN jsonb_build_object('ok', false, 'error', 'booking_no_longer_due_for_balance_cancel', 'reason', v_blocker);
   END IF;
 
   UPDATE public.bookings
@@ -414,6 +436,10 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'booking_not_payable');
   END IF;
 
+  IF v_booking.balance_cancel_claimed_at IS NOT NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'balance_cancel_in_progress');
+  END IF;
+
   IF v_booking.balance_payment_token_expires_at IS NULL
      OR now() >= v_booking.balance_payment_token_expires_at
      OR now() >= COALESCE(v_booking.balance_late_payment_until, v_booking.starts_at - INTERVAL '48 hours') THEN
@@ -445,6 +471,9 @@ BEGIN
   IF FOUND THEN
     IF v_payment.paypal_env <> p_paypal_env OR v_payment.amount_cents <> v_due OR v_payment.currency <> 'EUR' THEN
       RETURN jsonb_build_object('ok', false, 'error', 'balance_payment_intent_mismatch');
+    END IF;
+    IF v_payment.status = 'order_pending' AND v_payment.paypal_order_id IS NULL THEN
+      UPDATE public.rdv_balance_payments SET updated_at = now() WHERE id = v_payment.id;
     END IF;
     RETURN jsonb_build_object(
       'ok', true,
@@ -776,13 +805,14 @@ BEGIN
   IF v_row.status <> 'google_pending' THEN RETURN jsonb_build_object('ok', false, 'error', 'restoration_not_pending'); END IF;
 
   UPDATE public.rdv_balance_restorations
-  SET status = 'completed', google_status = left(p_google_status, 40), updated_at = now()
+  SET status = 'completed', google_status = left(p_google_status, 40), google_event_id = p_google_event_id,
+      resume_claimed_at = NULL, last_error = NULL, updated_at = now()
   WHERE id = v_row.id;
   IF p_google_event_id IS NOT NULL THEN
     UPDATE public.bookings SET google_event_id = p_google_event_id, updated_at = now() WHERE id = v_row.booking_id;
   END IF;
   INSERT INTO public.rdv_balance_review_events(booking_id, event, detail)
-  VALUES (v_row.booking_id, 'restore_completed', jsonb_build_object('restoration_id', v_row.id, 'google_status', p_google_status));
+  VALUES (v_row.booking_id, 'restore_completed', jsonb_build_object('restoration_id', v_row.id, 'google_status', p_google_status, 'attempts', v_row.attempts));
   RETURN jsonb_build_object('ok', true, 'replay', false);
 END;
 $$;
@@ -952,9 +982,111 @@ AS $$
     'pre_cancel_alert', (SELECT jsonb_build_object('status', a.status, 'sent_at', a.sent_at)
                          FROM public.rdv_balance_owner_alerts a WHERE a.booking_id = base.id AND a.kind = 'pre_cancel'),
     'cancel_blocker', CASE WHEN base.status = 'confirmed' THEN public.rdv_balance_cancel_blocker(base.id, p_now) END,
-    'restore_blocker', CASE WHEN base.status = 'cancelled' THEN public.rdv_balance_restore_blocker(base.id, p_now) END
+    'restore_blocker', CASE WHEN base.status = 'cancelled' THEN public.rdv_balance_restore_blocker(base.id, p_now) END,
+    'restoration', (SELECT jsonb_build_object('id', r.id, 'status', r.status, 'attempts', r.attempts, 'last_error', r.last_error, 'created_at', r.created_at)
+                    FROM public.rdv_balance_restorations r WHERE r.booking_id = base.id ORDER BY r.created_at DESC LIMIT 1)
   ) ORDER BY base.starts_at), '[]'::jsonb)
   FROM base;
 $$;
 REVOKE ALL ON FUNCTION public.rdv_balance_watch(UUID, TIMESTAMPTZ, INTEGER) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rdv_balance_watch(UUID, TIMESTAMPTZ, INTEGER) TO service_role;
+
+-- ── 15. Sérialisation paiement / annulation et reprise des restaurations ───
+-- Une annulation revendiquée bloque toute création ou rattachement de commande
+-- PayPal ; une restauration interrompue est reprise (verrou de reprise, journal).
+CREATE OR REPLACE FUNCTION public.release_stale_rdv_balance_cancel_claims(p_now TIMESTAMPTZ DEFAULT now())
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_count INTEGER;
+BEGIN
+  UPDATE public.bookings
+  SET balance_cancel_claimed_at = NULL, updated_at = now()
+  WHERE status = 'confirmed'
+    AND balance_cancel_claimed_at IS NOT NULL
+    AND balance_cancel_claimed_at < p_now - INTERVAL '30 minutes';
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.release_stale_rdv_balance_cancel_claims(TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.release_stale_rdv_balance_cancel_claims(TIMESTAMPTZ) TO service_role;
+CREATE OR REPLACE FUNCTION public.attach_rdv_balance_paypal_order(p_payment_id UUID, p_paypal_order_id TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_booking_id UUID;
+  v_booking public.bookings;
+  v_payment public.rdv_balance_payments;
+BEGIN
+  IF p_payment_id IS NULL OR p_paypal_order_id IS NULL OR p_paypal_order_id !~ '^[A-Za-z0-9_-]{5,80}$' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'invalid_paypal_order');
+  END IF;
+  SELECT booking_id INTO v_booking_id FROM public.rdv_balance_payments WHERE id = p_payment_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'error', 'balance_payment_not_found'); END IF;
+
+  SELECT * INTO v_booking FROM public.bookings WHERE id = v_booking_id FOR UPDATE;
+  SELECT * INTO v_payment FROM public.rdv_balance_payments WHERE id = p_payment_id FOR UPDATE;
+
+  IF v_payment.paypal_order_id IS NOT NULL THEN
+    RETURN jsonb_build_object('ok', true, 'paypal_order_id', v_payment.paypal_order_id, 'reused', true);
+  END IF;
+  IF v_booking.status <> 'confirmed' OR v_booking.balance_cancel_claimed_at IS NOT NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'balance_cancel_in_progress');
+  END IF;
+  IF v_payment.status <> 'order_pending'
+     OR now() >= COALESCE(v_booking.balance_late_payment_until, v_booking.starts_at - INTERVAL '48 hours') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'balance_payment_expired');
+  END IF;
+
+  UPDATE public.rdv_balance_payments
+  SET paypal_order_id = p_paypal_order_id, last_error_code = NULL, updated_at = now()
+  WHERE id = v_payment.id;
+  RETURN jsonb_build_object('ok', true, 'paypal_order_id', p_paypal_order_id, 'reused', false);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.attach_rdv_balance_paypal_order(UUID, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.attach_rdv_balance_paypal_order(UUID, TEXT) TO service_role;
+CREATE OR REPLACE FUNCTION public.claim_rdv_balance_restore_resume(p_restoration_id UUID, p_now TIMESTAMPTZ DEFAULT now())
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_row public.rdv_balance_restorations;
+BEGIN
+  SELECT * INTO v_row FROM public.rdv_balance_restorations WHERE id = p_restoration_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'error', 'restoration_not_found'); END IF;
+  IF v_row.status <> 'google_pending' THEN RETURN jsonb_build_object('ok', false, 'error', 'restoration_not_pending', 'status', v_row.status); END IF;
+  IF v_row.resume_claimed_at IS NOT NULL AND v_row.resume_claimed_at > p_now - INTERVAL '5 minutes' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'resume_in_progress');
+  END IF;
+  UPDATE public.rdv_balance_restorations
+  SET resume_claimed_at = p_now, attempts = attempts + 1, updated_at = now()
+  WHERE id = v_row.id;
+  RETURN jsonb_build_object('ok', true, 'restoration_id', v_row.id, 'booking_id', v_row.booking_id,
+                            'attempts', v_row.attempts + 1, 'due_cents', v_row.due_cents, 'created_at', v_row.created_at);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.claim_rdv_balance_restore_resume(UUID, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_rdv_balance_restore_resume(UUID, TIMESTAMPTZ) TO service_role;
+CREATE OR REPLACE FUNCTION public.record_rdv_balance_restore_failure(p_restoration_id UUID, p_error TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  UPDATE public.rdv_balance_restorations
+  SET last_error = left(p_error, 80), resume_claimed_at = NULL, updated_at = now()
+  WHERE id = p_restoration_id AND status = 'google_pending'
+  RETURNING true;
+$$;
+REVOKE ALL ON FUNCTION public.record_rdv_balance_restore_failure(UUID, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_rdv_balance_restore_failure(UUID, TEXT) TO service_role;

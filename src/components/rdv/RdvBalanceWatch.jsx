@@ -17,6 +17,8 @@ const CANCEL_STATE = {
   external_payment_recorded: ['Paiement externe enregistré : aucune annulation', 'ok'],
   awaiting_owner_decision: ['En attente de votre décision', 'warn'],
   owner_not_alerted: ['Annulation suspendue : alerte pas encore partie', 'warn'],
+  restore_pending: ['Rétablissement en attente de Google : aucune annulation', 'warn'],
+  payment_in_progress: ['Paiement PayPal en cours : aucune annulation', 'warn'],
 }
 const RESTORE_BLOCKERS = {
   too_close_to_start: 'trop proche de l’heure du rendez-vous',
@@ -39,6 +41,10 @@ const ERRORS = {
   balance_cancel_in_progress: 'Une annulation est en cours d’exécution : réessayez dans quelques minutes.',
   google_slot_busy: 'Le créneau est occupé dans Google Agenda : libérez-le d’abord (événement saisi à la main ?).',
   google_calendar_unavailable: 'Google Agenda est inaccessible : restauration refusée par prudence.',
+  google_calendar_truncated: 'Google Agenda renvoie trop d’événements sur ce créneau pour conclure : restauration refusée par prudence.',
+  restore_manual_review: 'Un paiement a commencé pendant le rétablissement : vérifiez PayPal avant toute action.',
+  restoration_not_pending: 'Aucun rétablissement en attente pour ce rendez-vous.',
+  idempotency_key_reused: 'Demande déjà utilisée pour un autre rendez-vous : rouvrez le formulaire.',
   google_restore_failed: 'Google Agenda n’a pas accepté l’événement : le rendez-vous est resté annulé.',
   external_payment_confirmation_required: 'Confirmez qu’aucun paiement du solde n’a été reçu hors MediumIA.',
   paypal_env_mismatch: 'Les arrhes ont été payées sur un autre environnement PayPal.',
@@ -70,6 +76,7 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
   const [restoreFor, setRestoreFor] = useState(null)
   const [form, setForm] = useState({ hours: 1, confirm: false, email: false, key: null })
   const [link, setLink] = useState(null)
+  const [notice, setNotice] = useState('')
 
   const headers = useCallback(() => ({ Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' }), [session])
   const fetchWatch = useCallback(async () => {
@@ -93,11 +100,13 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
   }, [fetchWatch, apply])
 
   async function post(payload, label) {
-    setBusy(label); setError('')
+    setBusy(label); setError(''); setNotice('')
     try {
       const res = await fetch('/api/rdv-admin?action=balance-watch', { method: 'POST', headers: headers(), body: JSON.stringify({ practitioner_id: practitionerId, ...payload }) })
       const body = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(errorText(body.error || 'action_failed')); return null }
+      if (!res.ok) { setError(errorText(body.error || 'action_failed')); await load(); return null }
+      // 202 : rétablissement enregistré, Google n'a pas encore confirmé.
+      if (body.pending) setNotice('Rétablissement enregistré, mais Google Agenda n’a pas encore confirmé. Le rendez-vous reste réservé ; reprise automatique au prochain passage, ou bouton « Reprendre » dans quelques minutes. Aucun lien n’a été envoyé.')
       await load()
       return body
     } finally { setBusy('') }
@@ -114,6 +123,7 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
       {!data.owner_alert_configured && <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">Adresse d’alerte non configurée : aucune annulation automatique ne peut avoir lieu tant que vous n’avez pas été prévenu (sécurité).</p>}
       {data.settings?.auto_cancel_mode === 'owner_review' && <p className="mt-2 text-xs text-[#4A3F6B]">Mode actuel : aucune annulation sans votre décision.</p>}
       {error && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-2 text-sm text-rose-900">{error}</p>}
+      {notice && <p role="status" className="mt-3 rounded-lg bg-amber-50 p-2 text-sm text-amber-900">{notice}</p>}
       {link && <div role="status" className="mt-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
         <p className="font-semibold">Lien du solde exact ({money(link.due_cents)}) — valable jusqu’au {dayTime(link.late_until)}</p>
         <p className="mt-1 break-all font-mono text-xs">{link.payment_url}</p>
@@ -124,6 +134,7 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
         {items.map(item => {
           const cancelled = item.status === 'cancelled'
           const [label, tone] = cancelled ? ['Annulé pour solde le ' + dayTime(item.auto_cancelled_at), 'bad'] : confirmedState(item, now)
+          const restorePending = item.restoration?.status === 'google_pending'
           return <li key={item.booking_id} className="rounded-xl border border-gold/20 bg-cream/60 p-3 text-sm text-deep">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p><strong>{item.customer_name}</strong> · {item.service_title} · {dayTime(item.starts_at)}</p>
@@ -137,17 +148,21 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
               {item.pre_cancel_alert ? ` · alerte ${item.pre_cancel_alert.status === 'sent' ? 'envoyée' : item.pre_cancel_alert.status}` : ''}
               {item.external_payment_cents ? ` · paiement externe ${money(item.external_payment_cents)}` : ''}
             </p>
+            {restorePending && <div className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+              <p>Rétablissement en attente de Google Agenda depuis le {dayTime(item.restoration.created_at)} · {item.restoration.attempts} essai(s){item.restoration.last_error ? ` · dernier incident : ${item.restoration.last_error}` : ''}. Le rendez-vous reste réservé.</p>
+              <button type="button" disabled={!!busy} className="mt-2 min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'resume', booking_id: item.booking_id, send_email: false }, 'resume'); if (body?.payment_url) setLink(body) }}>Reprendre</button>
+            </div>}
             {!cancelled && <div className="mt-2 flex flex-wrap gap-2">
               {item.owner_decision !== 'hold' && <button type="button" disabled={!!busy} className="min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold disabled:opacity-50" onClick={() => post({ op: 'decision', booking_id: item.booking_id, decision: 'hold' }, 'hold')}>Maintenir (pas d’annulation auto)</button>}
               {item.owner_decision !== 'cancel' && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-rose-300 px-4 text-xs font-semibold text-rose-900 disabled:opacity-50" onClick={() => { if (window.confirm('Approuver l’annulation automatique de ce rendez-vous au prochain passage du cron ?')) post({ op: 'decision', booking_id: item.booking_id, decision: 'cancel' }, 'cancel') }}>Approuver l’annulation</button>}
               {item.owner_decision && <button type="button" disabled={!!busy} className="min-h-11 px-3 text-xs underline disabled:opacity-50" onClick={() => post({ op: 'decision', booking_id: item.booking_id, decision: null }, 'clear')}>Revenir à la règle habituelle</button>}
-              {data.restore_enabled && item.restored_at && item.due_cents > 0 && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-gold/40 px-4 text-xs font-semibold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'rotate', booking_id: item.booking_id, send_email: false }, 'rotate'); if (body) setLink(body) }}>Nouveau lien de solde</button>}
+              {data.restore_enabled && item.restored_at && item.due_cents > 0 && !restorePending && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-gold/40 px-4 text-xs font-semibold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'rotate', booking_id: item.booking_id, send_email: false }, 'rotate'); if (body) setLink(body) }}>Nouveau lien de solde</button>}
             </div>}
             {cancelled && <div className="mt-2">
               {item.restore_blocker ? <p className="text-xs text-[#4A3F6B]">Rétablissement impossible : {RESTORE_BLOCKERS[item.restore_blocker] || item.restore_blocker}.</p>
                 : !data.restore_enabled ? <p className="text-xs text-[#4A3F6B]">Rétablissement possible, fonction pas encore activée.</p>
                   : restoreFor !== item.booking_id ? <button type="button" className="min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold" onClick={() => { setRestoreFor(item.booking_id); setForm({ hours: 1, confirm: false, email: false, key: newKey() }) }}>Rétablir et générer le lien du solde ({money(item.due_cents)})</button>
-                    : <form className="mt-2 space-y-2 rounded-lg bg-white p-3" onSubmit={async (event) => { event.preventDefault(); const body = await post({ op: 'restore', booking_id: item.booking_id, idempotency_key: form.key, hours_before: form.hours, confirm_no_external_payment: form.confirm, send_email: form.email }, 'restore'); if (body?.payment_url) { setLink(body); setRestoreFor(null) } }}>
+                    : <form className="mt-2 space-y-2 rounded-lg bg-white p-3" onSubmit={async (event) => { event.preventDefault(); const body = await post({ op: 'restore', booking_id: item.booking_id, idempotency_key: form.key, hours_before: form.hours, confirm_no_external_payment: form.confirm, send_email: form.email }, 'restore'); if (body?.payment_url) setLink(body); if (body?.payment_url || body?.pending) setRestoreFor(null) }}>
                       <label className="block text-xs font-semibold">Lien valable jusqu’à
                         <select className="ml-2 min-h-11 rounded border border-gold/30 px-2" value={form.hours} onChange={e => setForm(f => ({ ...f, hours: Number(e.target.value) }))}>{(data.late_window_hours || [1]).map(h => <option key={h} value={h}>{h} h avant le rendez-vous</option>)}</select>
                       </label>

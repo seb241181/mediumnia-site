@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import LegalFooter from './LegalFooter'
 import { ArcheAppPreview } from './ArcheSocialPrototype'
 
@@ -20,15 +20,6 @@ function LoginScreen({ onBack, onEnter }) {
 
 export default function ArchePage({ onBack, onNavigate }) {
   const [screen, setScreen] = useState('landing')
-  // Ne jamais superposer les widgets flottants historiques à la navigation mobile de L'Arche.
-  useEffect(() => {
-    document.body.classList.add('arche-isolated')
-    const style = document.createElement('style')
-    style.id = 'arche-floating-guard'
-    style.textContent = 'body.arche-isolated .guardian-fab, body.arche-isolated .fixed.bottom-5.left-5, body.arche-isolated .fixed.bottom-5.right-5 {display:none !important}'
-    document.head.appendChild(style)
-    return () => { document.body.classList.remove('arche-isolated'); style.remove() }
-  }, [])
   const [nickname, setNickname] = useState(null)
   if (screen === 'login') return <LoginScreen onBack={() => setScreen('landing')} onEnter={(nextNickname) => { setNickname(nextNickname); setScreen('app') }} />
   if (screen === 'app') return <ArcheAppPreview nickname={nickname || 'Étoile du Nord'} onExit={() => setScreen('landing')} />

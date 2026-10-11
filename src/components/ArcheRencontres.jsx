@@ -298,8 +298,9 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
 
   return <section className="mx-auto max-w-[760px] space-y-5" aria-labelledby="rencontres-title">
     <header className="rounded-3xl border border-[#ECEAF2] bg-[#FAFAF7] p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-[.18em] text-[#4A3F6B]">Rencontres · profils fictifs de démonstration</p><h2 id="rencontres-title" className="mt-2 font-georgia text-2xl leading-tight text-balance sm:text-3xl">Les belles rencontres commencent parfois par une simple conversation.</h2></div>
+      {/* iPhone : titre sur toute la largeur, bouton en dessous ; côte à côte à partir de 640 px. */}
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1"><p className="text-xs font-bold uppercase tracking-[.18em] text-[#4A3F6B]">Rencontres · profils fictifs de démonstration</p><h2 id="rencontres-title" className="mt-2 font-georgia text-2xl leading-tight text-balance sm:text-3xl">Les belles rencontres commencent parfois par une simple conversation.</h2></div>
         <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(value => !value)} className={secondary+' shrink-0'}>Mon profil Rencontres</button>
       </div>
       {settingsOpen && <div className="mt-5 space-y-4 rounded-2xl bg-white p-4">

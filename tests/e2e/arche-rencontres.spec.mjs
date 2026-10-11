@@ -48,6 +48,9 @@ test('Filtres, fiche puis invitation : pas de message libre avant acceptation', 
   await enterRencontres(page)
   await join(page)
   await expect(page.getByRole('heading', { name: 'Des personnes à découvrir' })).toBeVisible()
+  // Le titre d’accueil occupe toute la largeur sur iPhone (il n’est plus écrasé par « Mon profil Rencontres »).
+  const title = await page.locator('#rencontres-title').boundingBox()
+  expect(title.width).toBeGreaterThan(300)
   // L’intention amoureuse n’apparaît pas à qui ne l’a pas choisie.
   await expect(page.getByRole('button', { name: 'Relation amoureuse', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Échanges et découvertes', exact: true }).click()

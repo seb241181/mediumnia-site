@@ -40,7 +40,7 @@ const INITIAL_POSTS = [
 ]
 const primary = 'min-h-11 rounded-full bg-[#1A1535] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#2B254D] disabled:cursor-not-allowed disabled:opacity-40'
 const secondary = 'min-h-11 rounded-full border border-[#ECEAF2] bg-white px-4 py-2 text-sm font-semibold text-[#1A1535] transition hover:bg-[#FAFAF7]'
-const field = 'min-h-11 w-full rounded-2xl border border-[#ECEAF2] bg-white px-4 py-3 text-sm text-[#1A1535] outline-none transition focus:border-[#4A3F6B]'
+const field = 'min-h-11 w-full rounded-2xl border border-[#ECEAF2] bg-white px-4 py-3 text-sm text-[#1A1535] placeholder:text-[#4A3F6B] outline-none transition focus:border-[#4A3F6B]'
 function colorIndex(name) {
   return Array.from(name || 'A').reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_PALETTE.length
 }
@@ -56,7 +56,7 @@ function PresenceDot({ status }) {
 }
 function Avatar({ name, status = 'invisible', lueur = false, large = false }) {
   const bg = AVATAR_PALETTE[colorIndex(name)]
-  return <span className={'relative inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-[#1A1535] '+(large ? 'h-14 w-14 text-xl' : 'h-11 w-11 text-sm')+(lueur ? ' ring-4 ring-[#C9A84C]/35 shadow-[0_0_26px_rgba(201,168,76,.45)]' : '')} style={{ background: bg }}>
+  return <span className={'relative inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-[#1A1535] '+(large ? 'h-14 w-14 text-xl' : 'h-11 w-11 text-sm')+(lueur ? ' arche-lueur ring-4 ring-[#C9A84C]/35 shadow-[0_0_26px_rgba(201,168,76,.45)]' : '')} style={{ background: bg }}>
     {name?.charAt(0)?.toUpperCase() || 'A'}<PresenceDot status={status}/>
   </span>
 }
@@ -83,7 +83,7 @@ function PostComposer({ nickname, onCreate }) {
     setDraft(''); setTheme('clear'); setFormat('normal'); setReplyPolicy('everyone'); setMore(false)
   }
   return <form onSubmit={submit} className="rounded-2xl border border-[#ECEAF2] bg-white p-4 shadow-sm">
-    <div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication fictive</label><textarea id="arche-post-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={2} maxLength={420} className="w-full resize-none rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 outline-none focus:border-[#4A3F6B]" placeholder="Partager quelque chose…"/></div></div>
+    <div className="flex gap-3"><Avatar name={nickname} status="invisible"/><div className="min-w-0 flex-1"><label className="sr-only" htmlFor="arche-post-draft">Écrire une publication fictive</label><textarea id="arche-post-draft" value={draft} onChange={event => setDraft(event.target.value)} rows={2} maxLength={420} className="w-full resize-none rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 py-3 text-sm leading-6 placeholder:text-[#4A3F6B] outline-none focus:border-[#4A3F6B]" placeholder="Partager quelque chose…"/></div></div>
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#ECEAF2] pt-3">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Ambiances de publication">
         {Object.entries(POST_THEMES).map(([id, data]) => <button key={id} type="button" disabled={draft.length > 160 || format !== 'normal'} onClick={() => setTheme(id)} aria-label={'Ambiance '+data.label} title={data.label} aria-pressed={effectiveTheme === id} className={'flex min-h-11 min-w-11 items-center justify-center rounded-full border-2 disabled:opacity-35 '+(effectiveTheme === id ? 'border-[#1A1535]' : 'border-[#ECEAF2]')}><span aria-hidden="true" className="h-7 w-7 rounded-full border border-[#DDD7EA]" style={{ background: data.label === 'Nuit' ? '#1A1535' : data.label === 'Doux' ? '#FFF8E8' : data.label === 'Brume' ? '#EEEAF6' : '#FFFFFF' }}/></button>)}
@@ -122,7 +122,7 @@ function PostCard({ post, nickname, reactions, onReact, replies, onReply, onMode
         </div>
       </div>
       {isSensitive && !showSensitive ? <section className="mt-4 rounded-xl border border-[#ECEAF2] bg-white p-4 text-[#1A1535]"><p className="text-sm font-semibold">Sujet sensible : {post.topic || 'Sujet délicat'}</p><p className="mt-2 text-xs text-[#4A3F6B]">Ce partage est replié jusqu’à votre choix.</p><p className="mt-2 text-xs text-[#4A3F6B]">{policy === 'contacts' ? 'Réponses réservées aux proches' : policy === 'closed' ? 'Réponses fermées' : 'Réponses ouvertes'}</p><button type="button" onClick={() => setShowSensitive(true)} className={primary+' mt-3'}>Lire avec attention</button></section> : <p className={'mt-4 whitespace-pre-wrap break-words leading-7 '+(post.text.length < 130 && post.theme !== 'clear' && post.format === 'normal' ? 'text-xl font-semibold sm:text-2xl' : 'text-sm')} style={{ color: theme.style.color }}>{post.text}</p>}
-      {canRead && <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-[#ECEAF2]/60 pt-3">{REACTIONS.map(reaction => <button key={reaction.id} type="button" aria-pressed={localReactions.includes(reaction.id)} onClick={() => onReact(post.id, reaction.id)} className={'reaction-button min-h-11 rounded-lg px-2 text-xs font-semibold transition '+(localReactions.includes(reaction.id) ? 'bg-[#FFF8E8] text-[#1A1535]' : night ? 'text-white hover:bg-white/10' : 'text-[#4A3F6B] hover:bg-[#FAFAF7]')}><span aria-hidden="true" className="mr-1">{reaction.icon}</span>{reaction.id === 'compris' ? 'Je comprends' : reaction.label}</button>)}
+      {canRead && <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-[#ECEAF2]/60 pt-3">{REACTIONS.map(reaction => <button key={reaction.id} type="button" aria-pressed={localReactions.includes(reaction.id)} onClick={() => onReact(post.id, reaction.id)} className={'reaction-button min-h-11 rounded-lg px-2 text-xs font-semibold transition '+(localReactions.includes(reaction.id) ? 'bg-[#FFF8E8] text-[#1A1535]' : night ? 'text-white hover:bg-white/10' : 'text-[#4A3F6B] hover:bg-[#FAFAF7]')}><span aria-hidden="true" className="mr-1">{reaction.icon}</span>{reaction.label}</button>)}
         {canReply ? <button type="button" className={'ml-auto min-h-11 px-2 text-xs font-semibold '+(night ? 'text-white' : 'text-[#1A1535]')} aria-expanded={showReplies} onClick={() => setShowReplies(v => !v)}>{showReplies ? 'Fermer' : 'Répondre'}{existingReplies.length > 0 ? ' · '+existingReplies.length+' (démo)' : ''}</button> : <span className={'ml-auto text-xs '+(night ? 'text-[#E2D7BE]' : 'text-[#4A3F6B]')}>{policy === 'closed' ? 'Réponses fermées' : 'Proches seulement'}</span>}</div>}
       {canRead && canReply && showReplies && <div className="mt-3 space-y-2 rounded-xl bg-white/95 p-3 text-[#1A1535]">{existingReplies.map((reply, index) => <p key={index} className="rounded-lg bg-[#FAFAF7] px-3 py-2 text-sm"><strong>{nickname}</strong> · {reply}</p>)}<form onSubmit={event => { event.preventDefault(); if (!replyDraft.trim()) return; onReply(post.id, replyDraft.trim()); setReplyDraft('') }} className="flex gap-2"><label className="sr-only" htmlFor={'reply-'+post.id}>Répondre à {post.author}</label><input id={'reply-'+post.id} value={replyDraft} onChange={event => setReplyDraft(event.target.value)} maxLength={200} placeholder="Votre réponse…" className={field}/><button disabled={!replyDraft.trim()} className={secondary}>Envoyer</button></form></div>}
     </div>
@@ -166,7 +166,7 @@ function CirclesView() {
   const [selected,setSelected]=useState(null)
   const [joined,setJoined]=useState(['decouverte'])
   return <div className="mx-auto max-w-[720px]"><h2 className="mb-4 font-georgia text-2xl">Les Cercles</h2><div className="grid gap-3 sm:grid-cols-2">{CIRCLES.map(circle => <article key={circle.id} className="rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="text-base font-semibold">{circle.title}</h3><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">{circle.description}</p><button type="button" className={secondary+' mt-4'} onClick={()=>setSelected(circle.id)}>Explorer</button></article>)}</div>
-    {selected && <div className="mt-4 rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="font-semibold">{CIRCLES.find(c=>c.id===selected)?.title}</h3><p className="mt-2 text-sm text-[#4A3F6B]">Espace de démonstration, sans véritables membres.</p><button type="button" className={primary+' mt-4'} onClick={()=>setJoined(list=>list.includes(selected)?list.filter(id=>id!==selected):[...list,selected])}>{joined.includes(selected)?'Quitter ce Cercle':'Rejoindre ce Cercle'}</button></div>}
+    {selected && <div className="mt-4 rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="font-semibold">{CIRCLES.find(c=>c.id===selected)?.title}</h3><p className="mt-2 text-sm text-[#4A3F6B]">Découvrez les échanges du Cercle.</p><button type="button" className={primary+' mt-4'} onClick={()=>setJoined(list=>list.includes(selected)?list.filter(id=>id!==selected):[...list,selected])}>{joined.includes(selected)?'Quitter ce Cercle':'Rejoindre ce Cercle'}</button></div>}
   </div>
 }
 function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
@@ -183,11 +183,15 @@ function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
   // Consentement reçu de l'autre personne : valeur de scénario fictif, jamais modifiable par l'expéditeur.
   const recipientAcceptsLueur = selected === 'aurore'
   const canChat = request === 'accepted' && selected === 'aurore' && !contactBlocked
-  function blockContact() {
+  function blockContact(withReport = false) {
+    const evidenceCount = withReport ? Math.min(messages.length, 5) : 0
     setBlocked(v => [...new Set([...v, person.name])])
     if (selected === 'aurore') setRequest('blocked')
     setSentLueur(false); setReceivedLueur(false); setMobileThread(false)
-    onNotice('Contact fictif bloqué. Historique masqué, aucun signalement réel transmis.')
+    setMessages([]); setDraft('')
+    onNotice(withReport
+      ? 'Blocage et signalement simulés (' + evidenceCount + ' dernier(s) message(s) concernés). Aucune preuve copiée ni aucun signalement transmis.'
+      : 'Contact fictif bloqué. Historique masqué, aucun signalement réel transmis.')
   }
   function sendLueur() {
     if (!canChat || !recipientAcceptsLueur || Date.now()-lastSent < 10000) return
@@ -204,16 +208,16 @@ function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
     <aside className={(mobileThread ? 'hidden ' : '')+'rounded-2xl border border-[#ECEAF2] bg-white p-3 md:block'}>
       <h2 className="px-3 py-2 text-base font-semibold">Mes rencontres</h2>
       {PEOPLE.filter(p => !blocked.includes(p.name)).slice(0,3).map(p => <button type="button" key={p.id} onClick={() => { setSelected(p.id); setMobileThread(true); setSentLueur(false); setReceivedLueur(false) }} className={'flex min-h-16 w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-[#FAFAF7] '+(p.id === selected ? 'bg-[#FAFAF7]' : '')}><Avatar name={p.name} status={p.status}/><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{p.name}</strong><span className="block truncate text-xs text-[#4A3F6B]">{p.note}</span></span></button>)}
-      <p className="mt-3 border-t border-[#ECEAF2] p-3 text-xs text-[#4A3F6B]">Profils et conversations fictifs. Messages privés non ouverts pendant le pilote.</p>
+      <p className="mt-3 border-t border-[#ECEAF2] p-3 text-xs text-[#4A3F6B]">Messages privés prévus après le pilote fermé.</p>
     </aside>
     <section className={(mobileThread ? 'flex ' : 'hidden ')+'min-h-[480px] flex-col overflow-hidden rounded-2xl border border-[#ECEAF2] bg-white md:flex'}>
-      <header className="flex items-center gap-2 border-b border-[#ECEAF2] p-3"><button type="button" onClick={() => setMobileThread(false)} aria-label="Revenir aux rencontres" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl md:hidden">←</button><Avatar name={person.name} status={person.status} lueur={receivedLueur}/><div className="min-w-0 flex-1"><h2 className="text-sm font-semibold">{person.name}</h2><p className="text-xs text-[#4A3F6B]">Conversation de démonstration</p></div></header>
+      <header className="flex items-center gap-2 border-b border-[#ECEAF2] p-3"><button type="button" onClick={() => setMobileThread(false)} aria-label="Revenir aux rencontres" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl md:hidden">←</button><Avatar name={person.name} status={person.status} lueur={receivedLueur}/><div className="min-w-0 flex-1"><h2 className="text-sm font-semibold">{person.name}</h2><p className="text-xs text-[#4A3F6B]">Conversation privée</p></div>{canChat && <button type="button" className={secondary+' shrink-0'} onClick={() => onNotice('Signalement de conversation simulé : aucun message réel transmis.')}>Signaler</button>}</header>
       <div className="min-h-[310px] flex-1 space-y-3 overflow-y-auto p-4">
-        {contactBlocked ? <p className="text-sm">Contact bloqué. Historique masqué dans la démonstration.</p> : selected !== 'aurore' ? <p className="text-sm text-[#4A3F6B]">Aucune conversation ouverte. Une invitation acceptée sera nécessaire.</p> : request === 'pending' ? <div className="rounded-xl bg-[#FAFAF7] p-4"><p className="text-sm leading-6">Aurore souhaite entrer en contact avec vous. Vous pouvez accepter, ignorer ou bloquer sans justification.</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={primary} onClick={() => setRequest('accepted')}>Accepter</button><button type="button" className={secondary} onClick={() => setRequest('ignored')}>Ignorer</button><button type="button" className={secondary} onClick={blockContact}>Bloquer</button></div></div> : request === 'ignored' ? <div><p className="text-sm">Invitation ignorée. Aucune conversation privée ouverte.</p><button type="button" className={secondary+' mt-3'} onClick={() => setRequest('pending')}>Réinitialiser l’exemple</button></div> : <>
+        {contactBlocked ? <p className="text-sm">Contact bloqué. Historique masqué dans la démonstration.</p> : selected !== 'aurore' ? <p className="text-sm text-[#4A3F6B]">Une invitation acceptée sera nécessaire pour échanger.</p> : request === 'pending' ? <div className="rounded-xl bg-[#FAFAF7] p-4"><p className="text-sm leading-6">Aurore souhaite entrer en contact avec vous. Vous pouvez accepter, ignorer ou bloquer sans justification.</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={primary} onClick={() => setRequest('accepted')}>Accepter</button><button type="button" className={secondary} onClick={() => setRequest('ignored')}>Ignorer</button><button type="button" className={secondary} onClick={() => blockContact()}>Bloquer</button></div></div> : request === 'ignored' ? <div><p className="text-sm">Invitation ignorée. Aucune conversation privée ouverte.</p><button type="button" className={secondary+' mt-3'} onClick={() => setRequest('pending')}>Réinitialiser l’exemple</button></div> : <>
           {messages.map((m,index) => <div key={index} className={'flex '+(m.who === 'me' ? 'justify-end' : 'justify-start')}><p className={'max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 '+(m.who === 'me' ? 'bg-[#EEEAF6]' : 'bg-[#FAFAF7]')}>{m.text}</p></div>)}
           {sentLueur && <p role="status" className="mx-auto w-fit rounded-xl bg-[#FFF8E8] px-4 py-2 text-xs">✧ Vous avez envoyé une Lueur à Aurore (démo)</p>}
           {receivedLueur && <p role="status" className="mx-auto w-fit rounded-xl bg-[#FFF8E8] px-4 py-2 text-xs">✧ Aurore vous envoie une Lueur (démo)</p>}
-          <div className="flex flex-wrap gap-2 pt-4"><button type="button" disabled={!recipientAcceptsLueur} onClick={sendLueur} className={secondary}>Envoyer une Lueur</button><button type="button" disabled={!incomingLueur} onClick={simulateReceivedLueur} className={secondary}>Simuler une Lueur reçue</button><button type="button" onClick={blockContact} className={secondary}>Bloquer</button></div>
+          <div className="flex flex-wrap gap-2 pt-4"><button type="button" disabled={!recipientAcceptsLueur} onClick={sendLueur} className={secondary}>Envoyer une Lueur</button><button type="button" disabled={!incomingLueur} onClick={simulateReceivedLueur} className={secondary}>Simuler une Lueur reçue</button><button type="button" onClick={() => blockContact()} className={secondary}>Bloquer</button><button type="button" onClick={() => blockContact(true)} className={secondary}>Bloquer et signaler</button></div>
           <p className="text-xs leading-5 text-[#4A3F6B]">Aurore autorise les Lueurs dans ce scénario. Pour recevoir les vôtres, choisissez dans Moi → Confidentialité. La vibration peut ne pas fonctionner sur iPhone.</p>
         </>}
       </div>
@@ -234,7 +238,7 @@ function ProfileView({ nickname, presence, setPresence, mood, setMood, incomingL
 }
 
 function RightRail({ blocked }) {
-  return <aside className="hidden space-y-4 xl:block"><section className="rounded-2xl border border-[#ECEAF2] bg-white p-4"><h2 className="text-sm font-semibold">Mes proches <span className="font-normal text-[#4A3F6B]">· exemples fictifs</span></h2><div className="mt-3 space-y-3">{PEOPLE.filter(p=>!blocked.includes(p.name)).map(person=><div key={person.id} className="flex items-center gap-3"><Avatar name={person.name} status={person.status}/><div className="min-w-0"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-[#4A3F6B]">{person.note}</p></div></div>)}</div></section><section className="rounded-2xl border border-[#ECEAF2] bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[.14em]">Question du soir</p><p className="mt-3 text-sm leading-6">Qu’est-ce qui vous a donné envie d’explorer la spiritualité ?</p></section></aside>
+  return <aside className="hidden space-y-4 xl:block"><section className="rounded-2xl border border-[#ECEAF2] bg-white p-4"><h2 className="text-sm font-semibold">Mes proches <span className="font-normal text-[#4A3F6B]"></span></h2><div className="mt-3 space-y-3">{PEOPLE.filter(p=>!blocked.includes(p.name)).map(person=><div key={person.id} className="flex items-center gap-3"><Avatar name={person.name} status={person.status}/><div className="min-w-0"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-[#4A3F6B]">{person.note}</p></div></div>)}</div></section><section className="rounded-2xl border border-[#ECEAF2] bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[.14em]">Question du soir</p><p className="mt-3 text-sm leading-6">Qu’est-ce qui vous a donné envie d’explorer la spiritualité ?</p></section></aside>
 }
 
 export function ArcheAppPreview({ nickname, onExit }) {
@@ -259,11 +263,11 @@ export function ArcheAppPreview({ nickname, onExit }) {
     <div className="mx-auto grid max-w-7xl gap-4 px-3 pb-28 pt-4 sm:px-5 lg:grid-cols-[205px_minmax(0,700px)] xl:grid-cols-[205px_minmax(0,700px)_250px]">
       <aside className="hidden lg:block"><nav className="sticky top-20 space-y-1">{MENU.map(item=><button key={item.id} type="button" aria-current={view===item.id?'page':undefined} onClick={()=>setView(item.id)} className={'flex min-h-12 w-full items-center rounded-xl px-4 text-left text-sm '+(view===item.id?'bg-[#EEEAF6] font-semibold text-[#1A1535]':'text-[#4A3F6B] hover:bg-[#FAFAF7]')}>{item.label}</button>)}<button type="button" onClick={onExit} className="min-h-11 w-full px-4 text-left text-sm text-[#4A3F6B]">Quitter la démo</button></nav></aside>
       <main className="min-w-0">
-        {view==='feed'&&<FeedView nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/>}
-        {view==='salon'&&<SalonView nickname={nickname}/>}
-        {view==='cercles'&&<CirclesView/>}
-        {view==='messages'&&<MessagesView blocked={blocked} setBlocked={setBlocked} incomingLueur={incomingLueur} onNotice={setNotice}/>}
-        {view==='profile'&&<ProfileView nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/>}
+        <div hidden={view !== 'feed'}><FeedView nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/></div>
+        <div hidden={view !== 'salon'}><SalonView nickname={nickname}/></div>
+        <div hidden={view !== 'cercles'}><CirclesView/></div>
+        <div hidden={view !== 'messages'}><MessagesView blocked={blocked} setBlocked={setBlocked} incomingLueur={incomingLueur} onNotice={setNotice}/></div>
+        <div hidden={view !== 'profile'}><ProfileView nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/></div>
       </main><RightRail blocked={blocked}/>
     </div>
     <nav aria-label="Navigation principale L’Arche" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"><div className="grid grid-cols-5 gap-1">{MENU.map((item,index)=><button key={item.id} type="button" onClick={()=>setView(item.id)} aria-label={item.label} aria-current={view===item.id?'page':undefined} className={'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 px-1 text-[10px] font-semibold '+(view===item.id?'border-[#1A1535] text-[#1A1535]':'border-transparent text-[#4A3F6B]')}><span aria-hidden="true" className="text-lg leading-none">{['⌂','◉','◎','✉','◯'][index]}</span>{item.label}</button>)}</div></nav>

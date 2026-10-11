@@ -164,3 +164,19 @@ test('Icônes vectorielles et champs suffisamment contrastés', () => {
   assert.match(source, /arche-lueur/)
   assert.match(source, /reaction.label/)
 })
+
+
+test('La revue mobile/desktop garde les bonnes cibles et les retours visibles seulement sur leur onglet', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  const e2e = read('tests/e2e/arche-touch.spec.mjs')
+  assert.match(app, /aria-label="Navigation latérale L’Arche"/)
+  assert.match(app, /placeholder:text-\[#4A3F6B\] md:block/)
+  assert.match(app, /className=\{primary\+' shrink-0 px-5'\}>Envoyer/)
+  assert.match(app, /function navigateTo\(nextView\) \{ setNotice\(''\); setView\(nextView\) \}/)
+  assert.match(app, /onClick=\{\(\)=>navigateTo\(item\.id\)\}/)
+  assert.match(e2e, /page\.locator\('\[data-arche-app-preview="local-only"\]'\)/)
+  assert.match(e2e, /Navigation latérale L’Arche/)
+  assert.doesNotMatch(e2e, /await expect\(page\.getByRole\('navigation', \{ name: \/Navigation principale L’Arche\/i \}\)\)\.toBeVisible\(\)/)
+  assert.match(e2e, /npm install --no-save @playwright\/test@1\.56\.1/)
+  assert.match(e2e, /document\.elementFromPoint/)
+})

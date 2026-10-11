@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ArcheInvitationActions from './ArcheInvitationActions'
 
 // Rencontres — maquette locale de L’Arche.
 // Profils, invitations et conversations sont fictifs et restent dans la mémoire de l’onglet :
@@ -14,13 +15,13 @@ const INTENTIONS = [
 ]
 
 const PROFILES = [
-  { id: 'lune', name: 'Lune Sereine', age: '35–44 ans', region: 'Bretagne', mood: 'Le calme du matin me fait du bien', intentions: ['amitie', 'binome'], interests: ['Méditation', 'Marche en forêt', 'Carnet de rêves'], bio: 'Je médite depuis quelques années, souvent seule. J’aimerais trouver quelqu’un avec qui partager un petit rendez-vous régulier, même à distance.', seeks: 'Une présence régulière, quelqu’un qui aime les silences autant que les mots.', icebreakers: ['Quelle pratique vous apaise le plus en ce moment ?', 'Plutôt méditation du matin ou du soir ?'], motif: 'moon', tone: '#EEEAF6', photo: true },
-  { id: 'sentier', name: 'Sentier Vert', age: '28 ans', region: 'Occitanie', mood: 'Toujours une question en poche', intentions: ['echanges', 'amitie'], interests: ['Rêves lucides', 'Philosophie', 'Randonnée'], bio: 'Curieux de tout, sceptique parfois. J’aime les discussions où l’on peut douter sans être jugé.', seeks: 'Des échanges francs et bienveillants, entre croyants, non-croyants et chercheurs.', icebreakers: ['Un rêve qui vous a marqué ?', 'Qu’est-ce qui vous a fait changer d’avis récemment ?'], motif: 'leaf', tone: '#EAF3E8', photo: false },
-  { id: 'phare', name: 'Petit Phare', age: '55–64 ans', region: 'Hauts-de-France', mood: 'Une lumière pour ceux qui passent', intentions: ['echanges', 'coeur'], interests: ['Deuil et mémoire', 'Écriture', 'Jardinage'], bio: 'Depuis un deuil, j’écris beaucoup. J’aimerais échanger avec des personnes qui comprennent ce chemin, sans conseils tout faits.', seeks: 'Des personnes qui savent écouter, et parfois rire aussi.', icebreakers: ['Qu’est-ce qui vous aide dans les jours plus lourds ?', 'Vous écrivez, vous aussi ?'], motif: 'star', tone: '#FFF1CC', photo: false },
-  { id: 'sauge', name: 'Brin de Sauge', age: '45–54 ans', region: '', mood: 'Entre deux tisanes', intentions: ['amour', 'coeur', 'amitie'], interests: ['Plantes', 'Tarot en amateur', 'Musique'], bio: 'Je crois aux rencontres simples. Je prends le temps, j’aime les longues conversations avant tout le reste.', seeks: 'Une belle rencontre qui commence par une vraie conversation.', icebreakers: ['Votre tisane préférée ?', 'Une musique qui vous ressemble ?'], motif: 'sprig', tone: '#F3E7D9', photo: true },
-  { id: 'maree', name: 'Marée Douce', age: '25–34 ans', region: 'Nouvelle-Aquitaine', mood: 'Je respire au rythme des vagues', intentions: ['binome', 'echanges'], interests: ['Yoga', 'Respiration', 'Astrologie'], bio: 'Je cherche un binôme pour tenir une petite routine : respiration le matin, un message le soir pour se dire comment ça s’est passé.', seeks: 'Un binôme fiable et doux, sans compétition.', icebreakers: ['Votre routine idéale tiendrait en combien de minutes ?', 'Mer ou montagne ?'], motif: 'wave', tone: '#E9F4F5', photo: false },
-  { id: 'ambre', name: 'Ciel d’Ambre', age: '65 ans et plus', region: 'Auvergne-Rhône-Alpes', mood: 'Jeune retraitée, vieille âme', intentions: ['amitie', 'echanges'], interests: ['Prière', 'Lecture', 'Chant'], bio: 'Croyante, ouverte aux autres chemins. J’aime écouter les histoires de chacun et partager un bon livre.', seeks: 'Des amitiés au long cours, des lectures à partager.', icebreakers: ['Un livre qui vous accompagne ?', 'Un lieu où vous vous sentez en paix ?'], motif: 'sun', tone: '#F8E9EB', photo: false },
-  { id: 'bois', name: 'Bois Flotté', age: '35–44 ans', region: 'Grand Est', mood: 'J’apprends à ralentir', intentions: ['amour', 'amitie'], interests: ['Méditation', 'Photographie', 'Cuisine'], bio: 'Père de deux enfants, je prends enfin du temps pour moi. Ouvert à une belle rencontre, sans précipitation.', seeks: 'De l’amitié d’abord, et pourquoi pas plus si le cœur y est.', icebreakers: ['Votre plat réconfortant ?', 'Qu’est-ce qui vous aide à ralentir ?'], motif: 'tree', tone: '#E7EEF8', photo: true },
+  { id: 'lune', name: 'Lune Sereine', age: '35–44 ans', region: 'Bretagne', mood: 'Le calme du matin me fait du bien', intentions: ['amitie', 'binome'], interests: ['Méditation', 'Marche en forêt', 'Carnet de rêves'], bio: 'Je médite depuis quelques années, souvent seule. J’aimerais trouver quelqu’un avec qui partager un petit rendez-vous régulier, même à distance.', seeks: 'Une présence régulière, quelqu’un qui aime les silences autant que les mots.', icebreakers: ['Quelle pratique vous apaise le plus en ce moment ?', 'Plutôt méditation du matin ou du soir ?'], avatar: { symbol: 'moon', label: 'Lune', tone: '#EEEAF6' }, photo: true },
+  { id: 'sentier', name: 'Sentier Vert', age: '28 ans', region: 'Occitanie', mood: 'Toujours une question en poche', intentions: ['echanges', 'amitie'], interests: ['Rêves lucides', 'Philosophie', 'Randonnée'], bio: 'Curieux de tout, sceptique parfois. J’aime les discussions où l’on peut douter sans être jugé.', seeks: 'Des échanges francs et bienveillants, entre croyants, non-croyants et chercheurs.', icebreakers: ['Un rêve qui vous a marqué ?', 'Qu’est-ce qui vous a fait changer d’avis récemment ?'], avatar: null, photo: false },
+  { id: 'phare', name: 'Petit Phare', age: '55–64 ans', region: 'Hauts-de-France', mood: 'Une lumière pour ceux qui passent', intentions: ['echanges', 'coeur'], interests: ['Deuil et mémoire', 'Écriture', 'Jardinage'], bio: 'Depuis un deuil, j’écris beaucoup. J’aimerais échanger avec des personnes qui comprennent ce chemin, sans conseils tout faits.', seeks: 'Des personnes qui savent écouter, et parfois rire aussi.', icebreakers: ['Qu’est-ce qui vous aide dans les jours plus lourds ?', 'Vous écrivez, vous aussi ?'], avatar: { symbol: 'star', label: 'Étoile', tone: '#FFF1CC' }, photo: false },
+  { id: 'sauge', name: 'Brin de Sauge', age: '45–54 ans', region: '', mood: 'Entre deux tisanes', intentions: ['amour', 'coeur', 'amitie'], interests: ['Plantes', 'Tarot en amateur', 'Musique'], bio: 'Je crois aux rencontres simples. Je prends le temps, j’aime les longues conversations avant tout le reste.', seeks: 'Une belle rencontre qui commence par une vraie conversation.', icebreakers: ['Votre tisane préférée ?', 'Une musique qui vous ressemble ?'], avatar: { symbol: 'sprig', label: 'Brin', tone: '#F3E7D9' }, photo: true },
+  { id: 'maree', name: 'Marée Douce', age: '25–34 ans', region: 'Nouvelle-Aquitaine', mood: 'Je respire au rythme des vagues', intentions: ['binome', 'echanges'], interests: ['Yoga', 'Respiration', 'Astrologie'], bio: 'Je cherche un binôme pour tenir une petite routine : respiration le matin, un message le soir pour se dire comment ça s’est passé.', seeks: 'Un binôme fiable et doux, sans compétition.', icebreakers: ['Votre routine idéale tiendrait en combien de minutes ?', 'Mer ou montagne ?'], avatar: { symbol: 'wave', label: 'Vague', tone: '#E9F4F5' }, photo: false },
+  { id: 'ambre', name: 'Ciel d’Ambre', age: '65 ans et plus', region: 'Auvergne-Rhône-Alpes', mood: 'Jeune retraitée, vieille âme', intentions: ['amitie', 'echanges'], interests: ['Prière', 'Lecture', 'Chant'], bio: 'Croyante, ouverte aux autres chemins. J’aime écouter les histoires de chacun et partager un bon livre.', seeks: 'Des amitiés au long cours, des lectures à partager.', icebreakers: ['Un livre qui vous accompagne ?', 'Un lieu où vous vous sentez en paix ?'], avatar: { symbol: 'sun', label: 'Soleil', tone: '#F8E9EB' }, photo: false },
+  { id: 'bois', name: 'Bois Flotté', age: '35–44 ans', region: 'Grand Est', mood: 'J’apprends à ralentir', intentions: ['amour', 'amitie'], interests: ['Méditation', 'Photographie', 'Cuisine'], bio: 'Père de deux enfants, je prends enfin du temps pour moi. Ouvert à une belle rencontre, sans précipitation.', seeks: 'De l’amitié d’abord, et pourquoi pas plus si le cœur y est.', icebreakers: ['Votre plat réconfortant ?', 'Qu’est-ce qui vous aide à ralentir ?'], avatar: { symbol: 'tree', label: 'Sapin', tone: '#E7EEF8' }, photo: true },
 ]
 
 const APPROACHES = [
@@ -62,9 +63,12 @@ function Motif({ name, size = 28 }) {
   return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{paths[name] || paths.star}</svg>
 }
 
+// L’avatar est celui que la personne a choisi (symbole et couleur). Sans choix : son initiale sur un fond
+// neutre identique pour tous. Rien n’est jamais déduit du pseudonyme (ni visage, ni couleur de peau).
 function ProfileAvatar({ profile, large = false }) {
-  return <span className={'relative inline-flex shrink-0 items-center justify-center rounded-full text-[#1A1535] ring-4 ring-white '+(large ? 'h-24 w-24' : 'h-16 w-16')} style={{ background: profile.tone }}>
-    <Motif name={profile.motif} size={large ? 40 : 28}/>
+  const chosen = profile.avatar
+  return <span role="img" aria-label={chosen ? 'Avatar choisi par '+profile.name+' : '+chosen.label : 'Avatar par défaut de '+profile.name} className={'relative inline-flex shrink-0 items-center justify-center rounded-full text-[#1A1535] ring-4 ring-white '+(large ? 'h-24 w-24 text-3xl' : 'h-16 w-16 text-xl')} style={{ background: chosen ? chosen.tone : '#F3F1F7' }}>
+    {chosen ? <Motif name={chosen.symbol} size={large ? 40 : 28}/> : <span aria-hidden="true" className="font-georgia">{profile.name.charAt(0)}</span>}
   </span>
 }
 
@@ -134,6 +138,7 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
   const commonIntentions = (profile) => visibleIntentions(profile, mine).filter(id => mine.includes(id))
   const pendingIncoming = incoming.filter(item => item.status === 'pending' && !isBlocked(item.from))
   const ignoredIncoming = incoming.filter(item => item.status === 'ignored' && !isBlocked(item.from))
+  const refusedIncoming = incoming.filter(item => item.status === 'refused' && !isBlocked(item.from))
   const connections = PROFILES.filter(profile => isConnected(profile.id))
   const sentPending = PROFILES.filter(profile => outgoing[profile.id]?.status === 'pending' && !isBlocked(profile.id))
   // Aucun classement : ordre alphabétique, filtré seulement par les intentions choisies.
@@ -185,8 +190,8 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
     const name = byId[invitation.from].name
     if (status === 'accepted') onNotice('Invitation de '+name+' acceptée. Vous pouvez maintenant échanger.')
     if (status === 'ignored') onNotice('Invitation ignorée. '+name+' n’est pas prévenu·e ; vous pourrez y revenir plus tard.')
-    if (status === 'refused') onNotice('Invitation refusée. '+name+' voit seulement qu’elle n’a pas abouti et ne pourra pas vous réinviter.')
-    if (status === 'pending') onNotice('Invitation de '+name+' de nouveau en attente.')
+    if (status === 'refused') onNotice('Invitation refusée. '+name+' voit seulement qu’elle n’a pas abouti : aucun motif, aucune relance possible. Vous seul·e pourrez revenir sur votre décision.')
+    if (status === 'pending') onNotice(invitation.status === 'refused' ? 'Vous revenez sur votre décision : l’invitation de '+name+' est de nouveau en attente. '+name+' n’en est pas averti·e.' : 'Invitation de '+name+' de nouveau en attente.')
   }
   function openReport(id) { setReportFor(id); setReportReason(''); setReportBlock(true) }
   function blockProfile(id, message) {
@@ -267,12 +272,16 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
         </div> : received?.status === 'pending' ? <div>
           <h3 className="font-georgia text-xl">{profile.name} aimerait faire connaissance</h3>
           <p className="mt-2 text-sm">Intention proposée : <strong>{intentionLabel(received.intention)}</strong> · « {received.approach} »</p>
-          <div className="mt-4 flex flex-wrap gap-2"><button type="button" className={primary} onClick={() => answer(received, 'accepted')}>Accepter</button><button type="button" className={secondary} onClick={() => answer(received, 'ignored')}>Ignorer</button><button type="button" className={secondary} onClick={() => answer(received, 'refused')}>Refuser</button><button type="button" className={secondary} onClick={() => openReport(profile.id)}>Bloquer et signaler</button></div>
+          <ArcheInvitationActions name={profile.name} onAccept={() => answer(received, 'accepted')} onIgnore={() => answer(received, 'ignored')} onRefuse={() => answer(received, 'refused')} onBlockAndReport={() => openReport(profile.id)}/>
         </div> : sent?.status === 'pending' ? <div>
           <h3 className="font-georgia text-xl">Invitation envoyée</h3>
           <p className="mt-2 text-sm text-[#4A3F6B]">{profile.name} répondra si elle ou il le souhaite. Pas de relance, pas de compte à rebours.</p>
           <div className="mt-4 rounded-2xl border border-dashed border-[#DDD7EA] p-3"><p className="text-xs font-semibold text-[#4A3F6B]">Pour la démonstration uniquement</p><div className="mt-2 flex flex-wrap gap-2"><button type="button" className={secondary} onClick={() => simulateAnswer(profile.id, true)}>Simuler une acceptation</button><button type="button" className={secondary} onClick={() => simulateAnswer(profile.id, false)}>Simuler une absence de suite</button></div></div>
-        </div> : sent?.status === 'closed' || received?.status === 'refused' ? <p className="text-sm text-[#4A3F6B]">Pas de suite pour le moment. Une nouvelle invitation n’est pas possible.</p>
+        </div> : received?.status === 'refused' ? <div>
+          <h3 className="font-georgia text-xl">Vous avez refusé cette invitation</h3>
+          <p className="mt-2 text-sm leading-6 text-[#4A3F6B]">{profile.name} ne connaît pas votre motif et ne peut pas vous relancer. Si vous changez d’avis, vous seul·e pouvez rouvrir l’invitation.</p>
+          <button type="button" className={secondary+' mt-4'} onClick={() => answer(received, 'pending')}>Revenir sur ma décision</button>
+        </div> : sent?.status === 'closed' ? <p className="text-sm text-[#4A3F6B]">Pas de suite pour le moment. Une nouvelle invitation n’est pas possible.</p>
         : inviteFor === profile.id ? <form onSubmit={(event) => { event.preventDefault(); sendInvite() }}>
           <h3 className="font-georgia text-xl">Demander à faire connaissance</h3>
           <p className="mt-2 text-sm leading-6 text-[#4A3F6B]">Pas de message libre avant acceptation : vous choisissez une intention commune et une phrase d’approche. {profile.name} pourra accepter, ignorer, refuser ou bloquer, sans se justifier.</p>
@@ -316,12 +325,15 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
       <h3 id="invitations-title" className="font-georgia text-xl">Invitations reçues</h3>
       {pendingIncoming.map(invitation => { const profile = byId[invitation.from]; return <article key={invitation.id} className="rounded-3xl border border-[#ECEAF2] bg-white p-4">
         <div className="flex items-center gap-4"><ProfileAvatar profile={profile}/><div className="min-w-0"><p className="text-sm"><strong>{profile.name}</strong> aimerait faire connaissance</p><p className="mt-1 text-xs leading-5 text-[#4A3F6B]">{intentionLabel(invitation.intention)} · « {invitation.approach} »</p></div></div>
-        <div className="mt-4 flex flex-wrap gap-2"><button type="button" className={secondary} onClick={() => openFiche(profile.id)}>Voir son profil</button><button type="button" className={primary} onClick={() => answer(invitation, 'accepted')}>Accepter</button><button type="button" className={secondary} onClick={() => answer(invitation, 'ignored')}>Ignorer</button><button type="button" className={secondary} onClick={() => answer(invitation, 'refused')}>Refuser</button><button type="button" className={secondary} onClick={() => openReport(profile.id)}>Bloquer et signaler</button></div>
+        <ArcheInvitationActions name={profile.name} onViewProfile={() => openFiche(profile.id)} onAccept={() => answer(invitation, 'accepted')} onIgnore={() => answer(invitation, 'ignored')} onRefuse={() => answer(invitation, 'refused')} onBlockAndReport={() => openReport(profile.id)}/>
         {reportFor === profile.id && <ReportPanel profile={profile} reason={reportReason} setReason={setReportReason} alsoBlock={reportBlock} setAlsoBlock={setReportBlock} onSubmit={submitReport} onCancel={() => setReportFor(null)}/>}
       </article> })}
       <p className="text-xs leading-5 text-[#4A3F6B]">Aucune pression : répondre n’est jamais obligatoire, et personne ne voit si vous avez lu son invitation.</p>
     </section>}
-    {ignoredIncoming.length > 0 && <div><button type="button" aria-expanded={showIgnored} onClick={() => setShowIgnored(value => !value)} className={quiet}>Invitations ignorées ({ignoredIncoming.length})</button>{showIgnored && <ul className="mt-2 space-y-2">{ignoredIncoming.map(invitation => <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#ECEAF2] bg-white p-3 text-sm"><span>{byId[invitation.from].name}</span><button type="button" className={secondary} onClick={() => answer(invitation, 'pending')}>Revoir l’invitation</button></li>)}</ul>}</div>}
+    {ignoredIncoming.length + refusedIncoming.length > 0 && <div><button type="button" aria-expanded={showIgnored} onClick={() => setShowIgnored(value => !value)} className={quiet}>Invitations mises de côté ({ignoredIncoming.length + refusedIncoming.length})</button>{showIgnored && <ul className="mt-2 space-y-2">
+      {ignoredIncoming.map(invitation => <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#ECEAF2] bg-white p-3 text-sm"><span>{byId[invitation.from].name} · ignorée</span><button type="button" className={secondary} onClick={() => answer(invitation, 'pending')}>Revoir l’invitation</button></li>)}
+      {refusedIncoming.map(invitation => <li key={invitation.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#ECEAF2] bg-white p-3 text-sm"><span>{byId[invitation.from].name} · refusée</span><button type="button" className={secondary} onClick={() => answer(invitation, 'pending')}>Revenir sur ma décision</button></li>)}
+    </ul>}</div>}
 
     {(connections.length > 0 || sentPending.length > 0) && <section aria-labelledby="liens-title" className="rounded-3xl border border-[#ECEAF2] bg-white p-4">
       <h3 id="liens-title" className="text-sm font-semibold">Vos liens en cours</h3>
@@ -340,8 +352,8 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
           const sent = outgoing[profile.id]
           const received = incomingFrom(profile.id)
           const connected = isConnected(profile.id)
-          const label = connected ? 'Écrire' : received?.status === 'pending' ? 'Voir son invitation' : sent?.status === 'pending' ? 'Invitation envoyée' : sent?.status === 'closed' || received?.status === 'refused' ? 'Pas de suite' : 'Faire connaissance'
-          const disabled = !connected && (sent?.status === 'pending' || sent?.status === 'closed' || received?.status === 'refused')
+          const label = connected ? 'Écrire' : received?.status === 'pending' ? 'Voir son invitation' : sent?.status === 'pending' ? 'Invitation envoyée' : received?.status === 'refused' ? 'Invitation refusée' : sent?.status === 'closed' ? 'Pas de suite' : 'Faire connaissance'
+          const disabled = !connected && (sent?.status === 'pending' || sent?.status === 'closed')
           return <article key={profile.id} className="flex flex-col rounded-3xl border border-[#ECEAF2] bg-white p-5 shadow-[0_6px_24px_rgba(26,21,53,.04)]">
             <div className="flex items-start gap-4"><ProfileAvatar profile={profile}/><div className="min-w-0"><h4 className="font-georgia text-xl leading-tight">{profile.name}</h4><p className="mt-1 text-xs text-[#4A3F6B]">{profile.age} · {profile.region || 'Région non précisée'}</p><p className="mt-2 text-sm italic leading-6">« {profile.mood} »</p></div></div>
             <div className="mt-4"><IntentionChips ids={visibleIntentions(profile, mine)}/></div>

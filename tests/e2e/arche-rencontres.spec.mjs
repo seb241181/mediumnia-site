@@ -85,15 +85,50 @@ test('Invitations reçues : accepter, bloquer et signaler', async ({ page }) => 
   await expect(page.getByText('Bois Flotté', { exact: true })).toBeVisible()
 })
 
-test('Invitations reçues : ignorer sans prévenir, revoir, puis refuser', async ({ page }) => {
+test('Invitations reçues : ignorer sans prévenir, refuser sans relance, puis revenir sur sa décision', async ({ page }) => {
   await enterRencontres(page)
   await join(page)
   await page.getByRole('article').filter({ hasText: 'Petit Phare aimerait' }).getByRole('button', { name: 'Ignorer' }).click()
-  await page.getByRole('button', { name: 'Invitations ignorées (1)' }).click()
+  await page.getByRole('button', { name: 'Invitations mises de côté (1)' }).click()
   await page.getByRole('button', { name: 'Revoir l’invitation' }).click()
   await page.getByRole('article').filter({ hasText: 'Petit Phare aimerait' }).getByRole('button', { name: 'Refuser' }).click()
   await expect(page.getByText('Petit Phare aimerait faire connaissance')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Pas de suite — Petit Phare' })).toBeDisabled()
+  await expect(page.getByText(/aucun motif, aucune relance possible/)).toBeVisible()
+  // Seule la personne qui a refusé peut rouvrir l’invitation, depuis la fiche.
+  await page.getByRole('button', { name: 'Invitation refusée — Petit Phare' }).click()
+  await expect(page.getByRole('heading', { name: 'Vous avez refusé cette invitation' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Faire connaissance', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Revenir sur ma décision' }).click()
+  await page.getByRole('group', { name: 'Répondre à l’invitation de Petit Phare' }).getByRole('button', { name: 'Accepter' }).click()
+  await expect(page.getByRole('textbox', { name: 'Écrire à Petit Phare' })).toBeVisible()
+})
+
+test('Dès la demande initiale : signaler sans bloquer, puis bloquer et signaler depuis la fiche', async ({ page }) => {
+  await enterRencontres(page)
+  await join(page)
+  await page.getByRole('article').filter({ hasText: 'Bois Flotté aimerait' }).getByRole('button', { name: 'Voir son profil' }).click()
+  const actions = page.getByRole('group', { name: 'Répondre à l’invitation de Bois Flotté' })
+  await expect(page.getByRole('textbox', { name: /Écrire à/ })).toHaveCount(0)
+  await actions.getByRole('button', { name: 'Bloquer et signaler' }).click()
+  await page.getByRole('radio', { name: 'Faux profil' }).check()
+  await page.getByRole('checkbox', { name: 'Bloquer aussi cette personne' }).uncheck()
+  await page.getByRole('button', { name: 'Envoyer le signalement' }).click()
+  await expect(page.getByText('Signalement simulé : rien n’a été transmis.')).toBeVisible()
+  await expect(actions).toBeVisible()
+  await actions.getByRole('button', { name: 'Bloquer et signaler' }).click()
+  await expect(page.getByRole('checkbox', { name: 'Bloquer aussi cette personne' })).toBeChecked()
+  await page.getByRole('radio', { name: 'Comportement insistant' }).check()
+  await page.getByRole('button', { name: 'Envoyer le signalement' }).click()
+  await expect(page.getByRole('heading', { name: 'Des personnes à découvrir' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Bois Flotté' })).toHaveCount(0)
+  await expect(page.getByText('Bois Flotté aimerait faire connaissance')).toHaveCount(0)
+})
+
+test('Avatars choisis par les personnes, initiale neutre à défaut de choix', async ({ page }) => {
+  await enterRencontres(page)
+  await join(page)
+  await expect(page.getByRole('img', { name: 'Avatar choisi par Lune Sereine : Lune' })).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Avatar par défaut de Sentier Vert' })).toBeVisible()
 })
 
 test('Ordinateur : Rencontres accessible depuis la navigation latérale', async ({ page }) => {

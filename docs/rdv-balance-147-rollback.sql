@@ -19,8 +19,12 @@
 -- Avant le niveau 2, vérifier qu'aucune restauration n'est en attente :
 --   SELECT id, booking_id, attempts, last_error FROM public.rdv_balance_restorations
 --   WHERE status = 'google_pending';
--- S'il y en a : « Reprendre » depuis le tableau de bord (ou décision manuelle
--- après contrôle de Google Agenda) AVANT de supprimer les fonctions de reprise.
+-- S'il y en a : « Reprendre » ou « Abandonner » depuis le tableau de bord
+-- AVANT de supprimer les fonctions de reprise.
+-- Vérifier aussi les événements Google à remettre (annulation interrompue) :
+--   SELECT id, starts_at, balance_google_resync_error FROM public.bookings
+--   WHERE status = 'confirmed' AND balance_google_resync_at IS NOT NULL;
+-- S'il y en a : vérifier/remettre l'événement dans Google Agenda à la main.
 
 CREATE OR REPLACE FUNCTION public.claim_rdv_balance_auto_cancel(p_booking_id uuid, p_now timestamp with time zone DEFAULT now())
  RETURNS jsonb
@@ -120,6 +124,9 @@ $function$;
 -- Attention : une visio rétablie dont le lien tardif est en cours ne pourrait
 -- alors plus être réglée ; vérifier qu'aucune n'est en cours avant ce retour.
 
+DROP FUNCTION IF EXISTS public.record_rdv_balance_google_resync_failure(UUID, TEXT);
+DROP FUNCTION IF EXISTS public.complete_rdv_balance_google_resync(UUID, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.claim_rdv_balance_google_resync(UUID, TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.record_rdv_balance_restore_failure(UUID, TEXT);
 DROP FUNCTION IF EXISTS public.claim_rdv_balance_restore_resume(UUID, TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.attach_rdv_balance_paypal_order(UUID, TEXT);
@@ -136,5 +143,7 @@ DROP FUNCTION IF EXISTS public.finalize_rdv_balance_owner_alert(UUID, TEXT, TEXT
 DROP FUNCTION IF EXISTS public.claim_rdv_balance_owner_alert(UUID, TEXT, TEXT, TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.rdv_balance_cancel_blocker(UUID, TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.rdv_balance_external_payment_cents(UUID);
--- Colonnes de reprise (resume_claimed_at, attempts, last_error, google_event_id)
--- et type d'alerte « restore » : conservés (journal, sans effet sur l'ancien code).
+-- Colonnes de reprise (resume_claimed_at, attempts, last_error, google_event_id),
+-- repère Google (bookings.balance_google_resync_at/_claimed_at/_error) et types
+-- d'alerte « restore » / « google_sync » : conservés (journal, sans effet sur
+-- l'ancien code, qui ne les lit ni ne les écrit).

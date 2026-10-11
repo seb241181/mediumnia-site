@@ -41,9 +41,10 @@ const ERRORS = {
   balance_cancel_in_progress: 'Une annulation est en cours d’exécution : réessayez dans quelques minutes.',
   google_slot_busy: 'Le créneau est occupé dans Google Agenda : libérez-le d’abord (événement saisi à la main ?).',
   google_calendar_unavailable: 'Google Agenda est inaccessible : restauration refusée par prudence.',
-  google_calendar_truncated: 'Google Agenda renvoie trop d’événements sur ce créneau pour conclure : restauration refusée par prudence.',
   restore_manual_review: 'Un paiement a commencé pendant le rétablissement : vérifiez PayPal avant toute action.',
   restoration_not_pending: 'Aucun rétablissement en attente pour ce rendez-vous.',
+  restore_google_conflict: 'Le créneau est désormais occupé dans Google Agenda : rien n’a été écrit. Libérez-le puis « Reprendre », ou « Abandonner ».',
+  google_calendar_truncated: 'Google Agenda renvoie trop d’événements sur ce créneau pour conclure : restauration refusée par prudence.',
   idempotency_key_reused: 'Demande déjà utilisée pour un autre rendez-vous : rouvrez le formulaire.',
   google_restore_failed: 'Google Agenda n’a pas accepté l’événement : le rendez-vous est resté annulé.',
   external_payment_confirmation_required: 'Confirmez qu’aucun paiement du solde n’a été reçu hors MediumIA.',
@@ -106,7 +107,10 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
       const body = await res.json().catch(() => ({}))
       if (!res.ok) { setError(errorText(body.error || 'action_failed')); await load(); return null }
       // 202 : rétablissement enregistré, Google n'a pas encore confirmé.
-      if (body.pending) setNotice('Rétablissement enregistré, mais Google Agenda n’a pas encore confirmé. Le rendez-vous reste réservé ; reprise automatique au prochain passage, ou bouton « Reprendre » dans quelques minutes. Aucun lien n’a été envoyé.')
+      if (body.pending) setNotice(body.reason === 'google_disconnected'
+        ? 'Rétablissement enregistré, mais Google Agenda n’est plus connecté : rien n’a été écrit. Reconnectez Google puis « Reprendre ». Le rendez-vous reste réservé ; aucun lien n’a été envoyé.'
+        : 'Rétablissement enregistré, mais Google Agenda n’a pas encore confirmé. Le rendez-vous reste réservé ; reprise automatique au prochain passage, ou bouton « Reprendre » dans quelques minutes. Aucun lien n’a été envoyé.')
+      if (body.abandoned) setNotice('Rétablissement abandonné : la visio est revenue à l’état annulé.')
       await load()
       return body
     } finally { setBusy('') }
@@ -150,8 +154,12 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
             </p>
             {restorePending && <div className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
               <p>Rétablissement en attente de Google Agenda depuis le {dayTime(item.restoration.created_at)} · {item.restoration.attempts} essai(s){item.restoration.last_error ? ` · dernier incident : ${item.restoration.last_error}` : ''}. Le rendez-vous reste réservé.</p>
-              <button type="button" disabled={!!busy} className="mt-2 min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'resume', booking_id: item.booking_id, send_email: false }, 'resume'); if (body?.payment_url) setLink(body) }}>Reprendre</button>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" disabled={!!busy} className="min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'resume', booking_id: item.booking_id, send_email: false }, 'resume'); if (body?.payment_url) setLink(body) }}>Reprendre</button>
+                <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-rose-300 px-4 text-xs font-semibold text-rose-900 disabled:opacity-50" onClick={() => { if (window.confirm('Abandonner le rétablissement ? La visio reviendra à l’état « annulé pour solde ».')) post({ op: 'abandon', booking_id: item.booking_id }, 'abandon') }}>Abandonner</button>
+              </div>
             </div>}
+            {item.google_resync && <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-900">Annulation interrompue le {dayTime(item.google_resync.since)} : l’événement Google de ce rendez-vous maintenu est à remettre{item.google_resync.error ? ` (dernier incident : ${item.google_resync.error})` : ''}. Remise automatique au prochain passage ; vérifiez Google Agenda.</p>}
             {!cancelled && <div className="mt-2 flex flex-wrap gap-2">
               {item.owner_decision !== 'hold' && <button type="button" disabled={!!busy} className="min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold disabled:opacity-50" onClick={() => post({ op: 'decision', booking_id: item.booking_id, decision: 'hold' }, 'hold')}>Maintenir (pas d’annulation auto)</button>}
               {item.owner_decision !== 'cancel' && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-rose-300 px-4 text-xs font-semibold text-rose-900 disabled:opacity-50" onClick={() => { if (window.confirm('Approuver l’annulation automatique de ce rendez-vous au prochain passage du cron ?')) post({ op: 'decision', booking_id: item.booking_id, decision: 'cancel' }, 'cancel') }}>Approuver l’annulation</button>}

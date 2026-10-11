@@ -8,10 +8,11 @@ delete process.env.RDV_BALANCE_ALERT_EMAIL
 delete process.env.VERCEL_ENV
 
 const { encrypt } = await import('../lib/googleOAuth.js')
-const { needsPreCancelAlert, runDailySweep } = await import('../lib/rdvBalanceCronHandler.js')
+const { needsPreCancelAlert, runDailySweep, runGoogleReconciliation } = await import('../lib/rdvBalanceCronHandler.js')
 const { sendOwnerBalanceAlert, ownerAlertRecipient } = await import('../lib/rdvBalanceOwnerAlerts.js')
-const { restoreBalanceBooking, setBalanceDecision, rotateBalanceLink, resumeBalanceRestoration, googleSlotIsFree, GOOGLE_SLOT_MAX_PAGES } = await import('../lib/rdvBalanceReviewAdmin.js')
-const { reconcilePendingRestorations, RESUME_ALERT_ATTEMPTS } = await import('../lib/rdvBalanceRestoreResume.js')
+const { restoreBalanceBooking, setBalanceDecision, rotateBalanceLink, resumeBalanceRestoration, abandonBalanceRestoration, googleSlotIsFree, GOOGLE_SLOT_MAX_PAGES } = await import('../lib/rdvBalanceReviewAdmin.js')
+const { reconcilePendingRestorations, releaseStaleCancelClaims, RESUME_ALERT_ATTEMPTS } = await import('../lib/rdvBalanceRestoreResume.js')
+const { reconcileGoogleResyncs } = await import('../lib/rdvBalanceGoogleResync.js')
 const { recreatedEventId } = await import('../lib/rdvBalanceGoogle.js')
 const { buildRdvBalanceOwnerAlert, buildRdvBalanceRestored } = await import('../lib/rdvBalanceEmail.js')
 
@@ -22,6 +23,8 @@ const BOOKING = '11111111-1111-4111-8111-111111111111'
 const USER = '22222222-2222-4222-8222-222222222222'
 const KEY = '33333333-3333-4333-8333-333333333333'
 
+const thenable = (value) => { const promise = Promise.resolve(value); return { then: (resolve, reject) => promise.then(resolve, reject) } }
+
 // Faux client Supabase : requêtes chaînées + RPC, chaque appel est journalisé.
 function fakeSupabase({ tables = {}, rpc = {} } = {}) {
   const calls = []
@@ -31,7 +34,7 @@ function fakeSupabase({ tables = {}, rpc = {} } = {}) {
       select() { return builder },
       update(values) { state.op = 'update'; state.values = values; return builder },
       eq(col, val) { state.filters.push(['eq', col, val]); return builder },
-      gt() { return builder }, lt() { return builder }, lte() { return builder }, is() { return builder }, in() { return builder }, limit() { return builder }, order() { return builder },
+      gt() { return builder }, lt() { return builder }, not() { return builder }, lte() { return builder }, is() { return builder }, in() { return builder }, limit() { return builder }, order() { return builder },
       maybeSingle() { return Promise.resolve(run(true)) },
       single() { return Promise.resolve(run(true)) },
       then(resolve, reject) { return Promise.resolve(run(false)).then(resolve, reject) },
@@ -51,7 +54,8 @@ function fakeSupabase({ tables = {}, rpc = {} } = {}) {
       calls.push({ type: 'rpc', name, args })
       const handler = rpc[name]
       const result = typeof handler === 'function' ? handler(args) : handler
-      return Promise.resolve(result ?? { data: null, error: null })
+      // Comme supabase-js : un objet « thenable » SANS .catch() (régression #148).
+      return thenable(result ?? { data: null, error: null })
     },
   }
 }
@@ -189,6 +193,12 @@ function fakeGoogle({ events = { 'evt-old': 'cancelled' }, pages = null, faults 
     if (fault === 'timeout') throw abort()
     if (fault && typeof fault === 'object') return { ok: false, status: fault.status, json: async () => ({}) }
     const apply = () => {
+      if (method === 'DELETE') {
+        const id = decodeURIComponent(parsed.pathname.split('/').pop())
+        if (!store.has(id) || store.get(id) === 'cancelled') return { ok: false, status: 410, json: async () => ({}) }
+        store.set(id, 'cancelled')
+        return { ok: true, status: 204, json: async () => ({}) }
+      }
       if (method === 'PATCH') {
         const id = decodeURIComponent(parsed.pathname.split('/').pop())
         if (!store.has(id)) return { ok: false, status: 404, json: async () => ({}) }
@@ -367,10 +377,10 @@ test('cron : libère les annulations abandonnées, reprend les restaurations, al
       ? fakeSupabase({ tables: { rdv_balance_restorations: ROWS.map(r => ({ id: r.id, booking_id: BOOKING })) } }).from(table)
       : base.from(table),
     rpc: (name, args) => {
-      if (name === 'release_stale_rdv_balance_cancel_claims') return Promise.resolve({ data: 2, error: null })
+      if (name === 'release_stale_rdv_balance_cancel_claims') return thenable({ data: 2, error: null })
       if (name === 'claim_rdv_balance_restore_resume') {
         current = ROWS.find(r => r.id === args.p_restoration_id)
-        return Promise.resolve({ data: { ok: true, restoration_id: current.id, booking_id: BOOKING, attempts: current.attempts + 1, due_cents: 5000 }, error: null })
+        return thenable({ data: { ok: true, restoration_id: current.id, booking_id: BOOKING, attempts: current.attempts + 1, due_cents: 5000 }, error: null })
       }
       return base.rpc(name, args)
     },
@@ -385,11 +395,211 @@ test('cron : libère les annulations abandonnées, reprend les restaurations, al
     return google.fetchImpl(url, opts)
   }
   const alerts = []
-  const summary = await reconcilePendingRestorations({ supabase, fetchImpl, sendAlert: async (args) => { alerts.push([args.kind, args.reason]); return { status: 'sent' } } })
-  assert.equal(summary.released_cancel_claims, 2)
+  const summary = await reconcilePendingRestorations({ supabase, fetchImpl, limit: 10, sendAlert: async (args) => { alerts.push([args.kind, args.reason]); return { status: 'sent' } } })
+  assert.equal(await releaseStaleCancelClaims({ supabase }), 2)
   assert.equal(summary.examined, 4)
   assert.deepEqual(summary.outcomes, { completed: 1, compensated: 1, pending: 2 })
   assert.deepEqual(alerts, [['restore', 'restore_compensated'], ['restore', 'restore_google_retrying']])
+})
+
+// ── Seconde revue PR #148 ───────────────────────────────────────────────────
+
+// Calendrier connecté au premier accès (contrôle du créneau), puis déconnecté.
+function disconnectAfter(supabase, okCalls) {
+  let calls = 0
+  const from = supabase.from
+  supabase.from = (table) => {
+    if (table !== 'booking_calendar_connections') return from(table)
+    calls += 1
+    return calls <= okCalls ? from(table) : fakeSupabase({ tables: { booking_calendar_connections: [] } }).from(table)
+  }
+  return supabase
+}
+
+test('A — connexion Google perdue entre le contrôle et l’écriture : en attente, jamais « synchronisé », jamais compensé', async () => {
+  const supabase = disconnectAfter(restoreSupabase(), 1)
+  const google = fakeGoogle()
+  const result = await restoreBalanceBooking({ supabase, userId: USER, input: restoreInput, env: enabled, fetchImpl: google.fetchImpl })
+  assert.equal(result.status, 202)
+  assert.equal(result.body.reason, 'google_disconnected')
+  assert.equal(result.body.payment_url, undefined)
+  assert.ok(!supabase.journal.completed, 'jamais marqué comme rétabli sans événement Google')
+  assert.ok(!supabase.calls.some(c => c.name === 'compensate_rdv_balance_restore'))
+  assert.deepEqual(supabase.journal.failures, ['google_disconnected'])
+  assert.equal(google.writes().length, 0)
+})
+
+test('A — reprise au cron avec Google déconnecté : rien n’est écrit, alerte « reconnecter »', async () => {
+  const supabase = disconnectAfter(restoreSupabase(), 0)
+  supabase.from = ((from) => (table) => table === 'rdv_balance_restorations'
+    ? fakeSupabase({ tables: { rdv_balance_restorations: [{ id: REST, booking_id: BOOKING }] } }).from(table)
+    : from(table))(supabase.from)
+  const google = fakeGoogle()
+  const alerts = []
+  const summary = await reconcilePendingRestorations({ supabase, fetchImpl: google.fetchImpl, sendAlert: async (args) => { alerts.push(args.reason); return { status: 'sent' } } })
+  assert.deepEqual(summary.outcomes, { pending: 1 })
+  assert.deepEqual(alerts, ['restore_google_disconnected'])
+  assert.ok(!supabase.journal.completed)
+  assert.equal(google.calls.length, 0)
+})
+
+test('D — reprise différée : nouveau rendez-vous manuel sur le créneau → examen manuel, aucune écriture Google', async () => {
+  const google = fakeGoogle({ events: { 'evt-old': 'cancelled', 'manuel-1': 'confirmed' } })
+  const pending = restoreSupabase({ previous: { id: REST, booking_id: BOOKING, status: 'google_pending' } })
+  const result = await resumeBalanceRestoration({ supabase: pending, userId: USER, input: { practitioner_id: PRACT, booking_id: BOOKING }, env: enabled, fetchImpl: google.fetchImpl })
+  assert.equal(result.status, 409)
+  assert.equal(result.body.error, 'restore_google_conflict')
+  assert.equal(google.writes().length, 0, 'aucune réactivation sur un créneau occupé')
+  assert.deepEqual(pending.journal.failures, ['google_slot_conflict'])
+  assert.ok(!pending.calls.some(c => c.name === 'compensate_rdv_balance_restore'), 'pas de retour silencieux')
+
+  // Cron : même conflit → alerte « conflit ».
+  const cron = restoreSupabase()
+  cron.from = ((from) => (table) => table === 'rdv_balance_restorations'
+    ? fakeSupabase({ tables: { rdv_balance_restorations: [{ id: REST, booking_id: BOOKING }] } }).from(table)
+    : from(table))(cron.from)
+  const alerts = []
+  const summary = await reconcilePendingRestorations({ supabase: cron, fetchImpl: fakeGoogle({ events: { 'manuel-1': 'confirmed' } }).fetchImpl, sendAlert: async (args) => { alerts.push(args.reason); return { status: 'sent' } } })
+  assert.deepEqual(summary.outcomes, { conflict: 1 })
+  assert.deepEqual(alerts, ['restore_conflict'])
+})
+
+test('D — les événements de la réservation elle-même ne sont jamais un conflit', async () => {
+  const fixed = recreatedEventId(BOOKING, REST)
+  const google = fakeGoogle({ events: { [fixed]: 'confirmed' } })
+  const pending = restoreSupabase({ previous: { id: REST, booking_id: BOOKING, status: 'google_pending' } })
+  const result = await resumeBalanceRestoration({ supabase: pending, userId: USER, input: { practitioner_id: PRACT, booking_id: BOOKING }, env: enabled, fetchImpl: google.fetchImpl })
+  assert.equal(result.status, 200)
+  assert.equal(google.store.size, 1)
+})
+
+test('Abandonner : retour à l’état annulé ; refusé si un paiement a commencé', async () => {
+  const ok = restoreSupabase({ previous: { id: REST, booking_id: BOOKING, status: 'google_pending' } })
+  const done = await abandonBalanceRestoration({ supabase: ok, userId: USER, input: { practitioner_id: PRACT, booking_id: BOOKING } })
+  assert.equal(done.status, 200)
+  assert.equal(ok.calls.find(c => c.name === 'compensate_rdv_balance_restore').args.p_reason, 'owner_abandoned')
+  const paid = restoreSupabase({ previous: { id: REST, booking_id: BOOKING, status: 'google_pending' }, compensate: { ok: false, error: 'payment_started_manual_review' } })
+  assert.equal((await abandonBalanceRestoration({ supabase: paid, userId: USER, input: { practitioner_id: PRACT, booking_id: BOOKING } })).body.error, 'restore_manual_review')
+})
+
+// Passage du cron sur une visio due, avec Google simulé (fetch global).
+function cancelSupabase({ finalize, resyncClaim = { ok: true, booking_id: BOOKING, google_event_id: 'evt1' } }) {
+  const starts = new Date(Date.now() + 30 * H).toISOString()
+  const ends = new Date(Date.now() + 31 * H).toISOString()
+  const journal = { released: 0, resynced: null, resyncFailures: [] }
+  const supabase = fakeSupabase({
+    tables: {
+      bookings: [{ id: BOOKING, practitioner_id: PRACT, service_id: 'svc', customer_first_name: 'Sylvie', customer_last_name: 'Test', customer_email: 's@example.invalid', starts_at: starts, ends_at: ends, status: 'confirmed', booking_source: 'mediumia', booked_price_cents: 7000, reservation_payment_cents: 2000, balance_reminder_sent_at: new Date().toISOString(), google_event_id: 'evt1' }],
+      booking_services: [{ id: 'svc', title: 'Guidance visio', modality: ['video'] }],
+      booking_practitioners: [{ id: PRACT, buffer_before_min: 0, buffer_after_min: 0 }],
+      rdv_financial_entries: [{ booking_id: BOOKING, direction: 'income', gross_cents: 2000 }],
+      booking_calendar_connections: [{ access_token_enc: encrypt('tok'), refresh_token_enc: encrypt('ref'), token_expiry: new Date(Date.now() + 10 * H).toISOString(), google_calendar_id: 'cal@group' }],
+    },
+    rpc: {
+      claim_rdv_balance_auto_cancel: { data: { ok: true, booking_id: BOOKING }, error: null },
+      finalize_rdv_balance_auto_cancel: { data: finalize, error: null },
+      release_rdv_balance_auto_cancel: () => { journal.released += 1; return { data: null, error: null } },
+      claim_rdv_balance_google_resync: { data: resyncClaim, error: null },
+      complete_rdv_balance_google_resync: (args) => { journal.resynced = args; return { data: { ok: true }, error: null } },
+      record_rdv_balance_google_resync_failure: (args) => { journal.resyncFailures.push(args.p_error); return { data: true, error: null } },
+      rdv_booking_paid_cents: { data: 2000, error: null },
+    },
+  })
+  supabase.journal = journal
+  return supabase
+}
+
+async function withGlobalFetch(fetchImpl, run) {
+  const original = globalThis.fetch
+  globalThis.fetch = fetchImpl
+  try { return await run() } finally { globalThis.fetch = original }
+}
+
+test('B — coupure juste après la suppression Google : l’événement est remis, l’annulation retentée plus tard', async () => {
+  // DELETE appliqué par Google mais réponse perdue.
+  const google = fakeGoogle({ events: { evt1: 'confirmed', 'manuel-1': 'confirmed' }, faults: ['lost'] })
+  const supabase = cancelSupabase({ finalize: { ok: true } })
+  const result = await withGlobalFetch(google.fetchImpl, () => runDailySweep(supabase, new Date(), { sendAlert: async () => ({ status: 'sent' }) }))
+  const item = result.results[0]
+  assert.equal(item.action, 'cancel_google_retry')
+  assert.equal(item.google, 'resynced')
+  assert.equal(supabase.journal.released, 1, 'verrou libéré (plus de TypeError .catch)')
+  assert.equal(google.store.get('evt1'), 'confirmed', 'événement remis')
+  assert.equal(google.store.get('manuel-1'), 'confirmed')
+  assert.ok(!google.calls.some(c => c.url.includes('manuel-1')), 'aucun événement manuel touché')
+  assert.ok(!supabase.calls.some(c => c.name === 'finalize_rdv_balance_auto_cancel'))
+})
+
+test('B — événement déjà supprimé par un passage interrompu (already_deleted) + finalisation refusée : remis sans doublon', async () => {
+  const google = fakeGoogle({ events: { evt1: 'cancelled' } })
+  const supabase = cancelSupabase({ finalize: { ok: false, error: 'booking_no_longer_due_for_balance_cancel', reason: 'owner_hold' } })
+  const result = await withGlobalFetch(google.fetchImpl, () => runDailySweep(supabase, new Date(), { sendAlert: async () => ({ status: 'sent' }) }))
+  const item = result.results[0]
+  assert.equal(item.action, 'cancel_aborted')
+  assert.equal(item.google, 'resynced')
+  assert.equal(google.store.get('evt1'), 'confirmed')
+  assert.equal(google.store.size, 1, 'aucun doublon')
+  assert.equal(supabase.journal.resynced.p_google_status, 'restored')
+  assert.equal(supabase.journal.released, 1)
+})
+
+test('B — rattrapage au cron suivant (décision « Maintenir » prise entre-temps) : remis, puis rien à refaire', async () => {
+  // Événement complètement disparu : recréé une seule fois avec l'identifiant fixe de la réservation.
+  const google = fakeGoogle({ events: {} })
+  const supabase = cancelSupabase({ finalize: null })
+  const fixed = recreatedEventId(BOOKING, BOOKING)
+  const first = await withGlobalFetch(google.fetchImpl, () => reconcileGoogleResyncs({ supabase, sendAlert: async () => ({ status: 'sent' }) }))
+  assert.deepEqual(first.outcomes, { resynced: 1 })
+  assert.equal(supabase.journal.resynced.p_google_event_id, fixed)
+  // Réponse perdue puis nouveau passage : 409 → même événement, jamais deux.
+  const again = await withGlobalFetch(google.fetchImpl, () => reconcileGoogleResyncs({ supabase, sendAlert: async () => ({ status: 'sent' }) }))
+  assert.deepEqual(again.outcomes, { resynced: 1 })
+  assert.deepEqual([...google.store.keys()], [fixed])
+
+  // Google refuse : repère conservé, échec journalisé, alerte « google_sync ».
+  const refused = fakeGoogle({ events: { evt1: 'cancelled' }, faults: [{ status: 403 }] })
+  const failing = cancelSupabase({ finalize: null })
+  const alerts = []
+  const summary = await withGlobalFetch(refused.fetchImpl, () => reconcileGoogleResyncs({ supabase: failing, sendAlert: async (args) => { alerts.push([args.kind, args.reason]); return { status: 'sent' } } }))
+  assert.deepEqual(summary.outcomes, { failed: 1 })
+  assert.deepEqual(failing.journal.resyncFailures, ['google_patch_403'])
+  assert.deepEqual(alerts, [['google_sync', 'google_resync_failed']])
+  assert.equal(failing.journal.resynced, null)
+})
+
+test('C — budget du cron : Google qui expire à chaque appel → lots arrêtés à l’échéance, le reste reporté', async () => {
+  let clockMs = 0
+  const clock = () => clockMs
+  // Chaque appel Google « dure » 4 s puis expire.
+  const slowGoogle = async () => { clockMs += 4000; throw Object.assign(new Error('aborted'), { name: 'AbortError' }) }
+  const supabase = restoreSupabase()
+  supabase.from = ((from) => (table) => {
+    if (table === 'rdv_balance_restorations') return fakeSupabase({ tables: { rdv_balance_restorations: [1, 2, 3].map(i => ({ id: `r-${i}`, booking_id: BOOKING })) } }).from(table)
+    if (table === 'bookings') return fakeSupabase({ tables: { bookings: [1, 2, 3, 4, 5].map(() => ({ id: BOOKING, practitioner_id: PRACT, service_id: 'svc', starts_at: new Date(Date.now() + 30 * H).toISOString(), ends_at: new Date(Date.now() + 31 * H).toISOString(), status: 'confirmed', google_event_id: 'evt-old', booked_price_cents: 7000 })) } }).from(table)
+    return from(table)
+  })(supabase.from)
+  const rpc = supabase.rpc
+  supabase.rpc = (name, args) => name === 'claim_rdv_balance_google_resync'
+    ? thenable({ data: { ok: true, booking_id: BOOKING, google_event_id: 'evt-old' }, error: null })
+    : rpc(name, args)
+  const result = await withGlobalFetch(slowGoogle, () => runGoogleReconciliation({ supabase, deadline: 10_000, clock, fetchImpl: slowGoogle, sendAlert: async () => ({ status: 'sent' }) }))
+  // Remise Google : 4 s par essai → 3 essais commencés avant 10 s, 2 reportés.
+  assert.equal(result.googleResync.examined, 3)
+  assert.equal(result.googleResync.deferred, 2)
+  // Restaurations : échéance déjà dépassée → toutes reportées, aucune bloquée.
+  assert.equal(result.restorations.examined, 0)
+  assert.equal(result.restorations.deferred, 3)
+  assert.ok(clockMs <= 10_000 + 4000, 'aucun essai commencé après l’échéance')
+})
+
+test('C — ordre du cron : rappels et annulations d’abord, étapes Google en dernier avec échéance', () => {
+  const src = read('lib/rdvBalanceCronHandler.js')
+  const sweep = src.indexOf('const result = await runDailySweep(supabase)')
+  const formation = src.indexOf('formationPath = await syncLiveSubscriptions(supabase)')
+  const google = src.indexOf('await runGoogleReconciliation({ supabase, deadline: cronStartedAt + CRON_GOOGLE_PHASE_BUDGET_MS })')
+  assert.ok(sweep > 0 && formation > sweep && google > formation)
+  assert.doesNotMatch(src, /\.rpc\([^)]*\)\.catch\(/)
+  assert.doesNotMatch(read('lib/rdvBalanceApiHandler.js'), /\.rpc\([^)]*\)\.catch\(/)
 })
 
 test('accès : un compte qui n’est pas propriétaire ET administrateur est refusé', async () => {
@@ -433,16 +643,19 @@ test('migration : paiement et annulation sérialisés, reprise des restaurations
   assert.match(sql, /FUNCTION public\.attach_rdv_balance_paypal_order/)
   assert.match(sql, /FUNCTION public\.claim_rdv_balance_restore_resume/)
   assert.match(sql, /FUNCTION public\.release_stale_rdv_balance_cancel_claims/)
-  assert.match(sql, /CHECK \(kind IN \('pre_cancel', 'review', 'restore'\)\)/)
+  assert.match(sql, /CHECK \(kind IN \('pre_cancel', 'review', 'restore', 'google_sync'\)\)/)
   const handler = read('lib/rdvBalanceApiHandler.js')
   assert.match(handler, /rpc\('attach_rdv_balance_paypal_order'/)
   assert.doesNotMatch(handler, /\.update\(\{ paypal_order_id: order\.orderId/, 'plus de rattachement direct hors verrou')
-  assert.match(read('lib/rdvBalanceCronHandler.js'), /reconcilePendingRestorations\(\{ supabase \}\)/)
+  assert.match(read('lib/rdvBalanceCronHandler.js'), /reconcilePendingRestorations\(options\)/)
+  assert.match(sql, /balance_google_resync_at = COALESCE\(balance_google_resync_at, p_now\)/)
+  assert.match(sql, /FUNCTION public\.claim_rdv_balance_google_resync/)
 })
 
 test('branchements : action admin, panneau dans la comptabilité, colonnes lues par le cron', () => {
   assert.match(read('api/rdv-admin.js'), /case 'balance-watch': \{/)
   assert.match(read('api/rdv-admin.js'), /input\.op === 'resume'\) result = await resumeBalanceRestoration/)
+  assert.match(read('api/rdv-admin.js'), /input\.op === 'abandon'\) result = await abandonBalanceRestoration/)
   assert.match(read('src/components/rdv/AccountingSection.jsx'), /<RdvBalanceWatch practitionerId=\{practitionerId\} session=\{session\} \/>/)
   assert.match(read('lib/rdvBalanceCronHandler.js'), /balance_owner_decision, balance_late_payment_until'\)/)
 })

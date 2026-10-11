@@ -1328,6 +1328,9 @@ GRANT EXECUTE ON FUNCTION public.dismiss_rdv_balance_google_resync(UUID, UUID, U
 
 -- Incidents persistants (tableau de bord) : remise Google en attente ou en
 -- examen manuel, restauration en attente — y compris rendez-vous commencés.
+-- Aucune borne d'ancienneté : un incident non traité reste visible jusqu'à son
+-- traitement. Liste plafonnée à 100 (les plus anciens d'abord) avec le total,
+-- pour ne jamais masquer un incident sans le signaler.
 CREATE OR REPLACE FUNCTION public.rdv_balance_google_incidents(p_practitioner_id UUID, p_now TIMESTAMPTZ DEFAULT now())
 RETURNS JSONB
 LANGUAGE sql
@@ -1335,22 +1338,31 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT COALESCE(jsonb_agg(jsonb_build_object(
-    'booking_id', b.id,
-    'customer_name', trim(coalesce(b.customer_first_name, '') || ' ' || coalesce(b.customer_last_name, '')),
-    'starts_at', b.starts_at,
-    'started', b.starts_at <= p_now,
-    'kind', CASE WHEN b.balance_google_resync_at IS NOT NULL THEN 'google_resync' ELSE 'restoration' END,
-    'since', COALESCE(b.balance_google_resync_at, r.created_at),
-    'error', COALESCE(b.balance_google_resync_error, r.last_error),
-    'manual_review', b.balance_google_resync_review_at IS NOT NULL OR b.starts_at <= p_now
-  ) ORDER BY b.starts_at), '[]'::jsonb)
-  FROM public.bookings b
-  LEFT JOIN public.rdv_balance_restorations r ON r.booking_id = b.id AND r.status = 'google_pending'
-  WHERE b.practitioner_id = p_practitioner_id
-    AND b.status = 'confirmed'
-    AND b.starts_at > p_now - INTERVAL '30 days'
-    AND (b.balance_google_resync_at IS NOT NULL OR r.id IS NOT NULL);
+  WITH open_incidents AS (
+    SELECT b.id, b.customer_first_name, b.customer_last_name, b.starts_at,
+           b.balance_google_resync_at, b.balance_google_resync_error, b.balance_google_resync_review_at,
+           r.id AS restoration_id, r.created_at AS restoration_created_at, r.last_error AS restoration_error
+    FROM public.bookings b
+    LEFT JOIN public.rdv_balance_restorations r ON r.booking_id = b.id AND r.status = 'google_pending'
+    WHERE b.practitioner_id = p_practitioner_id
+      AND b.status = 'confirmed'
+      AND (b.balance_google_resync_at IS NOT NULL OR r.id IS NOT NULL)
+  ), listed AS (
+    SELECT * FROM open_incidents ORDER BY starts_at ASC LIMIT 100
+  )
+  SELECT jsonb_build_object(
+    'total', (SELECT count(*) FROM open_incidents),
+    'items', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'booking_id', l.id,
+      'customer_name', trim(coalesce(l.customer_first_name, '') || ' ' || coalesce(l.customer_last_name, '')),
+      'starts_at', l.starts_at,
+      'started', l.starts_at <= p_now,
+      'kind', CASE WHEN l.balance_google_resync_at IS NOT NULL THEN 'google_resync' ELSE 'restoration' END,
+      'since', COALESCE(l.balance_google_resync_at, l.restoration_created_at),
+      'error', COALESCE(l.balance_google_resync_error, l.restoration_error),
+      'manual_review', l.balance_google_resync_review_at IS NOT NULL OR l.starts_at <= p_now
+    ) ORDER BY l.starts_at) FROM listed l), '[]'::jsonb)
+  );
 $$;
 REVOKE ALL ON FUNCTION public.rdv_balance_google_incidents(UUID, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rdv_balance_google_incidents(UUID, TIMESTAMPTZ) TO service_role;

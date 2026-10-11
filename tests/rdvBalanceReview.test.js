@@ -34,7 +34,12 @@ function fakeSupabase({ tables = {}, rpc = {} } = {}) {
       select() { return builder },
       update(values) { state.op = 'update'; state.values = values; return builder },
       eq(col, val) { state.filters.push(['eq', col, val]); return builder },
-      gt() { return builder }, lt() { return builder }, not() { return builder }, lte() { return builder }, is() { return builder }, in() { return builder }, limit() { return builder }, order() { return builder },
+      gt() { return builder }, lt() { return builder }, lte() { return builder }, in() { return builder },
+      // Filtres de nullité, tri et limite appliqués comme en base (sélection des lots).
+      is(col, val) { state.filters.push(['is', col, val]); return builder },
+      not(col, op, val) { state.filters.push(['not', col, op, val]); return builder },
+      order(col, opts = {}) { state.order = [col, opts.ascending !== false]; return builder },
+      limit(n) { state.limit = n; return builder },
       maybeSingle() { return Promise.resolve(run(true)) },
       single() { return Promise.resolve(run(true)) },
       then(resolve, reject) { return Promise.resolve(run(false)).then(resolve, reject) },
@@ -42,7 +47,18 @@ function fakeSupabase({ tables = {}, rpc = {} } = {}) {
     const run = (single) => {
       calls.push({ type: 'from', ...state })
       const handler = tables[table]
-      const data = typeof handler === 'function' ? handler(state) : handler
+      let data = typeof handler === 'function' ? handler(state) : handler
+      if (Array.isArray(data)) {
+        for (const [kind, col, op, val] of state.filters) {
+          if (kind === 'is' && col !== undefined) data = data.filter(row => (row[col] ?? null) === (op ?? null))
+          if (kind === 'not' && op === 'is' && val === null) data = data.filter(row => row[col] != null)
+        }
+        if (state.order) {
+          const [col, asc] = state.order
+          data = [...data].sort((a, b) => (String(a[col] ?? '') < String(b[col] ?? '') ? -1 : 1) * (asc ? 1 : -1))
+        }
+        if (state.limit) data = data.slice(0, state.limit)
+      }
       return { data: single && Array.isArray(data) ? (data[0] ?? null) : (data ?? null), error: null }
     }
     return builder
@@ -490,7 +506,7 @@ function cancelSupabase({ finalize, resyncClaim = { ok: true, booking_id: BOOKIN
   const journal = { released: 0, resynced: null, resyncFailures: [], manualReview: [], claims: [] }
   const supabase = fakeSupabase({
     tables: {
-      bookings: [{ id: BOOKING, practitioner_id: PRACT, service_id: 'svc', customer_first_name: 'Sylvie', customer_last_name: 'Test', customer_email: 's@example.invalid', starts_at: starts, ends_at: ends, status: 'confirmed', booking_source: 'mediumia', booked_price_cents: 7000, reservation_payment_cents: 2000, balance_reminder_sent_at: new Date().toISOString(), google_event_id: 'evt1', balance_google_resync_review_at: review, balance_google_resync_error: error }],
+      bookings: [{ id: BOOKING, practitioner_id: PRACT, service_id: 'svc', customer_first_name: 'Sylvie', customer_last_name: 'Test', customer_email: 's@example.invalid', starts_at: starts, ends_at: ends, status: 'confirmed', booking_source: 'mediumia', booked_price_cents: 7000, reservation_payment_cents: 2000, balance_reminder_sent_at: new Date().toISOString(), google_event_id: 'evt1', balance_google_resync_at: new Date(Date.now() - H).toISOString(), balance_google_resync_review_at: review, balance_google_resync_error: error }],
       booking_services: [{ id: 'svc', title: 'Guidance visio', modality: ['video'] }],
       booking_practitioners: [{ id: PRACT, buffer_before_min: 0, buffer_after_min: 0 }],
       rdv_financial_entries: [{ booking_id: BOOKING, direction: 'income', gross_cents: 2000 }],
@@ -639,6 +655,70 @@ test('P1 — rendez-vous imminent : échec de remise → alerte URGENTE', async 
   assert.deepEqual(alerts, [['google_sync', 'google_resync_failed_imminent']])
 })
 
+test('Sélection du cron : 5 incidents en examen manuel + 1 remise éligible → la remise est traitée, aucun appel Google pour les incidents', async () => {
+  const day = (h) => new Date(Date.now() + h * H).toISOString()
+  const id = (n) => `aaaaaaa${n}-1111-4111-8111-111111111111`
+  // Les incidents manuels sont plus anciens : avec un lot unique de 5, ils l'occuperaient entièrement.
+  const rows = [1, 2, 3, 4, 5].map(n => ({
+    id: id(n), practitioner_id: PRACT, service_id: 'svc', customer_first_name: `M${n}`, customer_last_name: 'Test', starts_at: day(n), ends_at: day(n + 1),
+    status: 'confirmed', google_event_id: `evtm${n}`, booked_price_cents: 7000,
+    balance_google_resync_at: day(-30), balance_google_resync_review_at: day(-29), balance_google_resync_error: 'google_slot_conflict',
+  }))
+  rows.push({ id: BOOKING, practitioner_id: PRACT, service_id: 'svc', customer_first_name: 'E', customer_last_name: 'Test', starts_at: day(40), ends_at: day(41),
+    status: 'confirmed', google_event_id: 'evte', booked_price_cents: 7000, balance_google_resync_at: day(-1), balance_google_resync_review_at: null })
+  const resynced = []
+  const supabase = fakeSupabase({
+    tables: {
+      bookings: (state) => { const byId = state.filters.find(f => f[0] === 'eq' && f[1] === 'id'); return byId ? rows.filter(r => r.id === byId[2]) : rows },
+      booking_services: [{ id: 'svc', title: 'Guidance visio', modality: ['video'] }],
+      booking_practitioners: [{ id: PRACT, buffer_before_min: 0, buffer_after_min: 0 }],
+      booking_calendar_connections: [{ access_token_enc: encrypt('tok'), refresh_token_enc: encrypt('ref'), token_expiry: new Date(Date.now() + 10 * H).toISOString(), google_calendar_id: 'cal@group' }],
+    },
+    rpc: {
+      claim_rdv_balance_google_resync: (args) => {
+        const row = rows.find(r => r.id === args.p_booking_id)
+        return { data: row.balance_google_resync_review_at ? { ok: false, error: 'manual_review' } : { ok: true, booking_id: row.id, google_event_id: row.google_event_id }, error: null }
+      },
+      complete_rdv_balance_google_resync: (args) => { resynced.push(args.p_booking_id); return { data: { ok: true }, error: null } },
+      rdv_booking_paid_cents: { data: 2000, error: null },
+    },
+  })
+  const google = fakeGoogle({ events: { evte: 'cancelled', evtm1: 'cancelled', evtm2: 'cancelled', evtm3: 'cancelled', evtm4: 'cancelled', evtm5: 'cancelled', 'manuel-x': 'confirmed' } })
+  // Le créneau de la remise éligible est libre ; ceux des incidents ne sont jamais consultés.
+  google.store.delete('manuel-x')
+  const alerts = []
+  const summary = await withGlobalFetch(google.fetchImpl, () => reconcileGoogleResyncs({ supabase, fetchImpl: google.fetchImpl, sendAlert: async (args) => { alerts.push([args.item.booking.id, args.kind]); return { status: 'already_handled' } } }))
+  assert.deepEqual(resynced, [BOOKING], 'la remise éligible est traitée')
+  assert.equal(google.store.get('evte'), 'confirmed')
+  assert.deepEqual(summary.outcomes, { resynced: 1, manual_review: 5 })
+  const writes = google.writes()
+  assert.equal(writes.length, 1)
+  assert.match(writes[0].url, /evte$/)
+  assert.ok(!google.calls.some(c => /evtm\d/.test(c.url)), 'aucun appel Google pour les incidents manuels')
+  assert.ok(!supabase.calls.some(c => c.name === 'claim_rdv_balance_google_resync' && c.args.p_booking_id !== BOOKING), 'les incidents ne sont jamais revendiqués')
+  assert.equal(alerts.filter(([, kind]) => kind === 'google_conflict').length, 5, 'alertes des incidents toujours assurées')
+  // Les deux sélections sont distinctes : la limite de 5 ne porte que sur les remises éligibles.
+  const selects = supabase.calls.filter(c => c.type === 'from' && c.table === 'bookings' && c.limit)
+  assert.deepEqual(selects.map(c => [c.limit, c.filters.find(f => f[1] === 'balance_google_resync_review_at')?.[0]]), [[5, 'is'], [20, 'not']])
+})
+
+test('Tableau de bord : incident ancien non résolu toujours listé, liste plafonnée avec le total', async () => {
+  const old = { booking_id: BOOKING, customer_name: 'Ancien Incident', starts_at: new Date(Date.now() - 60 * 24 * H).toISOString(), started: true, kind: 'google_resync', manual_review: true, error: 'appointment_started' }
+  const supabase = restoreSupabase()
+  const rpc = supabase.rpc
+  supabase.rpc = (name, args) => name === 'rdv_balance_google_incidents' ? thenable({ data: { total: 130, items: [old] }, error: null }) : rpc(name, args)
+  const watch = await listBalanceWatch({ supabase, userId: USER, practitionerId: PRACT, env: {} })
+  assert.equal(watch.status, 200)
+  assert.deepEqual(watch.body.incidents, [old])
+  assert.equal(watch.body.incidents_total, 130)
+  const sql = read('supabase/migrations/20261011160000_rdv_balance_owner_review_restore.sql')
+  const fn = sql.slice(sql.indexOf('FUNCTION public.rdv_balance_google_incidents'), sql.indexOf('GRANT EXECUTE ON FUNCTION public.rdv_balance_google_incidents'))
+  assert.doesNotMatch(fn, /30 days/, 'aucune borne d’ancienneté sur les incidents non traités')
+  assert.match(fn, /'total', \(SELECT count\(\*\) FROM open_incidents\)/)
+  assert.match(fn, /ORDER BY starts_at ASC LIMIT 100/)
+  assert.match(read('src/components/rdv/RdvBalanceWatch.jsx'), /affichés sur \$\{data\.incidents_total\}/)
+})
+
 test('B — événement déjà supprimé par un passage interrompu (already_deleted) + finalisation refusée : remis sans doublon', async () => {
   const google = fakeGoogle({ events: { evt1: 'cancelled' } })
   const supabase = cancelSupabase({ finalize: { ok: false, error: 'booking_no_longer_due_for_balance_cancel', reason: 'owner_hold' } })
@@ -681,7 +761,7 @@ function budgetSupabase() {
   const supabase = restoreSupabase()
   supabase.from = ((from) => (table) => {
     if (table === 'rdv_balance_restorations') return fakeSupabase({ tables: { rdv_balance_restorations: [1, 2, 3].map(i => ({ id: `r-${i}`, booking_id: BOOKING })) } }).from(table)
-    if (table === 'bookings') return fakeSupabase({ tables: { bookings: [1, 2, 3, 4, 5].map(() => ({ id: BOOKING, practitioner_id: PRACT, service_id: 'svc', starts_at: new Date(Date.now() + 30 * H).toISOString(), ends_at: new Date(Date.now() + 31 * H).toISOString(), status: 'confirmed', google_event_id: 'evt-old', booked_price_cents: 7000 })) } }).from(table)
+    if (table === 'bookings') return fakeSupabase({ tables: { bookings: [1, 2, 3, 4, 5].map(() => ({ id: BOOKING, practitioner_id: PRACT, service_id: 'svc', starts_at: new Date(Date.now() + 30 * H).toISOString(), ends_at: new Date(Date.now() + 31 * H).toISOString(), status: 'confirmed', google_event_id: 'evt-old', booked_price_cents: 7000, balance_google_resync_at: new Date(Date.now() - H).toISOString() })) } }).from(table)
     return from(table)
   })(supabase.from)
   const rpc = supabase.rpc

@@ -148,7 +148,7 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
         <p className="mt-1 text-xs">E-mail au client : {link.email_status === 'sent' ? 'envoyé' : link.email_status === 'not_requested' ? 'non envoyé (à vous de transmettre le lien)' : 'à vérifier'}. Ce lien n’est affiché qu’une fois.</p>
       </div>}
       {(data.incidents || []).length > 0 && <div className="mt-3 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900" role="alert">
-        <p className="font-semibold">Incidents Google à traiter</p>
+        <p className="font-semibold">Incidents Google à traiter{data.incidents_total > data.incidents.length ? ` — ${data.incidents.length} affichés sur ${data.incidents_total} (les plus anciens d’abord)` : ''}</p>
         <ul className="mt-2 space-y-2">
           {data.incidents.map(incident => <li key={incident.booking_id} className="text-xs">
             <p><strong>{incident.customer_name}</strong> · {dayTime(incident.starts_at)}{incident.started ? ' · DÉJÀ COMMENCÉ' : ''} · {incident.kind === 'restoration' ? 'rétablissement en attente' : 'événement Google à remettre'} depuis le {dayTime(incident.since)}{incident.error ? ` · ${INCIDENT_ERRORS[incident.error] || incident.error}` : ''}</p>

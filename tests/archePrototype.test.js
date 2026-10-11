@@ -53,7 +53,7 @@ test('Question et sujet sensible : lecture conditionnelle et autorisations de r�
   assert.match(app, /Lire avec attention/)
   assert.match(app, /const \[showSensitive, setShowSensitive\] = useState\(false\)/)
   assert.match(app, /setReplyPolicy/)
-  assert.match(app, /replyPolicy === 'contacts'/)
+  assert.match(app, /policy !== 'contacts'/)
   assert.match(app, /policy !== 'closed'/)
   assert.match(app, /Réponses réservées aux proches/)
   assert.doesNotMatch(app, /<button[^>]*>Réponses limitées aux proches<\/button>/)

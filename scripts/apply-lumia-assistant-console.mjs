@@ -47,7 +47,7 @@ app = insertAfter(
 app = replaceRequired(
   app,
   "  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere'",
-  "  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-lumia' && view !== 'rdv-public' && view !== 'chronosphere'", 
+  "  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-lumia' && view !== 'rdv-public' && view !== 'chronosphere'",
   'guardian exclusion',
 )
 

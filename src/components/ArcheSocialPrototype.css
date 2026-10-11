@@ -354,3 +354,20 @@
  .arche-rencontres .arche-rencontre-card { padding: 16px; }
  .arche-rencontres .arche-rencontre-invitation { padding: 14px; }
 }
+
+.arche-rencontre-identity { display: flex; align-items: center; gap: 16px; }
+.arche-rencontre-self-avatar { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 76px; height: 76px; border-radius: 50%; color: #243950; font-size: 40px; border: 3px solid white; box-shadow: 0 0 0 1px #e0e5ed; }
+.arche-rencontre-create > header { padding: 4px 2px 8px; border: 0; background: transparent; }
+.arche-rencontre-create textarea { line-height: 1.6; }
+
+.arche-rencontre-avatar-choice { display: inline-flex; justify-content: center; align-items: center; min-width: 44px; padding-inline: 12px; font-size: 23px; }
+@media (max-width: 767px) {
+ .arche-rencontre-create > header { padding-bottom: 0; }
+ .arche-rencontre-create > header > p:last-child { line-height: 1.5; }
+ .arche-rencontre-create .arche-rencontre-self-avatar { width: 58px; height: 58px; font-size: 32px; }
+ .arche-rencontre-create .mt-5 { margin-top: 12px; }
+ .arche-rencontre-create .mt-4 { margin-top: 10px; }
+ .arche-rencontre-create textarea { min-height: 74px; height: 74px; padding-block: 8px; }
+ .arche-rencontre-create fieldset label { gap: 6px; padding-inline: 4px; font-size: 13px; white-space: nowrap; }
+ .arche-rencontre-create fieldset input { width: 16px; height: 16px; }
+}

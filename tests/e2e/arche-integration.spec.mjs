@@ -17,9 +17,9 @@ async function go(page, label, width = 390) {
 }
 async function participate(page, width = 390, all = false) {
   await go(page, 'Rencontres', width)
-  for (const intent of all ? ['Amitié','Échanges et découvertes','Binôme de pratique','Affinités de cœur','Relation amoureuse'] : ['Amitié','Échanges et découvertes']) await page.getByRole('checkbox', { name: new RegExp('^'+intent) }).check()
+  await page.getByRole('radio', { name: all ? 'Les deux' : 'Amitié', exact:true }).check()
   await page.getByRole('checkbox', { name: /J’ai 18 ans ou plus/ }).check()
-  await page.getByRole('button', { name: 'Rejoindre les Rencontres' }).click()
+  await page.getByRole('button', { name: 'Créer mon profil' }).click()
 }
 async function acceptPhare(page) {
   await page.getByRole('article').filter({ hasText: 'Petit Phare aimerait' }).getByRole('button', { name: 'Accepter', exact: true }).click()
@@ -76,7 +76,7 @@ test('Profil masqué puis départ : découverte désactivée, conversations déj
   await page.getByRole('checkbox', { name: 'Mon profil est visible des participants' }).uncheck()
   await expect(page.getByRole('heading', { name: 'Des personnes à découvrir' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Quitter les Rencontres' }).click()
-  await expect(page.getByRole('button', { name: 'Rejoindre les Rencontres' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Créer mon profil' })).toBeVisible()
   await go(page, 'Messages')
   await expect(page.getByText('Conversation conservée')).toBeVisible()
 })
@@ -86,6 +86,7 @@ test('Cinq intentions choisies explicitement, amour visible uniquement après ce
   await expect(page.getByRole('heading', { name: 'Brin de Sauge' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Bois Flotté' })).toBeVisible()
   await page.getByRole('button', { name: 'Mon profil Rencontres' }).click()
+  await page.getByRole('button', { name:'Compléter mon profil', exact:true }).click()
   await page.getByRole('checkbox', { name: /^Relation amoureuse/ }).uncheck()
   await expect(page.getByRole('button', { name: 'Relation amoureuse', exact: true })).toHaveCount(0)
 })

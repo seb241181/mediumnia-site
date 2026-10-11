@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ArcheInvitationActions from './ArcheInvitationActions'
 import { PROFILES } from '../data/archeRencontres'
+import { intentionsForChoice } from '../../lib/archeRencontresIntentions'
 
 // Rencontres — maquette locale de L’Arche.
 // Profils, invitations et conversations sont fictifs et restent dans la mémoire de l’onglet :
@@ -106,7 +107,14 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
   const [joined, setJoined] = useState(false)
   const [adultConfirmed, setAdultConfirmed] = useState(false)
   const [mine, setMine] = useState([])
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(false)
+  const [simpleChoice, setSimpleChoice] = useState('')
+  const [profileName, setProfileName] = useState(nickname)
+  const [bio, setBio] = useState('')
+  const [region, setRegion] = useState('')
+  const [avatarId, setAvatarId] = useState('star')
+  const [extrasOpen, setExtrasOpen] = useState(false)
+  const [interests, setInterests] = useState('')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [filter, setFilter] = useState('mine')
   const [openId, setOpenId] = useState(null)
@@ -144,16 +152,21 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
   const openProfile = openId && !isBlocked(openId) ? byId[openId] : null
 
   function toggleMine(id) {
-    setMine(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
+    const next = mine.includes(id) ? mine.filter(item => item !== id) : [...mine, id]
+    setMine(next)
+    const love = next.some(item=>['coeur','amour'].includes(item))
+    const friendship = next.some(item=>['amitie','echanges','binome'].includes(item))
+    setSimpleChoice(love ? friendship ? 'both' : 'amour' : friendship ? 'amitie' : '')
     if (filter === id) setFilter('mine')
   }
   function join() {
-    if (!adultConfirmed || mine.length === 0) return
+    if (!adultConfirmed || mine.length === 0 || !profileName.trim() || !simpleChoice) return
+    setVisible(true)
     setJoined(true)
     onNotice('Profil Rencontres créé dans la démonstration. Vous pouvez le masquer à tout moment.')
   }
   function leave() {
-    setJoined(false); setSettingsOpen(false); setOpenId(null); setInviteFor(null); setVisible(true)
+    setJoined(false); setSettingsOpen(false); setOpenId(null); setInviteFor(null); setVisible(false)
     onNotice('Vous avez quitté les Rencontres : votre profil Rencontres n’est plus visible.')
   }
   function openFiche(id, withInvite = false) {
@@ -206,24 +219,36 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
   }
 
 
-  if (!joined) return <section className="arche-rencontres mx-auto max-w-[680px] space-y-4" aria-labelledby="rencontres-title">
-    <header className="rounded-3xl border border-[#ECEAF2] bg-[#FAFAF7] p-6">
-      <p className="text-xs font-bold uppercase tracking-[.18em] text-[#4A3F6B]">Rencontres</p>
-      <h2 id="rencontres-title" className="mt-3 font-georgia text-3xl leading-tight text-balance">Les belles rencontres commencent parfois par une simple conversation.</h2>
-      <p className="mt-4 text-sm leading-7 text-[#4A3F6B]">Amitié, échanges, binôme de pratique ou affinités de cœur : ici, on se découvre par ce qu’on partage, pas par une photo.</p>
-      <ul className="mt-5 grid gap-2 text-sm sm:grid-cols-3">
-        <li className="rounded-2xl bg-white p-3">Aucun score, aucun classement.</li>
-        <li className="rounded-2xl bg-white p-3">Photos partagées seulement après acceptation.</li>
-        <li className="rounded-2xl bg-white p-3">On n’écrit qu’à qui a dit oui.</li>
-      </ul>
-    </header>
-    <form onSubmit={(event) => { event.preventDefault(); join() }} className="rounded-3xl border border-[#ECEAF2] bg-white p-5">
-      <h3 className="font-georgia text-xl">Créer mon profil Rencontres</h3>
-      <p className="mt-2 text-sm leading-6 text-[#4A3F6B]">La participation est désactivée par défaut. Votre profil Rencontres est distinct de votre profil L’Arche, visible seulement des autres participants, et masquable à tout moment.</p>
-      <div className="mt-5"><IntentionPicker mine={mine} onToggle={toggleMine} idPrefix="join-"/></div>
-      <label className="mt-5 flex items-start gap-3 rounded-2xl bg-[#FAFAF7] p-3 text-sm"><input type="checkbox" checked={adultConfirmed} onChange={event => setAdultConfirmed(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[#1A1535]"/><span>J’ai 18 ans ou plus et je choisis de participer aux Rencontres.</span></label>
-      <p className="mt-2 text-xs leading-5 text-[#4A3F6B]">Démonstration : aucun âge n’est vérifié et aucun profil réel n’est créé. Pseudonyme affiché : {nickname}.</p>
-      <button type="submit" disabled={!adultConfirmed || mine.length === 0} className={primary+' mt-4 w-full sm:w-auto'}>Rejoindre les Rencontres</button>
+  const avatarOptions = [
+    { id: 'star', label: 'Étoile', emoji: '✦', tone: '#fff1cc' },
+    { id: 'moon', label: 'Lune', emoji: '☾', tone: '#eeeaf6' },
+    { id: 'sun', label: 'Soleil', emoji: '☀', tone: '#fff2e9' },
+    { id: 'wave', label: 'Vague', emoji: '≈', tone: '#e7eef8' },
+    { id: 'photo', label: 'Photo simulée', tone: '#eaf3e8' },
+  ]
+  const selectedAvatar = avatarOptions.find(item => item.id === avatarId)
+  const profileEditor = <>
+    <div className="arche-rencontre-identity">
+      <span role="img" aria-label={'Mon avatar : '+selectedAvatar.label} className="arche-rencontre-self-avatar" style={{background:selectedAvatar.tone}}>{avatarId === 'photo' ? <Motif name="camera" size={32}/> : selectedAvatar.emoji}</span>
+      <div className="min-w-0 flex-1"><label htmlFor="rencontre-pseudo" className="text-sm font-semibold">Pseudo</label><input id="rencontre-pseudo" required maxLength={32} autoComplete="off" value={profileName} onChange={event=>setProfileName(event.target.value)} className={field+' mt-1'}/></div>
+    </div>
+    <div role="group" aria-label="Choisir mon avatar" className="mt-3 flex flex-wrap gap-2">{avatarOptions.map(item=><button key={item.id} type="button" aria-label={item.label} aria-pressed={avatarId===item.id} onClick={()=>setAvatarId(item.id)} title={item.label} className={secondary+' arche-rencontre-avatar-choice'}>{item.id==='photo' ? <Motif name="camera" size={22}/> : item.emoji}<span className="sr-only">{item.label}</span></button>)}</div>
+    {avatarId === 'photo' && <p className="mt-2 text-xs text-[#596778]">Photo fictive, sans fichier ni envoi. Une photo privée reste réservée aux liens acceptés.</p>}
+    <fieldset className="mt-5"><legend className="text-sm font-semibold">Je suis ici pour…</legend><div className="mt-2 grid grid-cols-3 gap-2">{[{id:'amitie',label:'Amitié'},{id:'amour',label:'Amour'},{id:'both',label:'Les deux'}].map(item=><label key={item.id} className={'flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border px-2 text-sm '+(simpleChoice===item.id ? 'border-[#243950] bg-[#e7eef8] font-semibold' : 'border-[#e0e5ed]')}><input type="radio" name="rencontre-choice" value={item.id} checked={simpleChoice===item.id} onChange={()=>{setSimpleChoice(item.id);setMine(intentionsForChoice(item.id));setFilter('mine')}}/>{item.label}</label>)}</div></fieldset>
+    <label htmlFor="rencontre-bio" className="mt-5 block text-sm font-semibold">Quelques mots sur moi <span className="font-normal text-[#596778]">(facultatif)</span></label>
+    <textarea id="rencontre-bio" maxLength={300} rows={3} placeholder="Ce que j’aime, ce qui me donne envie de rencontrer…" value={bio} onChange={event=>setBio(event.target.value)} className={field+' mt-2 resize-y'}/><p className="text-right text-xs text-[#596778]">{bio.length}/300</p>
+    <label htmlFor="rencontre-region" className="mt-3 block text-sm font-semibold">Ville ou région <span className="font-normal text-[#596778]">(facultatif)</span></label><input id="rencontre-region" maxLength={80} autoComplete="off" placeholder="Par exemple : Lille ou Bretagne" value={region} onChange={event=>setRegion(event.target.value)} className={field+' mt-2'}/>
+    <button type="button" aria-expanded={extrasOpen} onClick={()=>setExtrasOpen(value=>!value)} className={secondary+' mt-4'}>Compléter mon profil</button>
+    {extrasOpen && <div className="mt-4 space-y-4 border-t border-[#e0e5ed] pt-4"><label className="block text-sm font-semibold" htmlFor="rencontre-interests">Centres d’intérêt <span className="font-normal">(facultatif)</span></label><input id="rencontre-interests" maxLength={160} value={interests} onChange={event=>setInterests(event.target.value)} placeholder="Musique, voyages, lecture…" className={field}/><IntentionPicker mine={mine} onToggle={toggleMine} idPrefix="details-"/></div>}
+  </>
+
+  if (!joined) return <section className="arche-rencontres arche-rencontre-create mx-auto max-w-[680px] space-y-4" aria-labelledby="rencontres-title">
+    <header><p className="text-xs font-semibold uppercase tracking-wide">Rencontres · démonstration</p><h2 id="rencontres-title" className="mt-2">Faisons connaissance</h2></header>
+    <form onSubmit={event=>{event.preventDefault();join()}} className="rounded-2xl border border-[#e0e5ed] bg-white p-5">
+      {profileEditor}
+      <label className="mt-5 flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={adultConfirmed} onChange={event=>setAdultConfirmed(event.target.checked)}/><span>J’ai 18 ans ou plus et je choisis de participer aux Rencontres.</span></label>
+      <button type="submit" disabled={!adultConfirmed || mine.length === 0 || !profileName.trim() || !simpleChoice} className={primary+' mt-3 w-full'}>Créer mon profil</button>
+      <p className="mt-3 text-xs leading-5 text-[#596778]">Profil caché avant création, masquable ensuite. Simulation locale : aucun âge n’est vérifié, aucune donnée n’est envoyée.</p>
     </form>
   </section>
 
@@ -303,7 +328,8 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
         <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(value => !value)} className={secondary+' shrink-0'}>Mon profil Rencontres</button>
       </div>
       {settingsOpen && <div className="mt-5 space-y-4 rounded-2xl bg-white p-4">
-        <IntentionPicker mine={mine} onToggle={toggleMine} idPrefix="edit-"/>
+        <div className="arche-rencontre-own-summary flex items-center gap-3"><span className="text-3xl" aria-hidden="true">{selectedAvatar.emoji || '▧'}</span><div><strong>{profileName.trim()}</strong>{bio && <p className="mt-1 text-sm">{bio}</p>}{region && <p className="mt-1 text-xs">{region}</p>}{interests && <p className="mt-1 text-xs">{interests}</p>}</div></div>
+        {profileEditor}
         <label className="flex min-h-11 items-center gap-3 text-sm font-semibold"><input type="checkbox" checked={visible} onChange={event => { setVisible(event.target.checked); onNotice(event.target.checked ? 'Votre profil Rencontres est de nouveau visible des participants.' : 'Votre profil Rencontres est masqué. Vos conversations ouvertes restent accessibles.') }} className="h-4 w-4 accent-[#1A1535]"/>Mon profil est visible des participants</label>
         <button type="button" onClick={leave} className={secondary}>Quitter les Rencontres</button>
       </div>}

@@ -29,7 +29,7 @@ test('Rencontres : participation désactivée par défaut, 18 ans et plus confir
   assert.match(source, /const \[joined, setJoined\] = useState\(false\)/)
   assert.match(source, /const \[adultConfirmed, setAdultConfirmed\] = useState\(false\)/)
   assert.match(source, /J’ai 18 ans ou plus et je choisis de participer aux Rencontres\./)
-  assert.match(source, /disabled=\{!adultConfirmed \|\| mine\.length === 0\}/)
+  assert.match(source, /disabled=\{!adultConfirmed \|\| mine\.length === 0 \|\| !profileName\.trim\(\) \|\| !simpleChoice\}/)
   assert.match(source, /Mon profil est visible des participants/)
   assert.match(source, /Quitter les Rencontres/)
   assert.match(source, /aucun âge n’est vérifié/)

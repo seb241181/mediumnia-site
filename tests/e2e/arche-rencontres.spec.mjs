@@ -22,9 +22,10 @@ async function enterRencontres(page, width = 390) {
 }
 
 async function join(page, intentions = ['Amitié', 'Échanges et découvertes']) {
-  const submit = page.getByRole('button', { name: 'Rejoindre les Rencontres' })
+  const submit = page.getByRole('button', { name: 'Créer mon profil' })
   await expect(submit).toBeDisabled()
-  for (const label of intentions) await page.getByRole('checkbox', { name: new RegExp(label) }).check()
+  await page.getByRole('radio', { name: 'Amitié', exact:true }).check()
+  if (intentions.includes('Relation amoureuse')) await page.getByRole('radio', { name:'Les deux', exact:true }).check()
   await expect(submit).toBeDisabled()
   await page.getByRole('checkbox', { name: /J’ai 18 ans ou plus/ }).check()
   await submit.click()
@@ -39,7 +40,7 @@ test('iPhone : les cinq onglets restent touchables, Rencontres désactivé par d
     expect(hit).toBe(title)
   }
   await nav.getByRole('button', { name: 'Rencontres', exact: true }).click()
-  await expect(page.getByRole('heading', { name: /Les belles rencontres commencent/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Faisons connaissance/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Des personnes à découvrir' })).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
 })

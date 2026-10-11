@@ -10,7 +10,7 @@ import { handleLumiaBookingCancelApi } from '../lib/lumiaBookingCancelApi.js'
 import { handleEmailQuestionsAdmin } from '../lib/emailQuestions.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
-import { abandonBalanceRestoration, listBalanceWatch, restoreBalanceBooking, resumeBalanceRestoration, rotateBalanceLink, setBalanceDecision } from '../lib/rdvBalanceReviewAdmin.js'
+import { abandonBalanceRestoration, dismissGoogleResync, listBalanceWatch, restoreBalanceBooking, resumeBalanceRestoration, retryGoogleResync, rotateBalanceLink, setBalanceDecision } from '../lib/rdvBalanceReviewAdmin.js'
 /**
  * /api/rdv-admin?action=<action>
  * En-tête requis : Authorization: Bearer <supabase_access_token>
@@ -893,6 +893,8 @@ export default async function handler(req, res) {
       else if (req.method === 'POST' && input.op === 'rotate') result = await rotateBalanceLink({ supabase, userId, input })
       else if (req.method === 'POST' && input.op === 'resume') result = await resumeBalanceRestoration({ supabase, userId, input })
       else if (req.method === 'POST' && input.op === 'abandon') result = await abandonBalanceRestoration({ supabase, userId, input })
+      else if (req.method === 'POST' && input.op === 'google-resync') result = await retryGoogleResync({ supabase, userId, input })
+      else if (req.method === 'POST' && input.op === 'google-dismiss') result = await dismissGoogleResync({ supabase, userId, input })
       else result = { status: 400, body: { error: 'invalid_request' } }
       return res.status(result.status).json(result.body)
     }

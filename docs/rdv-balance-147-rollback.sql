@@ -1,12 +1,21 @@
 -- Retour arrière de 20261011160000_rdv_balance_owner_review_restore.sql (#147)
 -- À n'exécuter que sur décision explicite, dans l'éditeur SQL, une étape à la fois.
 --
--- Niveau 1 — interrupteur immédiat, sans redéploiement : revient au
--- comportement d'annulation d'avant (plus d'exigence d'alerte préalable).
--- Les garde-fous « Maintenir », lien tardif, paiement engagé ou externe restent actifs.
+-- Niveau 1 — MODE DE REPLI PRUDENT (premier geste en cas d'incident), sans
+-- redéploiement : plus AUCUNE annulation automatique sans décision du
+-- propriétaire (« Approuver l'annulation » au tableau de bord). Les alertes,
+-- rappels, paiements, remises Google et incidents continuent de fonctionner.
 --   UPDATE public.rdv_balance_runtime_settings
---   SET require_owner_alert = false, auto_cancel_mode = 'auto'
+--   SET auto_cancel_mode = 'owner_review'
 --   WHERE singleton = true;
+-- Retour au fonctionnement normal (sur GO) :
+--   UPDATE public.rdv_balance_runtime_settings SET auto_cancel_mode = 'auto' WHERE singleton = true;
+--
+-- Les alertes ne sont JAMAIS désactivées automatiquement : aucun code ne
+-- modifie require_owner_alert. Le désactiver (require_owner_alert = false)
+-- retirerait la garantie « pas d'annulation sans alerte préalable » : réservé
+-- à une décision explicite et distincte du propriétaire, jamais en réaction à
+-- un incident.
 --
 -- Niveau 2 — fonctions d'avant (définitions PROD relevées le 11/10/2026),
 -- puis suppression des nouvelles fonctions. Les colonnes et tables ajoutées
@@ -21,10 +30,13 @@
 --   WHERE status = 'google_pending';
 -- S'il y en a : « Reprendre » ou « Abandonner » depuis le tableau de bord
 -- AVANT de supprimer les fonctions de reprise.
--- Vérifier aussi les événements Google à remettre (annulation interrompue) :
---   SELECT id, starts_at, balance_google_resync_error FROM public.bookings
+-- Vérifier aussi les événements Google à remettre ou en examen manuel
+-- (annulation interrompue, conflit, rendez-vous commencé) :
+--   SELECT id, starts_at, balance_google_resync_error, balance_google_resync_review_at
+--   FROM public.bookings
 --   WHERE status = 'confirmed' AND balance_google_resync_at IS NOT NULL;
--- S'il y en a : vérifier/remettre l'événement dans Google Agenda à la main.
+-- S'il y en a : les traiter depuis le tableau de bord (« Revérifier et remettre »
+-- ou « Marquer comme traité ») AVANT le niveau 2.
 
 CREATE OR REPLACE FUNCTION public.claim_rdv_balance_auto_cancel(p_booking_id uuid, p_now timestamp with time zone DEFAULT now())
  RETURNS jsonb
@@ -124,6 +136,10 @@ $function$;
 -- Attention : une visio rétablie dont le lien tardif est en cours ne pourrait
 -- alors plus être réglée ; vérifier qu'aucune n'est en cours avant ce retour.
 
+DROP FUNCTION IF EXISTS public.rdv_balance_google_incidents(UUID, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS public.dismiss_rdv_balance_google_resync(UUID, UUID, UUID, TEXT);
+DROP FUNCTION IF EXISTS public.reopen_rdv_balance_google_resync(UUID, UUID, UUID, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS public.flag_rdv_balance_google_resync_review(UUID, TEXT);
 DROP FUNCTION IF EXISTS public.record_rdv_balance_google_resync_failure(UUID, TEXT);
 DROP FUNCTION IF EXISTS public.complete_rdv_balance_google_resync(UUID, TEXT, TEXT);
 DROP FUNCTION IF EXISTS public.claim_rdv_balance_google_resync(UUID, TIMESTAMPTZ);
@@ -144,6 +160,8 @@ DROP FUNCTION IF EXISTS public.claim_rdv_balance_owner_alert(UUID, TEXT, TEXT, T
 DROP FUNCTION IF EXISTS public.rdv_balance_cancel_blocker(UUID, TIMESTAMPTZ);
 DROP FUNCTION IF EXISTS public.rdv_balance_external_payment_cents(UUID);
 -- Colonnes de reprise (resume_claimed_at, attempts, last_error, google_event_id),
--- repère Google (bookings.balance_google_resync_at/_claimed_at/_error) et types
--- d'alerte « restore » / « google_sync » : conservés (journal, sans effet sur
--- l'ancien code, qui ne les lit ni ne les écrit).
+-- repère Google (bookings.balance_google_resync_at/_claimed_at/_error/_review_at)
+-- et types d'alerte « restore », « google_sync », « google_conflict »,
+-- « google_overdue » : conservés (journal, sans effet sur l'ancien code, qui
+-- ne les lit ni ne les écrit).
+-- vercel.json : l'entrée functions["api/rdv-config.js"].maxDuration peut rester.

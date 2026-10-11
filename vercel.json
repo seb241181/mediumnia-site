@@ -188,5 +188,10 @@
   ],
   "env": {
     "PAYPAL_FORMATION_PATH_ENABLED": "true"
+  },
+  "functions": {
+    "api/rdv-config.js": {
+      "maxDuration": 300
+    }
   }
 }

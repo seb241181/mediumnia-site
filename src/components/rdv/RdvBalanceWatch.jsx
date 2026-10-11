@@ -52,6 +52,17 @@ const ERRORS = {
   invalid_late_window: 'Échéance impossible : trop proche du rendez-vous.',
   not_restored_or_window_closed: 'Ce rendez-vous n’a pas de lien tardif actif.',
 }
+const INCIDENT_ERRORS = {
+  appointment_started: 'rendez-vous commencé avant la remise (aucune modification automatique)',
+  google_slot_conflict: 'créneau occupé par un autre événement Google (rien n’a été écrit ni supprimé)',
+  google_disconnected: 'Google Agenda déconnecté',
+}
+Object.assign(ERRORS, {
+  google_slot_busy: 'Le créneau est toujours occupé dans Google Agenda : rien n’a été écrit. Libérez-le ou marquez l’incident comme traité.',
+  appointment_started: 'Le rendez-vous a commencé : aucune modification Google automatique. Vérifiez avec le client puis marquez l’incident comme traité.',
+  google_resync_failed: 'Google Agenda n’a pas confirmé : nouvel essai possible dans quelques minutes.',
+  resync_in_progress: 'Une remise est déjà en cours : réessayez dans quelques minutes.',
+})
 const errorText = (code) => ERRORS[code] || RESTORE_BLOCKERS[code] || `Action impossible (${code}).`
 
 function Badge({ tone, children }) {
@@ -111,6 +122,8 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
         ? 'Rétablissement enregistré, mais Google Agenda n’est plus connecté : rien n’a été écrit. Reconnectez Google puis « Reprendre ». Le rendez-vous reste réservé ; aucun lien n’a été envoyé.'
         : 'Rétablissement enregistré, mais Google Agenda n’a pas encore confirmé. Le rendez-vous reste réservé ; reprise automatique au prochain passage, ou bouton « Reprendre » dans quelques minutes. Aucun lien n’a été envoyé.')
       if (body.abandoned) setNotice('Rétablissement abandonné : la visio est revenue à l’état annulé.')
+      if (body.dismissed) setNotice('Incident marqué comme traité.')
+      if (body.google_status) setNotice('Événement Google remis.')
       await load()
       return body
     } finally { setBusy('') }
@@ -133,6 +146,18 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
         <p className="mt-1 break-all font-mono text-xs">{link.payment_url}</p>
         <div className="mt-2 flex gap-2"><button type="button" className="min-h-11 rounded-full border border-emerald-400 px-3 text-xs font-semibold" onClick={() => navigator.clipboard?.writeText(link.payment_url)}>Copier le lien</button><button type="button" className="min-h-11 px-3 text-xs underline" onClick={() => setLink(null)}>Masquer</button></div>
         <p className="mt-1 text-xs">E-mail au client : {link.email_status === 'sent' ? 'envoyé' : link.email_status === 'not_requested' ? 'non envoyé (à vous de transmettre le lien)' : 'à vérifier'}. Ce lien n’est affiché qu’une fois.</p>
+      </div>}
+      {(data.incidents || []).length > 0 && <div className="mt-3 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900" role="alert">
+        <p className="font-semibold">Incidents Google à traiter</p>
+        <ul className="mt-2 space-y-2">
+          {data.incidents.map(incident => <li key={incident.booking_id} className="text-xs">
+            <p><strong>{incident.customer_name}</strong> · {dayTime(incident.starts_at)}{incident.started ? ' · DÉJÀ COMMENCÉ' : ''} · {incident.kind === 'restoration' ? 'rétablissement en attente' : 'événement Google à remettre'} depuis le {dayTime(incident.since)}{incident.error ? ` · ${INCIDENT_ERRORS[incident.error] || incident.error}` : ''}</p>
+            {incident.kind === 'google_resync' && <div className="mt-1 flex flex-wrap gap-2">
+              {!incident.started && <button type="button" disabled={!!busy} className="min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold disabled:opacity-50" onClick={() => post({ op: 'google-resync', booking_id: incident.booking_id }, 'google-resync')}>Revérifier et remettre</button>}
+              <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-rose-300 px-4 text-xs font-semibold disabled:opacity-50" onClick={() => { if (window.confirm('Confirmez que vous avez vérifié Google Agenda et traité ce rendez-vous vous-même.')) post({ op: 'google-dismiss', booking_id: incident.booking_id }, 'google-dismiss') }}>Marquer comme traité</button>
+            </div>}
+          </li>)}
+        </ul>
       </div>}
       {items.length === 0 ? <p className="mt-3 text-sm text-[#4A3F6B]">Aucune visio à surveiller.</p> : <ul className="mt-3 space-y-3">
         {items.map(item => {

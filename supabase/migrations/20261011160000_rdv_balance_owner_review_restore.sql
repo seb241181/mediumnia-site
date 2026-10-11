@@ -27,7 +27,11 @@ ALTER TABLE public.bookings
   -- effacé à la finalisation ou quand l'événement est remis (section 16).
   ADD COLUMN IF NOT EXISTS balance_google_resync_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS balance_google_resync_claimed_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS balance_google_resync_error TEXT;
+  ADD COLUMN IF NOT EXISTS balance_google_resync_error TEXT,
+  -- Examen manuel : créneau occupé par un autre événement, ou rendez-vous
+  -- commencé avant la remise. Plus aucune remise automatique ; incident
+  -- visible au tableau de bord jusqu'à ce que le propriétaire le traite.
+  ADD COLUMN IF NOT EXISTS balance_google_resync_review_at TIMESTAMPTZ;
 
 DO $$
 BEGIN
@@ -76,11 +80,13 @@ CREATE TABLE IF NOT EXISTS public.rdv_balance_owner_alerts (
 ALTER TABLE public.rdv_balance_owner_alerts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.rdv_balance_owner_alerts FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.rdv_balance_owner_alerts TO service_role;
--- Type « restore » : rétablissement interrompu ou abandonné ; « google_sync » :
--- événement Google à remettre après une annulation interrompue (une alerte par visio et par type).
+-- Type « restore » : rétablissement interrompu ou abandonné ; « google_sync » /
+-- « google_conflict » / « google_overdue » : événement Google à remettre après
+-- une annulation interrompue (échec, créneau occupé, rendez-vous commencé).
+-- Une alerte par visio et par type.
 ALTER TABLE public.rdv_balance_owner_alerts DROP CONSTRAINT IF EXISTS rdv_balance_owner_alerts_kind_check;
 ALTER TABLE public.rdv_balance_owner_alerts ADD CONSTRAINT rdv_balance_owner_alerts_kind_check
-  CHECK (kind IN ('pre_cancel', 'review', 'restore', 'google_sync'));
+  CHECK (kind IN ('pre_cancel', 'review', 'restore', 'google_sync', 'google_conflict', 'google_overdue'));
 
 -- ── 4. Journal des décisions et contrôles ─────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.rdv_balance_review_events (
@@ -318,6 +324,7 @@ BEGIN
       balance_google_resync_at = NULL,
       balance_google_resync_claimed_at = NULL,
       balance_google_resync_error = NULL,
+      balance_google_resync_review_at = NULL,
       updated_at = now()
   WHERE id = v_booking.id;
 
@@ -1005,7 +1012,8 @@ AS $$
     'restoration', (SELECT jsonb_build_object('id', r.id, 'status', r.status, 'attempts', r.attempts, 'last_error', r.last_error, 'created_at', r.created_at)
                     FROM public.rdv_balance_restorations r WHERE r.booking_id = base.id ORDER BY r.created_at DESC LIMIT 1),
     'google_resync', CASE WHEN base.status = 'confirmed' AND base.balance_google_resync_at IS NOT NULL
-                          THEN jsonb_build_object('since', base.balance_google_resync_at, 'error', base.balance_google_resync_error) END
+                          THEN jsonb_build_object('since', base.balance_google_resync_at, 'error', base.balance_google_resync_error,
+                                                  'manual_review', base.balance_google_resync_review_at IS NOT NULL) END
   ) ORDER BY base.starts_at), '[]'::jsonb)
   FROM base;
 $$;
@@ -1115,7 +1123,9 @@ GRANT EXECUTE ON FUNCTION public.record_rdv_balance_restore_failure(UUID, TEXT) 
 -- ── 16. Remise de l'événement Google après une annulation interrompue ─────
 -- Réservation encore confirmée avec le repère posé par la revendication :
 -- l'événement Google est remis (réactivation de son propre identifiant ou
--- recréation à identifiant fixe), jamais un autre événement.
+-- recréation à identifiant fixe), jamais un autre événement. Le créneau est
+-- revérifié dans Google juste avant (code) ; conflit ou rendez-vous déjà
+-- commencé → examen manuel, repère conservé, aucune écriture Google.
 CREATE OR REPLACE FUNCTION public.claim_rdv_balance_google_resync(p_booking_id UUID, p_now TIMESTAMPTZ DEFAULT now())
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1130,12 +1140,33 @@ BEGIN
   IF v_booking.balance_google_resync_at IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_needed');
   END IF;
-  -- Annulée (suppression voulue) ou déjà passée : plus rien à remettre.
-  IF v_booking.status <> 'confirmed' OR v_booking.starts_at <= p_now THEN
+  -- Annulée entre-temps : la suppression de l'événement est voulue.
+  IF v_booking.status <> 'confirmed' THEN
     UPDATE public.bookings
-    SET balance_google_resync_at = NULL, balance_google_resync_claimed_at = NULL, updated_at = now()
+    SET balance_google_resync_at = NULL, balance_google_resync_claimed_at = NULL,
+        balance_google_resync_review_at = NULL, updated_at = now()
     WHERE id = v_booking.id;
     RETURN jsonb_build_object('ok', false, 'error', 'not_needed');
+  END IF;
+  -- Rendez-vous déjà commencé : jamais d'écriture Google sur un créneau
+  -- passé ; le repère est CONSERVÉ et devient un incident à traiter.
+  IF v_booking.starts_at <= p_now THEN
+    UPDATE public.bookings
+    SET balance_google_resync_review_at = COALESCE(balance_google_resync_review_at, p_now),
+        balance_google_resync_error = 'appointment_started',
+        balance_google_resync_claimed_at = NULL,
+        updated_at = now()
+    WHERE id = v_booking.id;
+    IF v_booking.balance_google_resync_review_at IS NULL THEN
+      INSERT INTO public.rdv_balance_review_events(booking_id, event, detail)
+      VALUES (v_booking.id, 'google_resync_overdue', jsonb_build_object('since', v_booking.balance_google_resync_at, 'starts_at', v_booking.starts_at));
+    END IF;
+    RETURN jsonb_build_object('ok', false, 'error', 'appointment_started',
+                              'first', v_booking.balance_google_resync_review_at IS NULL);
+  END IF;
+  -- Examen manuel : seul le propriétaire relance (reopen_rdv_balance_google_resync).
+  IF v_booking.balance_google_resync_review_at IS NOT NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'manual_review');
   END IF;
   IF v_booking.balance_cancel_claimed_at IS NOT NULL
      AND v_booking.balance_cancel_claimed_at > p_now - INTERVAL '30 minutes' THEN
@@ -1150,7 +1181,8 @@ BEGIN
   WHERE id = v_booking.id;
   RETURN jsonb_build_object('ok', true, 'booking_id', v_booking.id,
                             'google_event_id', v_booking.google_event_id,
-                            'since', v_booking.balance_google_resync_at);
+                            'since', v_booking.balance_google_resync_at,
+                            'starts_at', v_booking.starts_at);
 END;
 $$;
 REVOKE ALL ON FUNCTION public.claim_rdv_balance_google_resync(UUID, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
@@ -1177,6 +1209,7 @@ BEGIN
   SET balance_google_resync_at = NULL,
       balance_google_resync_claimed_at = NULL,
       balance_google_resync_error = NULL,
+      balance_google_resync_review_at = NULL,
       google_event_id = COALESCE(p_google_event_id, google_event_id),
       updated_at = now()
   WHERE id = v_booking.id;
@@ -1188,6 +1221,7 @@ $$;
 REVOKE ALL ON FUNCTION public.complete_rdv_balance_google_resync(UUID, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.complete_rdv_balance_google_resync(UUID, TEXT, TEXT) TO service_role;
 
+-- Échec (repère conservé, nouvel essai au passage suivant).
 CREATE OR REPLACE FUNCTION public.record_rdv_balance_google_resync_failure(p_booking_id UUID, p_error TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -1206,3 +1240,117 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.record_rdv_balance_google_resync_failure(UUID, TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.record_rdv_balance_google_resync_failure(UUID, TEXT) TO service_role;
+
+-- Créneau occupé par un autre événement : examen manuel, repère conservé,
+-- plus aucune remise automatique.
+CREATE OR REPLACE FUNCTION public.flag_rdv_balance_google_resync_review(p_booking_id UUID, p_error TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  UPDATE public.bookings
+  SET balance_google_resync_claimed_at = NULL,
+      balance_google_resync_error = left(p_error, 80),
+      balance_google_resync_review_at = COALESCE(balance_google_resync_review_at, now()),
+      updated_at = now()
+  WHERE id = p_booking_id AND balance_google_resync_at IS NOT NULL;
+  IF NOT FOUND THEN RETURN false; END IF;
+  INSERT INTO public.rdv_balance_review_events(booking_id, event, detail)
+  VALUES (p_booking_id, 'google_resync_manual_review', jsonb_build_object('error', left(p_error, 80)));
+  RETURN true;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.flag_rdv_balance_google_resync_review(UUID, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.flag_rdv_balance_google_resync_review(UUID, TEXT) TO service_role;
+
+-- « Revérifier et remettre » : le propriétaire rouvre un incident en examen
+-- (jamais pour un rendez-vous commencé). La remise revérifie le créneau.
+CREATE OR REPLACE FUNCTION public.reopen_rdv_balance_google_resync(p_booking_id UUID, p_practitioner_id UUID, p_actor UUID, p_now TIMESTAMPTZ DEFAULT now())
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_booking public.bookings;
+BEGIN
+  IF p_actor IS NULL THEN RETURN jsonb_build_object('ok', false, 'error', 'invalid_request'); END IF;
+  SELECT * INTO v_booking FROM public.bookings
+  WHERE id = p_booking_id AND practitioner_id = p_practitioner_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'error', 'booking_not_found'); END IF;
+  IF v_booking.balance_google_resync_at IS NULL OR v_booking.status <> 'confirmed' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'not_needed');
+  END IF;
+  IF v_booking.starts_at <= p_now THEN RETURN jsonb_build_object('ok', false, 'error', 'appointment_started'); END IF;
+  UPDATE public.bookings SET balance_google_resync_review_at = NULL, updated_at = now() WHERE id = v_booking.id;
+  INSERT INTO public.rdv_balance_review_events(booking_id, event, actor, detail)
+  VALUES (v_booking.id, 'google_resync_reopened', p_actor, jsonb_build_object('error', v_booking.balance_google_resync_error));
+  RETURN jsonb_build_object('ok', true);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.reopen_rdv_balance_google_resync(UUID, UUID, UUID, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.reopen_rdv_balance_google_resync(UUID, UUID, UUID, TIMESTAMPTZ) TO service_role;
+
+-- Le propriétaire a traité l'incident lui-même (Google vérifié à la main).
+-- Seule façon d'effacer un repère en examen manuel ; journalisée.
+CREATE OR REPLACE FUNCTION public.dismiss_rdv_balance_google_resync(p_booking_id UUID, p_practitioner_id UUID, p_actor UUID, p_note TEXT DEFAULT NULL)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_booking public.bookings;
+BEGIN
+  IF p_actor IS NULL THEN RETURN jsonb_build_object('ok', false, 'error', 'invalid_request'); END IF;
+  SELECT * INTO v_booking FROM public.bookings
+  WHERE id = p_booking_id AND practitioner_id = p_practitioner_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'error', 'booking_not_found'); END IF;
+  IF v_booking.balance_google_resync_at IS NULL THEN RETURN jsonb_build_object('ok', true, 'replay', true); END IF;
+  IF v_booking.balance_google_resync_claimed_at IS NOT NULL
+     AND v_booking.balance_google_resync_claimed_at > now() - INTERVAL '5 minutes' THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'resync_in_progress');
+  END IF;
+  UPDATE public.bookings
+  SET balance_google_resync_at = NULL, balance_google_resync_claimed_at = NULL,
+      balance_google_resync_error = NULL, balance_google_resync_review_at = NULL, updated_at = now()
+  WHERE id = v_booking.id;
+  INSERT INTO public.rdv_balance_review_events(booking_id, event, actor, detail)
+  VALUES (v_booking.id, 'google_resync_dismissed', p_actor,
+          jsonb_build_object('error', v_booking.balance_google_resync_error, 'since', v_booking.balance_google_resync_at, 'note', left(p_note, 300)));
+  RETURN jsonb_build_object('ok', true, 'replay', false);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.dismiss_rdv_balance_google_resync(UUID, UUID, UUID, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.dismiss_rdv_balance_google_resync(UUID, UUID, UUID, TEXT) TO service_role;
+
+-- Incidents persistants (tableau de bord) : remise Google en attente ou en
+-- examen manuel, restauration en attente — y compris rendez-vous commencés.
+CREATE OR REPLACE FUNCTION public.rdv_balance_google_incidents(p_practitioner_id UUID, p_now TIMESTAMPTZ DEFAULT now())
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'booking_id', b.id,
+    'customer_name', trim(coalesce(b.customer_first_name, '') || ' ' || coalesce(b.customer_last_name, '')),
+    'starts_at', b.starts_at,
+    'started', b.starts_at <= p_now,
+    'kind', CASE WHEN b.balance_google_resync_at IS NOT NULL THEN 'google_resync' ELSE 'restoration' END,
+    'since', COALESCE(b.balance_google_resync_at, r.created_at),
+    'error', COALESCE(b.balance_google_resync_error, r.last_error),
+    'manual_review', b.balance_google_resync_review_at IS NOT NULL OR b.starts_at <= p_now
+  ) ORDER BY b.starts_at), '[]'::jsonb)
+  FROM public.bookings b
+  LEFT JOIN public.rdv_balance_restorations r ON r.booking_id = b.id AND r.status = 'google_pending'
+  WHERE b.practitioner_id = p_practitioner_id
+    AND b.status = 'confirmed'
+    AND b.starts_at > p_now - INTERVAL '30 days'
+    AND (b.balance_google_resync_at IS NOT NULL OR r.id IS NOT NULL);
+$$;
+REVOKE ALL ON FUNCTION public.rdv_balance_google_incidents(UUID, TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rdv_balance_google_incidents(UUID, TIMESTAMPTZ) TO service_role;

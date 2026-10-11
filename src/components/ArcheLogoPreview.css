@@ -14,3 +14,7 @@
 .arche-logo-choices button > span > strong { display: block; font-size: 14px; color: #20233f; }
 .arche-logo-choices button > span > span { display: block; font-size: 11px; color: #52617b; margin-top: 4px; line-height: 1.6; }
 @media(max-width:639px) { .arche-logo-preview { gap: 6px; } .arche-logo-preview summary { gap: 6px; } .arche-logo-preview summary > strong { font-size: 18px; } }
+
+.arche-brand-lockup { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.arche-brand-lockup > strong { font-family: Georgia,serif; font-size: 20px; letter-spacing: .035em; color: #17233f; }
+@media(max-width:639px) { .arche-brand-lockup { gap: 6px; } .arche-brand-lockup > strong { font-size: 18px; } }

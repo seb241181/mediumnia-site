@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/arche",
+      "destination": "/index.html"
+    },
+    {
       "source": "/api/rdv-balance-cron",
       "destination": "/api/rdv-config?rdvBalanceAction=cron"
     },
@@ -144,6 +148,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/arche",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [

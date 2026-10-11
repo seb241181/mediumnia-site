@@ -1,11 +1,4 @@
-import { useState } from 'react'
 import './ArcheLogoPreview.css'
-
-const PROPOSALS = [
-  { id: 'regard', name: 'Regard refuge', description: 'L’œil MediumIA accueilli sous une arche douce.' },
-  { id: 'porte', name: 'Porte ouverte', description: 'Une ouverture lumineuse au cœur du regard.' },
-  { id: 'lueur', name: 'Lueur partagée', description: 'Un regard vivant, une lumière qui rayonne.' },
-]
 
 export function ArcheLogoSymbol({ variant }) {
   return <svg aria-hidden="true" viewBox="0 0 48 48" fill="none" className="arche-logo-symbol">
@@ -32,22 +25,10 @@ export function ArcheLogoSymbol({ variant }) {
   </svg>
 }
 
-// Sélecteur artistique local, affiché uniquement dans la messagerie de démonstration.
-export default function ArcheLogoPreview() {
-  const [selected, setSelected] = useState('regard')
-  const proposal = PROPOSALS.find(item => item.id === selected)
-  return <div className="arche-logo-preview" data-logo-proposal={selected}>
-    <details onKeyDown={event => { if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary').focus() } }}>
-      <summary aria-label="Comparer les propositions du logo L’ARCHE" title={'Logo '+proposal.name+' · comparer les propositions'}>
-        <ArcheLogoSymbol variant={selected}/><strong>L’ARCHE</strong>
-      </summary>
-      <div className="arche-logo-choices">
-        <p>L’Arche · filiation MediumIA</p>
-        {PROPOSALS.map(item => <button key={item.id} type="button" aria-pressed={selected === item.id} onClick={event => { setSelected(item.id); const details = event.currentTarget.closest('details'); details.open = false; details.querySelector('summary').focus() }}>
-          <ArcheLogoSymbol variant={item.id}/><span><strong>{item.name}</strong><span>{item.description}</span></span>
-        </button>)}
-      </div>
-    </details>
-    <span className="arche-logo-demo">Démo</span>
+// Symbole retenu : chemin SVG « lueur » inchangé. Les autres pistes restent exportées comme alternatives.
+export default function ArcheBrand({ demo = false }) {
+  return <div className="arche-logo-preview" data-logo-proposal="lueur">
+    <span className="arche-brand-lockup"><ArcheLogoSymbol variant="lueur"/><strong>L’ARCHE</strong></span>
+    {demo && <span className="arche-logo-demo">Démo</span>}
   </div>
 }

@@ -1,0 +1,16 @@
+.arche-logo-preview { display: flex; flex-shrink: 0; align-items: center; gap: 10px; }
+.arche-logo-preview details { position: relative; }
+.arche-logo-preview summary { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; list-style: none; border-radius: 12px; }
+.arche-logo-preview summary::-webkit-details-marker { display: none; }
+.arche-logo-preview summary > strong { font-family: Georgia,serif; font-size: 20px; letter-spacing: .035em; color: #20233f; }
+.arche-logo-symbol { width: 44px; height: 44px; flex-shrink: 0; }
+.arche-logo-demo { border-radius: 6px; background: #f4e7c8; color: #614d2d; font-size: 10px; font-weight: 600; padding: 5px 8px; }
+.arche-logo-preview :is(summary,button):focus-visible { outline: 3px solid #567ba4; outline-offset: 3px; }
+.arche-logo-choices { position: absolute; top: 56px; left: 0; z-index: 50; width: min(340px,calc(100vw - 24px)); padding: 14px; border-radius: 20px; border: 1px solid #e5e1ed; background: #fff; box-shadow: 0 12px 36px #33496520; }
+.arche-logo-choices > p { font-size: 12px; color: #52617b; margin: 0 8px 10px; }
+.arche-logo-choices button { width: 100%; min-height: 76px; display: flex; align-items: center; gap: 14px; text-align: left; border-radius: 14px; padding: 10px 8px; touch-action: manipulation; }
+.arche-logo-choices button[aria-pressed=true] { background: #f3f0fa; }
+.arche-logo-choices button:hover { background: #f6f5fa; }
+.arche-logo-choices button > span > strong { display: block; font-size: 14px; color: #20233f; }
+.arche-logo-choices button > span > span { display: block; font-size: 11px; color: #52617b; margin-top: 4px; line-height: 1.6; }
+@media(max-width:639px) { .arche-logo-preview { gap: 6px; } .arche-logo-preview summary { gap: 6px; } .arche-logo-preview summary > strong { font-size: 18px; } }

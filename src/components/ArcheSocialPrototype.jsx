@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './ArcheSocialPrototype.css'
+import ArcheLogoPreview from './ArcheLogoPreview'
 
 // Prototype privé : toutes les données ci-dessous sont fictives et locales.
 const PEOPLE = [
@@ -300,7 +301,7 @@ export function ArcheAppPreview({ nickname, onExit }) {
   const matching = PEOPLE.filter(p => !blocked.includes(p.name) && p.name.toLowerCase().includes(search.toLowerCase()))
   return <div data-arche-app-preview="local-only" style={{ fontFamily: 'system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif' }} className="min-h-screen bg-white text-[#1A1535]">
     <style>{'@keyframes soft-pop{0%{transform:scale(.92)}100%{transform:scale(1)}}.reaction-button[aria-pressed="true"]{animation:soft-pop .24s ease-out}@keyframes arche-lueur-glow{0%{box-shadow:0 0 0 rgba(201,168,76,0)}100%{box-shadow:0 0 26px rgba(201,168,76,.45)}}.arche-lueur{animation:arche-lueur-glow .45s ease-out}@media(prefers-reduced-motion:reduce){.reaction-button[aria-pressed="true"],.arche-lueur{animation:none}}'}</style>
-    <header className="sticky top-0 z-30 border-b border-[#ECEAF2] bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5"><div className="flex shrink-0 items-center gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A1535] font-georgia text-lg text-white">A</span><strong className="font-georgia text-xl">L’ARCHE</strong><span className="rounded-md bg-[#C9A84C] px-2 py-1 text-[10px] font-semibold text-[#1A1535]">Démo</span></div>
+    <header className="sticky top-0 z-30 border-b border-[#ECEAF2] bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5">{view === 'messages' ? <ArcheLogoPreview/> : <div className="flex shrink-0 items-center gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A1535] font-georgia text-lg text-white">A</span><strong className="font-georgia text-xl">L’ARCHE</strong><span className="rounded-md bg-[#C9A84C] px-2 py-1 text-[10px] font-semibold text-[#1A1535]">Démo</span></div>}
       <label htmlFor="arche-member-search" className="sr-only">Rechercher un proche fictif</label><input id="arche-member-search" className="hidden min-h-11 min-w-0 flex-1 rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 text-sm placeholder:text-[#4A3F6B] md:block" placeholder="Rechercher un proche…" value={search} onChange={event=>setSearch(event.target.value)}/>
       <button type="button" aria-label="Notifications fictives" aria-expanded={showNotifications} onClick={()=>setShowNotifications(v=>!v)} className="ml-auto flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-[#ECEAF2]"><AppIcon name="bell"/></button>
       <button type="button" onClick={()=>navigateTo('profile')} aria-label="Ouvrir mon profil" className="flex min-h-11 items-center gap-2 rounded-xl px-2 hover:bg-[#FAFAF7]"><Avatar name={nickname}/><span className="hidden text-sm lg:inline">{nickname}</span></button>

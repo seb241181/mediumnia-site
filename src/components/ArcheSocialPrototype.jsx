@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './ArcheSocialPrototype.css'
 
 // Prototype privé : toutes les données ci-dessous sont fictives et locales.
@@ -182,15 +182,21 @@ function CirclesView() {
     {selected && <div className="mt-4 rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="font-semibold">{CIRCLES.find(c=>c.id===selected)?.title}</h3><p className="mt-2 text-sm text-[#4A3F6B]">Découvrez les échanges du Cercle.</p><button type="button" className={primary+' mt-4'} onClick={()=>setJoined(list=>list.includes(selected)?list.filter(id=>id!==selected):[...list,selected])}>{joined.includes(selected)?'Quitter ce Cercle':'Rejoindre ce Cercle'}</button></div>}
   </div>
 }
-function MessageAvatar({ name, status = 'invisible', lueur = false }) {
-  const index = colorIndex(name) % 4
-  return <span className={'arche-message-avatar arche-avatar-'+index+(lueur ? ' arche-lueur' : '')}>
-    <svg aria-hidden="true" viewBox="0 0 64 64"><path d="M6 64c0-20 12-27 26-27s26 7 26 27" fill={['#628DAA','#9B82BD','#6EAB96','#C884A1'][index]}/><path d="M16 31c-5-25 38-29 33 1l4 14H12Z" fill="#343451"/><ellipse cx="32" cy="27" rx="13" ry="16" fill={['#EDC5AC','#BD886D','#E3B493','#D6A082'][index]}/><path d="M18 22c0-20 28-20 28 0-8-1-14-5-18-10-1 5-5 8-10 10" fill="#343451"/><circle cx="27" cy="26" r="1.2" fill="#343451"/><circle cx="37" cy="26" r="1.2" fill="#343451"/><path d="M27 33q5 4 10 0" stroke="#875743" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg><PresenceDot status={status}/>
+function MessageAvatar({ name, status = 'invisible', lueur = false, self = false, model = 'lunettes' }) {
+  const index = self ? (model === 'portrait' ? 1 : 0) : colorIndex(name) % 4
+  const emoji = { etoile: '🌟', lune: '🌙', sourire: '😊' }[model]
+  return <span role="img" aria-label={'Avatar de '+name} className={'arche-message-avatar '+(self ? 'arche-avatar-self ' : '')+'arche-avatar-'+index+(lueur ? ' arche-lueur' : '')}>
+    {self && emoji ? <span aria-hidden="true" className="arche-avatar-emoji">{emoji}</span> : self && model !== 'portrait' ? <svg aria-hidden="true" viewBox="0 0 64 64"><path d="M5 64c1-19 12-26 27-26s26 7 27 26" fill="#395F97"/><ellipse cx="32" cy="27" rx="13" ry="16" fill="#EAC29F"/><path d="M19 23c-5-23 33-23 27 0l-4-7-7 2-10-4Z" fill="#3A3548"/><g fill="none" stroke="#394660" strokeWidth="2"><rect x="21" y="24" width="10" height="7" rx="3"/><rect x="33" y="24" width="10" height="7" rx="3"/><path d="M31 27h2M27 35q5 4 10 0"/></g><path d="m32 48 2 4 5 1-4 3 1 5-4-3-4 3 1-5-4-3 5-1Z" fill="#F6DC99"/></svg> : <svg aria-hidden="true" viewBox="0 0 64 64"><path d="M6 64c0-20 12-27 26-27s26 7 26 27" fill={['#628DAA','#9B82BD','#6EAB96','#C884A1'][index]}/><path d="M16 31c-5-25 38-29 33 1l4 14H12Z" fill="#343451"/><ellipse cx="32" cy="27" rx="13" ry="16" fill={['#EDC5AC','#BD886D','#E3B493','#D6A082'][index]}/><path d="M18 22c0-20 28-20 28 0-8-1-14-5-18-10-1 5-5 8-10 10" fill="#343451"/><circle cx="27" cy="26" r="1.2" fill="#343451"/><circle cx="37" cy="26" r="1.2" fill="#343451"/><path d="M27 33q5 4 10 0" stroke="#875743" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}<PresenceDot status={status}/>
   </span>
 }
-function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
+function MessagesView({ blocked, setBlocked, incomingLueur, onNotice, nickname, mood, setMood, setIncomingLueur }) {
   const [selected, setSelected] = useState('aurore')
-  const [bubblePalette, setBubblePalette] = useState('lavande')
+  const [bubblePalette, setBubblePalette] = useState('ciel')
+  const [avatarModel, setAvatarModel] = useState('lunettes')
+  const [personalizeOpen, setPersonalizeOpen] = useState(false)
+  const [lueurPulse, setLueurPulse] = useState(null)
+  const [sendCooling, setSendCooling] = useState(false)
+  const lueurGate = useRef({ sent: 0, received: 0 })
   const [mobileThread, setMobileThread] = useState(false)
   const [request, setRequest] = useState('pending')
   const [messages, setMessages] = useState([{ who: 'them', text: 'Bonsoir ! Je voudrais parler des rêves, si vous en avez envie.' }, { who: 'them', text: 'Aucune urgence, on peut prendre notre temps ✧' }])
@@ -198,6 +204,16 @@ function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
   const [sentLueur, setSentLueur] = useState(false)
   const [receivedLueur, setReceivedLueur] = useState(false)
   const [lastSent, setLastSent] = useState(0)
+  useEffect(() => {
+    if (!lastSent) return
+    const timer = setTimeout(() => setSendCooling(false), Math.max(0, 10000 - (Date.now() - lastSent)))
+    return () => clearTimeout(timer)
+  }, [lastSent])
+  useEffect(() => {
+    if (!lueurPulse) return
+    const timer = setTimeout(() => setLueurPulse(null), 650)
+    return () => clearTimeout(timer)
+  }, [lueurPulse])
   const person = PEOPLE.find(p => p.id === selected) || PEOPLE[0]
   const contactBlocked = blocked.includes(person.name) || (request === 'blocked' && selected === 'aurore')
   // Consentement reçu de l'autre personne : valeur de scénario fictif, jamais modifiable par l'expéditeur.
@@ -207,41 +223,48 @@ function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
     const evidenceCount = withReport ? Math.min(messages.length, 5) : 0
     setBlocked(v => [...new Set([...v, person.name])])
     if (selected === 'aurore') setRequest('blocked')
-    setSentLueur(false); setReceivedLueur(false); setMobileThread(false)
+    setSentLueur(false); setReceivedLueur(false); setLueurPulse(null); setMobileThread(false)
     setMessages([]); setDraft('')
     onNotice(withReport
       ? 'Blocage et signalement simulés (' + evidenceCount + ' dernier(s) message(s) concernés). Aucune preuve copiée ni aucun signalement transmis.'
       : 'Contact fictif bloqué. Historique masqué, aucun signalement réel transmis.')
   }
   function sendLueur() {
-    if (!canChat || !recipientAcceptsLueur || Date.now()-lastSent < 10000) return
-    setLastSent(Date.now()); setSentLueur(true)
+    if (!canChat || !recipientAcceptsLueur || Date.now() - lueurGate.current.sent < 10000) return
+    const now = Date.now()
+    lueurGate.current.sent = now
+    setLastSent(now); setSendCooling(true); setSentLueur(true); setLueurPulse({ kind: 'sent', id: now })
     onNotice('Lueur envoyée dans la simulation uniquement. Aucun appareil distant contacté.')
   }
   function simulateReceivedLueur() {
-    if (!canChat || !incomingLueur) return
-    setReceivedLueur(true)
-    try { if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(70) } catch { /* vibration facultative */ }
+    if (!canChat || !incomingLueur || Date.now() - lueurGate.current.received < 10000) return
+    const now = Date.now()
+    lueurGate.current.received = now
+    setReceivedLueur(true); setLueurPulse({ kind: 'received', id: now })
+    try { if (window.innerWidth <= 767 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(40) } catch { /* vibration facultative */ }
     onNotice('Lueur reçue dans la simulation avec votre autorisation.')
   }
   return <div data-bubble-palette={bubblePalette} className="arche-messages mx-auto grid max-w-[900px] gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
     <aside className={(mobileThread ? 'hidden ' : '')+'rounded-2xl border border-[#ECEAF2] bg-white p-3 md:block'}>
       <div className="arche-contact-heading"><span className="arche-message-symbol" aria-hidden="true"><AppIcon name="chat" size={24}/></span><div><p className="arche-message-eyebrow">Un petit signe, un vrai lien</p><h2>Mes rencontres</h2></div></div><p className="arche-message-demo">Contacts et statuts fictifs</p>
-      {PEOPLE.filter(p => !blocked.includes(p.name)).map(p => <button type="button" key={p.id} onClick={() => { setSelected(p.id); setMobileThread(true); setSentLueur(false); setReceivedLueur(false) }} aria-pressed={p.id === selected} className={'arche-contact flex min-h-16 w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-[#FAFAF7] '+(p.id === selected ? 'arche-contact-selected bg-[#FAFAF7]' : '')}><MessageAvatar name={p.name} status={p.status}/><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{p.name}</strong><span className="arche-contact-mood block truncate text-xs text-[#4A3F6B]">{p.note}</span><span className="arche-contact-status">{p.status === 'online' ? 'Disponible' : p.status === 'away' ? 'Absent' : 'Occupé'}</span></span></button>)}
+      {PEOPLE.filter(p => !blocked.includes(p.name)).map(p => <button type="button" key={p.id} onClick={() => { setSelected(p.id); setMobileThread(true); setSentLueur(false); setReceivedLueur(false); setLueurPulse(null) }} aria-pressed={p.id === selected} className={'arche-contact flex min-h-16 w-full items-center gap-3 rounded-xl px-3 text-left hover:bg-[#FAFAF7] '+(p.id === selected ? 'arche-contact-selected bg-[#FAFAF7]' : '')}><MessageAvatar name={p.name} status={p.status}/><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{p.name}</strong><span className="arche-contact-mood block truncate text-xs text-[#4A3F6B]">{p.note}</span><span className="arche-contact-status">{p.status === 'online' ? 'Disponible' : p.status === 'away' ? 'Absent' : 'Occupé'}</span></span></button>)}
       <p className="mt-3 border-t border-[#ECEAF2] p-3 text-xs text-[#4A3F6B]">Messages privés prévus après le pilote fermé.</p>
     </aside>
     <section className={(mobileThread ? 'flex ' : 'hidden ')+'min-h-[480px] flex-col overflow-hidden rounded-2xl border border-[#ECEAF2] bg-white md:flex'}>
-      <header className="flex items-center gap-2 border-b border-[#ECEAF2] p-3"><button type="button" onClick={() => setMobileThread(false)} aria-label="Revenir aux rencontres" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl md:hidden">←</button><MessageAvatar name={person.name} status={person.status} lueur={receivedLueur}/><div className="min-w-0 flex-1"><h2 className="arche-conversation-name text-sm font-semibold">{person.name}</h2><p className="text-xs text-[#4A3F6B]">{person.note} · privé</p></div>{canChat && <button type="button" aria-label="Envoyer une Lueur" disabled={!recipientAcceptsLueur} onClick={sendLueur} className="arche-header-lueur"><span aria-hidden="true">✧</span><span>Lueur</span></button>}</header>
-      <div className="arche-conversation-body min-h-[310px] flex-1 space-y-3 overflow-y-auto p-4">
+      <header className="flex items-center gap-2 border-b border-[#ECEAF2] p-3"><button type="button" onClick={() => setMobileThread(false)} aria-label="Revenir aux rencontres" className="flex min-h-11 min-w-11 items-center justify-center rounded-xl md:hidden">←</button><MessageAvatar name={person.name} status={person.status} lueur={canChat && incomingLueur && lueurPulse?.kind === 'received'}/><div className="min-w-0 flex-1"><h2 className="arche-conversation-name text-sm font-semibold">{person.name}</h2><p className="text-xs text-[#4A3F6B]">{person.note} · privé</p></div>{canChat && <button type="button" aria-label="Envoyer une Lueur" disabled={!recipientAcceptsLueur || sendCooling} title={sendCooling ? 'Patientez 10 secondes entre deux Lueurs' : 'Envoyer une Lueur fictive'} onClick={sendLueur} className="arche-header-lueur"><span aria-hidden="true">✧</span><span>Lueur</span></button>}{!contactBlocked &&           <details className="arche-conversation-menu" onKeyDown={event => { if (event.key === 'Escape') { event.currentTarget.open = false; event.currentTarget.querySelector('summary').focus() } }}><summary aria-label="Options de la conversation" title="Options de la conversation"><span aria-hidden="true">···</span></summary><div className="arche-conversation-menu-panel"><p className="arche-menu-title">Votre conversation</p><label className="arche-lueur-consent"><input type="checkbox" checked={incomingLueur} onChange={event => { setIncomingLueur(event.target.checked); setReceivedLueur(false); setLueurPulse(null) }}/><span>Autoriser les Lueurs de mes proches</span></label><div className="flex flex-wrap gap-2 pt-4"><button type="button" onClick={() => onNotice('Signalement de conversation simulé : aucun message réel transmis.')} className={secondary}>Signaler</button><button type="button" disabled={!incomingLueur || !canChat} onClick={simulateReceivedLueur} className={secondary}>Simuler une Lueur reçue</button><button type="button" onClick={() => blockContact()} className={secondary}>Bloquer</button><button type="button" onClick={() => blockContact(true)} className={secondary}>Bloquer et signaler</button></div>
+          <p className="text-xs leading-5 text-[#4A3F6B]">Aurore autorise les Lueurs dans ce scénario. Pour recevoir les vôtres, choisissez dans Moi → Confidentialité. La vibration peut ne pas fonctionner sur iPhone. Une Lueur par sens toutes les 10 secondes.</p></div></details>}</header>
+      <div className={'arche-conversation-body min-h-[310px] flex-1 space-y-3 overflow-y-auto p-4'+(canChat && lueurPulse && (lueurPulse.kind === 'sent' ? recipientAcceptsLueur : incomingLueur) ? ' arche-lueur-nudge' : '')}>
+        {canChat && lueurPulse && (lueurPulse.kind === 'sent' ? recipientAcceptsLueur : incomingLueur) && <span key={lueurPulse.id+'-'+lueurPulse.kind} className="arche-lueur-flash" aria-hidden="true"/>}
         {contactBlocked ? <p className="text-sm">Contact bloqué. Historique masqué dans la démonstration.</p> : selected !== 'aurore' ? <p className="text-sm text-[#4A3F6B]">Une invitation acceptée sera nécessaire pour échanger.</p> : request === 'pending' ? <div className="arche-invitation rounded-xl bg-[#FAFAF7] p-4"><p className="arche-eyebrow">Un nouveau lien, si vous le souhaitez</p><p className="text-sm leading-6">Aurore souhaite entrer en contact avec vous. Vous pouvez accepter, ignorer ou bloquer sans justification.</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={primary} onClick={() => setRequest('accepted')}>Accepter</button><button type="button" className={secondary} onClick={() => setRequest('ignored')}>Ignorer</button><button type="button" className={secondary} onClick={() => blockContact()}>Bloquer</button></div></div> : request === 'ignored' ? <div><p className="text-sm">Invitation ignorée. Aucune conversation privée ouverte.</p><button type="button" className={secondary+' mt-3'} onClick={() => setRequest('pending')}>Réinitialiser l’exemple</button></div> : <>
-          <p className="arche-transcript-label">Conversation de démonstration · ici, on prend son temps</p>{messages.map((m,index) => <div key={index} className={'arche-message-row flex '+(m.who === 'me' ? 'justify-end' : 'justify-start')}>{m.who === 'them' && <MessageAvatar name={person.name}/>}<p className={'arche-bubble max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 '+(m.who === 'me' ? 'bg-[#EEEAF6]' : 'bg-[#FAFAF7]')}>{m.text}</p></div>)}
+          <p className="arche-transcript-label">Conversation et horaires fictifs · démonstration</p>{messages.map((m,index) => <div key={index} className={'arche-message-row flex '+(m.who === 'me' ? 'justify-end' : 'justify-start')}>{m.who === 'them' && <MessageAvatar name={person.name}/>}<p className={'arche-bubble max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 '+(m.who === 'me' ? 'bg-[#EEEAF6]' : 'bg-[#FAFAF7]')}>{m.text}<span className="arche-message-time" aria-label="Heure fictive">20:{String(14 + index % 46).padStart(2, '0')}</span></p>{m.who === 'me' && <MessageAvatar name={nickname} self model={avatarModel}/>}</div>)}
           {sentLueur && <p role="status" className="mx-auto w-fit rounded-xl bg-[#FFF8E8] px-4 py-2 text-xs">✧ Vous avez envoyé une Lueur à Aurore (démo)</p>}
           {receivedLueur && <p role="status" className="mx-auto w-fit rounded-xl bg-[#FFF8E8] px-4 py-2 text-xs">✧ Aurore vous envoie une Lueur (démo)</p>}
-          <details className="arche-conversation-safety"><summary>Consentement et protections</summary><div className="flex flex-wrap gap-2 pt-4"><button type="button" onClick={() => onNotice('Signalement de conversation simulé : aucun message réel transmis.')} className={secondary}>Signaler</button><button type="button" disabled={!incomingLueur} onClick={simulateReceivedLueur} className={secondary}>Simuler une Lueur reçue</button><button type="button" onClick={() => blockContact()} className={secondary}>Bloquer</button><button type="button" onClick={() => blockContact(true)} className={secondary}>Bloquer et signaler</button></div>
-          <p className="text-xs leading-5 text-[#4A3F6B]">Aurore autorise les Lueurs dans ce scénario. Pour recevoir les vôtres, choisissez dans Moi → Confidentialité. La vibration peut ne pas fonctionner sur iPhone.</p></details>
+
         </>}
       </div>
-      {canChat && <div className="arche-palette-bar"><span>Votre couleur</span><div role="group" aria-label="Couleur de vos bulles">{['lavande','ciel','rose','menthe'].map(color => <button key={color} type="button" aria-label={'Bulles '+color} aria-pressed={bubblePalette === color} onClick={() => setBubblePalette(color)} className={'arche-palette-choice arche-palette-'+color}><span aria-hidden="true"/></button>)}</div><span className="arche-private-label">Échange privé · fictif</span></div>}
+      {canChat && <div className="arche-palette-bar"><span>Votre couleur</span><div role="group" aria-label="Couleur de vos bulles">{['ciel','rose','lavande','menthe','peche','nuit'].map(color => <button key={color} type="button" aria-label={'Bulles '+color} title={{ ciel: 'Ciel', rose: 'Rose', lavande: 'Lavande', menthe: 'Menthe', peche: 'Pêche', nuit: 'Nuit' }[color]} aria-pressed={bubblePalette === color} onClick={() => setBubblePalette(color)} className={'arche-palette-choice arche-palette-'+color}><span aria-hidden="true"/></button>)}</div><button type="button" className="arche-personalize-toggle" aria-expanded={personalizeOpen} onClick={() => setPersonalizeOpen(v => !v)}>Mon style</button></div>}
+      {canChat && <div className="arche-self-presence"><MessageAvatar name={nickname} self model={avatarModel}/><span><strong>{nickname}</strong><span>{mood}</span></span></div>}
+      {canChat && personalizeOpen && <section className="arche-personalization" aria-label="Personnaliser la messagerie"><p className="arche-menu-title">Votre petite signature</p><div role="group" aria-label="Choisir mon avatar">{[{ id: 'lunettes', label: 'Illustré à lunettes' },{ id: 'portrait', label: 'Portrait illustré' },{ id: 'etoile', label: 'Emoji étoile' },{ id: 'lune', label: 'Emoji lune' },{ id: 'sourire', label: 'Emoji sourire' }].map(model => <button type="button" key={model.id} aria-label={model.label} aria-pressed={avatarModel === model.id} onClick={() => setAvatarModel(model.id)}><MessageAvatar name={nickname} self model={model.id}/></button>)}</div><button type="button" disabled className="arche-photo-placeholder">Photo de profil · bientôt</button><p>Aucun import de photo dans cette maquette.</p><label>Ma phrase d’humeur<input aria-label="Ma phrase d’humeur" maxLength={60} value={mood} onChange={event => setMood(event.target.value)} placeholder="Quelques mots, juste pour vos proches…"/></label><span className="arche-mood-count">{mood.length}/60 · visible par vos proches seulement</span><button type="button" className="arche-personalization-done" onClick={() => setPersonalizeOpen(false)}>Terminé</button></section>}
       {canChat && <form onSubmit={event => { event.preventDefault(); if (!draft.trim()) return; setMessages(v => [...v,{ who:'me',text:draft.trim() }]); setDraft('') }} className="flex gap-2 border-t border-[#ECEAF2] p-3"><label className="sr-only" htmlFor="arche-dm-draft">Écrire un message fictif</label><input id="arche-dm-draft" className={field} maxLength={240} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Un petit mot pour Aurore…"/><button type="submit" disabled={!draft.trim()} className={primary+' shrink-0 px-5'}>Envoyer</button></form>}
     </section>
   </div>
@@ -290,7 +313,7 @@ export function ArcheAppPreview({ nickname, onExit }) {
         <div hidden={view !== 'feed'}><FeedView nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/></div>
         <div hidden={view !== 'salon'}><SalonView nickname={nickname}/></div>
         <div hidden={view !== 'cercles'}><CirclesView/></div>
-        <div hidden={view !== 'messages'}><MessagesView blocked={blocked} setBlocked={setBlocked} incomingLueur={incomingLueur} onNotice={setNotice}/></div>
+        <div hidden={view !== 'messages'}><MessagesView blocked={blocked} setBlocked={setBlocked} incomingLueur={incomingLueur} onNotice={setNotice} nickname={nickname} mood={mood} setMood={setMood} setIncomingLueur={setIncomingLueur}/></div>
         <div hidden={view !== 'profile'}><ProfileView nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/></div>
       </main><RightRail blocked={blocked}/>
     </div>

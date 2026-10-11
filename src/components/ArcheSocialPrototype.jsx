@@ -111,7 +111,7 @@ function PostCard({ post, nickname, reactions, onReact, replies, onReply, onMode
   const canReply = policy !== 'closed' && (policy !== 'contacts' || isClose || post.author === nickname)
   const existingReplies = replies[post.id] || []
   const localReactions = reactions[post.id] || []
-  const night = post.format === 'normal' && post.theme === 'nuit'
+  const night = theme === POST_THEMES.nuit
   return <article className={'overflow-visible rounded-2xl border bg-white shadow-[0_6px_24px_rgba(26,21,53,.035)] '+(isQuestion ? 'border-l-4 border-l-[#C9A84C]' : 'border-[#ECEAF2]')} style={theme.style}>
     <div className="p-4 sm:p-5">
       <div className="flex items-start gap-3"><Avatar name={post.author} status={isClose ? person.status : 'invisible'}/><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm" style={{ color: theme.style.color }}>{post.author}</strong>{isQuestion && <span className="rounded-lg border-l-2 border-[#C9A84C] bg-[#FFF8E8] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Question</span>}{isSensitive && <span className="rounded-lg bg-[#EEEAF6] px-2 py-1 text-[11px] font-semibold text-[#1A1535]">Sujet sensible</span>}</div><p className="mt-1 text-xs" style={{ color: night ? '#E2D7BE' : '#4A3F6B' }}>{post.circle} · {post.time}</p></div>

@@ -141,11 +141,21 @@ test('Aurore garde les personnalisations, le consentement Lueur et le délai loc
 })
 for(const width of [390,1440]) test('Parcours et captures '+width+' px : une seule messagerie, design conservé', async ({ page }, testInfo) => {
   await page.emulateMedia({ reducedMotion:'reduce' })
-  await enter(page,width); await participate(page,width)
+  await enter(page,width)
+  const feed = page.locator('.arche-feed')
+  await expect(feed.getByRole('heading', { name: 'Entre nous' })).toBeVisible()
+  await expect(feed.locator('.arche-feed-avatar[data-person=aurore]')).toBeVisible()
+  expect(await feed.locator('.arche-post').first().evaluate(el => el.getBoundingClientRect().top)).toBeLessThan(width === 390 ? 420 : 650)
+  const captureDir=process.env.ARCHE_CAPTURE_DIR || testInfo.outputDir
+  mkdirSync(captureDir,{recursive:true})
+  await page.screenshot({path:pathJoin(captureDir,'correction-fil-'+width+'.png'),fullPage:false})
+  await participate(page,width)
+  await expect(page.locator('.arche-rencontres:visible #rencontres-title')).toHaveCSS('font-family', await feed.evaluate(el=>getComputedStyle(el).fontFamily))
   const dir=process.env.ARCHE_CAPTURE_DIR || testInfo.outputDir
   mkdirSync(dir,{recursive:true})
   await page.evaluate(()=>window.scrollTo(0,0))
-  await page.screenshot({ path:pathJoin(dir,'integration-rencontres-'+width+'.png'),fullPage:false })
+  await page.getByRole('button', { name:'Fermer', exact:true }).click()
+  await page.screenshot({ path:pathJoin(dir,'correction-rencontres-'+width+'.png'),fullPage:true })
   await acceptPhare(page)
   await page.locator('#arche-dm-draft').fill('Bonjour, votre présentation m’a parlé. Prenons le temps de faire connaissance.')
   await page.getByRole('button', { name:'Envoyer',exact:true }).click()

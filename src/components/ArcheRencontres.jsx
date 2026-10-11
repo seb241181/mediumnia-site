@@ -31,7 +31,7 @@ const INITIAL_INCOMING = [
 
 const REPORT_REASONS = ['Comportement insistant', 'Faux profil', 'Propos déplacés ou blessants', 'Démarchage ou vente', 'Personne possiblement mineure', 'Autre raison']
 
-const primary = 'min-h-11 rounded-full bg-[#1A1535] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#2B254D] disabled:cursor-not-allowed disabled:opacity-40'
+const primary = 'arche-rencontre-primary min-h-11 rounded-full bg-[#1A1535] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#2B254D] disabled:cursor-not-allowed disabled:opacity-40'
 const secondary = 'min-h-11 rounded-full border border-[#ECEAF2] bg-white px-4 py-2 text-sm font-semibold text-[#1A1535] transition hover:bg-[#FAFAF7] disabled:cursor-not-allowed disabled:opacity-50'
 const quiet = 'min-h-11 rounded-full px-3 py-2 text-sm font-semibold text-[#4A3F6B] underline-offset-4 hover:underline'
 const field = 'min-h-11 w-full rounded-2xl border border-[#ECEAF2] bg-white px-4 py-3 text-sm text-[#1A1535] placeholder:text-[#4A3F6B] outline-none transition focus:border-[#4A3F6B]'
@@ -206,7 +206,7 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
   }
 
 
-  if (!joined) return <section className="mx-auto max-w-[680px] space-y-4" aria-labelledby="rencontres-title">
+  if (!joined) return <section className="arche-rencontres mx-auto max-w-[680px] space-y-4" aria-labelledby="rencontres-title">
     <header className="rounded-3xl border border-[#ECEAF2] bg-[#FAFAF7] p-6">
       <p className="text-xs font-bold uppercase tracking-[.18em] text-[#4A3F6B]">Rencontres</p>
       <h2 id="rencontres-title" className="mt-3 font-georgia text-3xl leading-tight text-balance">Les belles rencontres commencent parfois par une simple conversation.</h2>
@@ -234,7 +234,7 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
     const received = incomingFrom(profile.id)
     const connected = isConnected(profile.id)
     const common = commonIntentions(profile)
-    return <article className="mx-auto max-w-[680px] space-y-4" aria-labelledby="rencontre-fiche-title">
+    return <article className="arche-rencontres mx-auto max-w-[680px] space-y-4" aria-labelledby="rencontre-fiche-title">
       <button type="button" onClick={() => { setOpenId(null); setInviteFor(null); setReportFor(null) }} className={secondary}>← Retour aux profils</button>
       <section className="rounded-3xl border border-[#ECEAF2] bg-white p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-5">
@@ -295,7 +295,7 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
     </article>
   }
 
-  return <section className="mx-auto max-w-[760px] space-y-5" aria-labelledby="rencontres-title">
+  return <section className="arche-rencontres mx-auto max-w-[760px] space-y-5" aria-labelledby="rencontres-title">
     <header className="rounded-3xl border border-[#ECEAF2] bg-[#FAFAF7] p-5 sm:p-6">
       {/* iPhone : titre sur toute la largeur, bouton en dessous ; côte à côte à partir de 640 px. */}
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between">
@@ -313,7 +313,7 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
 
     {pendingIncoming.length > 0 && <section aria-labelledby="invitations-title" className="space-y-3">
       <h3 id="invitations-title" className="font-georgia text-xl">Invitations reçues</h3>
-      {pendingIncoming.map(invitation => { const profile = byId[invitation.from]; return <article key={invitation.id} className="rounded-3xl border border-[#ECEAF2] bg-white p-4">
+      {pendingIncoming.map(invitation => { const profile = byId[invitation.from]; return <article key={invitation.id} className="arche-rencontre-invitation rounded-3xl border border-[#ECEAF2] bg-white p-4">
         <div className="flex items-center gap-4"><ProfileAvatar profile={profile}/><div className="min-w-0"><p className="text-sm"><strong>{profile.name}</strong> aimerait faire connaissance</p><p className="mt-1 text-xs leading-5 text-[#4A3F6B]">{intentionLabel(invitation.intention)} · « {invitation.approach} »</p></div></div>
         <ArcheInvitationActions name={profile.name} onViewProfile={() => openFiche(profile.id)} onAccept={() => answer(invitation, 'accepted')} onIgnore={() => answer(invitation, 'ignored')} onRefuse={() => answer(invitation, 'refused')} onBlockAndReport={() => openReport(profile.id)}/>
         {reportFor === profile.id && <ReportPanel profile={profile} reason={reportReason} setReason={setReportReason} alsoBlock={reportBlock} setAlsoBlock={setReportBlock} onSubmit={submitReport} onCancel={() => setReportFor(null)}/>}
@@ -344,7 +344,7 @@ export default function ArcheRencontres({ nickname, blocked = [], setBlocked = (
           const connected = isConnected(profile.id)
           const label = connected ? 'Écrire' : received?.status === 'pending' ? 'Voir son invitation' : sent?.status === 'pending' ? 'Invitation envoyée' : received?.status === 'refused' ? 'Invitation refusée' : sent?.status === 'closed' ? 'Pas de suite' : 'Faire connaissance'
           const disabled = !connected && (sent?.status === 'pending' || sent?.status === 'closed')
-          return <article key={profile.id} className="flex flex-col rounded-3xl border border-[#ECEAF2] bg-white p-5 shadow-[0_6px_24px_rgba(26,21,53,.04)]">
+          return <article key={profile.id} className="arche-rencontre-card flex flex-col rounded-3xl border border-[#ECEAF2] bg-white p-5 shadow-[0_6px_24px_rgba(26,21,53,.04)]">
             <div className="flex items-start gap-4"><ProfileAvatar profile={profile}/><div className="min-w-0"><h4 className="font-georgia text-xl leading-tight">{profile.name}</h4><p className="mt-1 text-xs text-[#4A3F6B]">{profile.age} · {profile.region || 'Région non précisée'}</p><p className="mt-2 text-sm italic leading-6">« {profile.mood} »</p></div></div>
             <div className="mt-4"><IntentionChips ids={visibleIntentions(profile, mine)}/></div>
             <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#4A3F6B]">{profile.bio}</p>

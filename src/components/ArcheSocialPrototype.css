@@ -324,3 +324,33 @@
 .arche-message-row .arche-encounter-avatar > span { width: 36px; height: 36px; }
 .arche-message-row .arche-encounter-avatar svg { width: 20px; height: 20px; }
 @media(max-width:767px) { .arche-messages > section > header .arche-encounter-avatar > span { width: 40px; height: 40px; } }
+
+/* Rencontres : même langage que le Fil conservé, sans modifier les avatars de Messages. */
+.arche-rencontres { color: #243950; }
+.arche-rencontres .font-georgia { font-family: inherit; }
+.arche-rencontres h2, .arche-rencontres h3, .arche-rencontres h4 { font-weight: 650; letter-spacing: -.025em; }
+.arche-rencontres > header { background: #fff; border-color: #e0e5ed; border-radius: 16px; padding: 20px; border-top: 3px solid #dfb66b; }
+.arche-rencontres > header h2 { font-size: 25px; line-height: 1.3; max-width: 520px; }
+.arche-rencontres > header > p:first-child, .arche-rencontres > header > div > div > p:first-child { letter-spacing: .08em; color: #596778; }
+.arche-rencontres > form, .arche-rencontres > section[aria-label="Faire connaissance"], .arche-rencontres > section.bg-white { border-radius: 16px; border-color: #e0e5ed; }
+.arche-rencontres button { min-height: 44px; }
+.arche-rencontres button[class*="bg-[#1A1535]"], .arche-rencontres button[aria-pressed=true] { background: #243950; color: #fff; border-color: #243950; }
+.arche-rencontres button[class*="bg-[#1A1535]"]:hover:not(:disabled), .arche-rencontres button[aria-pressed=true]:hover { background: #344f6b; }
+.arche-rencontres button.border { border-color: #dbe2eb; }
+.arche-rencontres button.border:not([aria-pressed=true]):hover:not(:disabled) { background: #f1f3fa; }
+.arche-rencontres .arche-rencontre-invitation { background: #fff7ee; border-color: #eedbc5; border-radius: 16px 16px 8px 16px; box-shadow: 0 4px 16px #233b6206; }
+.arche-rencontres .arche-rencontre-card { border-radius: 16px; border-color: #e0e5ed; box-shadow: 0 4px 16px #233b6206; border-top: 3px solid #c4dced; }
+.arche-rencontres .arche-rencontre-card:nth-child(3n+2) { border-top-color: #d9c9e7; }
+.arche-rencontres .arche-rencontre-card:nth-child(3n) { border-top-color: #c4dac9; }
+.arche-rencontres .arche-rencontre-card h4 { font-size: 20px; }
+.arche-rencontres .arche-rencontre-card [role=img], .arche-rencontres .arche-rencontre-invitation [role=img] { border: 2px solid white; box-shadow: 0 0 0 1px #dbe2eb; }
+.arche-rencontres .arche-rencontre-card p.italic { font-style: normal; color: #344f6b; }
+.arche-rencontres input, .arche-rencontres select { accent-color: #243950; }
+.arche-rencontres :is(button,input,select):focus-visible { outline: 2px solid #344f6b; outline-offset: 3px; }
+@media (max-width: 767px) {
+ .arche-rencontres > header { padding: 14px; }
+ .arche-rencontres > header h2 { font-size: 22px; }
+ .arche-rencontres > form { padding: 14px; }
+ .arche-rencontres .arche-rencontre-card { padding: 16px; }
+ .arche-rencontres .arche-rencontre-invitation { padding: 14px; }
+}

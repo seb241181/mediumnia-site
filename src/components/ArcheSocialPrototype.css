@@ -260,3 +260,58 @@
 .arche-profile .arche-personalization > div[role=group] { gap: 5px; }
 .arche-profile .arche-personalization > div[aria-label="Choisir mon avatar"] > button { width: 48px; height: 48px; }
 .arche-profile .arche-personalization > div[aria-label="Choisir mon avatar"] .arche-message-avatar { width: 42px; height: 42px; }
+/* Essai Fil : un carnet de liens, typographie éditoriale et couleurs ponctuelles. */
+[data-active-view=feed] { background: #fffdf9; }
+[data-active-view=feed] nav button[aria-current=page] { background: #f5ead5; border-radius: 8px; }
+.arche-feed { color: #202d3e; }
+.arche-feed-title { display: flex; justify-content: space-between; align-items: end; gap: 16px; padding: 4px 0 18px; border-bottom: 2px solid #25334a; margin-bottom: 18px; }
+.arche-feed-title .arche-section-kicker { color: #736243; font-size: 10px; letter-spacing: .14em; margin-bottom: 6px; }
+.arche-feed-title h2 { font-family: Georgia,serif; font-size: 34px; font-weight: 400; letter-spacing: -.04em; line-height: 1.15; }
+.arche-feed-title h2 span { color: #b07832; }
+.arche-feed-title > p { color: #716c63; font-size: 11px; line-height: 1.7; text-align: right; }
+.arche-feed .arche-composer { padding: 14px; border-radius: 8px; box-shadow: none; border-color: #ddd9cf; background: #fff; }
+.arche-feed .arche-composer > .arche-section-kicker { display: none; }
+.arche-feed .arche-composer textarea { background: #fbfaf6; border-color: #e7e3da; border-radius: 6px; padding: 10px 12px; min-height: 46px; }
+.arche-feed .arche-composer > div:nth-of-type(2) { margin-top: 8px; padding-top: 8px; border-color: #eee9df; gap: 4px; }
+.arche-feed .arche-composer button { border-radius: 6px; }
+.arche-feed .arche-composer button[aria-label^="Ambiance"] { border: 0; }
+.arche-feed .arche-composer button[aria-label^="Ambiance"] > span { width: 19px; height: 19px; }
+.arche-feed .arche-composer button[aria-pressed=true] { background: #f4edde; box-shadow: inset 0 -2px #8d6d32; }
+.arche-feed .arche-post { border-radius: 8px; border-color: #e4dfd6 !important; box-shadow: none; background: #fff !important; margin-top: 18px; }
+.arche-feed .arche-post > div { padding: 18px 20px; }
+.arche-feed .arche-post[data-format=question] { border-left: 3px solid #b38b44 !important; }
+.arche-feed .arche-post[data-ambiance=Doux] { background: #fbf1e7 !important; border-color: #eed9c6 !important; border-radius: 3px 14px 14px 3px; }
+.arche-feed .arche-post[data-ambiance=Nuit] { background: #24364a !important; border-color: #24364a !important; border-radius: 10px 3px 10px 3px; }
+.arche-feed .arche-post[data-ambiance=Brume] { background: #f1f2f6 !important; border-color: #dedfe8 !important; }
+.arche-feed .arche-post > div > p { font-size: 16px; font-weight: 400; line-height: 1.75; margin-top: 16px; }
+.arche-feed .arche-post[data-ambiance=Doux] > div > p { font-family: Georgia,serif; font-size: 23px; line-height: 1.5; }
+.arche-feed .arche-post[data-ambiance=Nuit] > div > p { font-family: Georgia,serif; font-size: 22px; line-height: 1.55; }
+.arche-feed .arche-post strong { font-size: 14px; }
+.arche-feed .arche-post .reaction-button { border-radius: 5px; font-weight: 500; padding-inline: 7px; }
+.arche-feed .arche-post .reaction-button span { width: auto; height: auto; background: transparent; font-size: 15px; margin-right: 5px; }
+.arche-feed .arche-post .reaction-button[aria-pressed=true] { background: #f3e2b8; color: #24364a; box-shadow: none; }
+.arche-feed-avatar { position: relative; width: 44px; height: 44px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 14px 18px 12px 17px; background: #e9dfed; color: #634b6f; font-family: Georgia,serif; font-size: 21px; border: 1px solid #d5c7db; transform: rotate(-3deg); }
+.arche-feed-avatar > span:first-child { transform: rotate(3deg); }
+.arche-feed-avatar[data-person=aurore] { background: #f3d8b1; color: #684222; border-color: #dfbd8d; border-radius: 50%; }
+.arche-feed-avatar[data-person=nuage] { background: #d5e5ee; color: #36556b; border-color: #b7cedb; border-radius: 10px; transform: rotate(3deg); font-size: 16px; }
+.arche-feed-avatar[data-person=chemin] { background: #dce9db; color: #3b603f; border-color: #bfd3bd; font-size: 17px; border-radius: 17px 8px 17px 8px; }
+[data-active-view=feed] main + aside > section { border-radius: 8px; border-color: #e4dfd6; }
+[data-active-view=feed] main + aside > section:last-child { border-top: 3px solid #b38b44; background: #fcf6e9; }
+@media(max-width:767px) {
+ [data-active-view=feed] > .grid { padding-top: 12px; }
+ .arche-feed-title { padding-bottom: 12px; margin-bottom: 12px; }
+ .arche-feed-title h2 { font-size: 28px; }
+ .arche-feed-title > p { font-size: 10px; }
+ .arche-feed .arche-composer { padding: 10px; }
+ .arche-feed .arche-composer textarea { padding: 10px; }
+ .arche-feed .arche-composer > div:nth-of-type(2) { flex-wrap: nowrap; }
+ .arche-feed .arche-composer [role=group] { gap: 0; flex-wrap: nowrap; }
+ .arche-feed .arche-composer button { padding-inline: 10px; }
+ .arche-feed .arche-composer button[aria-label^="Ambiance"] { padding-inline: 0; }
+ .arche-feed .arche-post { margin-top: 12px; }
+ .arche-feed .arche-post > div { padding: 14px; }
+ .arche-feed .arche-post > div > p { font-size: 15px; margin-top: 12px; }
+ .arche-feed .arche-post[data-ambiance=Doux] > div > p { font-size: 21px; }
+ .arche-feed .arche-post .reaction-button { font-size: 11px; padding-inline: 4px; }
+}
+.arche-feed button { min-width: 44px; }

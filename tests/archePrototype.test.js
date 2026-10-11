@@ -94,7 +94,7 @@ test('Présence protégée, pastilles dessinées et humeur limitée aux proches'
   assert.match(app, /isClose \? person\.status : 'invisible'/)
   assert.match(app, /const \[presence, setPresence\] = useState\('invisible'\)/)
   assert.match(app, /Phrase d’humeur \(visible par vos proches seulement\)/)
-  assert.match(app, /lueur \? ' ring-4 ring-\[#C9A84C\]\/35/)
+  assert.match(app, /lueur \? ' arche-lueur ring-4 ring-\[#C9A84C\]\/35/)
 })
 
 test('Réactions discrètes, réponses repliées, police système et mobile plein écran', () => {
@@ -120,4 +120,47 @@ test('La maquette n’effectue aucune écriture distante ni stockage navigateur'
   assert.match(app, /data-arche-app-preview="local-only"/)
   assert.match(app, /Prototype privé : toutes les données ci-dessous sont fictives et locales/)
   assert.doesNotMatch(app, /supabase|\.insert\(|\.upsert\(|supabase\.from\(|\bfetch\s*\(|axios|signInWithPassword|signUp\(|localStorage|sessionStorage/)
+})
+
+test('Le launcher et la fenêtre GlobalAccount sont réellement exclus sur /arche', () => {
+  const compiled = read('src/components/GlobalAccount.jsx')
+  const archePatch = read('scripts/apply-arche-isolation.mjs')
+  assert.match(compiled, /const hideLauncher = pathname\.startsWith\('\/rdv\/'\) \|\| pathname === '\/arche'/)
+  assert.match(compiled, /\{!hideLauncher && \(/)
+  assert.match(compiled, /\{open && !hideLauncher && \(/)
+  assert.match(archePatch, /const globalAccountPath/)
+  assert.match(archePatch, /GlobalAccount patch drift/)
+  assert.doesNotMatch(read('scripts/apply-lumia-assistant-console.mjs'), /view (?:===|!==) 'arche'/)
+  const app = read('src/App.jsx')
+  assert.match(app, /showGuardian = [^\n]*view !== 'arche'/)
+  assert.match(app, /isPrivate = [^\n]*view === 'arche'/)
+})
+
+test('Le signalement de conversation et les autres protections restent accessibles', () => {
+  const source = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(source, /Bloquer et signaler/)
+  assert.match(source, /Signaler<\/button>/)
+  assert.match(source, /blockContact\(true\)/)
+  assert.match(source, /onNotice\(withReport/)
+  assert.match(source, /setMessages\(\[\]\)/)
+  assert.match(source, /recipientAcceptsLueur/)
+})
+
+test('Changer d’onglet ne démonte pas les publications, les conversations ou leurs états', () => {
+  const source = read('src/components/ArcheSocialPrototype.jsx')
+  for (const id of ['feed', 'salon', 'cercles', 'messages', 'profile']) {
+    assert.match(source, new RegExp('<div hidden=\\{view !== \\'' + id + '\\'\\}>'))
+  }
+  assert.doesNotMatch(source, /view==='messages'&&<MessagesView/)
+})
+
+test('Icônes vectorielles et champs suffisamment contrastés', () => {
+  const source = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(source, /function AppIcon/)
+  assert.match(source, /<AppIcon name=\{item.icon\} size=\{20\}\/>/)
+  assert.match(source, /<AppIcon name="bell"\/>/)
+  assert.doesNotMatch(source, /\['⌂','◉','◎','✉','◯'\]/)
+  assert.match(source, /placeholder:text-\[#4A3F6B\]/)
+  assert.match(source, /arche-lueur/)
+  assert.match(source, /reaction.label/)
 })

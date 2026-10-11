@@ -1,17 +1,23 @@
-# Trois propositions pour le logo L’Arche
+# L’Arche — filiation avec l’œil MediumIA
 
-Exploration locale sur `codex/arche-visuel-humain`, uniquement dans l’en-tête de la messagerie. Aucun choix définitif, aucune modification de la vitrine ou des autres écrans.
+Ces trois nouvelles pistes remplacent dans le sélecteur les premières propositions Passage, Refuge et A habité, non retenues. Exploration locale sur `codex/arche-visuel-humain`, uniquement dans l’en-tête de la messagerie. Aucun choix définitif ni extension aux autres écrans.
 
-1. **Passage** : arche arrondie, ouverture intérieure dorée, point de lumière. Évoque le passage et l’accueil.
-2. **Refuge** : deux courbes bleu nuit entourent une silhouette dorée. Évoque la protection et la présence humaine.
-3. **A habité** : A souple, traverse courbe dorée et petit point intérieur. Garde un lien direct avec le nom.
+## Référence examinée
 
-Le nom L’ARCHE reste lisible dans sa typographie actuelle. Les symboles sont des SVG originaux intégrés au composant React, sans image IA, police externe ou nouvelle dépendance. Le carré sombre est remplacé par un symbole ouvert sur fond blanc ; la pastille de démonstration est adoucie.
+`public/images/brand/MEDIUMIA_symbol_header.png`, effectivement utilisé dans `SiteNav.jsx` : œil doré avec iris, grande courbe protectrice, rayons fins et étoiles. Les nouveaux SVG en reprennent l’œil, le halo en arche et la lumière dorée, avec moins de traits pour rester lisibles dans une application. Ils sont dessinés directement dans React ; aucune image IA, aucune dépendance ni reproduction exacte de l’asset MediumIA.
 
-Cliquer le logo dans la messagerie ouvre les trois propositions. Sélection locale, sans persistance. Échap ferme le sélecteur et replace le focus sur le logo. Aucun changement de logique sociale ou de sécurité.
+## Les pistes
 
-Vérifié : build, ESLint des composants concernés, 14 tests L’Arche existants. Revue React : état local, composants définis au niveau du module, aucune requête ou effet supplémentaire. Chrome desktop 1440 px et mobile 390 px, requêtes externes bloquées : sélection des trois variantes, fermeture au clavier, cibles ≥44 px, aucun débordement, aucune erreur JavaScript, `noindex,nofollow` et logo initial des autres onglets conservés.
+1. **Regard refuge** : œil or et iris bleu nuit sous une courbe protectrice ; trois traits de lumière courts. La plus proche de la composition MediumIA, avec une lecture plus douce et plus simple.
+2. **Porte ouverte** : l’œil traverse une arche ; son iris devient une petite ouverture lumineuse. Le lien au passage et au refuge est plus explicite.
+3. **Lueur partagée** : œil aux courbes ouvertes, lueur discrète dans l’iris et trois rayons fins. Le regard et la lumière prennent le premier plan.
 
-`captures/logos-comparaison.png` juxtapose les agrandissements des trois en-têtes et leurs captures complètes de la même messagerie. Les captures individuelles sont `logo-passage-interface.png`, `logo-refuge-interface.png` et `logo-habite-interface.png`.
+Le nom **L’ARCHE** et sa typographie sont conservés. Couleurs : bleu nuit `#17233F`, or doux `#B49450`, lumière champagne. Les trois variantes sont sélectionnables en cliquant sur le logo dans la messagerie ; sélection en mémoire locale uniquement.
 
-Préférence proposée : **Passage**, pour l’association immédiate à une arche ouverte et sa simplicité à petite taille. Attendre le choix de Sébastien avant d’étendre l’identité aux autres écrans. Aucun merge, push ou déploiement.
+## Vérification
+
+Build, ESLint du composant et 14 tests existants L’Arche réussis. Chrome desktop 1440 px et mobile 390 px, appels externes bloqués : sélection et fermeture des trois variantes, clavier/Échap, cibles ≥44 px, aucun débordement ni erreur JavaScript. `noindex,nofollow` conservé. Le logo initial reste en place sur les autres onglets ; aucune modification de la logique sociale.
+
+Comparaison : `captures/logos-filiation-mediumia.png`. Captures complètes : `logo-regard-interface.png`, `logo-porte-interface.png`, `logo-lueur-interface.png`. Les anciennes captures restent disponibles comme historique de la piste écartée.
+
+Préférence proposée : **Regard refuge**, pour sa filiation immédiate avec MediumIA et le lien entre regard et accueil. Attendre le choix de Sébastien. Aucun merge, push ou déploiement.

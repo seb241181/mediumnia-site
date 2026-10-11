@@ -8,10 +8,10 @@ const PEOPLE = [
   { id: 'chemin', name: 'Chemin Libre', status: 'busy', note: 'Je préfère lire', unread: 0 },
 ]
 const CIRCLES = [
-  { id: 'decouverte', title: 'Les Découvertes', unread: 4, description: 'Questions simples, premiers pas et accueil.' },
-  { id: 'intuition', title: 'Intuition', unread: 1, description: 'Ressentis, impressions et discernement.' },
+  { id: 'decouverte', title: 'Les Découvertes', description: 'Questions simples, premiers pas et accueil.' },
+  { id: 'intuition', title: 'Intuition', description: 'Ressentis, impressions et discernement.' },
   { id: 'reves', title: 'Rêves', unread: 0, description: 'Symboles, nuits marquantes et récits.' },
-  { id: 'questions', title: 'Grandes Questions', unread: 2, description: 'Croire, douter, nuancer et dialoguer.' },
+  { id: 'questions', title: 'Grandes Questions', description: 'Croire, douter, nuancer et dialoguer.' },
 ]
 const POST_THEMES = {
   clear: { label: 'Clair', style: { background: '#FFFFFF', color: '#1A1535', borderColor: '#ECEAF2' }, accent: '#ECEAF2' },
@@ -27,9 +27,9 @@ const REACTIONS = [
 ]
 const MENU = [
   { id: 'feed', label: 'Fil', badge: 0 },
-  { id: 'salon', label: 'Salon', badge: 5 },
-  { id: 'cercles', label: 'Cercles', badge: 7 },
-  { id: 'messages', label: 'Messages', badge: 2 },
+  { id: 'salon', label: 'Salon', badge: 0 },
+  { id: 'cercles', label: 'Cercles', badge: 0 },
+  { id: 'messages', label: 'Messages', badge: 0 },
   { id: 'profile', label: 'Moi', badge: 0 },
 ]
 const INITIAL_POSTS = [
@@ -44,12 +44,15 @@ const field = 'min-h-11 w-full rounded-2xl border border-[#ECEAF2] bg-white px-4
 function colorIndex(name) {
   return Array.from(name || 'A').reduce((sum, char) => sum + char.charCodeAt(0), 0) % AVATAR_PALETTE.length
 }
+
 function PresenceDot({ status }) {
-  if (status === 'invisible') return null
-  const label = status === 'online' ? 'en ligne' : status === 'away' ? 'absent' : 'occupé'
-  const shape = status === 'online' ? '●' : status === 'away' ? '◐' : '⊖'
-  const color = status === 'online' ? '#5E8F63' : status === 'away' ? '#9B640B' : '#4A3F6B'
-  return <span aria-label={label} title={label} className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-white text-[13px] font-bold" style={{ color }}>{shape}</span>
+  if (!status || status === 'invisible') return null
+  const label = status === 'online' ? 'Disponible' : status === 'away' ? 'Absent' : 'Occupé'
+  return <span aria-label={label} title={label} className="absolute -bottom-1 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-white">
+    {status === 'online' && <span className="h-[11px] w-[11px] rounded-full bg-[#377946]"/>}
+    {status === 'away' && <span className="h-[11px] w-[11px] rounded-full border border-[#675C47]" style={{ background: 'linear-gradient(90deg,#675C47 50%,#fff 50%)' }}/>}
+    {status === 'busy' && <span className="flex h-[11px] w-[11px] items-center justify-center rounded-full bg-[#4A3F6B]"><span className="h-[2px] w-[7px] rounded-full bg-white"/></span>}
+  </span>
 }
 function Avatar({ name, status = 'invisible', lueur = false, large = false }) {
   const bg = AVATAR_PALETTE[colorIndex(name)]
@@ -64,25 +67,7 @@ function themeForPost(post) {
   if (post.format === 'question' || post.format === 'sensitive') return POST_THEMES.clear
   return POST_THEMES[post.theme] || POST_THEMES.clear
 }
-function ArcheLoginPreview({ onEnter, onBack }) {
-  const [mode, setMode] = useState('existing')
-  const [pseudo, setPseudo] = useState('Étoile du Nord')
-  const [ack, setAck] = useState(false)
-  return <div className="min-h-screen bg-white text-[#1A1535]">
-    <header className="border-b border-[#ECEAF2] bg-white px-5 py-4 md:px-8"><div className="mx-auto flex max-w-6xl items-center justify-between"><p className="font-georgia text-xl tracking-[.05em]">L’ARCHE</p><button type="button" onClick={onBack} className={secondary}>← Découverte</button></div></header>
-    <section id="connexion" className="px-5 py-20 md:px-8"><div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_420px]">
-      <div><p className="mb-4 text-xs font-bold uppercase tracking-[.2em] text-[#4A3F6B]">Accès membres · démonstration</p><h2 className="max-w-xl font-georgia text-4xl leading-tight md:text-5xl">Entrez dans L’Arche.</h2><p className="mt-6 max-w-xl text-base leading-8 text-[#4A3F6B]">Un espace clair, blanc, social : Fil vivant, Grand Salon, Cercles, proches, présence et Lueur. Tout reste simulé localement.</p></div>
-      <form onSubmit={(event) => { event.preventDefault(); if (pseudo.trim() && ack) onEnter(pseudo.trim()) }} className="rounded-3xl border border-[#ECEAF2] bg-white p-6 shadow-[0_22px_70px_rgba(26,21,53,.08)]">
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Type d’accès"><button type="button" className={mode === 'existing' ? primary : secondary} aria-pressed={mode === 'existing'} onClick={() => setMode('existing')}>J’ai un compte</button><button type="button" className={mode === 'new' ? primary : secondary} aria-pressed={mode === 'new'} onClick={() => setMode('new')}>Créer un compte</button></div>
-        <p className="mt-5 text-sm leading-6 text-[#4A3F6B]">{mode === 'existing' ? 'Dans la vraie version, votre compte MediumIA ouvrira l’adhésion gratuite à L’Arche.' : 'La création du compte restera gratuite, puis l’adhésion à L’Arche sera distincte.'}</p>
-        <label className="mt-5 block text-sm font-semibold">Pseudonyme fictif<input required maxLength={32} autoComplete="off" value={pseudo} onChange={(event) => setPseudo(event.target.value)} className={'mt-2 '+field}/></label>
-        <label className="mt-5 flex items-start gap-3 text-xs leading-5 text-[#4A3F6B]"><input required checked={ack} onChange={(event) => setAck(event.target.checked)} type="checkbox" className="mt-1 h-4 w-4 accent-[#1A1535]"/><span>Je comprends qu’aucun compte, message ou profil réel n’est créé par cette démonstration.</span></label>
-        <button disabled={!ack || !pseudo.trim()} className={primary+' mt-6 w-full'}>Entrer dans l’application →</button>
-      </form>
-    </div></section>
-  </div>
-}
-
+// L’écran de connexion appartient à ArchePage.jsx et est chargé à la demande.
 function PostComposer({ nickname, onCreate }) {
   const [draft, setDraft] = useState('')
   const [theme, setTheme] = useState('clear')
@@ -166,15 +151,24 @@ function FeedView({ nickname, blocked, setBlocked, onNotice }) {
     {shown.map(post => <PostCard key={post.id} post={post} nickname={nickname} reactions={reactions} replies={replies} onReact={react} onReply={reply} onModerate={moderate} isClose={PEOPLE.some(p => p.name === post.author && !blocked.includes(p.name))}/>)}
   </div>
 }
+
 function SalonView({ nickname }) {
-  const [messages, setMessages] = useState([{ author: 'Aurore', text: 'Bienvenue dans le Grand Salon.' }, { author: 'Nuage Bleu', text: 'Je suis là aussi, je lis doucement.' }])
+  const [messages, setMessages] = useState([{ author:'Aurore',text:'Bienvenue dans ce salon de démonstration.' },{ author:'Nuage Bleu',text:'Je suis là aussi, je profite du calme.' }])
   const [draft, setDraft] = useState('')
-  return <section className="rounded-3xl border border-[#ECEAF2] bg-white shadow-[0_12px_36px_rgba(26,21,53,.05)]"><header className="flex items-center justify-between border-b border-[#ECEAF2] p-4"><div><h2 className="font-georgia text-xl">Grand Salon</h2><p className="text-xs text-[#4A3F6B]">5 présents · Aurore écrit…</p></div><button className={secondary}>Présences</button></header><div className="min-h-[420px] space-y-4 p-4">{messages.map((message, index) => <div key={index} className="flex gap-3"><Avatar name={message.author} status={getPerson(message.author).status}/><p className="max-w-[75%] rounded-3xl bg-[#FAFAF7] px-4 py-3 text-sm leading-6"><strong>{message.author}</strong><br/>{message.text}</p></div>)}</div><form onSubmit={(event) => { event.preventDefault(); if (!draft.trim()) return; setMessages((current) => [...current, { author: nickname, text: draft.trim() }]); setDraft('') }} className="flex gap-2 border-t border-[#ECEAF2] p-4"><input value={draft} onChange={(event) => setDraft(event.target.value)} className={field} placeholder="Écrire au Salon…"/><button disabled={!draft.trim()} className={primary}>Envoyer</button></form></section>
-}
-function CirclesView() {
-  return <div className="grid gap-3 md:grid-cols-2">{CIRCLES.map((circle) => <article key={circle.id} className="rounded-3xl border border-[#ECEAF2] bg-white p-5 shadow-[0_10px_30px_rgba(26,21,53,.04)]"><div className="flex items-center justify-between"><h2 className="font-georgia text-xl text-[#1A1535]">{circle.title}</h2>{circle.unread > 0 && <span className="rounded-full bg-[#C9A84C] px-2 py-1 text-xs font-bold text-[#1A1535]">{circle.unread}</span>}</div><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">{circle.description}</p><button className={secondary+' mt-5'}>Explorer</button></article>)}</div>
+  return <section className="mx-auto max-w-[720px] overflow-hidden rounded-2xl border border-[#ECEAF2] bg-white">
+    <header className="border-b border-[#ECEAF2] px-4 py-3"><h2 className="text-base font-semibold">Grand Salon</h2><p className="text-xs text-[#4A3F6B]">Messages fictifs · aucun membre réel en ligne</p></header>
+    <div aria-live="polite" className="max-h-[60vh] min-h-[340px] space-y-3 overflow-y-auto p-4">{messages.map((message,index) => <div key={index} className="flex gap-3"><Avatar name={message.author}/><p className="max-w-[80%] rounded-xl bg-[#FAFAF7] px-4 py-3 text-sm leading-6"><strong>{message.author}</strong><span className="block">{message.text}</span></p></div>)}</div>
+    <form onSubmit={event => { event.preventDefault(); if (!draft.trim()) return; setMessages(current => [...current,{ author:nickname,text:draft.trim() }]); setDraft('') }} className="flex gap-2 border-t border-[#ECEAF2] p-3"><label className="sr-only" htmlFor="arche-salon-draft">Écrire dans le Salon fictif</label><input id="arche-salon-draft" maxLength={240} value={draft} onChange={event => setDraft(event.target.value)} className={field} placeholder="Écrire au Salon…"/><button disabled={!draft.trim()} className={primary}>Envoyer</button></form>
+  </section>
 }
 
+function CirclesView() {
+  const [selected,setSelected]=useState(null)
+  const [joined,setJoined]=useState(['decouverte'])
+  return <div className="mx-auto max-w-[720px]"><h2 className="mb-4 font-georgia text-2xl">Les Cercles</h2><div className="grid gap-3 sm:grid-cols-2">{CIRCLES.map(circle => <article key={circle.id} className="rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="text-base font-semibold">{circle.title}</h3><p className="mt-3 text-sm leading-6 text-[#4A3F6B]">{circle.description}</p><button type="button" className={secondary+' mt-4'} onClick={()=>setSelected(circle.id)}>Explorer</button></article>)}</div>
+    {selected && <div className="mt-4 rounded-2xl border border-[#ECEAF2] bg-white p-5"><h3 className="font-semibold">{CIRCLES.find(c=>c.id===selected)?.title}</h3><p className="mt-2 text-sm text-[#4A3F6B]">Espace de démonstration, sans véritables membres.</p><button type="button" className={primary+' mt-4'} onClick={()=>setJoined(list=>list.includes(selected)?list.filter(id=>id!==selected):[...list,selected])}>{joined.includes(selected)?'Quitter ce Cercle':'Rejoindre ce Cercle'}</button></div>}
+  </div>
+}
 function MessagesView({ blocked, setBlocked, incomingLueur, onNotice }) {
   const [selected, setSelected] = useState('aurore')
   const [mobileThread, setMobileThread] = useState(false)
@@ -238,20 +232,41 @@ function ProfileView({ nickname, presence, setPresence, mood, setMood, incomingL
     <button onClick={onExit} type="button" className={secondary+' mt-5'}>Quitter la démo</button>
   </section>
 }
-function RightRail() {
-  return <aside className="hidden space-y-4 xl:block"><section className="rounded-3xl border border-[#ECEAF2] bg-white p-4"><h2 className="text-sm font-bold">Mes proches</h2><div className="mt-3 space-y-2">{PEOPLE.map((person) => <div key={person.id} className="flex items-center gap-3"><Avatar name={person.name} status={person.status}/><div className="min-w-0"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-[#4A3F6B]">{person.note}</p></div></div>)}</div></section><section className="rounded-3xl border border-[#ECEAF2] bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[#4A3F6B]">Question du soir</p><p className="mt-3 text-sm leading-6 text-[#1A1535]">Qu’est-ce qui vous a donné envie d’explorer la spiritualité ?</p></section></aside>
+
+function RightRail({ blocked }) {
+  return <aside className="hidden space-y-4 xl:block"><section className="rounded-2xl border border-[#ECEAF2] bg-white p-4"><h2 className="text-sm font-semibold">Mes proches <span className="font-normal text-[#4A3F6B]">· exemples fictifs</span></h2><div className="mt-3 space-y-3">{PEOPLE.filter(p=>!blocked.includes(p.name)).map(person=><div key={person.id} className="flex items-center gap-3"><Avatar name={person.name} status={person.status}/><div className="min-w-0"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-xs text-[#4A3F6B]">{person.note}</p></div></div>)}</div></section><section className="rounded-2xl border border-[#ECEAF2] bg-white p-4"><p className="text-xs font-semibold uppercase tracking-[.14em]">Question du soir</p><p className="mt-3 text-sm leading-6">Qu’est-ce qui vous a donné envie d’explorer la spiritualité ?</p></section></aside>
 }
+
 export function ArcheAppPreview({ nickname, onExit }) {
   const [view, setView] = useState('feed')
-  const current = useMemo(() => MENU.find((item) => item.id === view) || MENU[0], [view])
-  return <div data-arche-app-preview="local-only" className="min-h-screen bg-[#FAFAF7] text-[#1A1535]">
-    <style>{'@keyframes soft-pop{0%{transform:scale(.92);opacity:.55}100%{transform:scale(1);opacity:1}}.reaction-button[aria-pressed="true"]{animation:soft-pop .24s ease-out}@media(prefers-reduced-motion:reduce){.reaction-button[aria-pressed="true"]{animation:none}}'}</style>
-    <header className="sticky top-0 z-30 border-b border-[#ECEAF2] bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3"><div className="flex items-center gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1A1535] font-georgia text-lg text-white">A</span><strong className="font-georgia text-xl tracking-[.04em]">L’ARCHE</strong><span className="rounded-full bg-[#C9A84C] px-2 py-1 text-[11px] font-bold text-[#1A1535]">Démo</span></div><input aria-label="Rechercher un membre ou un Cercle" className="hidden min-h-11 flex-1 rounded-full border border-[#ECEAF2] bg-[#FAFAF7] px-4 text-sm outline-none focus:border-[#4A3F6B] md:block" placeholder="Rechercher un membre ou un Cercle"/><button className={secondary}>🔔 3</button><button onClick={onExit} className={secondary}>Quitter</button></div></header>
-    <div className="mx-auto grid max-w-7xl gap-4 px-3 pb-24 pt-4 md:px-5 lg:grid-cols-[220px_minmax(0,680px)_260px] xl:grid-cols-[220px_minmax(0,680px)_280px]">
-      <aside className="hidden lg:block"><nav className="sticky top-20 rounded-3xl border border-[#ECEAF2] bg-white p-2">{MENU.map((item) => <button key={item.id} onClick={() => setView(item.id)} aria-current={view === item.id ? 'page' : undefined} className={'flex min-h-12 w-full items-center justify-between rounded-2xl px-4 text-sm '+(view === item.id ? 'bg-[#1A1535] font-semibold text-white' : 'text-[#4A3F6B] hover:bg-[#FAFAF7]')}><span>{item.label}</span>{item.badge > 0 && <span className={view === item.id ? 'rounded-full bg-white px-2 py-1 text-[11px] text-[#1A1535]' : 'rounded-full bg-[#ECEAF2] px-2 py-1 text-[11px] text-[#1A1535]'}>{item.badge}</span>}</button>)}</nav></aside>
-      <main className="min-w-0"><div className="mb-3 flex items-center justify-between rounded-3xl border border-[#ECEAF2] bg-white p-3 lg:hidden"><h1 className="font-semibold">{current.label}</h1><span className="text-xs text-[#4A3F6B]">{nickname}</span></div>{view === 'feed' && <FeedView nickname={nickname}/>} {view === 'salon' && <SalonView nickname={nickname}/>} {view === 'cercles' && <CirclesView/>} {view === 'messages' && <MessagesView/>} {view === 'profile' && <ProfileView nickname={nickname}/>}</main>
-      <RightRail/>
+  const [blocked, setBlocked] = useState([])
+  const [presence, setPresence] = useState('invisible')
+  const [mood, setMood] = useState('Je découvre doucement')
+  const [incomingLueur, setIncomingLueur] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [search, setSearch] = useState('')
+  const current = useMemo(() => MENU.find(item => item.id === view) || MENU[0], [view])
+  const matching = PEOPLE.filter(p => !blocked.includes(p.name) && p.name.toLowerCase().includes(search.toLowerCase()))
+  return <div data-arche-app-preview="local-only" style={{ fontFamily: 'system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif' }} className="min-h-screen bg-white text-[#1A1535]">
+    <style>{'@keyframes soft-pop{0%{transform:scale(.92)}100%{transform:scale(1)}}.reaction-button[aria-pressed="true"]{animation:soft-pop .24s ease-out}@keyframes arche-lueur-glow{0%{box-shadow:0 0 0 rgba(201,168,76,0)}100%{box-shadow:0 0 26px rgba(201,168,76,.45)}}.arche-lueur{animation:arche-lueur-glow .45s ease-out}@media(prefers-reduced-motion:reduce){.reaction-button[aria-pressed="true"],.arche-lueur{animation:none}}'}</style>
+    <header className="sticky top-0 z-30 border-b border-[#ECEAF2] bg-white/95 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5"><div className="flex shrink-0 items-center gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1A1535] font-georgia text-lg text-white">A</span><strong className="font-georgia text-xl">L’ARCHE</strong><span className="rounded-md bg-[#C9A84C] px-2 py-1 text-[10px] font-semibold text-[#1A1535]">Démo</span></div>
+      <label htmlFor="arche-member-search" className="sr-only">Rechercher un proche fictif</label><input id="arche-member-search" className="hidden min-h-11 min-w-0 flex-1 rounded-xl border border-[#ECEAF2] bg-[#FAFAF7] px-4 text-sm md:block" placeholder="Rechercher un proche…" value={search} onChange={event=>setSearch(event.target.value)}/>
+      <button type="button" aria-label="Notifications fictives" aria-expanded={showNotifications} onClick={()=>setShowNotifications(v=>!v)} className="ml-auto min-h-11 min-w-11 rounded-xl border border-[#ECEAF2]">♧</button>
+      <button type="button" onClick={()=>setView('profile')} aria-label="Ouvrir mon profil" className="flex min-h-11 items-center gap-2 rounded-xl px-2 hover:bg-[#FAFAF7]"><Avatar name={nickname}/><span className="hidden text-sm lg:inline">{nickname}</span></button>
+    </div>{showNotifications&&<p className="border-t border-[#ECEAF2] bg-[#FAFAF7] p-3 text-center text-xs">Aucune notification réelle, aucune statistique inventée.</p>}</header>
+    {notice&&<div role="status" className="mx-auto mt-3 max-w-[720px] rounded-xl border border-[#ECEAF2] bg-[#FFF8E8] p-3 text-sm">{notice}<button type="button" onClick={()=>setNotice('')} className="ml-3 font-semibold underline">Fermer</button></div>}
+    {search.trim()&&<div className="mx-auto max-w-[720px] border-b border-[#ECEAF2] p-3 text-sm"><p className="text-xs text-[#4A3F6B]">Recherche locale parmi les proches fictifs</p>{matching.length===0?'Aucun résultat.':matching.map(p=><p key={p.id} className="mt-2">{p.name}</p>)}</div>}
+    <div className="mx-auto grid max-w-7xl gap-4 px-3 pb-28 pt-4 sm:px-5 lg:grid-cols-[205px_minmax(0,700px)] xl:grid-cols-[205px_minmax(0,700px)_250px]">
+      <aside className="hidden lg:block"><nav className="sticky top-20 space-y-1">{MENU.map(item=><button key={item.id} type="button" aria-current={view===item.id?'page':undefined} onClick={()=>setView(item.id)} className={'flex min-h-12 w-full items-center rounded-xl px-4 text-left text-sm '+(view===item.id?'bg-[#EEEAF6] font-semibold text-[#1A1535]':'text-[#4A3F6B] hover:bg-[#FAFAF7]')}>{item.label}</button>)}<button type="button" onClick={onExit} className="min-h-11 w-full px-4 text-left text-sm text-[#4A3F6B]">Quitter la démo</button></nav></aside>
+      <main className="min-w-0">
+        {view==='feed'&&<FeedView nickname={nickname} blocked={blocked} setBlocked={setBlocked} onNotice={setNotice}/>}
+        {view==='salon'&&<SalonView nickname={nickname}/>}
+        {view==='cercles'&&<CirclesView/>}
+        {view==='messages'&&<MessagesView blocked={blocked} setBlocked={setBlocked} incomingLueur={incomingLueur} onNotice={setNotice}/>}
+        {view==='profile'&&<ProfileView nickname={nickname} presence={presence} setPresence={setPresence} mood={mood} setMood={setMood} incomingLueur={incomingLueur} setIncomingLueur={setIncomingLueur} blocked={blocked} setBlocked={setBlocked} onExit={onExit}/>}
+      </main><RightRail blocked={blocked}/>
     </div>
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-2 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"> <div className="grid grid-cols-5 gap-1">{MENU.map((item) => <button key={item.id} onClick={() => setView(item.id)} aria-current={view === item.id ? 'page' : undefined} className={'relative min-h-14 rounded-2xl text-[11px] font-semibold '+(view === item.id ? 'bg-[#1A1535] text-white' : 'text-[#4A3F6B]')}>{item.label}{item.badge > 0 && <span className="absolute right-2 top-1 rounded-full bg-[#C9A84C] px-1.5 py-0.5 text-[10px] text-[#1A1535]">{item.badge}</span>}</button>)}</div></nav>
+    <nav aria-label="Navigation principale L’Arche" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ECEAF2] bg-white px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"><div className="grid grid-cols-5 gap-1">{MENU.map((item,index)=><button key={item.id} type="button" onClick={()=>setView(item.id)} aria-label={item.label} aria-current={view===item.id?'page':undefined} className={'flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border-t-2 px-1 text-[10px] font-semibold '+(view===item.id?'border-[#1A1535] text-[#1A1535]':'border-transparent text-[#4A3F6B]')}><span aria-hidden="true" className="text-lg leading-none">{['⌂','◉','◎','✉','◯'][index]}</span>{item.label}</button>)}</div></nav>
   </div>
 }

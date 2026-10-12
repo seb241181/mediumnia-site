@@ -7,6 +7,11 @@ import { sendEmail } from '../lib/transactionalEmail.js'
 import { balanceSweepUpperBound, reminderWindow } from '../lib/parisReminderDays.js'
 import { runDailySweep } from '../lib/rdvBalanceCronHandler.js'
 
+// Ces tests portent sur les rappels clients, pas les alertes propriétaire.
+// En build Vercel, la vraie adresse de production est injectée : ne jamais
+// l'utiliser dans les mocks Resend ni fausser les assertions des RPC.
+delete process.env.RDV_BALANCE_ALERT_EMAIL
+
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
 // Mardi 29 septembre 2026, 9 h à Paris (passage de la tâche quotidienne).
 const NOW = new Date('2026-09-29T07:00:00Z')

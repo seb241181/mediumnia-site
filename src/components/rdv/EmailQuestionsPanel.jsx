@@ -61,6 +61,9 @@ export default function EmailQuestionsPanel({ session }) {
 
   const pending = useMemo(() => rows.filter((r) => ['paid', 'in_progress', 'manual_review', 'refund_pending'].includes(r.status)), [rows])
   const history = useMemo(() => rows.filter((r) => ['answered', 'refunded'].includes(r.status)).slice(0, 20), [rows])
+  // Les paiements non confirmés peuvent malgré tout avoir été encaissés par PayPal.
+  // Consultation uniquement : aucune réponse, aucun remboursement ni changement de statut.
+  const paymentPending = useMemo(() => rows.filter((r) => r.status === 'payment_pending'), [rows])
 
   async function mutate(id, op, extra = {}) {
     setWorking(id)
@@ -101,7 +104,7 @@ export default function EmailQuestionsPanel({ session }) {
       {loading ? (
         <p className="font-georgia text-sm text-mist">Chargement…</p>
       ) : pending.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-gold/25 px-5 py-8 text-center font-georgia text-sm text-mist">Aucune question en attente.</p>
+        <p className="rounded-xl border border-dashed border-gold/25 px-5 py-8 text-center font-georgia text-sm text-mist">Aucune demande avec paiement confirmé à traiter.</p>
       ) : (
         <div className="space-y-4">
           {pending.map((row) => (
@@ -176,6 +179,36 @@ export default function EmailQuestionsPanel({ session }) {
             </article>
           ))}
         </div>
+      )}
+
+      {paymentPending.length > 0 && (
+        <details className="mt-5 rounded-2xl border border-amber-300/50 bg-white/65 p-5">
+          <summary className="cursor-pointer font-georgia text-sm font-medium text-deep">
+            Commandes à vérifier — paiement non confirmé dans MediumIA ({paymentPending.length})
+          </summary>
+          <p className="mt-3 font-georgia text-xs leading-relaxed text-mist">
+            Statut technique « en attente » : PayPal a pu encaisser le paiement.
+            Vérifiez les transactions avant de traiter une demande. Des commandes peuvent être des doublons.
+            Cette liste permet uniquement de lire les questions ; aucune réponse, validation ou opération financière n'est disponible ici.
+          </p>
+          <div className="mt-4 space-y-3">
+            {paymentPending.map((row) => (
+              <article key={row.id} className="rounded-xl border border-gold/20 bg-cream/40 p-4">
+                <p className="font-georgia text-sm font-semibold text-deep">{row.first_name}</p>
+                <p className="font-georgia text-xs text-mist">{row.email} · {money(row.amount_cents)} · PayPal : {row.paypal_order_id}</p>
+                <div className="mt-3 space-y-3">
+                  {(Array.isArray(row.questions) ? row.questions : []).map((item, i) => (
+                    <div key={i} className="rounded-lg border border-gold/15 bg-white/70 p-3">
+                      <p className="font-georgia text-[10px] uppercase tracking-[0.15em] text-gold">Question {i + 1}</p>
+                      <p className="mt-1 whitespace-pre-wrap font-georgia text-sm text-deep">{item.q}</p>
+                      {item.context && <p className="mt-2 whitespace-pre-wrap font-georgia text-xs text-mist">Contexte : {item.context}</p>}
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </details>
       )}
 
       {history.length > 0 && (

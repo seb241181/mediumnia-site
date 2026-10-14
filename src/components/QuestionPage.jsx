@@ -84,6 +84,7 @@ function QuestionCheckout({ config }) {
             })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || !data.id) {
+              if (data.error === 'email_questions_suspended') throw new Error('email_questions_suspended')
               if (data.error === 'daily_capacity_reached') throw new Error('capacity')
               throw new Error(data.error || 'paypal_create_order_failed')
             }
@@ -105,12 +106,16 @@ function QuestionCheckout({ config }) {
           onCancel: () => setStatus('Paiement annulé. Aucune somme n’a été débitée.'),
           onError: (error) => setStatus(error?.message === 'capacity'
             ? 'Le quota de demandes disponible pour le moment est atteint.'
-            : 'Le paiement n’a pas pu aboutir. Vous pouvez réessayer sans être débité deux fois.'),
+            : error?.message === 'email_questions_suspended'
+              ? 'Les commandes de Guidances par e-mail sont momentanément suspendues pour maintenance. Vos demandes déjà enregistrées restent prises en charge.'
+              : 'Nous ne pouvons pas confirmer l’état de votre paiement. Ne recommencez pas le paiement pour le moment. Contactez-moi afin que je vérifie votre transaction.'),
         }).render(node)
       })
       .catch((error) => setStatus(error?.message === 'capacity'
         ? 'Le quota de demandes disponible pour le moment est atteint.'
-        : 'PayPal est momentanément indisponible. Réessayez dans quelques instants.'))
+        : error?.message === 'email_questions_suspended'
+          ? 'Les commandes de Guidances par e-mail sont momentanément suspendues pour maintenance. Vos demandes déjà enregistrées restent prises en charge.'
+          : 'PayPal est momentanément indisponible. Si vous avez déjà validé un paiement, ne recommencez pas avant vérification.'))
 
     return () => {
       cancelled = true
@@ -266,7 +271,9 @@ export default function QuestionPage({ onBack, onNavigate }) {
           {availability === 'loading' && <p className="font-georgia text-sm text-mist">Chargement…</p>}
           {availability === 'disabled' && (
             <div className="rounded-2xl border border-gold/25 bg-white/70 p-6 text-center font-georgia text-sm text-mist">
-              {config?.remaining === 0 ? 'Le quota de demandes disponible pour le moment est atteint.' : 'Ce service sera bientôt disponible.'}
+              {config?.suspended
+                ? 'Les commandes de Guidances par e-mail sont momentanément suspendues pour maintenance. Vos demandes déjà enregistrées restent prises en charge.'
+                : config?.remaining === 0 ? 'Le quota de demandes disponible pour le moment est atteint.' : 'Ce service sera bientôt disponible.'}
               {' '}Vous pouvez <a href="/rdv/sebastien-seguin" className="text-gold hover:underline">réserver une guidance avec moi</a>.
             </div>
           )}

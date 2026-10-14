@@ -4,9 +4,12 @@ import { readFileSync } from 'node:fs'
 import {
   EMAIL_QUESTION_DAILY_CAP,
   EMAIL_QUESTION_PACKS,
+  EMAIL_QUESTION_SUSPENDED_MESSAGE,
   EMAIL_QUESTION_TERMS_VERSION,
   buildEmailGuidanceAnswer,
+  createQuestionOrder,
   emailQuestionEnv,
+  emailQuestionPurchasesSuspended,
   emailQuestionsOpen,
 } from '../lib/emailQuestions.js'
 
@@ -53,6 +56,102 @@ test('production reste fermée sans interrupteur explicite', () => {
   else process.env.EMAIL_QUESTIONS_ENABLED = beforeFlag
 })
 
+function validQuestionBody() {
+  return {
+    pack: 'q2',
+    firstName: 'Camille',
+    email: 'camille@example.invalid',
+    questions: [
+      { q: 'Est-ce le bon moment pour changer de voie professionnelle ?', context: '' },
+      { q: 'Comment avancer sereinement dans cette période de transition ?', context: '' },
+    ],
+    retractationWaived: true,
+    rulesAccepted: true,
+  }
+}
+
+function res() {
+  return { status(code) { this.code = code; return this }, json(body) { this.body = body; return this } }
+}
+
+function createDbMock() {
+  const inserted = []
+  return {
+    inserted,
+    from(table) {
+      assert.equal(table, 'mediumia_email_questions')
+      const q = {
+        select() { return q },
+        eq() { return q },
+        gte() { return q },
+        insert(row) { inserted.push(row); return Promise.resolve({ error: null }) },
+        then(resolve) { return Promise.resolve({ count: 0, error: null }).then(resolve) },
+      }
+      return q
+    },
+  }
+}
+
+test('suspension Guidances e-mail : aucune nouvelle commande PayPal créée', async () => {
+  const before = process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+  try {
+    process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = 'true'
+    assert.equal(emailQuestionPurchasesSuspended(), true)
+    let dbTouched = false
+    const db = { from() { dbTouched = true; throw new Error('db_must_not_be_touched_before_suspension_reply') } }
+    const out = res()
+    await createQuestionOrder({ method: 'POST', body: validQuestionBody() }, out, db, 'sandbox')
+    assert.equal(out.code, 503)
+    assert.equal(out.body.error, 'email_questions_suspended')
+    assert.equal(out.body.message, EMAIL_QUESTION_SUSPENDED_MESSAGE)
+    assert.equal(dbTouched, false)
+  } finally {
+    if (before == null) delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    else process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = before
+  }
+})
+
+test('suspension désactivée : création PayPal normale inchangée', async () => {
+  const before = {
+    suspended: process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED,
+    clientId: process.env.PAYPAL_CLIENT_ID,
+    secret: process.env.PAYPAL_CLIENT_SECRET,
+  }
+  const beforeFetch = globalThis.fetch
+  try {
+    delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    process.env.PAYPAL_CLIENT_ID = 'client-id-test'
+    process.env.PAYPAL_CLIENT_SECRET = 'secret-test'
+    const calls = []
+    globalThis.fetch = async (url, options) => {
+      calls.push({ url: String(url), method: options?.method, body: options?.body })
+      if (String(url).includes('/v1/oauth2/token')) {
+        return { ok: true, status: 200, json: async () => ({ access_token: 'TOKEN' }) }
+      }
+      if (String(url).includes('/v2/checkout/orders')) {
+        return { ok: true, status: 201, json: async () => ({ id: 'ORDER-NORMAL-123' }) }
+      }
+      throw new Error('unexpected_fetch')
+    }
+    const db = createDbMock()
+    const out = res()
+    await createQuestionOrder({ method: 'POST', body: validQuestionBody() }, out, db, 'sandbox')
+    assert.equal(out.code, 200)
+    assert.equal(out.body.id, 'ORDER-NORMAL-123')
+    assert.deepEqual(calls.map((call) => call.method), ['POST', 'POST'])
+    assert.equal(db.inserted.length, 1)
+    assert.equal(db.inserted[0].paypal_order_id, 'ORDER-NORMAL-123')
+  } finally {
+    globalThis.fetch = beforeFetch
+    if (before.suspended == null) delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    else process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = before.suspended
+    if (before.clientId == null) delete process.env.PAYPAL_CLIENT_ID
+    else process.env.PAYPAL_CLIENT_ID = before.clientId
+    if (before.secret == null) delete process.env.PAYPAL_CLIENT_SECRET
+    else process.env.PAYPAL_CLIENT_SECRET = before.secret
+  }
+})
+
 test('le prix PayPal vient uniquement du pack serveur', () => {
   const src = read('lib/emailQuestions.js')
   assert.match(src, /meta\.amountCents/)
@@ -82,10 +181,21 @@ test('le checkout public propose exactement q1 et q2', () => {
   assert.doesNotMatch(page, /q3|6900|2900/)
   assert.match(page, /questionAction=create/)
   assert.match(page, /questionAction=capture/)
+  assert.match(page, /Les commandes de Guidances par e-mail sont momentanément suspendues pour maintenance\. Vos demandes déjà enregistrées restent prises en charge\./)
   assert.match(page, /réponse personnelle et développée/)
   assert.match(page, /Aucune question d’ordre médical n’est acceptée/)
   assert.match(page, /Toute demande médicale sera refusée et remboursée/)
   assert.match(page, /interdiction de toute question d’ordre médical/)
+})
+
+test('erreur PayPal ambiguë : ne jamais promettre absence de double débit ni encourager à repayer', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  const onError = page.split('onError: (error) => setStatus(')[1]?.split('}).render(node)')[0] || ''
+  assert.match(onError, /Nous ne pouvons pas confirmer l’état de votre paiement/)
+  assert.match(onError, /Ne recommencez pas le paiement pour le moment/)
+  assert.match(onError, /Contactez-moi/)
+  assert.match(onError, /email_questions_suspended/)
+  assert.doesNotMatch(page, /sans être débité deux fois|Vous pouvez réessayer sans être débité/)
 })
 
 test('la réponse de guidance reprend le style Chronosphère et échappe les contenus', () => {

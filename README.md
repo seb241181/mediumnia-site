@@ -43,23 +43,15 @@ Vercel (`track()`) ne sont **pas** utilisés car ils nécessitent le plan Pro.
 | Codes carte cadeau masqués | `/carte-cadeau/MED-ABCD-1234` → `/carte-cadeau/[code]` |
 | Identifiants longs masqués | Segments ≥ 20 caractères alphanumériques → `[id]` |
 
-### Campagnes (UTM)
-
-Les paramètres `utm_source`, `utm_medium` et `utm_campaign` sont lus à
-l'arrivée, stockés en `sessionStorage` pour la visite, et réappliqués aux
-pages vues envoyées à Vercel. Les valeurs sont validées strictement : aucun
-e-mail, numéro de téléphone ou identifiant opaque n'est accepté (max 50
-caractères, `[a-zA-Z0-9._~+%-]` uniquement).
-
 ### Tests
 
 ```bash
 node --test tests/siteAnalytics.test.js
 ```
 
-7 tests couvrent : production uniquement, opt-out, UTM (capture + validation),
-confidentialité (sanitization, exclusion, masquage), et branchements dans le
-code source.
+6 tests couvrent : production uniquement, opt-out, pages sensibles exclues,
+confidentialité (sanitization, masquage), compteurs MediumIA intacts, et
+branchements dans le code source.
 
 ## Expanding the ESLint configuration
 

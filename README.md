@@ -37,9 +37,9 @@ Vercel (`track()`) ne sont **pas** utilisés car ils nécessitent le plan Pro.
 | Protection | Détail |
 |---|---|
 | Aucun cookie | Vercel Analytics fonctionne sans cookie |
-| Pages de gestion exclues | `/rdv`, `/pro`, `/agents` ne sont jamais comptées |
+| Pages sensibles exclues | `/rdv`, `/rdv/annuler`, `/rdv/solde`, `/pro`, `/agents` ne sont jamais comptées |
 | Fragments supprimés | `#token=...` jamais envoyé |
-| Paramètres personnels supprimés | `email`, `offre`, etc. supprimés de l'URL |
+| Tous les paramètres supprimés | `beforeSend` retire **tous** les paramètres de requête (UTM inclus) — aucune stat UTM détaillée disponible |
 | Codes carte cadeau masqués | `/carte-cadeau/MED-ABCD-1234` → `/carte-cadeau/[code]` |
 | Identifiants longs masqués | Segments ≥ 20 caractères alphanumériques → `[id]` |
 

@@ -6,10 +6,9 @@
 // (fragments et paramètres supprimés, codes personnels masqués). Actif
 // uniquement en production sur mediumia.fr.
 //
-// Les UTM (utm_source, utm_medium, utm_campaign) sont gérés nativement par
-// le client @vercel/analytics et ne sont pas réinjectés manuellement.
-// Sur le plan Hobby les statistiques UTM détaillées ne sont pas disponibles
-// dans le tableau de bord Vercel.
+// Attention : beforeSend supprime TOUS les paramètres de requête (y compris
+// les UTM). Les statistiques UTM détaillées ne sont donc pas disponibles,
+// ni sur le plan Hobby ni sur un plan supérieur, tant que ce filtre est actif.
 
 export const PRODUCTION_HOSTS = new Set(['mediumia.fr', 'www.mediumia.fr'])
 export const OPT_OUT_KEY = 'mediumia_noanalytics'

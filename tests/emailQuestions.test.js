@@ -7,6 +7,7 @@ import {
   EMAIL_QUESTION_SUSPENDED_MESSAGE,
   EMAIL_QUESTION_TERMS_VERSION,
   buildEmailGuidanceAnswer,
+  buildOwnerQuestionEmail,
   createQuestionOrder,
   emailQuestionEnv,
   emailQuestionPurchasesSuspended,
@@ -231,6 +232,46 @@ test('les e-mails n’utilisent aucune boîte contact fictive et supportent Repl
   assert.match(server, /EMAIL_QUESTIONS_OWNER_EMAIL/)
   assert.match(server, /EMAIL_QUESTIONS_REPLY_TO/)
   assert.match(helper, /payload\.reply_to = replyTo/)
+})
+
+test('notification propriétaire : inclut les questions, contextes et référence, échappe le HTML', () => {
+  const row = {
+    id: 'test-id',
+    first_name: 'Camille',
+    email: 'camille@example.invalid',
+    question_count: 2,
+    questions: [
+      { q: 'Est-ce le bon moment pour changer de travail ?', context: 'Je doute de ma décision.' },
+      { q: '<script>alert(1)</script>', context: '<b>Contexte privé</b>' },
+    ],
+    amount_cents: 2990,
+    paypal_order_id: 'ORDER-TEST-1',
+  }
+  const owner = buildOwnerQuestionEmail(row, '22 octobre 2026')
+  assert.match(owner.text, /Est-ce le bon moment/)
+  assert.match(owner.text, /Je doute de ma décision/)
+  assert.match(owner.text, /ORDER-TEST-1/)
+  assert.match(owner.text, /Contexte privé/)
+  assert.match(owner.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/)
+  assert.match(owner.html, /&lt;b&gt;Contexte privé&lt;\/b&gt;/)
+  assert.doesNotMatch(owner.html, /<script>/)
+  const server = read('lib/emailQuestions.js')
+  assert.match(server, /email-question-owner\/\$\{row\.id\}/)
+  assert.match(server, /buildOwnerQuestionEmail\(row, due\)/)
+})
+
+test('administration : demandes sans statut payé lisibles, mais aucune action financière ni réponse dans leur bloc', () => {
+  const panel = read('src/components/rdv/EmailQuestionsPanel.jsx')
+  const marker = 'Commandes à vérifier — paiement non confirmé dans MediumIA'
+  const start = panel.indexOf(marker)
+  const end = panel.indexOf('{history.length > 0', start)
+  assert.ok(start > 0 && end > start)
+  const block = panel.slice(start, end)
+  assert.match(block, /paymentPending\.map/)
+  assert.match(block, /row\.questions/)
+  assert.match(block, /row\.paypal_order_id/)
+  assert.doesNotMatch(block, /mutate\(|Envoyer la réponse|Refuser et rembourser/)
+  assert.match(panel, /r\.status === 'payment_pending'/)
 })
 
 test('l’administration est authentifiée via rdv-admin et offre réponse + remboursement', () => {

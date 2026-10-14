@@ -188,6 +188,16 @@ test('le checkout public propose exactement q1 et q2', () => {
   assert.match(page, /interdiction de toute question d’ordre médical/)
 })
 
+test('erreur PayPal ambiguë : ne jamais promettre absence de double débit ni encourager à repayer', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  const onError = page.split('onError: (error) => setStatus(')[1]?.split('}).render(node)')[0] || ''
+  assert.match(onError, /Nous ne pouvons pas confirmer l’état de votre paiement/)
+  assert.match(onError, /Ne recommencez pas le paiement pour le moment/)
+  assert.match(onError, /Contactez-moi/)
+  assert.match(onError, /email_questions_suspended/)
+  assert.doesNotMatch(page, /sans être débité deux fois|Vous pouvez réessayer sans être débité/)
+})
+
 test('la réponse de guidance reprend le style Chronosphère et échappe les contenus', () => {
   const email = buildEmailGuidanceAnswer({
     first_name: '<Camille>',

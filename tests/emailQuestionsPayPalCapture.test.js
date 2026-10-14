@@ -1,113 +1,414 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import process from 'node:process'
+import { setImmediate } from 'node:timers'
+import {
+  captureQuestionOrder,
+  handleWebhook,
+  sendPurchaseEmails,
+} from '../lib/emailQuestions.js'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const fixture = (name) => JSON.parse(read(`tests/fixtures/paypal/${name}`))
+const webhookFixture = fixture('payment-capture-completed.sandbox.json')
+const orderFixture = fixture('checkout-order-completed.sandbox.json')
 
-test('capture corrigée : GET avant POST, réponse ambiguë gérée par relecture', () => {
-  const src = read('lib/emailQuestions.js')
-  const captureStart = src.indexOf('async function captureQuestionOrder(')
-  const captureEnd = src.indexOf('\nasync function', captureStart + 1)
-  assert.ok(captureStart > 0 && captureEnd > captureStart)
-  const captureFn = src.slice(captureStart, captureEnd)
+const QUESTION_ID = '11111111-2222-4333-8444-555555555555'
+const ORDER_ID = '9P99943869582473S'
+const CAPTURE_ID = '3Y662965014333303'
 
-  // GET d'abord pour vérifier l'état avant de tenter la capture.
-  const getIndex = captureFn.indexOf("'GET', `/v2/checkout/orders/")
-  const postIndex = captureFn.indexOf("'POST', `/v2/checkout/orders/")
-  assert.ok(getIndex > 0, 'doit contenir un GET orders')
-  assert.ok(postIndex > 0, 'doit contenir un POST capture')
-  assert.ok(getIndex < postIndex, 'GET doit précéder POST')
+function response() {
+  return {
+    code: null,
+    body: null,
+    status(code) { this.code = code; return this },
+    json(body) { this.body = body; return this },
+  }
+}
 
-  // Vérifie que si la commande est déjà COMPLETED, on ne re-capture pas.
-  assert.match(captureFn, /preCheck\.data\?\.status === 'COMPLETED'/, 'détecte les commandes déjà capturées')
+function webhookRequest(body = webhookFixture, headers = {}) {
+  return {
+    method: 'POST',
+    body: structuredClone(body),
+    headers: {
+      'paypal-auth-algo': 'SHA256withRSA',
+      'paypal-cert-url': 'https://api-m.sandbox.paypal.com/v1/notifications/certs/CERT-TEST',
+      'paypal-transmission-id': '69cd13f0-d67a-11f0-8a88-77339302725b',
+      'paypal-transmission-sig': 'TEST_SIGNATURE_BASE64',
+      'paypal-transmission-time': '2026-10-14T18:42:19Z',
+      ...headers,
+    },
+  }
+}
 
-  // Vérifie que seules les commandes APPROVED sont capturées.
-  assert.match(captureFn, /preCheck\.data\?\.status === 'APPROVED'/, 'ne capture que les commandes approuvées')
+function guidanceRow(overrides = {}) {
+  return {
+    id: QUESTION_ID,
+    paypal_env: 'sandbox',
+    paypal_order_id: ORDER_ID,
+    paypal_capture_id: null,
+    pack: 'q2',
+    question_count: 2,
+    amount_cents: 2990,
+    currency: 'EUR',
+    first_name: 'Camille',
+    email: 'camille@example.invalid',
+    questions: [
+      { q: 'Est-ce le bon moment pour changer de voie professionnelle ?', context: '' },
+      { q: 'Comment avancer sereinement dans cette période ?', context: '' },
+    ],
+    status: 'payment_pending',
+    due_at: null,
+    ...overrides,
+  }
+}
 
-  // En cas de réponse ambiguë, relecture GET pour vérifier.
-  const recheckPattern = /recheck.*=.*paypalRequest.*'GET'/
-  assert.match(captureFn, recheckPattern, 'relecture GET en cas de réponse ambiguë')
+function createMemoryDb(initialRow = guidanceRow()) {
+  const state = {
+    row: structuredClone(initialRow),
+    events: new Map(),
+    updates: [],
+  }
 
-  // Idempotence PayPal : clé de requête présente.
-  assert.match(captureFn, /mediumia-email-question-capture-/, 'clé d’idempotence PayPal présente')
+  function matches(filters) {
+    return filters.every(([key, value]) => state.row?.[key] === value)
+  }
 
-  // Vérification montant/devise/référence inchangée.
-  assert.match(captureFn, /capture\.amount\?\.currency_code !== 'EUR'/)
-  assert.match(captureFn, /reference_id !== `MEDIUMIA_EMAIL_/)
-  assert.match(captureFn, /custom_id === row\.id/)
+  function query() {
+    const filters = []
+    let changes = null
+    const q = {
+      select() { return q },
+      eq(key, value) { filters.push([key, value]); return q },
+      update(value) { changes = value; return q },
+      async maybeSingle() {
+        if (!state.row || !matches(filters)) return { data: null, error: null }
+        if (changes) {
+          state.row = { ...state.row, ...changes }
+          state.updates.push(structuredClone(changes))
+        }
+        return { data: structuredClone(state.row), error: null }
+      },
+      then(resolve, reject) {
+        const run = async () => {
+          if (state.row && matches(filters) && changes) {
+            state.row = { ...state.row, ...changes }
+            state.updates.push(structuredClone(changes))
+          }
+          return { data: state.row ? structuredClone(state.row) : null, error: null }
+        }
+        return run().then(resolve, reject)
+      },
+    }
+    return q
+  }
+
+  return {
+    state,
+    from(table) {
+      assert.equal(table, 'mediumia_email_questions')
+      return query()
+    },
+    async rpc(name, params) {
+      if (name === 'claim_email_question_paypal_event') {
+        const byEvent = state.events.get(params.p_event_id)
+        const byCapture = [...state.events.values()].find((item) => item.captureId === params.p_capture_id)
+        const existing = byEvent || byCapture
+        if (!existing) {
+          state.events.set(params.p_event_id, {
+            captureId: params.p_capture_id,
+            orderId: params.p_paypal_order_id,
+            questionId: params.p_question_id,
+            status: 'processing',
+            attempts: 1,
+          })
+          return { data: [{ claimed: true, event_status: 'processing' }], error: null }
+        }
+        if (existing.status === 'retryable') {
+          existing.status = 'processing'
+          existing.attempts += 1
+          return { data: [{ claimed: true, event_status: 'processing' }], error: null }
+        }
+        return { data: [{ claimed: false, event_status: existing.status }], error: null }
+      }
+      if (name === 'finish_email_question_paypal_event') {
+        const event = state.events.get(params.p_event_id)
+        if (!event || event.status !== 'processing') return { data: false, error: null }
+        event.status = params.p_status
+        event.error = params.p_error
+        return { data: true, error: null }
+      }
+      throw new Error(`unexpected_rpc:${name}`)
+    },
+  }
+}
+
+function installPayPalFetch({ verification = 'SUCCESS', orderResponses = [orderFixture], captureError = null, captureStatus = 201 } = {}) {
+  const original = globalThis.fetch
+  const calls = []
+  let orderIndex = 0
+  globalThis.fetch = async (url, options = {}) => {
+    const href = String(url)
+    calls.push({ href, method: options.method, headers: options.headers, body: options.body, signal: options.signal })
+    if (href.endsWith('/v1/oauth2/token')) {
+      return { ok: true, status: 200, json: async () => ({ access_token: 'SANDBOX_ACCESS_TOKEN' }) }
+    }
+    if (href.endsWith('/v1/notifications/verify-webhook-signature')) {
+      return { ok: true, status: 200, json: async () => ({ verification_status: verification }) }
+    }
+    if (href.endsWith(`/v2/checkout/orders/${ORDER_ID}/capture`)) {
+      if (captureError) throw captureError
+      return {
+        ok: captureStatus >= 200 && captureStatus < 300,
+        status: captureStatus,
+        json: async () => captureStatus >= 200 && captureStatus < 300
+          ? structuredClone(orderFixture)
+          : { name: 'INTERNAL_SERVER_ERROR' },
+      }
+    }
+    if (href.endsWith(`/v2/checkout/orders/${ORDER_ID}`)) {
+      const value = orderResponses[Math.min(orderIndex, orderResponses.length - 1)]
+      orderIndex += 1
+      if (value instanceof Error) throw value
+      if (value?.httpStatus) {
+        return { ok: false, status: value.httpStatus, json: async () => ({ name: 'INTERNAL_SERVER_ERROR' }) }
+      }
+      return { ok: true, status: 200, json: async () => structuredClone(value) }
+    }
+    throw new Error(`unexpected_fetch:${href}`)
+  }
+  return { calls, restore() { globalThis.fetch = original } }
+}
+
+function withPayPalEnv(fn) {
+  return async () => {
+    const before = {
+      id: process.env.PAYPAL_CLIENT_ID,
+      secret: process.env.PAYPAL_CLIENT_SECRET,
+      webhook: process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID,
+    }
+    process.env.PAYPAL_CLIENT_ID = 'sandbox-client-id'
+    process.env.PAYPAL_CLIENT_SECRET = 'sandbox-client-secret'
+    process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = '5GP03276FF874683P'
+    try {
+      await fn()
+    } finally {
+      for (const [key, value] of Object.entries({
+        PAYPAL_CLIENT_ID: before.id,
+        PAYPAL_CLIENT_SECRET: before.secret,
+        PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID: before.webhook,
+      })) {
+        if (value == null) delete process.env[key]
+        else process.env[key] = value
+      }
+    }
+  }
+}
+
+test('webhook : les en-têtes de signature absents sont rejetés avant tout accès DB ou PayPal', withPayPalEnv(async () => {
+  let touched = false
+  const db = { from() { touched = true }, rpc() { touched = true } }
+  const out = response()
+  await handleWebhook({ method: 'POST', body: webhookFixture, headers: {} }, out, db, 'sandbox')
+  assert.equal(out.code, 401)
+  assert.equal(out.body.error, 'paypal_signature_headers_missing')
+  assert.equal(touched, false)
+}))
+
+test('webhook : une signature PayPal invalide est rejetée', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ verification: 'FAILURE' })
+  try {
+    const out = response()
+    await handleWebhook(webhookRequest(), out, createMemoryDb(), 'sandbox')
+    assert.equal(out.code, 401)
+    assert.equal(out.body.error, 'paypal_signature_invalid')
+    assert.equal(paypal.calls.filter((call) => call.href.includes('/verify-webhook-signature')).length, 1)
+  } finally {
+    paypal.restore()
+  }
+}))
+
+test('webhook Sandbox réaliste : corrèle par order_id, confirme en GET et conserve les questions pour l’administration', withPayPalEnv(async () => {
+  const payload = structuredClone(webhookFixture)
+  assert.equal(payload.resource.custom_id, undefined, 'la fixture provider ne suppose pas resource.custom_id')
+  const paypal = installPayPalFetch()
+  const db = createMemoryDb()
+  let notifications = 0
+  try {
+    const out = response()
+    await handleWebhook(webhookRequest(payload), out, db, 'sandbox', {
+      sendPurchase: async (_db, row) => {
+        notifications += 1
+        assert.equal(row.status, 'paid')
+        assert.equal(row.questions.length, 2)
+        return 'sent'
+      },
+    })
+    assert.equal(out.code, 200)
+    assert.equal(out.body.captured, true)
+    assert.equal(db.state.row.status, 'paid')
+    assert.equal(db.state.row.paypal_capture_id, CAPTURE_ID)
+    assert.equal(db.state.row.questions[0].q, 'Est-ce le bon moment pour changer de voie professionnelle ?')
+    assert.equal(db.state.row.confirmation_email_status, 'sent')
+    assert.equal(notifications, 1)
+
+    const verifyCall = paypal.calls.find((call) => call.href.includes('/verify-webhook-signature'))
+    const verificationBody = JSON.parse(verifyCall.body)
+    assert.equal(verificationBody.webhook_id, '5GP03276FF874683P')
+    assert.equal(verificationBody.webhook_event.id, webhookFixture.id)
+    assert.ok(verifyCall.signal instanceof AbortSignal)
+  } finally {
+    paypal.restore()
+  }
+}))
+
+test('webhook : replay et concurrence ne produisent qu’une notification', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch()
+  const db = createMemoryDb()
+  let releaseNotification
+  const blocked = new Promise((resolve) => { releaseNotification = resolve })
+  let notificationCalls = 0
+  const sendPurchase = async () => {
+    notificationCalls += 1
+    await blocked
+    return 'sent'
+  }
+  try {
+    const firstOut = response()
+    const first = handleWebhook(webhookRequest(), firstOut, db, 'sandbox', { sendPurchase })
+    await new Promise((resolve) => setImmediate(resolve))
+
+    const concurrentOut = response()
+    await handleWebhook(webhookRequest(), concurrentOut, db, 'sandbox', { sendPurchase })
+    assert.equal(concurrentOut.code, 503)
+    assert.equal(concurrentOut.body.error, 'webhook_event_busy')
+
+    releaseNotification()
+    await first
+    assert.equal(firstOut.code, 200)
+
+    const replayOut = response()
+    await handleWebhook(webhookRequest(), replayOut, db, 'sandbox', { sendPurchase })
+    assert.equal(replayOut.code, 200)
+    assert.equal(replayOut.body.idempotent, true)
+    assert.equal(notificationCalls, 1)
+  } finally {
+    paypal.restore()
+  }
+}))
+
+test('webhook : indisponibilité PayPal temporaire renvoie 503 et reste rejouable', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ orderResponses: [{ httpStatus: 503 }, orderFixture] })
+  const db = createMemoryDb()
+  let notifications = 0
+  try {
+    const firstOut = response()
+    await handleWebhook(webhookRequest(), firstOut, db, 'sandbox', { sendPurchase: async () => 'sent' })
+    assert.equal(firstOut.code, 503)
+    assert.equal(firstOut.body.retryable, true)
+    assert.equal(db.state.events.get(webhookFixture.id).status, 'retryable')
+
+    const retryOut = response()
+    await handleWebhook(webhookRequest(), retryOut, db, 'sandbox', {
+      sendPurchase: async () => { notifications += 1; return 'sent' },
+    })
+    assert.equal(retryOut.code, 200)
+    assert.equal(db.state.events.get(webhookFixture.id).attempts, 2)
+    assert.equal(notifications, 1)
+  } finally {
+    paypal.restore()
+  }
+}))
+
+test('capture : timeout réseau du POST déclenche un GET sûr sans second POST', withPayPalEnv(async () => {
+  const approved = { ...structuredClone(orderFixture), status: 'APPROVED', purchase_units: [{
+    ...structuredClone(orderFixture.purchase_units[0]), payments: undefined,
+  }] }
+  const timeout = new Error('request aborted')
+  timeout.name = 'AbortError'
+  const paypal = installPayPalFetch({ orderResponses: [approved, orderFixture], captureError: timeout })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await captureQuestionOrder({ method: 'POST', body: { orderId: ORDER_ID } }, out, db, 'sandbox')
+    assert.equal(out.code, 200)
+    assert.equal(db.state.row.paypal_capture_id, CAPTURE_ID)
+    const orderCalls = paypal.calls.filter((call) => call.href.includes(`/v2/checkout/orders/${ORDER_ID}`))
+    assert.deepEqual(orderCalls.map((call) => call.method), ['GET', 'POST', 'GET'])
+    assert.equal(orderCalls.filter((call) => call.method === 'POST').length, 1)
+    assert.equal(orderCalls[1].headers['PayPal-Request-Id'], `mediumia-email-question-capture-${ORDER_ID}`)
+  } finally {
+    paypal.restore()
+  }
+}))
+
+test('capture : réponse PayPal 5xx déclenche aussi une relecture sûre', withPayPalEnv(async () => {
+  const approved = { ...structuredClone(orderFixture), status: 'APPROVED', purchase_units: [{
+    ...structuredClone(orderFixture.purchase_units[0]), payments: undefined,
+  }] }
+  const paypal = installPayPalFetch({ orderResponses: [approved, orderFixture], captureStatus: 503 })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await captureQuestionOrder({ method: 'POST', body: { orderId: ORDER_ID } }, out, db, 'sandbox')
+    assert.equal(out.code, 200)
+    assert.equal(db.state.row.paypal_capture_id, CAPTURE_ID)
+    assert.deepEqual(
+      paypal.calls.filter((call) => call.href.includes(`/v2/checkout/orders/${ORDER_ID}`)).map((call) => call.method),
+      ['GET', 'POST', 'GET'],
+    )
+  } finally {
+    paypal.restore()
+  }
+}))
+
+test('notifications : la cliente et accompagnement.medium@gmail.com sont ciblés une seule fois avec clés stables', async () => {
+  const before = process.env.EMAIL_QUESTIONS_OWNER_EMAIL
+  process.env.EMAIL_QUESTIONS_OWNER_EMAIL = 'accompagnement.medium@gmail.com'
+  const deliveries = []
+  try {
+    const status = await sendPurchaseEmails(createMemoryDb(), guidanceRow({
+      paypal_env: 'sandbox',
+      paypal_capture_id: CAPTURE_ID,
+      status: 'paid',
+      due_at: '2026-10-19T18:42:15Z',
+    }), {
+      allowSandbox: true,
+      send: async (message) => { deliveries.push(message); return { status: 'sent', id: `mail-${deliveries.length}` } },
+    })
+    assert.equal(status, 'sent')
+    assert.deepEqual(deliveries.map((item) => item.to), [
+      'camille@example.invalid',
+      'accompagnement.medium@gmail.com',
+    ])
+    assert.equal(new Set(deliveries.map((item) => item.idempotencyKey)).size, 2)
+    assert.match(deliveries[1].text, /Est-ce le bon moment/)
+    assert.match(deliveries[1].text, new RegExp(ORDER_ID))
+  } finally {
+    if (before == null) delete process.env.EMAIL_QUESTIONS_OWNER_EMAIL
+    else process.env.EMAIL_QUESTIONS_OWNER_EMAIL = before
+  }
 })
 
-test('capture : jamais de double débit — commande non-APPROVED rejetée sans POST', () => {
-  const src = read('lib/emailQuestions.js')
-  const captureStart = src.indexOf('async function captureQuestionOrder(')
-  const captureEnd = src.indexOf('\nasync function', captureStart + 1)
-  const captureFn = src.slice(captureStart, captureEnd)
-
-  // Les commandes dans un état inattendu (CREATED, VOIDED) retournent une erreur sans appel POST.
-  assert.match(captureFn, /paypal_order_not_approved/, 'erreur spécifique pour état inattendu')
-  assert.match(captureFn, /orderStatus.*preCheck\.data\?\.status/, 'retourne le statut pour diagnostic')
+test('migration webhook : registre privé, unicité capture et fonctions réservées au service_role', () => {
+  const sql = read('supabase/migrations/20261014210000_email_question_paypal_webhook_hardening.sql')
+  assert.match(sql, /event_id TEXT PRIMARY KEY/)
+  assert.match(sql, /capture_id TEXT NOT NULL UNIQUE/)
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.claim_email_question_paypal_event/)
+  assert.match(sql, /FOR UPDATE/)
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.finish_email_question_paypal_event/)
+  assert.match(sql, /FORCE ROW LEVEL SECURITY/)
+  assert.match(sql, /REVOKE ALL ON FUNCTION[\s\S]*FROM PUBLIC, anon, authenticated/)
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION[\s\S]*TO service_role/)
 })
 
-test('capture : idempotence en base — status payment_pending requis pour la mise à jour', () => {
-  const src = read('lib/emailQuestions.js')
-  const captureStart = src.indexOf('async function captureQuestionOrder(')
-  const captureEnd = src.indexOf('\nasync function', captureStart + 1)
-  const captureFn = src.slice(captureStart, captureEnd)
-
-  // La mise à jour en base requiert status === payment_pending (garde optimiste).
-  assert.match(captureFn, /\.eq\('status', 'payment_pending'\)/)
-  // En cas de conflit, vérifie si le capture_id correspond déjà.
-  assert.match(captureFn, /replay\?\.paypal_capture_id === capture\.id/)
-})
-
-test('webhook Guidance : filtrage strict, relecture PayPal, idempotence', () => {
-  const src = read('lib/emailQuestions.js')
-
-  // Le handler webhook est branché dans handleEmailQuestions.
-  assert.match(src, /action === 'webhook'.*handleWebhook/)
-
-  const webhookStart = src.indexOf('async function handleWebhook(')
-  const webhookEnd = src.indexOf('\nexport async function handleEmailQuestions(', webhookStart)
-  assert.ok(webhookStart > 0 && webhookEnd > webhookStart)
-  const webhookFn = src.slice(webhookStart, webhookEnd)
-
-  // Seul PAYMENT.CAPTURE.COMPLETED est traité.
-  assert.match(webhookFn, /PAYMENT\.CAPTURE\.COMPLETED/, 'filtre sur le bon event_type')
-  assert.match(webhookFn, /event_type_not_handled/, 'rejette les autres types')
-
-  // Validation de l'event_id PayPal (format WH-...).
-  assert.match(webhookFn, /WH-\[A-Za-z0-9-\]/, 'valide le format event_id')
-
-  // Filtrage Guidance : seules les commandes avec un UUID custom_id sont traitées.
-  assert.match(webhookFn, /not_a_guidance_order/, 'ignore les ordres non-guidance')
-
-  // Relecture via GET au lieu de faire confiance au payload.
-  assert.match(webhookFn, /'GET'.*checkout\/orders/, 'relit l’état depuis PayPal')
-
-  // Aucun appel PayPal POST (capture, refund) dans le webhook — uniquement des GET.
-  assert.doesNotMatch(webhookFn, /paypalRequest\([^)]*'POST'/, 'aucun appel PayPal POST dans le webhook')
-
-  // Vérification montant, devise, référence.
-  assert.match(webhookFn, /currency_code !== 'EUR'/)
-  assert.match(webhookFn, /reference_id !== `MEDIUMIA_EMAIL_/)
-
-  // Idempotence par capture_id en base.
-  assert.match(webhookFn, /paypal_capture_id === captureId/)
-
-  // Mise à jour en base avec garde status === payment_pending.
-  assert.match(webhookFn, /\.eq\('status', 'payment_pending'\)/)
-
-  // Envoi des e-mails de confirmation après mise à jour réussie.
-  assert.match(webhookFn, /sendPurchaseEmails\(db, paid\)/)
-})
-
-test('webhook : pas de détournement — les webhooks formations et autres ne sont pas affectés', () => {
+test('route webhook Guidance distincte des webhooks des autres prestations', () => {
   const router = read('api/rdv-config.js')
-  // Le webhook guidance passe par questionAction=webhook, pas formationPathAction.
+  const server = read('lib/emailQuestions.js')
   assert.match(router, /questionAction/)
   assert.match(router, /formationPathAction/)
-  // Les deux routes sont distinctes.
-  const questionLine = router.indexOf('questionAction')
-  const formationLine = router.indexOf('formationPathAction')
-  assert.ok(questionLine !== formationLine, 'routes distinctes pour guidance et formation')
+  assert.match(server, /action === 'webhook'/)
+  const webhook = server.slice(server.indexOf('export async function handleWebhook'), server.indexOf('export async function handleEmailQuestions'))
+  assert.doesNotMatch(webhook, /\/refund/)
 })

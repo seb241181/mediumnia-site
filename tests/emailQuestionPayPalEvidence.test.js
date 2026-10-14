@@ -20,10 +20,10 @@ const order = () => ({
   status: 'COMPLETED',
   purchase_units: [{
     custom_id: row.id, reference_id: 'MEDIUMIA_EMAIL_Q2',
-    payments: { captures: [{ ...capture }] },
+    payments: { captures: [{ ...capture, amount: { ...capture.amount } }] },
   }],
 })
-const detail = () => ({ ...capture })
+const detail = () => ({ ...capture, amount: { ...capture.amount } })
 
 test('capture PayPal cohérente : confirmation de lecture seule, aucune mutation', () => {
   const output = summarize(row, order(), detail())

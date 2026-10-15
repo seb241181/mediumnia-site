@@ -1521,6 +1521,21 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       </button>
                     ))}
                   </nav>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePanel('rdv')
+                        window.setTimeout(() => document.getElementById('mediumia-rdv-requests')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+                      }}
+                      className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 font-georgia text-sm font-semibold text-deep hover:bg-gold/20"
+                    >
+                      Voir mes demandes — ${(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} en attente
+                    </button>
+                    <span className="font-georgia text-xs text-mist">
+                      ${(activePractitioner.pending_requests || []).filter(req => req.status === 'contacted').length} contactées
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1718,9 +1733,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                   />
 
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
-                  {(activePractitioner.pending_requests?.length > 0 ||
-                    activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
-                    <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                  <section id="mediumia-rdv-requests" className="scroll-mt-6 rounded-2xl border border-gold/25 bg-white/60 p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Demandes</p>
@@ -1740,7 +1753,6 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                         onChanged={() => loadMe(session)}
                       />
                     </section>
-                  )}
 
                   {/* Upcoming bookings */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">

@@ -1,6 +1,32 @@
 # Reprise Codex - MediumIA PR #156
 
+## Reprise du 15 octobre 2026 - synchronisation et preflight TEST
+
+- Checkout : /private/tmp/mediumia-pr156-test-validation ; les anciens checkouts
+  ne sont plus presents. Aucun travail des autres branches touche. Chemin sans espace
+  requis par deux tests existants (leur conversion URL locale est incorrecte).
+- PR #156 ouverte/en brouillon, correctif 6dd3a7e1169cf4d54825172bbbe05247df64b529.
+- Main recupere : 2465ba068d7935e9bcb33d8fc4deb6e92e7681fa (fusion #157).
+- Integration main sans conflit ; les cinq fichiers Coulisses sont identiques a main.
+- Supabase TEST wnbwhnqiulsdjcvkuwos interroge uniquement en lecture : colonne absente,
+  table compatible, RLS/FORCE RLS actifs et aucun trigger applicatif.
+- Aucun DDL distant, paiement, webhook externe, e-mail ou modification Production.
+- npm ci verrouille, sans scripts d'installation. npm test final : 868/868, aucun
+  echec/skip. Premier passage sous New project : 866/868 a cause du chemin encode.
+- Build complet : reussi, 868 tests prebuild, bundle V2 verifie, 30 pages prerendues.
+  URL Supabase TEST et cle factice de compilation, aucun secret ni acces metier.
+- Sorties generees npm exclues du commit ; fichiers Coulisses identiques a main.
+- Registre webhook et RPC claim/finish presents sur TEST, ne pas les reappliquer.
+- Rapport/protocole : docs/paypal-test-validation-preflight.md.
+- Prochaine action : demander GO migration TEST, sans transaction Sandbox. Une fois
+  la colonne verifiee, demander un GO distinct avant le scenario concurrent prepare.
+- Attendre ensuite deux GO distincts : migration TEST, puis transactions Sandbox.
+- Production : NO-GO ; ventes suspendues et PR en brouillon.
+
 ## Mission actuelle
+
+Les sections ci-dessous conservent les preuves de la phase precedente ; le point
+de reprise du 15 octobre ci-dessus est prioritaire.
 
 Corriger le faux 409 paypal_capture_unconfirmed et les confirmations concurrentes.
 Base exacte : c520bd5c7839aad2197c0aea7ab8ee3bb2e43fd4, branche distante

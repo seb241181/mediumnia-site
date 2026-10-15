@@ -112,12 +112,20 @@ function SummaryCard({ label, value, note, wide = false }) {
   )
 }
 
-export default function AccountingSection({ practitionerId, session }) {
+export default function AccountingSection({ practitionerId, session, showDailyPayments = true }) {
   const [month, setMonth] = useState(() => monthValue())
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [dayNonce, setDayNonce] = useState(0)
+
+  // La liste quotidienne est affichee en tete des Coulisses, mais la comptabilite
+  // doit continuer a se rafraichir lorsque le règlement est enregistre ailleurs.
+  useEffect(() => {
+    const refresh = () => setDayNonce(value => value + 1)
+    window.addEventListener('mediumia:finance-saved', refresh)
+    return () => window.removeEventListener('mediumia:finance-saved', refresh)
+  }, [])
 
   useEffect(() => {
     if (!practitionerId || !session || !month) return
@@ -255,7 +263,7 @@ export default function AccountingSection({ practitionerId, session }) {
 
       {slotOfferOpen && <SlotOfferModal practitionerId={practitionerId} session={session} onClose={() => setSlotOfferOpen(false)} />}
 
-      <DailyPayments practitionerId={practitionerId} session={session} onSaved={() => setDayNonce(value => value + 1)} />
+      {showDailyPayments && <DailyPayments practitionerId={practitionerId} session={session} onSaved={() => setDayNonce(value => value + 1)} />}
 
       <RdvBalanceWatch practitionerId={practitionerId} session={session} />
 

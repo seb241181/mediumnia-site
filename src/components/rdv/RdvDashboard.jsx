@@ -4,6 +4,7 @@ import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
 import OwnerCancelBookingButton from './OwnerCancelBookingButton.jsx'
+import BookingPaymentStatus from './BookingPaymentStatus.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1790,6 +1791,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                                 <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}{visio ? ` · ${visio}` : ''}</p>
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
+                                <BookingPaymentStatus booking={b} practitionerId={activePractitioner.id} session={session} />
                                 <OwnerCancelBookingButton
                                   booking={b}
                                   practitionerId={activePractitioner.id}

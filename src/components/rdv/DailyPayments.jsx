@@ -15,7 +15,15 @@ const METHOD_LABELS = { card: 'Carte bancaire', cash: 'Espèces', check: 'Chèqu
 const KIND_LABELS = { arrhes: 'arrhes', balance: 'solde', full_payment: 'paiement intégral', refund: 'remboursement', arrhes_retained: 'arrhes conservées', adjustment: 'règlement', deposit_transfer: 'transfert d’arrhes' }
 
 const pad = (n) => String(n).padStart(2, '0')
-const todayValue = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
+const todayValue = () => {
+  // Les rendez-vous sont exprimés en heure de Paris, indépendamment du
+  // fuseau horaire du téléphone du praticien.
+  const parts = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date())
+  const get = type => parts.find(part => part.type === type)?.value || ''
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
 const localInput = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 const money = (cents) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(cents || 0) / 100)
 const time = (iso) => new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).format(new Date(iso))
@@ -182,7 +190,7 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
     <div className="mt-6 rounded-2xl border border-gold/25 bg-gold/[.04] p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Caisse du jour</p>
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">{day === todayValue() ? 'Vos rendez-vous aujourd’hui' : 'Vos rendez-vous'}</p>
           <h3 className="font-georgia text-lg font-medium capitalize text-deep">{dayLabel}</h3>
         </div>
         <div className="flex items-center gap-2">

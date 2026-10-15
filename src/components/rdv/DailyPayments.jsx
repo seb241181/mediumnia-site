@@ -185,6 +185,12 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
   const dayLabel = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${day}T12:00:00`))
   const collected = data?.collected
   const methodRows = collected ? Object.entries(collected.by_method).filter(([, v]) => v.count > 0) : []
+  // Ne pas confondre un montant inconnu (0 €) avec un règlement prouvé.
+  // Soldé signifie ici soldé dans les écritures MediumIA, pas certifié PayPal.
+  const settledBookings = (data?.bookings || []).filter(booking =>
+    booking.status === 'confirmed' && booking.total_cents > 0 && booking.remaining_cents === 0)
+  const actionableBookings = (data?.bookings || []).filter(booking =>
+    booking.status !== 'confirmed' || booking.total_cents <= 0 || booking.remaining_cents > 0)
 
   return (
     <div className="mt-6 rounded-2xl border border-gold/25 bg-gold/[.04] p-4 sm:p-5">
@@ -208,12 +214,30 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
         <>
           {data.bookings.length === 0
             ? <p className="mt-4 rounded-xl border border-dashed border-gold/25 px-4 py-6 text-center font-georgia text-sm text-mist">Aucun rendez-vous ce jour-là.</p>
-            : (
-              <ul className="mt-4 space-y-3">
-                {data.bookings.map(b => (
-                  <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />
-                ))}
-              </ul>
+            : <>
+                {actionableBookings.length > 0 ? (
+                  <ul className="mt-4 space-y-3" aria-label="Rendez-vous à suivre">
+                    {actionableBookings.map(b => (
+                      <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 font-georgia text-sm text-mist">Aucun règlement en attente sur les rendez-vous de cette journée.</p>
+                )}
+                {settledBookings.length > 0 && (
+                  <details key={day} className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/40">
+                    <summary className="cursor-pointer px-4 py-3 font-georgia text-sm font-semibold text-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">
+                      Rendez-vous réglés ({settledBookings.length}) — afficher / masquer
+                    </summary>
+                    <p className="px-4 pb-2 font-georgia text-[11px] text-mist">Soldés d'après les écritures MediumIA. Cela ne remplace pas le rapprochement bancaire ou PayPal.</p>
+                    <ul className="space-y-2 px-3 pb-3" aria-label="Rendez-vous soldés dans MediumIA">
+                      {settledBookings.map(b => (
+                        <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </>
             )}
 
           <div className="mt-5 rounded-xl border border-gold/20 bg-white/70 p-4">

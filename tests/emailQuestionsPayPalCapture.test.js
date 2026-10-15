@@ -48,6 +48,7 @@ function guidanceRow(overrides = {}) {
     paypal_env: 'sandbox',
     paypal_order_id: ORDER_ID,
     paypal_capture_id: null,
+    capture_started_at: null,
     pack: 'q2',
     question_count: 2,
     amount_cents: 2990,
@@ -81,8 +82,11 @@ function createMemoryDb(initialRow = guidanceRow()) {
     const q = {
       select() { return q },
       eq(key, value) { filters.push([key, value]); return q },
+      is(key, value) { filters.push([key, value]); return q },
       update(value) { changes = value; return q },
       async maybeSingle() {
+        if ((changes?.capture_started_at && state.failClaim) || (changes?.status === 'paid' && state.failPaid)
+          || (!changes && state.failReads)) return { data: null, error: { message: 'database unavailable' } }
         if (!state.row || !matches(filters)) return { data: null, error: null }
         if (changes) {
           state.row = { ...state.row, ...changes }
@@ -375,6 +379,191 @@ test('capture : réponse PayPal 5xx déclenche aussi une relecture sûre', withP
   } finally {
     paypal.restore()
   }
+}))
+
+test('capture : APPROVED après réponse perdue reste retryable, jamais un faux 409', withPayPalEnv(async () => {
+  const approved = { ...structuredClone(orderFixture), status: 'APPROVED' }
+  const paypal = installPayPalFetch({ orderResponses: [approved], captureError: new Error('response lost') })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await captureQuestionOrder({ method: 'POST', body: { orderId: ORDER_ID } }, out, db, 'sandbox')
+    assert.equal(out.code, 503)
+    assert.equal(out.body.retryable, true)
+    assert.equal(paypal.calls.filter((call) => call.href.endsWith('/capture')).length, 1)
+  } finally { paypal.restore() }
+}))
+
+const captureRequest = () => ({ method: 'POST', body: { orderId: ORDER_ID } })
+const noDelay = { sleep: async () => {} }
+const approvedOrder = () => ({ ...structuredClone(orderFixture), status: 'APPROVED',
+  purchase_units: orderFixture.purchase_units.map((unit) => ({ ...unit, payments: undefined })) })
+
+test('capture : deux confirmations concurrentes, cohérence retardée, un POST et une notification', withPayPalEnv(async () => {
+  const approved = approvedOrder()
+  const paypal = installPayPalFetch({ orderResponses: [approved, approved, approved, orderFixture],
+    captureError: new Error('response lost') })
+  const db = createMemoryDb(guidanceRow({ questions: [
+    { q: 'Première question fictive ?', context: 'Contexte obligatoire fictif de la première question.' },
+    { q: 'Deuxième question fictive ?', context: 'Contexte obligatoire fictif de la deuxième question.' },
+  ] }))
+  const questions = structuredClone(db.state.row.questions)
+  let notifications = 0
+  const options = { ...noDelay, sendPurchase: async () => { notifications++; return 'collected' } }
+  try {
+    const a = response(), b = response()
+    await Promise.all([captureQuestionOrder(captureRequest(), a, db, 'sandbox', options),
+      captureQuestionOrder(captureRequest(), b, db, 'sandbox', options)])
+    assert.deepEqual([a.code, b.code], [200, 200])
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 1)
+    assert.equal(db.state.updates.filter((u) => u.status === 'paid').length, 1)
+    assert.equal(notifications, 1)
+    assert.deepEqual(db.state.row.questions, questions)
+    const calls = paypal.calls.length
+    const replay = response()
+    await captureQuestionOrder(captureRequest(), replay, db, 'sandbox', options)
+    assert.equal(replay.code, 200)
+    assert.equal(replay.body.idempotent, true)
+    assert.equal(paypal.calls.length, calls)
+    assert.equal(notifications, 1)
+  } finally { paypal.restore() }
+}))
+
+test('capture : une reprise après incertitude ne peut jamais refaire un POST, même sur APPROVED', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ orderResponses: [approvedOrder()], captureStatus: 503 })
+  const db = createMemoryDb()
+  try {
+    for (let i = 0; i < 2; i++) {
+      const out = response()
+      await captureQuestionOrder(captureRequest(), out, db, 'sandbox', noDelay)
+      assert.equal(out.code, 503)
+      assert.equal(out.body.retryable, true)
+    }
+    assert.ok(db.state.row.capture_started_at)
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 1)
+  } finally { paypal.restore() }
+}))
+
+test('capture : panne DB après capture puis reprise GET sans recapture ni double notification', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ orderResponses: [approvedOrder(), orderFixture] })
+  const db = createMemoryDb()
+  db.state.failPaid = true
+  let notifications = 0
+  const options = { ...noDelay, sendPurchase: async () => { notifications++; return 'collected' } }
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', options)
+    assert.equal(out.code, 503)
+    assert.equal(out.body.error, 'payment_record_failed')
+    assert.equal(out.body.retryable, true)
+    assert.equal(notifications, 0)
+    db.state.failPaid = false
+    const retry = response()
+    await captureQuestionOrder(captureRequest(), retry, db, 'sandbox', options)
+    assert.equal(retry.code, 200)
+    assert.equal(notifications, 1)
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 1)
+  } finally { paypal.restore() }
+}))
+
+test('capture : verrou DB indisponible ferme le paiement avant tout POST', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ orderResponses: [approvedOrder()] })
+  const db = createMemoryDb()
+  db.state.failClaim = true
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', noDelay)
+    assert.equal(out.code, 503)
+    assert.equal(out.body.retryable, true)
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 0)
+  } finally { paypal.restore() }
+}))
+
+test('capture : ancienne tentative durable ne reprend pas de capture après redémarrage du worker', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ orderResponses: [approvedOrder(), { httpStatus: 503 }, orderFixture] })
+  const db = createMemoryDb(guidanceRow({ capture_started_at: '2020-01-01T00:00:00Z' }))
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', noDelay)
+    assert.equal(out.code, 200)
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 0)
+  } finally { paypal.restore() }
+}))
+
+test('capture : conflit montant avéré reste 409, sans notification', withPayPalEnv(async () => {
+  const wrong = structuredClone(orderFixture)
+  wrong.purchase_units[0].payments.captures[0].amount.value = '0.01'
+  const paypal = installPayPalFetch({ orderResponses: [wrong] })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', { ...noDelay,
+      sendPurchase: async () => assert.fail('unexpected notification') })
+    assert.equal(out.code, 409)
+    assert.equal(out.body.error, 'paypal_order_mismatch')
+    assert.equal(db.state.row.status, 'payment_pending')
+  } finally { paypal.restore() }
+}))
+
+test('interface : conserve la consigne de ne pas recommencer le paiement incertain', () => {
+  assert.match(read('src/components/QuestionPage.jsx'), /ne recommencez pas le paiement/i)
+})
+
+test('capture : confirmation DB concurrente gagne même si PayPal reste APPROVED', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ orderResponses: [approvedOrder()], captureError: new Error('response lost') })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', {
+      sleep: async () => { Object.assign(db.state.row, { status: 'paid', paypal_capture_id: CAPTURE_ID }) },
+      sendPurchase: async () => assert.fail('other worker already owns notification'),
+    })
+    assert.equal(out.code, 200)
+    assert.equal(out.body.idempotent, true)
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 1)
+  } finally { paypal.restore() }
+}))
+
+test('capture : panne DB initiale est retryable et ne contacte jamais PayPal', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch()
+  const db = createMemoryDb()
+  db.state.failReads = true
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', noDelay)
+    assert.equal(out.code, 503)
+    assert.equal(out.body.retryable, true)
+    assert.equal(paypal.calls.length, 0)
+  } finally { paypal.restore() }
+}))
+
+test('capture : réponse PayPal sans état ne démontre pas un refus définitif', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch({ orderResponses: [{ id: ORDER_ID }] })
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, createMemoryDb(), 'sandbox', noDelay)
+    assert.equal(out.code, 503)
+    assert.equal(out.body.retryable, true)
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 0)
+  } finally { paypal.restore() }
+}))
+
+test('capture et webhook simultanés : une seule validation et notification', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch()
+  const db = createMemoryDb()
+  let notifications = 0
+  const sendPurchase = async () => { notifications++; return 'collected' }
+  try {
+    const capture = response(), webhook = response()
+    await Promise.all([
+      captureQuestionOrder(captureRequest(), capture, db, 'sandbox', { ...noDelay, sendPurchase }),
+      handleWebhook(webhookRequest(), webhook, db, 'sandbox', { sendPurchase }),
+    ])
+    assert.deepEqual([capture.code, webhook.code], [200, 200])
+    assert.equal(db.state.updates.filter((u) => u.status === 'paid').length, 1)
+    assert.equal(notifications, 1)
+    assert.equal(paypal.calls.filter((c) => c.href.endsWith('/capture')).length, 0)
+  } finally { paypal.restore() }
 }))
 
 test('notifications : la cliente et accompagnement.medium@gmail.com sont ciblés une seule fois avec clés stables', async () => {

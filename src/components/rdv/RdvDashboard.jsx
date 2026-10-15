@@ -1510,7 +1510,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {/* Contenu de la rubrique choisie */}
-                  <div className={`${activePanel === 'config' ? 'md:col-span-2' : 'md:col-span-3'} space-y-5 min-w-0`}>
+                  <div className="md:col-span-2 space-y-5 min-w-0" style={activePanel === 'config' ? undefined : { gridColumn: '1 / -1' }}>
                     {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (
                       <EmailQuestionsPanel session={session} />
                     )}

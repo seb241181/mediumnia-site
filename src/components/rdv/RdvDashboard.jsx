@@ -3,6 +3,7 @@ import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
+import OwnerCancelBookingButton from './OwnerCancelBookingButton.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1730,6 +1731,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                   <DailyPayments
                     practitionerId={activePractitioner.id}
                     session={session}
+                    onCancelled={() => loadMe(session)}
                   />
 
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
@@ -1787,14 +1789,22 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                                 <p className="font-georgia text-sm font-semibold text-deep">{b.customer_first_name} {b.customer_last_name}</p>
                                 <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}{visio ? ` · ${visio}` : ''}</p>
                               </div>
-                              <button
-                                onClick={() => handleResendConfirmation(b)}
-                                disabled={resendingBookingId === b.id}
-                                className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                              >
-                                {resendingBookingId === b.id && <Spinner />}
-                                Renvoyer la confirmation
-                              </button>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <OwnerCancelBookingButton
+                                  booking={b}
+                                  practitionerId={activePractitioner.id}
+                                  session={session}
+                                  onChanged={() => loadMe(session)}
+                                />
+                                <button
+                                  onClick={() => handleResendConfirmation(b)}
+                                  disabled={resendingBookingId === b.id}
+                                  className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                                >
+                                  {resendingBookingId === b.id && <Spinner />}
+                                  Renvoyer la confirmation
+                                </button>
+                              </div>
                             </div>
                           )
                         })}

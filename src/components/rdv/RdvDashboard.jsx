@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
+import AccountingSection from './AccountingSection.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1768,6 +1769,14 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       </div>
                     )}
                   </section>
+
+                  {/* Caisse accessible dans Rendez-vous (y compris /rdv#encaisser). */}
+                  <AccountingSection
+                    practitionerId={activePractitioner.id}
+                    session={session}
+                    services={activePractitioner.services || []}
+                    upcomingBookings={activePractitioner.upcoming_bookings || []}
+                  />
 
                       </>
                     )}

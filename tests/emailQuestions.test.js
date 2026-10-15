@@ -63,8 +63,8 @@ function validQuestionBody() {
     firstName: 'Camille',
     email: 'camille@example.invalid',
     questions: [
-      { q: 'Est-ce le bon moment pour changer de voie professionnelle ?', context: '' },
-      { q: 'Comment avancer sereinement dans cette période de transition ?', context: '' },
+      { q: 'Est-ce le bon moment pour changer de voie professionnelle ?', context: 'Je prépare une reconversion depuis plusieurs mois et j’hésite à me lancer.' },
+      { q: 'Comment avancer sereinement dans cette période de transition ?', context: 'Je quitte progressivement mon poste et je crains de faire le mauvais choix.' },
     ],
     retractationWaived: true,
     rulesAccepted: true,
@@ -92,6 +92,54 @@ function createDbMock() {
     },
   }
 }
+
+test('contexte obligatoire : création refusée avant toute requête DB ou PayPal', async () => {
+  const prior = process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+  const originalFetch = globalThis.fetch
+  try {
+    delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    let fetchCalls = 0
+    let dbCalls = 0
+    globalThis.fetch = async () => { fetchCalls++; throw new Error('paypal_must_not_be_called') }
+    const db = { from() { dbCalls++; throw new Error('db_must_not_be_called') } }
+
+    const scenarios = [
+      { name: 'une question sans contexte', body: {
+        ...validQuestionBody(), pack: 'q1', questions: [{ q: validQuestionBody().questions[0].q, context: '' }],
+      } },
+      { name: 'deux questions dont la seconde sans contexte', body: (() => {
+        const body = validQuestionBody(); body.questions[1].context = ''; return body
+      })() },
+      { name: 'contexte composé uniquement d’espaces', body: (() => {
+        const body = validQuestionBody(); body.questions[0].context = '                             '; return body
+      })() },
+      { name: 'contexte trop court', body: (() => {
+        const body = validQuestionBody(); body.questions[0].context = 'a'.repeat(19); return body
+      })() },
+    ]
+
+    for (const scenario of scenarios) {
+      const out = res()
+      await createQuestionOrder({ method: 'POST', body: scenario.body }, out, db, 'sandbox')
+      assert.equal(out.code, 400, scenario.name)
+      assert.equal(out.body.error, 'invalid_form', scenario.name)
+    }
+    assert.equal(dbCalls, 0)
+    assert.equal(fetchCalls, 0)
+  } finally {
+    globalThis.fetch = originalFetch
+    if (prior == null) delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    else process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = prior
+  }
+})
+
+test('formulaire : chaque contexte est requis avant l’affichage du paiement', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  assert.match(page, /contexts\.slice\(0, count\)\.every\(\(context\) => context\.trim\(\)\.length >= 20\)/)
+  assert.match(page, /questionsOk && contextsOk && waived && rulesOk/)
+  assert.match(page, /minLength=\{20\}/)
+  assert.doesNotMatch(page, /facultatif, quelques lignes/)
+})
 
 test('suspension Guidances e-mail : aucune nouvelle commande PayPal créée', async () => {
   const before = process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED

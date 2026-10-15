@@ -49,7 +49,8 @@ function QuestionCheckout({ config }) {
   const activeQuestions = questions.slice(0, count)
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
   const questionsOk = activeQuestions.every((q) => q.trim().length >= 10)
-  const formValid = firstName.trim().length >= 1 && emailOk && questionsOk && waived && rulesOk
+  const contextsOk = contexts.slice(0, count).every((context) => context.trim().length >= 20)
+  const formValid = firstName.trim().length >= 1 && emailOk && questionsOk && contextsOk && waived && rulesOk
 
   payloadRef.current = {
     pack,
@@ -192,13 +193,16 @@ function QuestionCheckout({ config }) {
               placeholder="Formulez une question précise, sur un sujet identifiable."
               className="w-full resize-y rounded-lg border-2 border-gold/25 bg-white px-4 py-3 font-georgia text-sm text-deep focus:border-gold/60 focus:outline-none"
             />
-            <label htmlFor={`q-ctx-${i}`} className="mt-3 mb-1.5 block font-georgia text-[11px] uppercase tracking-[0.12em] text-mist">Contexte <span className="normal-case tracking-normal text-mist/70">(facultatif, quelques lignes)</span></label>
+            <label htmlFor={`q-ctx-${i}`} className="mt-3 mb-1.5 block font-georgia text-[11px] uppercase tracking-[0.12em] text-mist">Contexte de la question <span className="normal-case tracking-normal text-mist/70">(obligatoire, 20 caractères minimum)</span></label>
             <textarea
               id={`q-ctx-${i}`}
+              required
+              minLength={20}
               value={contexts[i]}
               onChange={(e) => setContexts((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))}
-              rows={2}
+              rows={3}
               maxLength={2000}
+              placeholder="En quelques lignes, décrivez votre situation et ce qui motive votre question, sans données de santé."
               className="w-full resize-y rounded-lg border-2 border-gold/20 bg-white px-4 py-3 font-georgia text-sm text-deep focus:border-gold/60 focus:outline-none"
             />
           </div>
@@ -220,7 +224,7 @@ function QuestionCheckout({ config }) {
           <div ref={containerRef} className="min-h-[52px]" />
         ) : (
           <p className="rounded-xl border border-gold/20 bg-cream/50 px-4 py-3 text-center font-georgia text-sm text-mist">
-            Renseignez votre prénom, votre e-mail, {count > 1 ? 'vos deux questions' : 'votre question'} et cochez les deux cases pour accéder au paiement ({euro(price)}).
+            Renseignez votre prénom, votre e-mail, {count > 1 ? 'vos deux questions et leurs contextes' : 'votre question et son contexte'} (20 caractères minimum par contexte), puis cochez les deux cases pour accéder au paiement ({euro(price)}).
           </p>
         )}
         {status && <p role="status" className="text-center font-georgia text-sm text-deep">{status}</p>}

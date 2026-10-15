@@ -107,6 +107,15 @@ dashboard = replaceRequired(
 // Dans l'espace Rendez-vous, les demandes entrantes et les prochains RDV
 // doivent précéder les réglages techniques. Appliqué APRÈS les patchs historiques.
 function moveRdvPrioritiesFirst(source) {
+  // Les nouvelles Coulisses affichent deja les rendez-vous en premier dans un onglet dedie.
+  // Ne pas deplacer des fragments JSX entre les onglets : conserver le reordonnancement
+  // historique pour les versions sans navigation et la securite anti-drift de ces versions.
+  if (source.includes("const [activePanel, setActivePanel] = useState('rdv')")
+    && source.includes("{activePanel === 'rdv' && (")
+    && source.includes("{activePanel === 'config' && (")) {
+    return source
+  }
+
   const emailPanel = "                  {activePractitioner.slug === 'sebastien-seguin' && <EmailQuestionsPanel session={session} />}"
   const requests = '                  {/* Demandes de déplacement et demandes reçues par message (Lumia) */}'
   const upcoming = '                  {/* Upcoming bookings */}'

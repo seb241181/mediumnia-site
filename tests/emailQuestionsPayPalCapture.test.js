@@ -216,6 +216,20 @@ test('webhook : les en-têtes de signature absents sont rejetés avant tout acc�
   assert.equal(touched, false)
 }))
 
+test('webhook : une requête non signée reste rejetée si l’identifiant webhook manque', async () => {
+  const previous = process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+  delete process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+  try {
+    const out = response()
+    await handleWebhook({ method: 'POST', body: webhookFixture, headers: {} }, out, createMemoryDb(), 'sandbox')
+    assert.equal(out.code, 401)
+    assert.equal(out.body.error, 'paypal_signature_headers_missing')
+  } finally {
+    if (previous == null) delete process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+    else process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = previous
+  }
+})
+
 test('webhook : une signature PayPal invalide est rejetée', withPayPalEnv(async () => {
   const paypal = installPayPalFetch({ verification: 'FAILURE' })
   try {

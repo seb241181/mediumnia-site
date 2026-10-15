@@ -26,15 +26,21 @@ comportementaux.
   conservées, notification cliente et propriétaire ciblée une seule fois.
 - Test PostgreSQL Docker avec huit connexions simultanées : un seul claim gagne.
 - Tests ciblés : 32 réussis, 0 échec.
-- Suite complète : 853 réussis, 0 échec.
+- Suite complète finale : 854 réussis, 0 échec.
 - ESLint ciblé : réussi.
 - Build de production : réussi ; contrôle ChronoSphère V2 réussi.
 - Les sorties étrangères générées par `pretest`/`prebuild` ont été retirées du diff.
+- Correctif principal poussé : `4db54de3107354bb8d3d60e9c03827b43fc7566e`.
+- Durcissement du rejet non signé poussé : `8cf8855bbbb0b27104ba6e889ae72acc10859343`.
+- Preview Vercel `dpl_A37aUmWWWVvH7Fap5ntPWkafRsoa` : READY, contrôle GitHub réussi.
+- `/question` : rendu client fonctionnel en environnement Sandbox Preview.
+- POST webhook non signé sur le Preview : HTTP 401 `paypal_signature_headers_missing`.
+- Test ciblé après le dernier durcissement : 11 réussis, 0 échec ; ESLint ciblé réussi.
 
 ## Restant
 
-- Committer et pousser la branche de la PR #156.
-- Attendre le Preview Vercel, puis tester l'endpoint non signé et la page `/question`.
+- Retirer du worktree local les sorties sans rapport avec la PR générées par le dernier
+  `pretest` ; elles ne sont ni indexées, ni committées, ni poussées.
 - Une validation Sandbox signée sur Preview exige la migration dans un environnement TEST
   isolé et la variable de webhook Sandbox ; aucune migration distante n'est autorisée ici.
 
@@ -42,6 +48,11 @@ comportementaux.
 
 - Aucun blocage local.
 - La migration n'est appliquée sur aucun environnement distant.
+- Le Preview Sandbox expose volontairement le parcours d'achat Sandbox ; aucune vente Live
+  ni variable Production n'a été modifiée.
+- Un projet Vercel vide `mediumia-pr156`, sans domaine ni déploiement, a été créé par
+  l'auto-liaison de Vercel CLI pendant le test protégé. Sa suppression demande une autorisation
+  destructive distincte et n'affecte pas `mediumia-site`.
 
 ## Décisions
 
@@ -52,5 +63,6 @@ comportementaux.
 
 ## Prochaine action exacte
 
-Créer le commit de la PR #156, pousser la branche, attendre le déploiement Preview puis
-vérifier `/question` et le rejet d'un webhook non signé.
+Conserver la PR en brouillon et attendre une autorisation distincte avant migration TEST
+signée, fusion, production, nettoyage du projet Vercel vide ou suppression des sorties locales
+générées par `pretest`.

@@ -247,7 +247,7 @@ export default function DailyPayments({ practitionerId, session, onSaved, onCanc
                   </details>
                 )}
               </>
-            )}
+          }
 
           <div className="mt-5 rounded-xl border border-gold/20 bg-white/70 p-4">
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-mist">Encaissé ce jour</p>

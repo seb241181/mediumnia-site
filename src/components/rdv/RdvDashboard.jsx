@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
+import DailyPayments from './DailyPayments.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,18 @@ function authHeader(session) {
 function slugify(str) {
   return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
+// Date civile française : un rendez-vous du matin reste visible toute la journée,
+ // même si le visiteur a changé de fuseau horaire sur son téléphone.
+function parisDayKey(value) {
+  const at = new Date(value)
+  if (Number.isNaN(at.getTime())) return ''
+  const parts = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(at)
+  const get = type => parts.find(part => part.type === type)?.value || ''
+  return `${get('year')}-${get('month')}-${get('day')}`
 }
 
 function formatPrice(cents) {
@@ -1262,6 +1275,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
 
   const practitioners = meData?.practitioners || []
   const activePractitioner = practitioners.find(p => p.slug === activeSlug)
+  const futureBookings = (activePractitioner?.upcoming_bookings || []).filter(booking => parisDayKey(booking.starts_at) > parisDayKey(new Date()))
 
   // ── Google Calendar actions ────────────────────────────────────────────────
 
@@ -1478,7 +1492,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       {
                         id: 'rdv',
                         title: 'Rendez-vous',
-                        detail: `${(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} demande(s) · ${(activePractitioner.upcoming_bookings || []).length} à venir`,
+                        detail: `Aujourd’hui · ${(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} demande(s) à traiter`,
                       },
                       {
                         id: 'email',
@@ -1697,6 +1711,12 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
 
                     {activePanel === 'rdv' && (
                       <>
+                  {/* Agenda quotidien complet, y compris les horaires déjà passés aujourd'hui. */}
+                  <DailyPayments
+                    practitionerId={activePractitioner.id}
+                    session={session}
+                  />
+
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
                   {(activePractitioner.pending_requests?.length > 0 ||
                     activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
@@ -1727,23 +1747,23 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Agenda</p>
-                        <h2 className="font-georgia text-lg font-medium">Prochains rendez-vous</h2>
+                        <h2 className="font-georgia text-lg font-medium">Rendez-vous des prochains jours</h2>
                       </div>
-                      {activePractitioner.upcoming_bookings?.length > 0 && (
+                      {futureBookings.length > 0 && (
                         <StatusBadge status="ok" />
                       )}
                     </div>
 
-                    {!activePractitioner.upcoming_bookings?.length ? (
+                    {futureBookings.length === 0 ? (
                       <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-10 text-center">
                         <p className="text-gold text-3xl mb-3">◈</p>
                         <p className="font-georgia text-sm text-mist leading-relaxed max-w-xs mx-auto">
-                          Aucun rendez-vous à venir. Les réservations apparaîtront ici une fois le module activé.
+                          Aucun autre rendez-vous prévu après aujourd’hui.
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {activePractitioner.upcoming_bookings.map(b => {
+                        {futureBookings.map(b => {
                           const svc = activePractitioner.services.find(s => s.id === b.service_id)
                           const date = new Date(b.starts_at)
                           // Visio = WhatsApp / FaceTime (demande Lumia), sinon « canal à confirmer » ; jamais Meet.
@@ -1776,6 +1796,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     session={session}
                     services={activePractitioner.services || []}
                     upcomingBookings={activePractitioner.upcoming_bookings || []}
+                    showDailyPayments={false}
                   />
 
                       </>

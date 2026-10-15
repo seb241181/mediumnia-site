@@ -1157,6 +1157,8 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
   const [editingService, setEditingService] = useState(null)   // null | 'new' | service object
   const [editingAvail, setEditingAvail] = useState(false)
   const [editingSettings, setEditingSettings] = useState(false)
+  // Les Coulisses : montrer le travail quotidien avant les reglages techniques.
+  const [activePanel, setActivePanel] = useState('rdv')
 
   // OAuth URL notice from redirect
   useEffect(() => {
@@ -1445,7 +1447,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                 {practitioners.map(p => (
                   <button
                     key={p.slug}
-                    onClick={() => { setActiveSlug(p.slug); setEditingAvail(false); setEditingSettings(false) }}
+                    onClick={() => { setActiveSlug(p.slug); setActivePanel('rdv'); setEditingAvail(false); setEditingSettings(false) }}
                     className={`flex items-center gap-2.5 font-georgia text-sm px-4 py-2.5 rounded-xl border transition-all ${
                       activeSlug === p.slug ? 'bg-deep text-gold border-deep' : 'border-gold/30 text-mist hover:border-gold/60 hover:text-deep'
                     }`}
@@ -1458,13 +1460,63 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
             )}
 
             {activePractitioner && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-6">
+                {/* Navigation des Coulisses : les actions frequentes d'abord, les reglages a part. */}
+                <div className="rounded-2xl border border-gold/25 bg-white/70 p-4 sm:p-5">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold">Les Coulisses · Rendez-vous</p>
+                      <h2 className="mt-1 font-georgia text-xl font-medium text-deep">Votre espace de travail</h2>
+                    </div>
+                    <span className="font-georgia text-xs text-mist">
+                      {calLoading ? 'Agenda : vérification…' : calStatus?.connected ? 'Google Agenda connecté' : 'Google Agenda à vérifier'}
+                    </span>
+                  </div>
+                  <nav aria-label="Rubriques de votre espace professionnel" className="grid gap-2 sm:grid-cols-3">
+                    {[
+                      {
+                        id: 'rdv',
+                        title: 'Rendez-vous',
+                        detail: `${(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} demande(s) · ${(activePractitioner.upcoming_bookings || []).length} à venir`,
+                      },
+                      {
+                        id: 'email',
+                        title: 'Guidances e-mail',
+                        detail: 'Demandes et réponses écrites',
+                      },
+                      {
+                        id: 'config',
+                        title: 'Organisation',
+                        detail: 'Agenda, horaires et prestations',
+                      },
+                    ].filter(item => item.id !== 'email' || activePractitioner.slug === 'sebastien-seguin').map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-pressed={activePanel === item.id}
+                        onClick={() => setActivePanel(item.id)}
+                        className={`min-h-16 rounded-xl border px-4 py-3 text-left font-georgia transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+                          activePanel === item.id
+                            ? 'border-deep bg-deep text-cream'
+                            : 'border-gold/25 bg-white text-deep hover:border-gold/60 hover:bg-gold/5'
+                        }`}
+                      >
+                        <span className={`block text-sm font-semibold ${activePanel === item.id ? 'text-gold' : 'text-deep'}`}>{item.title}</span>
+                        <span className={`mt-1 block text-xs ${activePanel === item.id ? 'text-cream/75' : 'text-mist'}`}>{item.detail}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </div>
 
-                {/* Main column */}
-                <div className="md:col-span-2 space-y-5 min-w-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Contenu de la rubrique choisie */}
+                  <div className={`${activePanel === 'config' ? 'md:col-span-2' : 'md:col-span-3'} space-y-5 min-w-0`}>
+                    {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (
+                      <EmailQuestionsPanel session={session} />
+                    )}
 
-                  {activePractitioner.slug === 'sebastien-seguin' && <EmailQuestionsPanel session={session} />}
-
+                    {activePanel === 'config' && (
+                      <>
                   {/* Google Calendar */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
                     <div className="flex items-start justify-between gap-4 mb-4">
@@ -1639,6 +1691,11 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     )}
                   </section>
 
+                      </>
+                    )}
+
+                    {activePanel === 'rdv' && (
+                      <>
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
                   {(activePractitioner.pending_requests?.length > 0 ||
                     activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
@@ -1712,6 +1769,11 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     )}
                   </section>
 
+                      </>
+                    )}
+
+                    {activePanel === 'config' && (
+                      <>
                   {/* Exceptions / congés */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
                     <div className="mb-5">
@@ -1726,10 +1788,13 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       onChanged={() => loadMe(session)}
                     />
                   </section>
-                </div>
+                      </>
+                    )}
+                  </div>
 
-                {/* Side column */}
-                <div className="space-y-5 min-w-0">
+                {/* Colonne secondaire, visible seulement pour l'organisation */}
+                {activePanel === 'config' && (
+                  <div className="space-y-5 min-w-0">
 
                   {/* Settings */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-5">
@@ -1815,6 +1880,8 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     </button>
                   </section>
 
+                  </div>
+                )}
                 </div>
               </div>
             )}

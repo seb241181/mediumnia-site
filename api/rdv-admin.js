@@ -1,4 +1,5 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
+import { cancelOwnedBooking } from '../lib/rdvOwnerCancellation.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
 import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
 import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
@@ -401,6 +402,14 @@ async function sendConfirmationEmailClient({ customerEmail, firstName, svcTitle,
 
 async function handleBookings(req, res, supabase, userId) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  // L'annulation proprietaire est une action distincte de la fonction
+  // d'envoi de confirmation, qui reste limitee a la Preview.
+  if (req.body?.operation === 'cancel_owner') {
+    const result = await cancelOwnedBooking({
+      db: supabase, userId, input: req.body,
+    })
+    return res.status(result.status).json(result.body)
+  }
   if (process.env.VERCEL_ENV !== 'preview') {
     return res.status(403).json({ error: 'Cette opération est réservée à la Preview.' })
   }

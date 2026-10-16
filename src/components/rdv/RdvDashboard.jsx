@@ -1733,6 +1733,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     practitionerId={activePractitioner.id}
                     session={session}
                     onCancelled={() => loadMe(session)}
+                    ownerCancelEnabled={activePractitioner.owner_cancel_enabled}
                   />
 
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
@@ -1797,6 +1798,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                                   practitionerId={activePractitioner.id}
                                   session={session}
                                   onChanged={() => loadMe(session)}
+                                  enabled={activePractitioner.owner_cancel_enabled}
                                 />
                                 <button
                                   onClick={() => handleResendConfirmation(b)}

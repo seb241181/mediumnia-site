@@ -72,7 +72,7 @@ function makeDb({ owned = true, googleEventId = 'google-test-123', entries = [
 }
 
 const run = (db, deps = {}) => cancelOwnedBooking({
-  db, userId: USER_ID, input, env: { VERCEL_ENV: 'test' },
+  db, userId: USER_ID, input, env: { VERCEL_ENV: 'test', RDV_OWNER_CANCEL_ENABLED: 'true' },
   now: () => new Date('2026-10-15T16:00:00Z'),
   deleteGoogle: async () => ({ status: 'deleted' }),
   send: async () => ({ status: 'sent' }), ...deps,
@@ -80,7 +80,7 @@ const run = (db, deps = {}) => cancelOwnedBooking({
 
 test('preview reste en lecture seule, même avec confirmation explicite', async () => {
   const { db, state } = makeDb()
-  const result = await run(db, { env: { VERCEL_ENV: 'preview' } })
+  const result = await run(db, { env: { VERCEL_ENV: 'preview', RDV_OWNER_CANCEL_ENABLED: 'true' } })
   assert.equal(result.status, 403)
   assert.equal(state.lookupCalls, 0)
   assert.equal(state.updateCalls, 0)
@@ -211,5 +211,16 @@ test('un paiement marqué capturé sans identifiant PayPal est à rapprocher', a
   const result = await run(db, { deleteGoogle: async () => assert.fail('Google must not be called') })
   assert.equal(result.status, 409)
   assert.equal(result.body.error, 'payment_reconciliation_required')
+  assert.equal(state.updateCalls, 0)
+})
+
+test('feature flag éteint : accès refusé sans lecture ni écriture', async () => {
+  const { db, state } = makeDb()
+  const result = await run(db, {
+    env: { VERCEL_ENV: 'production', RDV_OWNER_CANCEL_ENABLED: 'false' },
+  })
+  assert.equal(result.status, 403)
+  assert.equal(result.body.error, 'owner_cancel_not_enabled')
+  assert.equal(state.lookupCalls, 0)
   assert.equal(state.updateCalls, 0)
 })

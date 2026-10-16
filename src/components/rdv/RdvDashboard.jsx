@@ -804,6 +804,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
     scheduled: { label: 'Planifié',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
     rejected:  { label: 'Refusé',     cls: 'bg-red-50 text-red-700 border-red-200' },
     cancelled: { label: 'Annulé',     cls: 'bg-deep/5 text-mist border-gold/20' },
+    handled:   { label: 'Déjà traité', cls: 'bg-deep/5 text-mist border-gold/20' },
   }
 
   function statusBadge(status) {
@@ -894,6 +895,9 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
     finally { setSyncingId(null) }
   }
 
+  const archivedRequests = (requests || []).filter((request) => request.status === 'handled')
+  const visibleRequests = (requests || []).filter((request) => request.status !== 'handled')
+
   const inp = "border border-gold/20 rounded-xl px-3 py-2 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60 w-full"
 
   if (!requests || requests.length === 0) {
@@ -909,7 +913,12 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">{error}</div>
       )}
-      {requests.map(req => {
+      {visibleRequests.length === 0 && (
+        <p className="rounded-xl border border-gold/15 bg-white/50 px-4 py-5 font-georgia text-sm text-mist">
+          Aucune demande à traiter actuellement.
+        </p>
+      )}
+      {visibleRequests.map(req => {
         const svc = services.find(s => s.id === req.service_id)
         const isExpanded = expandedId === req.id
         const canConfirm = req.status === 'pending' || req.status === 'contacted'
@@ -952,6 +961,19 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                   </span>
                 )}
                 {statusBadge(req.status)}
+                {['pending', 'contacted'].includes(req.status) && !req.confirmed_booking_id && (
+                  <button type="button"
+                    disabled={updating === req.id}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      updateStatus(req, 'handled')
+                    }}
+                    className="font-georgia text-[11px] rounded-lg border border-gold/35 bg-white px-2.5 py-2 text-deep hover:bg-cream disabled:opacity-40"
+                    title="Déplacer dans les archives, sans annuler de rendez-vous ni envoyer de message"
+                  >
+                    Déjà traité
+                  </button>
+                )}
                 <span className="text-mist text-xs select-none">{isExpanded ? '▲' : '▼'}</span>
               </div>
             </div>
@@ -1145,6 +1167,35 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
           </div>
         )
       })}
+      {archivedRequests.length > 0 && (
+        <details className="rounded-xl border border-gold/20 bg-white/40 px-4 py-3">
+          <summary className="cursor-pointer font-georgia text-sm text-mist">
+            Archives · Déjà traitées ({archivedRequests.length})
+          </summary>
+          <p className="mt-2 font-georgia text-xs text-mist">
+            Conservées pour mémoire. Aucune réservation ni conversation n’a été supprimée.
+          </p>
+          <div className="mt-3 space-y-2">
+            {archivedRequests.map((req) => (
+              <div key={req.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gold/15 bg-cream/40 p-3">
+                <div className="min-w-0">
+                  <p className="font-georgia text-sm text-deep">{requestDisplayName(req)}</p>
+                  <p className="font-georgia text-xs text-mist">
+                    {INTAKE_CHANNEL_LABELS[req.source_channel] || req.source_channel || 'Formulaire'}
+                    {' · '}{new Date(req.created_at).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+                <button type="button"
+                  disabled={updating === req.id}
+                  onClick={() => updateStatus(req, 'pending')}
+                  className="rounded-lg border border-gold/30 px-3 py-2 font-georgia text-xs text-deep hover:bg-white disabled:opacity-50">
+                  Remettre à traiter
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
     </div>
   )
 }

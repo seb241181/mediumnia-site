@@ -32,6 +32,15 @@ test('Sandbox : confirmation indique paiement fictif et aucun e-mail client', ()
   assert.match(page, /Approbation reçue\. Vérification sécurisée du paiement/)
 })
 
+test('client : apres approbation incertaine, aucun deuxieme appel a capture', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  assert.match(page, /result\.retryable === true/)
+  assert.match(page, /request\('reconcile'\)/)
+  assert.match(page, /\[0, 1200, 3000, 6000\]/)
+  assert.equal((page.match(/request\('capture'\)/g) || []).length, 1)
+  assert.match(page, /Ne recommencez pas le reglement|Ne recommencez pas le règlement/)
+})
+
 test('PayPal reste obligatoirement en sandbox hors production', () => {
   const beforeVercel = process.env.VERCEL_ENV
   const beforePayPal = process.env.PAYPAL_ENV

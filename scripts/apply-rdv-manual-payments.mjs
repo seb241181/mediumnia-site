@@ -7,6 +7,16 @@ function patchDashboard() {
   let source = fs.readFileSync(dashboardPath, 'utf8')
   let changed = false
 
+  // Native Coulisses component owns the balances and the existing collection event.
+  // Keep the legacy transformation for dashboards that still render inline rows.
+  if (source.includes('<UpcomingBookings')) {
+    const upcoming = fs.readFileSync('src/components/rdv/UpcomingBookings.jsx', 'utf8')
+    if (!upcoming.includes("action: 'booking-balances'") || !upcoming.includes("new CustomEvent('mediumia:manual-payment'")) {
+      throw new Error('rdv_native_upcoming_payment_controls_missing')
+    }
+    return
+  }
+
   const accountingMarker = `                  <AccountingSection\n                    practitionerId={activePractitioner.id}\n                    session={session}\n                  />`
   if (source.includes(accountingMarker) && !source.includes('upcomingBookings={activePractitioner.upcoming_bookings || []}')) {
     source = source.replace(accountingMarker, `                  <AccountingSection\n                    practitionerId={activePractitioner.id}\n                    session={session}\n                    services={activePractitioner.services || []}\n                    upcomingBookings={activePractitioner.upcoming_bookings || []}\n                  />`)

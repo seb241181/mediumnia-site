@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { defaultPaymentDate, parseAmount } from './dailyPaymentsHelpers.js'
+import { isFullySettled, partitionBookings } from './rdvCoulissesHelpers.js'
+import SettledBookings from './SettledBookings.jsx'
+import OwnerCancellationPreview from './OwnerCancellationPreview.jsx'
 
 // Caisse du jour : pour chaque rendez-vous, ce qui a déjà été payé en ligne
 // (pré-rempli) et une saisie en deux gestes du règlement sur place.
@@ -41,7 +44,7 @@ function BookingRow({ booking, practitionerId, session, onSaved }) {
   const [paidAt, setPaidAt] = useState(() => localInput(defaultPaymentDate(booking)))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
-  const settled = booking.status === 'confirmed' && booking.total_cents > 0 && booking.remaining_cents === 0
+  const settled = isFullySettled(booking)
   const canCollect = booking.status === 'confirmed' && booking.remaining_cents > 0
     && new Date(booking.starts_at).getTime() <= Date.now() + 24 * 3600_000
 
@@ -106,6 +109,10 @@ function BookingRow({ booking, practitionerId, session, onSaved }) {
           : booking.remaining_cents > 0 && <span className="rounded-full bg-gold/15 px-3 py-1 font-georgia text-xs font-semibold text-deep">Reste {money(booking.remaining_cents)}</span>}
       </div>
 
+      <div className="mt-3">
+        <OwnerCancellationPreview bookingId={booking.id} practitionerId={practitionerId} session={session} />
+      </div>
+
       {booking.payments.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-2">
           {booking.payments.map(p => (
@@ -156,10 +163,11 @@ function BookingRow({ booking, practitionerId, session, onSaved }) {
 
 export default function DailyPayments({ practitionerId, session, onSaved }) {
   const [day, setDay] = useState(todayValue)
-  const [data, setData] = useState(null)
+  const [loadedData, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [nonce, setNonce] = useState(0)
+  const data = loadedData?.practitionerId === practitionerId && loadedData.day === day ? loadedData : null
 
   const load = useCallback(() => setNonce(n => n + 1), [])
 
@@ -177,7 +185,7 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
     const params = new URLSearchParams({ action: 'day-payments', practitioner_id: practitionerId, day })
     fetch(`/api/rdv-admin?${params}`, { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then(async r => { const body = await r.json().catch(() => ({})); if (!r.ok) throw new Error(body.error || 'caisse_indisponible'); return body })
-      .then(body => { if (!cancelled) { setData(body); setLoading(false) } })
+      .then(body => { if (!cancelled) { setData({ ...body, practitionerId }); setLoading(false) } })
       .catch(err => { if (!cancelled) { setError(err.message); setLoading(false) } })
     return () => { cancelled = true }
   }, [practitionerId, session, day, nonce])
@@ -185,6 +193,13 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
   const dayLabel = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${day}T12:00:00`))
   const collected = data?.collected
   const methodRows = collected ? Object.entries(collected.by_method).filter(([, v]) => v.count > 0) : []
+  const groups = partitionBookings(data?.bookings || [])
+  const renderRows = rows => (
+    <ul className="mt-4 space-y-3">
+      {rows.map(b => <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session}
+        onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />)}
+    </ul>
+  )
 
   return (
     <div className="mt-6 rounded-2xl border border-gold/25 bg-gold/[.04] p-4 sm:p-5">
@@ -209,11 +224,10 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
           {data.bookings.length === 0
             ? <p className="mt-4 rounded-xl border border-dashed border-gold/25 px-4 py-6 text-center font-georgia text-sm text-mist">Aucun rendez-vous ce jour-là.</p>
             : (
-              <ul className="mt-4 space-y-3">
-                {data.bookings.map(b => (
-                  <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />
-                ))}
-              </ul>
+              <>
+                {groups.main.length ? renderRows(groups.main) : <p className="mt-4 font-georgia text-sm text-mist">Tous les rendez-vous de ce jour sont réglés.</p>}
+                <SettledBookings key={`${practitionerId}-${day}`} count={groups.settled.length}>{renderRows(groups.settled)}</SettledBookings>
+              </>
             )}
 
           <div className="mt-5 rounded-xl border border-gold/20 bg-white/70 p-4">

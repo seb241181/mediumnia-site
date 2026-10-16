@@ -114,6 +114,29 @@ export default function EmailQuestionsPanel({ session }) {
     setNotice(`Vérification PayPal terminée : ${checked} dossier(s) consulté(s), ${failed} échec(s). Aucun débit, remboursement, e-mail ou changement de statut.`)
   }
 
+  async function applyHistoricalFive() {
+    if (working || paymentPending.length !== 5) return
+    if (!window.confirm('GO PROD : rapprocher exactement les cinq anciennes commandes auprès de PayPal Live puis inscrire 2 paiements conservés et 3 remboursements déjà effectués ? Aucun nouveau paiement, remboursement ni e-mail ne sera envoyé.')) return
+    setWorking('historical_reconcile')
+    setNotice('Vérification sécurisée des cinq commandes PayPal Live. Ne relancez pas l’opération.')
+    try {
+      const result = await api('POST', {
+        id: paymentPending[0].id,
+        op: 'history_20261016_reconcile',
+      })
+      if (!result.five_orders_reconciled || result.paid !== 2 || result.refunded !== 3) {
+        throw new Error('historical_result_incomplete')
+      }
+      await load()
+      setNotice('Les 5 commandes ont été régularisées : 2 payées, 3 remboursées. Aucun nouvel encaissement, remboursement ou e-mail envoyé. Ventes toujours suspendues.')
+    } catch {
+      setNotice('Régularisation non confirmée : vérifiez les statuts avec assistance avant toute nouvelle tentative. Aucun appel PayPal de paiement ou remboursement n’a été déclenché par cette opération.')
+      await load()
+    } finally {
+      setWorking(null)
+    }
+  }
+
   if (!session?.access_token) return null
 
   return (
@@ -228,6 +251,17 @@ export default function EmailQuestionsPanel({ session }) {
           >
             {working === 'readonly_check' ? 'Vérification PayPal en cours…' : 'Vérifier les paiements chez PayPal — lecture seule'}
           </button>
+          {paymentPending.length === 5 && (
+            <div className="mt-3 rounded-xl border border-gold/25 bg-white/75 p-4">
+              <p className="font-georgia text-xs leading-relaxed text-mist">
+                Régularisation historique autorisée : uniquement 5 commandes identifiées (2 captures confirmées, 3 remboursements déjà réalisés). Une nouvelle vérification PayPal précède une mise à jour atomique. Aucun nouveau débit, remboursement ou e-mail.
+              </p>
+              <button type="button" disabled={Boolean(working)} onClick={applyHistoricalFive}
+                className="mt-3 rounded-lg border border-gold/45 bg-deep px-4 py-3 font-georgia text-xs font-semibold text-gold disabled:opacity-50">
+                {working === 'historical_reconcile' ? 'Contrôle et rapprochement PayPal en cours…' : 'Régulariser les 5 commandes historiques — sans transaction PayPal'}
+              </button>
+            </div>
+          )}
           <div className="mt-4 space-y-3">
             {paymentPending.map((row) => (
               <article key={row.id} className="rounded-xl border border-gold/20 bg-cream/40 p-4">

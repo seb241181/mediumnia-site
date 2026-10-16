@@ -106,6 +106,10 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
   }, [])
   const load = useCallback(async () => apply(await fetchWatch()), [apply, fetchWatch])
   useEffect(() => {
+    window.addEventListener('mediumia:booking-cancelled', load)
+    return () => window.removeEventListener('mediumia:booking-cancelled', load)
+  }, [load])
+  useEffect(() => {
     let active = true
     fetchWatch().then(result => { if (active) apply(result) }).catch(() => {})
     return () => { active = false }

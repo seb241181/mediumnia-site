@@ -13,6 +13,7 @@ import {
   emailQuestionPurchasesSuspended,
   emailQuestionLiveWebhookReady,
   emailQuestionsOpen,
+  reconcileApprovedGuidanceHistory,
 } from '../lib/emailQuestions.js'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
@@ -84,6 +85,112 @@ test('admin: les 5 commandes historiques disposent d’une vérification fournis
   assert.match(diagnostic, /paypalAccessToken\(row\.paypal_env\)/)
   assert.match(diagnostic, /paypalRequest\(row\.paypal_env, access, 'GET'/)
   assert.doesNotMatch(diagnostic, /paypalRequest\([^\n]*'POST'|\.update\(|\.insert\(|sendEmail\(/)
+})
+
+test('historical approved five-order repair: exact PayPal GET evidence, one atomic RPC, no charge/refund/email', async () => {
+  const envNames = ['VERCEL_ENV', 'PAYPAL_ENV', 'EMAIL_QUESTIONS_PURCHASES_SUSPENDED']
+  const previous = Object.fromEntries(envNames.map(k => [k, process.env[k]]))
+  const ids = [
+    '80K4011618869881S', '8UD57551GX7357418',
+    '3SW145854V1505605', '69X93374DH161533N', '35D011264B880141D',
+  ]
+  const statuses = Object.fromEntries(ids.map((id, i) => [id, i < 2 ? 'COMPLETED' : 'REFUNDED']))
+  const rows = ids.map((id, i) => ({
+    id: `11111111-2222-4333-8444-${String(i).padStart(12, '0')}`,
+    paypal_order_id: id, paypal_env: 'live', pack: 'q2', question_count: 2,
+    amount_cents: 2990, currency: 'EUR', status: 'payment_pending',
+    paypal_capture_id: null, paypal_refund_id: null, paid_at: null,
+    refunded_at: null, confirmation_email_status: null,
+  }))
+  const getCalls = []
+  const captureId = (id) => 'CAPTURE' + id
+  let callsToRpc = 0
+  const db = {
+    from(name) {
+      assert.equal(name, 'mediumia_email_questions')
+      return { select() { return this }, in(field, values) {
+        assert.equal(field, 'paypal_order_id')
+        assert.deepEqual(new Set(values), new Set(ids))
+        return Promise.resolve({ data: rows, error: null })
+      } }
+    },
+    async rpc(name, args) {
+      callsToRpc++
+      assert.equal(name, 'finalize_email_question_history_20261016')
+      assert.equal(args.p_items.length, 5)
+      assert.equal(args.p_items.filter(x => x.status === 'paid').length, 2)
+      assert.equal(args.p_items.filter(x => x.status === 'refunded').length, 3)
+      assert.equal(new Set(args.p_items.map(x => x.captureId)).size, 5)
+      assert.equal(args.p_items.every(x => x.paidAt && x.status === 'paid' ? !!x.dueAt : !x.dueAt), true)
+      return { data: { reconciled: 5, paid: 2, refunded: 3 }, error: null }
+    },
+  }
+  const paypalGet = async (env, access, method, path) => {
+    assert.equal(env, 'live'); assert.equal(access, 'test_access'); assert.equal(method, 'GET')
+    assert.doesNotMatch(path, /\\/capture$|\\/refund/)
+    getCalls.push(path)
+    const orderId = path.startsWith('/v2/checkout/orders/')
+      ? path.split('/').at(-1)
+      : ids.find(x => captureId(x) === path.split('/').at(-1))
+    assert.ok(orderId)
+    const row = rows.find(x => x.paypal_order_id === orderId)
+    const status = statuses[orderId]
+    const capture = { id: captureId(orderId), status, amount: { value: '29.90', currency_code: 'EUR' },
+      create_time: '2026-10-13T16:20:00Z' }
+    const data = path.startsWith('/v2/checkout/orders/')
+      ? { id: orderId, status: 'COMPLETED', purchase_units: [
+        { custom_id: row.id, reference_id: 'MEDIUMIA_EMAIL_Q2', payments: { captures: [capture] } },
+      ] }
+      : { ...capture, update_time: '2026-10-14T09:01:00Z' }
+    return { ok: true, data }
+  }
+  try {
+    process.env.VERCEL_ENV = 'production'
+    process.env.PAYPAL_ENV = 'live'
+    process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = 'true'
+    let out = await reconcileApprovedGuidanceHistory(db, {
+      getAccess: async env => { assert.equal(env,'live'); return 'test_access' },
+      paypalGet,
+    })
+    assert.equal(out.status, 200)
+    assert.equal(out.body.paid, 2)
+    assert.equal(out.body.refunded, 3)
+    assert.equal(out.body.no_paypal_capture_post, true)
+    assert.equal(out.body.no_refunds_issued, true)
+    assert.equal(out.body.no_emails_sent, true)
+    assert.equal(getCalls.length, 10)
+    assert.equal(callsToRpc, 1)
+
+    callsToRpc = 0
+    getCalls.length = 0
+    statuses['3SW145854V1505605'] = 'PARTIALLY_REFUNDED'
+    out = await reconcileApprovedGuidanceHistory(db, {
+      getAccess: async () => 'test_access', paypalGet,
+    })
+    assert.equal(out.status, 409)
+    assert.equal(callsToRpc, 0)
+
+    process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = 'false'
+    out = await reconcileApprovedGuidanceHistory(db, { getAccess: async () => { assert.fail('no provider call') } })
+    assert.equal(out.status, 403)
+    assert.equal(callsToRpc, 0)
+  } finally {
+    for (const key of envNames) {
+      if (previous[key] === undefined) delete process.env[key]
+      else process.env[key] = previous[key]
+    }
+  }
+})
+
+test('historical reconciliation UI: only owner authenticated action and deliberate confirmation', () => {
+  const source = read('src/components/rdv/EmailQuestionsPanel.jsx')
+  assert.match(source, /paymentPending\.length === 5/)
+  assert.match(source, /window\.confirm\('GO PROD/)
+  assert.match(source, /op: 'history_20261016_reconcile'/)
+  const server = read('lib/emailQuestions.js')
+  assert.match(server, /if \(input\.op === 'history_20261016_reconcile'\)/)
+  assert.match(server, /await ownerAllowed\(db, userId\)/)
+  assert.match(server, /return reconcileApprovedGuidanceHistory\(db\)/)
 })
 
 test('PayPal reste obligatoirement en sandbox hors production', () => {

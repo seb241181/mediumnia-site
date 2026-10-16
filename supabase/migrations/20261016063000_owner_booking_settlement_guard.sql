@@ -8,32 +8,29 @@ CREATE OR REPLACE FUNCTION public.guard_owner_cancel_settlement_write()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, pg_temp AS $function$
 DECLARE
-  v_primary uuid;
-  v_secondary uuid;
+  v_ids uuid[] := ARRAY[]::uuid[];
   v_blocked boolean;
 BEGIN
   IF TG_TABLE_NAME = 'rdv_payment_refunds' THEN
-    IF TG_OP <> 'INSERT' THEN v_primary := OLD.booking_id; END IF;
-    IF TG_OP <> 'DELETE' THEN v_secondary := NEW.booking_id; END IF;
+    IF TG_OP <> 'INSERT' THEN v_ids := array_append(v_ids, OLD.booking_id); END IF;
+    IF TG_OP <> 'DELETE' THEN v_ids := array_append(v_ids, NEW.booking_id); END IF;
   ELSIF TG_TABLE_NAME = 'rdv_deposit_transfers' THEN
     IF TG_OP <> 'INSERT' THEN
-      v_primary := OLD.source_booking_id;
-      v_secondary := OLD.target_booking_id;
+      v_ids := array_append(v_ids, OLD.source_booking_id);
+      v_ids := array_append(v_ids, OLD.target_booking_id);
     END IF;
     IF TG_OP <> 'DELETE' THEN
-      -- A transfer's source / target are immutable after creation. Check the
-      -- NEW references independently as well, below.
-      v_primary := COALESCE(v_primary, NEW.source_booking_id);
-      v_secondary := COALESCE(v_secondary, NEW.target_booking_id);
+      v_ids := array_append(v_ids, NEW.source_booking_id);
+      v_ids := array_append(v_ids, NEW.target_booking_id);
     END IF;
   END IF;
-  -- Lock referenced bookings in deterministic order. This serializes with the
-  -- existing cancel claim RPC, which locks bookings FOR UPDATE.
+  -- Lock all old and new references in a deterministic order. This prevents
+  -- switching a transfer from an unlocked booking into a claimed booking.
   SELECT EXISTS (
     SELECT 1 FROM (
       SELECT b.id, b.owner_cancel_claim_id, b.status
       FROM public.bookings b
-      WHERE b.id IN (v_primary, v_secondary)
+      WHERE b.id = ANY(v_ids)
       ORDER BY b.id FOR UPDATE
     ) locked
     WHERE locked.owner_cancel_claim_id IS NOT NULL

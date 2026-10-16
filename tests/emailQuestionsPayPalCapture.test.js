@@ -7,6 +7,7 @@ import {
   captureQuestionOrder,
   handleWebhook,
   sendPurchaseEmails,
+  inspectLatestSandboxGuidance,
 } from '../lib/emailQuestions.js'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
@@ -161,6 +162,12 @@ function installPayPalFetch({ verification = 'SUCCESS', orderResponses = [orderF
     if (href.endsWith('/v1/notifications/verify-webhook-signature')) {
       return { ok: true, status: 200, json: async () => ({ verification_status: verification }) }
     }
+    if (href.endsWith(`/v2/payments/captures/${CAPTURE_ID}`)) {
+      return {
+        ok: true, status: 200,
+        json: async () => structuredClone(orderFixture.purchase_units[0].payments.captures[0]),
+      }
+    }
     if (href.endsWith(`/v2/checkout/orders/${ORDER_ID}/capture`)) {
       if (captureError) throw captureError
       return {
@@ -209,6 +216,82 @@ function withPayPalEnv(fn) {
     }
   }
 }
+
+test('diagnostic Sandbox : désactivé hors environnement isolé sans accéder à PayPal', withPayPalEnv(async () => {
+  const saved = {
+    flag: process.env.EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED,
+    vercel: process.env.VERCEL_ENV,
+    url: process.env.SUPABASE_URL,
+  }
+  delete process.env.EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED
+  process.env.VERCEL_ENV = 'preview'
+  process.env.SUPABASE_URL = 'https://wnbwhnqiulsdjcvkuwos.supabase.co'
+  const output = response()
+  try {
+    await inspectLatestSandboxGuidance({ method: 'GET' }, output, {
+      from: () => assert.fail('DB must not be read with flag disabled'),
+    }, 'sandbox')
+    assert.equal(output.code, 404)
+  } finally {
+    for (const [key, value] of Object.entries({
+      EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED: saved.flag,
+      VERCEL_ENV: saved.vercel, SUPABASE_URL: saved.url,
+    })) {
+      if (value == null) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
+}))
+
+test('diagnostic Sandbox : un paiement fournisseur confirme reste strictement en lecture seule', withPayPalEnv(async () => {
+  const saved = {
+    flag: process.env.EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED,
+    vercel: process.env.VERCEL_ENV,
+    url: process.env.SUPABASE_URL,
+  }
+  process.env.EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED = 'true'
+  process.env.VERCEL_ENV = 'preview'
+  process.env.SUPABASE_URL = 'https://wnbwhnqiulsdjcvkuwos.supabase.co'
+  const paypal = installPayPalFetch()
+  let selects = 0
+  const db = {
+    from(table) {
+      assert.equal(table, 'mediumia_email_questions')
+      return {
+        select() { selects += 1; return this },
+        eq() { return this }, not() { return this }, gte() { return this },
+        order() { return this }, limit() { return this },
+        maybeSingle: async () => ({ data: guidanceRow({
+          capture_started_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        }), error: null }),
+      }
+    },
+  }
+  const output = response()
+  try {
+    await inspectLatestSandboxGuidance({ method: 'GET' }, output, db, 'sandbox')
+    assert.equal(output.code, 200)
+    assert.equal(output.body.sandbox_only, true)
+    assert.equal(output.body.read_only, true)
+    assert.equal(output.body.capture_post_retried, false)
+    assert.equal(output.body.provider_order_status, 'COMPLETED')
+    assert.equal(output.body.provider_capture_count, 1)
+    assert.equal(output.body.evidence_classification, 'capture_confirmed_readonly')
+    assert.equal(selects, 1)
+    assert.deepEqual(paypal.calls.map((call) => call.method), ['POST', 'GET', 'GET'])
+    assert.equal(paypal.calls.filter((call) => call.href.endsWith('/capture')).length, 0)
+  } finally {
+    paypal.restore()
+    for (const [key, value] of Object.entries({
+      EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED: saved.flag,
+      VERCEL_ENV: saved.vercel, SUPABASE_URL: saved.url,
+    })) {
+      if (value == null) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
+}))
 
 test('webhook : les en-têtes de signature absents sont rejetés avant tout accès DB ou PayPal', withPayPalEnv(async () => {
   let touched = false

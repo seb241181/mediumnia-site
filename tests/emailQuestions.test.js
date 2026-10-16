@@ -7,9 +7,11 @@ import {
   EMAIL_QUESTION_SUSPENDED_MESSAGE,
   EMAIL_QUESTION_TERMS_VERSION,
   buildEmailGuidanceAnswer,
+  buildOwnerQuestionEmail,
   createQuestionOrder,
   emailQuestionEnv,
   emailQuestionPurchasesSuspended,
+  emailQuestionLiveWebhookReady,
   emailQuestionsOpen,
 } from '../lib/emailQuestions.js'
 
@@ -20,6 +22,53 @@ test('tarifs e-mail : 19,90 € pour 1 question et 29,90 € pour 2', () => {
   assert.deepEqual(EMAIL_QUESTION_PACKS.q2, { count: 2, amountCents: 2990, label: 'Deux questions' })
   assert.equal(EMAIL_QUESTION_DAILY_CAP, 5)
   assert.match(EMAIL_QUESTION_TERMS_VERSION, /^email-question-/)
+})
+
+test('Sandbox : confirmation indique paiement fictif et aucun e-mail client', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  assert.match(page, /config\.env === 'sandbox'/)
+  assert.match(page, /Paiement fictif PayPal Sandbox validé/)
+  assert.match(page, /Aucun paiement réel ni e-mail client n’a été envoyé/)
+  assert.doesNotMatch(page, /Un e-mail de confirmation vient de vous être envoyé/)
+  assert.match(page, /Approbation reçue\. Vérification sécurisée du paiement/)
+})
+
+test('client : apres approbation incertaine, aucun deuxieme appel a capture', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  assert.match(page, /result\.retryable === true/)
+  assert.match(page, /request\('reconcile'\)/)
+  assert.match(page, /\[0, 1200, 3000, 6000\]/)
+  assert.equal((page.match(/request\('capture'\)/g) || []).length, 1)
+  assert.match(page, /Ne recommencez pas le reglement|Ne recommencez pas le règlement/)
+})
+
+test('LIVE : aucune nouvelle guidance payante sans identifiant de webhook PayPal signé', async () => {
+  const previous = process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+  const beforeSuspend = process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+  try {
+    delete process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+    process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = 'false'
+    assert.equal(emailQuestionLiveWebhookReady('live'), false)
+    assert.equal(emailQuestionLiveWebhookReady('sandbox'), true)
+    const result = { code: null, body: null,
+      status(code) { this.code = code; return this },
+      json(payload) { this.body = payload; return this },
+    }
+    await createQuestionOrder({ method: 'POST', body: {} }, result, {
+      from: () => assert.fail('DB must not be touched'),
+    }, 'live')
+    assert.equal(result.code, 503)
+    assert.equal(result.body.error, 'paypal_webhook_not_configured')
+    process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = 'WH-INVALID'
+    assert.equal(emailQuestionLiveWebhookReady('live'), false)
+    process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = '1234ABCD5678EFGH'
+    assert.equal(emailQuestionLiveWebhookReady('live'), true)
+  } finally {
+    if (previous === undefined) delete process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+    else process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = previous
+    if (beforeSuspend === undefined) delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    else process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = beforeSuspend
+  }
 })
 
 test('PayPal reste obligatoirement en sandbox hors production', () => {
@@ -62,8 +111,8 @@ function validQuestionBody() {
     firstName: 'Camille',
     email: 'camille@example.invalid',
     questions: [
-      { q: 'Est-ce le bon moment pour changer de voie professionnelle ?', context: '' },
-      { q: 'Comment avancer sereinement dans cette période de transition ?', context: '' },
+      { q: 'Est-ce le bon moment pour changer de voie professionnelle ?', context: 'Je prépare une reconversion depuis plusieurs mois et j’hésite à me lancer.' },
+      { q: 'Comment avancer sereinement dans cette période de transition ?', context: 'Je quitte progressivement mon poste et je crains de faire le mauvais choix.' },
     ],
     retractationWaived: true,
     rulesAccepted: true,
@@ -91,6 +140,54 @@ function createDbMock() {
     },
   }
 }
+
+test('contexte obligatoire : création refusée avant toute requête DB ou PayPal', async () => {
+  const prior = process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+  const originalFetch = globalThis.fetch
+  try {
+    delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    let fetchCalls = 0
+    let dbCalls = 0
+    globalThis.fetch = async () => { fetchCalls++; throw new Error('paypal_must_not_be_called') }
+    const db = { from() { dbCalls++; throw new Error('db_must_not_be_called') } }
+
+    const scenarios = [
+      { name: 'une question sans contexte', body: {
+        ...validQuestionBody(), pack: 'q1', questions: [{ q: validQuestionBody().questions[0].q, context: '' }],
+      } },
+      { name: 'deux questions dont la seconde sans contexte', body: (() => {
+        const body = validQuestionBody(); body.questions[1].context = ''; return body
+      })() },
+      { name: 'contexte composé uniquement d’espaces', body: (() => {
+        const body = validQuestionBody(); body.questions[0].context = '                             '; return body
+      })() },
+      { name: 'contexte trop court', body: (() => {
+        const body = validQuestionBody(); body.questions[0].context = 'a'.repeat(19); return body
+      })() },
+    ]
+
+    for (const scenario of scenarios) {
+      const out = res()
+      await createQuestionOrder({ method: 'POST', body: scenario.body }, out, db, 'sandbox')
+      assert.equal(out.code, 400, scenario.name)
+      assert.equal(out.body.error, 'invalid_form', scenario.name)
+    }
+    assert.equal(dbCalls, 0)
+    assert.equal(fetchCalls, 0)
+  } finally {
+    globalThis.fetch = originalFetch
+    if (prior == null) delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    else process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = prior
+  }
+})
+
+test('formulaire : chaque contexte est requis avant l’affichage du paiement', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  assert.match(page, /contexts\.slice\(0, count\)\.every\(\(context\) => context\.trim\(\)\.length >= 20\)/)
+  assert.match(page, /questionsOk && contextsOk && waived && rulesOk/)
+  assert.match(page, /minLength=\{20\}/)
+  assert.doesNotMatch(page, /facultatif, quelques lignes/)
+})
 
 test('suspension Guidances e-mail : aucune nouvelle commande PayPal créée', async () => {
   const before = process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
@@ -180,7 +277,8 @@ test('le checkout public propose exactement q1 et q2', () => {
   assert.match(page, /2990 : 1990/)
   assert.doesNotMatch(page, /q3|6900|2900/)
   assert.match(page, /questionAction=create/)
-  assert.match(page, /questionAction=capture/)
+  assert.match(page, /request\('capture'\)/)
+  assert.match(page, /request\('reconcile'\)/)
   assert.match(page, /Les commandes de Guidances par e-mail sont momentanément suspendues pour maintenance\. Vos demandes déjà enregistrées restent prises en charge\./)
   assert.match(page, /réponse personnelle et développée/)
   assert.match(page, /Aucune question d’ordre médical n’est acceptée/)
@@ -231,6 +329,46 @@ test('les e-mails n’utilisent aucune boîte contact fictive et supportent Repl
   assert.match(server, /EMAIL_QUESTIONS_OWNER_EMAIL/)
   assert.match(server, /EMAIL_QUESTIONS_REPLY_TO/)
   assert.match(helper, /payload\.reply_to = replyTo/)
+})
+
+test('notification propriétaire : inclut les questions, contextes et référence, échappe le HTML', () => {
+  const row = {
+    id: 'test-id',
+    first_name: 'Camille',
+    email: 'camille@example.invalid',
+    question_count: 2,
+    questions: [
+      { q: 'Est-ce le bon moment pour changer de travail ?', context: 'Je doute de ma décision.' },
+      { q: '<script>alert(1)</script>', context: '<b>Contexte privé</b>' },
+    ],
+    amount_cents: 2990,
+    paypal_order_id: 'ORDER-TEST-1',
+  }
+  const owner = buildOwnerQuestionEmail(row, '22 octobre 2026')
+  assert.match(owner.text, /Est-ce le bon moment/)
+  assert.match(owner.text, /Je doute de ma décision/)
+  assert.match(owner.text, /ORDER-TEST-1/)
+  assert.match(owner.text, /Contexte privé/)
+  assert.match(owner.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/)
+  assert.match(owner.html, /&lt;b&gt;Contexte privé&lt;\/b&gt;/)
+  assert.doesNotMatch(owner.html, /<script>/)
+  const server = read('lib/emailQuestions.js')
+  assert.match(server, /email-question-owner\/\$\{row\.id\}/)
+  assert.match(server, /buildOwnerQuestionEmail\(row, due\)/)
+})
+
+test('administration : demandes sans statut payé lisibles, mais aucune action financière ni réponse dans leur bloc', () => {
+  const panel = read('src/components/rdv/EmailQuestionsPanel.jsx')
+  const marker = 'Commandes à vérifier — paiement non confirmé dans MediumIA'
+  const start = panel.indexOf(marker)
+  const end = panel.indexOf('{history.length > 0', start)
+  assert.ok(start > 0 && end > start)
+  const block = panel.slice(start, end)
+  assert.match(block, /paymentPending\.map/)
+  assert.match(block, /row\.questions/)
+  assert.match(block, /row\.paypal_order_id/)
+  assert.doesNotMatch(block, /mutate\(|Envoyer la réponse|Refuser et rembourser/)
+  assert.match(panel, /r\.status === 'payment_pending'/)
 })
 
 test('l’administration est authentifiée via rdv-admin et offre réponse + remboursement', () => {

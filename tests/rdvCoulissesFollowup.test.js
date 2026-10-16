@@ -67,7 +67,7 @@ function readOnlyDb(overrides = {}) {
     rdv_booking_holds: [{ id: 'hold-test' }],
     rdv_financial_entries: [{ id: 'entry-test', direction: 'income', gross_cents: 2000 }],
     rdv_paypal_payments: [{ id: 'payment-test', status: 'captured' }],
-    rdv_balance_payments: [], rdv_payment_refunds: [], rdv_deposit_transfers: [], ...overrides,
+    rdv_balance_payments: [], rdv_payment_refunds: [], rdv_deposit_transfers: [], gift_card_redemptions: [], ...overrides,
   }
   const calls = []
   const db = { calls, from(table) {
@@ -134,6 +134,37 @@ test('cancellation preparation: cancelled/external booking and transfers require
   const result = await preview(readOnlyDb({ bookings: { id: bid, status: 'cancelled', booking_source: 'reservio' },
     rdv_deposit_transfers: [{ status: 'pending' }] }))
   assert.deepEqual(result.body.blockers, ['booking_not_confirmed', 'external_booking_requires_review', 'transfer_requires_review'])
+})
+
+test('cancellation preparation: gift-card redemption is a blocker even without local ledger entries', async () => {
+  const db = readOnlyDb({
+    rdv_financial_entries: [], rdv_paypal_payments: [], rdv_booking_holds: [],
+    gift_card_redemptions: [{ id: 'fictitious-redemption' }],
+  })
+  const result = await preview(db)
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.body.blockers, ['gift_card_requires_manual_review'])
+  assert.equal(result.body.finance.gift_card_redemptions, 1)
+  assert.equal(result.body.requires_financial_review, true)
+  assert.equal(result.body.execution_enabled, false)
+  assert.ok(db.calls.some(call => call.table === 'gift_card_redemptions'
+    && call.filters.some(([key, value]) => key === 'booking_id' && value === bid)))
+})
+
+test('cancellation preparation: completed refunds and transfers still require separate review', async () => {
+  const result = await preview(readOnlyDb({
+    rdv_payment_refunds: [{ id: 'fictitious-refund', status: 'completed' }],
+    rdv_deposit_transfers: [{ id: 'fictitious-transfer', status: 'completed' }],
+  }))
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.body.blockers, ['refund_requires_manual_review', 'transfer_requires_review'])
+  assert.equal(result.body.execution_enabled, false)
+})
+
+test('cancellation preparation: gift-card registry failure is fail-closed', async () => {
+  const result = await preview(readOnlyDb({ gift_card_redemptions: new Error('offline') }))
+  assert.equal(result.status, 503)
+  assert.equal(result.body.error, 'financial_review_unavailable')
 })
 
 test('Coulisses wiring: owner-only preparation, closed native details, real filtered requests and refresh', () => {

@@ -6,6 +6,8 @@ const BLOCKERS = {
   external_booking_requires_review: 'Réservation externe : intervention manuelle à examiner.',
   payment_state_uncertain: 'Un paiement n’est pas stabilisé : vérification prestataire nécessaire.',
   refund_in_progress: 'Un remboursement est en cours de traitement.',
+  refund_requires_manual_review: 'Historique de remboursement : vérification manuelle nécessaire.',
+  gift_card_requires_manual_review: 'Carte cadeau utilisée : vérification manuelle nécessaire.',
   transfer_requires_review: 'Un transfert doit être vérifié.',
 }
 
@@ -60,6 +62,7 @@ export default function OwnerCancellationPreview({ bookingId, practitionerId, se
               <dl className="grid grid-cols-2 gap-2">
                 <dt>Net enregistré MediumIA</dt><dd className="text-right">{money(data.finance.net_recorded_cents)}</dd>
                 <dt>Écritures conservées</dt><dd className="text-right">{data.finance.entries}</dd>
+                <dt>Cartes cadeaux utilisées</dt><dd className="text-right">{data.finance.gift_card_redemptions}</dd>
                 <dt>Vérification prestataire</dt><dd className="text-right">Non effectuée</dd>
                 <dt>Google Agenda</dt><dd className="text-right">{data.google.required ? 'Synchronisation à prévoir' : 'Aucun événement lié'}</dd>
               </dl>

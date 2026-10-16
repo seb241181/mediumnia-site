@@ -44,3 +44,22 @@
 - Aucun résultat d'audit financier réel ni identifiant de transaction client dans ce document public.
 
 **NO-GO Production.** Ne pas appliquer automatiquement la migration complémentaire, ne pas activer `RDV_OWNER_CANCEL_ENABLED`, ne pas lancer de suppression Google ni d'e-mail réel.
+
+
+## Résultats du GO TEST — 16 octobre 2026
+
+**Migration complémentaire appliquée sur Supabase TEST uniquement** :
+`owner_booking_settlement_guard_test` (fichier source `supabase/migrations/20261016063000_owner_booking_settlement_guard.sql`).
+
+Contrôle préalable : fonctions et tables requises présentes, zéro claim ouvert, aucun trigger homonyme, absence de transaction longue identifiée. Délai d'attente sur verrou : 2 s ; délai d'exécution : 30 s.
+
+Postflight : deux triggers supplémentaires installés sur `rdv_payment_refunds` et `rdv_deposit_transfers`. Les fonctions sensibles sont réservées au rôle serveur ; aucun changement sur Production.
+
+**Essai SQL effectif** exécuté sur TEST à partir de `tests/sql/rdv_owner_cancel_settlement_guard_test.sql` :
+- rendez-vous technique fictif dans une transaction ;
+- claim valide acquis, deuxième claim refusé ;
+- insertions fictives de remboursement et transfert rejetées (`SQLSTATE 55P03`) pendant ce claim ;
+- finalisation avec le claim correct, statut `cancelled` constaté dans la transaction ;
+- `ROLLBACK`, puis vérification par requête indépendante : **0 réservation, claim, remboursement et transfert fictifs conservés**.
+
+La migration est **appliquée en TEST**, mais pas en Production. Les essais mono-transactionnels ne prouvent pas la concurrence multi-connexions, l'intégration Google ni les transitions de paiements réels. **PR DRAFT — NO-GO Production**.

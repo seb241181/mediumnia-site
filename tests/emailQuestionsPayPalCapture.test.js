@@ -505,6 +505,59 @@ test('capture : conflit montant avéré reste 409, sans notification', withPayPa
   } finally { paypal.restore() }
 }))
 
+test('capture : plusieurs captures PayPal exigent une réconciliation manuelle', withPayPalEnv(async () => {
+  const suspect = structuredClone(orderFixture)
+  suspect.purchase_units[0].payments.captures.push({
+    ...structuredClone(suspect.purchase_units[0].payments.captures[0]),
+    id: 'ANOTHER-CAPTURE-FAKE',
+  })
+  const paypal = installPayPalFetch({ orderResponses: [suspect] })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', {
+      ...noDelay, sendPurchase: async () => assert.fail('unexpected notification'),
+    })
+    assert.equal(out.code, 409)
+    assert.equal(out.body.error, 'paypal_order_mismatch')
+    assert.equal(db.state.row.status, 'payment_pending')
+    assert.equal(paypal.calls.filter((call) => call.href.endsWith('/capture')).length, 0)
+  } finally { paypal.restore() }
+}))
+
+test('capture : plusieurs unités PayPal ne déclenchent aucune validation', withPayPalEnv(async () => {
+  const suspect = structuredClone(orderFixture)
+  suspect.purchase_units.push({ ...structuredClone(suspect.purchase_units[0]), reference_id: 'OTHER_UNIT' })
+  const paypal = installPayPalFetch({ orderResponses: [suspect] })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await captureQuestionOrder(captureRequest(), out, db, 'sandbox', noDelay)
+    assert.equal(out.code, 409)
+    assert.equal(db.state.row.status, 'payment_pending')
+  } finally { paypal.restore() }
+}))
+
+test('webhook : plusieurs captures ne valident aucune guidance', withPayPalEnv(async () => {
+  const suspect = structuredClone(orderFixture)
+  suspect.purchase_units[0].payments.captures.push({
+    ...structuredClone(suspect.purchase_units[0].payments.captures[0]),
+    id: 'ANOTHER-CAPTURE-FAKE',
+  })
+  const paypal = installPayPalFetch({ orderResponses: [suspect] })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await handleWebhook(webhookRequest(), out, db, 'sandbox', {
+      sendPurchase: async () => assert.fail('unexpected notification'),
+    })
+    assert.equal(out.code, 200)
+    assert.equal(out.body.ignored, 'order_mismatch')
+    assert.equal(db.state.row.status, 'payment_pending')
+    assert.equal(db.state.events.get(webhookFixture.id).status, 'failed')
+  } finally { paypal.restore() }
+}))
+
 test('interface : conserve la consigne de ne pas recommencer le paiement incertain', () => {
   assert.match(read('src/components/QuestionPage.jsx'), /ne recommencez pas le paiement/i)
 })

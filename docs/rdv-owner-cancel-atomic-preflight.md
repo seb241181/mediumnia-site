@@ -1,5 +1,5 @@
-# PR #158 — Préparation du verrou atomique annulation / paiements
-16 octobre 2026 — **Migration préparée, NON APPLIQUÉE**. Aucune annulation réelle.
+# PR #158 — Sécurité annulation / paiements
+16 octobre 2026 — **Socle et protection des colonnes appliqués sur Supabase TEST uniquement ; extension remboursements/transferts préparée, NON appliquée.** Aucune annulation réelle.
 
 ## Principe proposé
 
@@ -31,3 +31,16 @@
 - Ne jamais utiliser PayPal Live, envoyer d'e-mail réel, annuler un RDV client ou modifier Production dans ce protocole.
 
 **Verdict : NO-GO pour la fusion et NO-GO pour la Production.** La migration et le mécanisme sont prêts à être revus, non validés de bout en bout.
+
+
+## Mise à jour : remboursements et transferts (à valider)
+
+- **Déjà exécutées en Supabase TEST** : `owner_booking_cancel_claim_test` et `owner_cancel_claim_fields_protection_test`. Validation SQL : propriétaire correct, double claim refusé, écriture comptable refusée durant le claim, finalisation par identifiant ; transactions de test annulées et zéro résidu.
+- **Seulement préparée sur GitHub** : `supabase/migrations/20261016063000_owner_booking_settlement_guard.sql`. Cette migration ajoute la sérialisation des insertions/modifications/suppressions de `rdv_payment_refunds` et `rdv_deposit_transfers`. Elle relit et verrouille les anciens ET nouveaux rendez-vous référencés par une modification.
+- La nouvelle version de `claim_owner_booking_cancel` refuse l'annulation automatique lorsqu'un dossier de remboursement ou un transfert existe, ainsi que les réservations externes en attente de procédure distincte.
+- Script transactionnel prêt, mais **non exécuté** : `tests/sql/rdv_owner_cancel_settlement_guard_test.sql` ; il doit être exécuté après un GO spécifique pour la migration et se termine par ROLLBACK.
+- **POINT CRITIQUE RESTANT** : l'effacement Google avant finalisation SQL est une orchestration externe non atomique. La PR #159 de Codex recommande la transition SQL avec job durable de synchronisation Google. Cette architecture doit être tranchée et validée avant la fusion d'un exécuteur.
+- Deux PR pour un même écran : UI de #159 privilégiée (tests navigateur, lecture seule), moteur transactionnel #158 à intégrer seulement après validation, sans fusion mécanique des composants concurrents.
+- Aucun résultat d'audit financier réel ni identifiant de transaction client dans ce document public.
+
+**NO-GO Production.** Ne pas appliquer automatiquement la migration complémentaire, ne pas activer `RDV_OWNER_CANCEL_ENABLED`, ne pas lancer de suppression Google ni d'e-mail réel.

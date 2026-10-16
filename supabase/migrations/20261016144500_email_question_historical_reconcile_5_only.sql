@@ -30,14 +30,14 @@ BEGIN
      OR pg_catalog.jsonb_array_length(p_items) <> 5 THEN
     RAISE EXCEPTION 'historical_reconciliation_must_have_exactly_five';
   END IF;
-  SELECT pg_catalog.array_agg(v->>'orderId' ORDER BY v->>'orderId')
-    INTO v_orders FROM pg_catalog.jsonb_array_elements(p_items) v;
+  SELECT pg_catalog.array_agg(e.value->>'orderId' ORDER BY e.value->>'orderId')
+    INTO v_orders FROM pg_catalog.jsonb_array_elements(p_items) AS e(value);
   IF v_orders IS DISTINCT FROM (SELECT pg_catalog.array_agg(x ORDER BY x)
                                 FROM pg_catalog.unnest(v_expected) x) THEN
     RAISE EXCEPTION 'historical_reconciliation_scope_mismatch';
   END IF;
-  SELECT count(DISTINCT v->>'captureId') INTO v_distinct_capture
-    FROM pg_catalog.jsonb_array_elements(p_items) v;
+  SELECT count(DISTINCT e.value->>'captureId') INTO v_distinct_capture
+    FROM pg_catalog.jsonb_array_elements(p_items) AS e(value);
   IF v_distinct_capture <> 5 THEN
     RAISE EXCEPTION 'historical_reconciliation_duplicate_captures';
   END IF;
@@ -65,7 +65,7 @@ BEGIN
   END IF;
   v_count := 0;
 
-  FOR v_item IN SELECT value FROM pg_catalog.jsonb_array_elements(p_items)
+  FOR v_item IN SELECT e.value FROM pg_catalog.jsonb_array_elements(p_items) AS e(value)
   LOOP
     v_id := v_item->>'orderId';
     v_capture := v_item->>'captureId';

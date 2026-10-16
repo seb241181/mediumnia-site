@@ -13,6 +13,10 @@ const ERRORS = {
   google_delete_unconfirmed: 'Google Agenda n’a pas confirmé la suppression : annulation bloquée.',
   booking_update_unconfirmed: 'Google et MediumIA doivent être vérifiés avant une nouvelle tentative.',
   booking_status_changed: 'Le rendez-vous a changé entre-temps. Rechargez la page.',
+  owner_cancel_claim_unavailable: 'Le verrou de sécurité de la base est indisponible. Aucune annulation effectuée.',
+  owner_cancel_pending_review: 'Une annulation est déjà en cours ou en attente de vérification. Ne la relancez pas : contrôlez Google Agenda.',
+  claim_mismatch: 'L’annulation nécessite une vérification manuelle avant toute nouvelle action.',
+  cancel_finalize_blocked: 'La fin de l’annulation doit être vérifiée dans MediumIA et Google Agenda.',
   forbidden: 'Accès non autorisé.',
 }
 

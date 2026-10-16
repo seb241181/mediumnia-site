@@ -63,3 +63,12 @@ Postflight : deux triggers supplémentaires installés sur `rdv_payment_refunds`
 - `ROLLBACK`, puis vérification par requête indépendante : **0 réservation, claim, remboursement et transfert fictifs conservés**.
 
 La migration est **appliquée en TEST**, mais pas en Production. Les essais mono-transactionnels ne prouvent pas la concurrence multi-connexions, l'intégration Google ni les transitions de paiements réels. **PR DRAFT — NO-GO Production**.
+
+## Contrôle complémentaire du rôle authenticated sur TEST — 16/10/2026
+
+- Vérification des grants SQL : `anon` et `authenticated` ne peuvent pas exécuter `claim_owner_booking_cancel`; seul `service_role` le peut. En revanche, le grant historique d'UPDATE existe sur la colonne `owner_cancel_claim_id` : le trigger de protection doit donc effectivement jouer son rôle.
+- Première tentative avec le rôle `authenticated` et la politique RLS normale : la réservation fictive était invisible. Ce refus est rassurant mais **ne démontre pas le déclenchement du trigger**.
+- Second essai, uniquement sur Supabase TEST : création dans la transaction d'une politique RLS temporaire, limitée à l'UUID de la réservation fictive. Le rôle `authenticated` pouvait alors SELECT cette seule ligne, mais son UPDATE direct des deux champs de claim a été **refusé (`SQLSTATE 42501`)**. Ce contrôle démontre le verrou du trigger lorsque la ligne est visible.
+- La transaction incluait `ROLLBACK`; la requête postérieure a confirmé **zéro réservation fictive persistante**. La politique temporaire n'est pas conservée après le rollback.
+- Script rejouable : `tests/sql/rdv_owner_cancel_authenticated_guard_test.sql`. Attention : le script crée une politique transitoire exclusivement dans une transaction TEST et ne doit jamais être exécuté en Production.
+- Restent NON validés : requête HTTPS réelle portant un JWT client, concurrence sur plusieurs connexions PostgreSQL, orchestrateur Google durable, audit financier indépendant. **NO-GO fusion / Production**.

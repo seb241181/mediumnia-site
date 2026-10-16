@@ -8,6 +8,7 @@ import {
   handleWebhook,
   sendPurchaseEmails,
   inspectLatestSandboxGuidance,
+  reconcileQuestionOrder,
 } from '../lib/emailQuestions.js'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
@@ -295,6 +296,72 @@ test('diagnostic Sandbox : un paiement fournisseur confirme reste strictement en
       else process.env[key] = value
     }
   }
+}))
+
+test('reconcile: confirmed PayPal order + capture GET updates one Sandbox row and never POSTs capture', withPayPalEnv(async () => {
+  const paypal = installPayPalFetch()
+  const db = createMemoryDb(guidanceRow({
+    capture_started_at: '2026-10-16T07:16:27Z',
+  }))
+  let notifications = 0
+  const req = { method: 'POST', body: { orderId: ORDER_ID } }
+  try {
+    const first = response()
+    await reconcileQuestionOrder(req, first, db, 'sandbox', {
+      sendPurchase: async () => { notifications++; return 'sandbox_skipped' },
+    })
+    assert.equal(first.code, 200)
+    assert.equal(first.body.reconciled, true)
+    assert.equal(db.state.row.status, 'paid')
+    assert.equal(db.state.row.paypal_capture_id, CAPTURE_ID)
+    assert.equal(db.state.row.confirmation_email_status, 'sandbox_skipped')
+    assert.equal(notifications, 1)
+    assert.deepEqual(paypal.calls.map(c => c.method), ['POST', 'GET', 'GET'])
+    assert.equal(paypal.calls.filter(c => c.href.endsWith('/capture')).length, 0)
+    const replay = response()
+    await reconcileQuestionOrder(req, replay, db, 'sandbox', {
+      sendPurchase: async () => assert.fail('notification should not repeat'),
+    })
+    assert.equal(replay.code, 200)
+    assert.equal(replay.body.idempotent, true)
+    assert.equal(notifications, 1)
+    assert.equal(paypal.calls.length, 3)
+  } finally { paypal.restore() }
+}))
+
+test('reconcile: APPROVED but not captured retries GET only and never marks paid', withPayPalEnv(async () => {
+  const approved = structuredClone(orderFixture)
+  approved.status = 'APPROVED'
+  approved.purchase_units[0].payments = undefined
+  const paypal = installPayPalFetch({ orderResponses: [approved] })
+  const db = createMemoryDb(guidanceRow({ capture_started_at: '2026-10-16T07:16:27Z' }))
+  try {
+    const out = response()
+    await reconcileQuestionOrder({ method: 'POST', body: { orderId: ORDER_ID } }, out, db, 'sandbox', {
+      sendPurchase: async () => assert.fail('no notification on unconfirmed payment'),
+    })
+    assert.equal(out.code, 503)
+    assert.equal(out.body.retryable, true)
+    assert.equal(db.state.row.status, 'payment_pending')
+    assert.equal(paypal.calls.filter(c => c.href.endsWith('/capture')).length, 0)
+  } finally { paypal.restore() }
+}))
+
+test('reconcile: wrong amount never marks paid despite COMPLETED', withPayPalEnv(async () => {
+  const wrong = structuredClone(orderFixture)
+  wrong.purchase_units[0].payments.captures[0].amount.value = '0.01'
+  const paypal = installPayPalFetch({ orderResponses: [wrong] })
+  const db = createMemoryDb()
+  try {
+    const out = response()
+    await reconcileQuestionOrder({ method: 'POST', body: { orderId: ORDER_ID } }, out, db, 'sandbox', {
+      sendPurchase: async () => assert.fail('no notification for mismatch'),
+    })
+    assert.equal(out.code, 409)
+    assert.equal(out.body.error, 'payment_evidence_requires_review')
+    assert.equal(db.state.row.status, 'payment_pending')
+    assert.equal(paypal.calls.filter(c => c.href.endsWith('/capture')).length, 0)
+  } finally { paypal.restore() }
 }))
 
 test('webhook : les en-têtes de signature absents sont rejetés avant tout accès DB ou PayPal', withPayPalEnv(async () => {

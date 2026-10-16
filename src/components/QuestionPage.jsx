@@ -93,13 +93,37 @@ function QuestionCheckout({ config }) {
           },
           onApprove: async (data) => {
             setStatus('Approbation reçue. Vérification sécurisée du paiement…')
-            const res = await fetch('/api/rdv-config?questionAction=capture', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: data.orderID }),
-            })
-            const result = await res.json().catch(() => ({}))
-            if (!res.ok || !result.ok) throw new Error(result.error || 'question_record_failed')
+            const body = JSON.stringify({ orderId: data.orderID })
+            const request = async (action) => {
+              const res = await fetch(`/api/rdv-config?questionAction=${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+              })
+              const result = await res.json().catch(() => ({}))
+              return { httpStatus: res.status, ...result }
+            }
+            let result
+            try {
+              result = await request('capture')
+            } catch {
+              result = { error: 'payment_confirmation_unavailable', retryable: true }
+            }
+            if (!result.ok && result.retryable === true) {
+              // A capture may already have succeeded even if the response was lost.
+              // All follow-ups use "reconcile": PayPal GET-only; never another POST capture.
+              setStatus('Paiement en cours de vérification. Ne recommencez pas le règlement…')
+              for (const delay of [0, 1200, 3000, 6000]) {
+                if (delay) await new Promise((resolve) => setTimeout(resolve, delay))
+                try {
+                  result = await request('reconcile')
+                } catch {
+                  result = { error: 'payment_confirmation_unavailable', retryable: true }
+                }
+                if (result.ok || result.retryable !== true) break
+              }
+            }
+            if (!result.ok) throw new Error(result.error || 'question_record_failed')
             trackMediumiaMetric('question_purchase_completed', `question:${payloadRef.current.pack}`)
             setSuccess({ dueAt: result.due_at })
             node.innerHTML = ''

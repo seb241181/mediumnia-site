@@ -16,10 +16,15 @@ const ERRORS = {
   forbidden: 'Accès non autorisé.',
 }
 
-export default function OwnerCancelBookingButton({ booking, practitionerId, session, onChanged }) {
+export default function OwnerCancelBookingButton({ booking, practitionerId, session, onChanged, enabled = false }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   if (booking.status !== 'confirmed' || Date.parse(booking.starts_at) <= Date.now()) return null
+  if (!enabled) return (
+    <span className="font-georgia text-[11px] text-mist" title="L'annulation manuelle sera disponible après validation des tests.">
+      Annulation en préparation
+    </span>
+  )
 
   async function cancel() {
     const time = new Intl.DateTimeFormat('fr-FR', {

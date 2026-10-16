@@ -201,3 +201,15 @@ test('si le registre de paiement est indisponible, on n’annule pas', async () 
   assert.equal(result.body.error, 'payment_review_unavailable')
   assert.equal(state.updateCalls, 0)
 })
+
+test('un paiement marqué capturé sans identifiant PayPal est à rapprocher', async () => {
+  const { db, state } = makeDb({
+    entries: [{ gross_cents: 2000, direction: 'income', payment_method: 'paypal' }],
+    holdIds: ['hold-id'],
+    depositPayments: [{ status: 'captured', paypal_capture_id: null }],
+  })
+  const result = await run(db, { deleteGoogle: async () => assert.fail('Google must not be called') })
+  assert.equal(result.status, 409)
+  assert.equal(result.body.error, 'payment_reconciliation_required')
+  assert.equal(state.updateCalls, 0)
+})

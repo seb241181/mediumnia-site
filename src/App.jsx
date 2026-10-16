@@ -211,7 +211,16 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  const nav = (p, v) => { window.history.pushState({}, '', p); setView(v); requestAnimationFrame(() => window.scrollTo(0, 0)) }
+  const nav = (p, v) => {
+    window.history.pushState({}, '', p)
+    setView(v)
+    // The guidance page must be visible from its title immediately, not
+    // animate from the previous section of this single-page application.
+    requestAnimationFrame(() => {
+      if (v === 'question') window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      else window.scrollTo(0, 0)
+    })
+  }
   const openPro        = () => nav('/pro',              'pro')
   const openFormation  = () => nav('/formation',        'formation')
   const openOracle     = () => nav('/oracle',           'oracle')

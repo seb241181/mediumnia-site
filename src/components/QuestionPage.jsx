@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import SiteNav from './SiteNav'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
@@ -264,6 +264,17 @@ function QuestionCheckout({ config }) {
 export default function QuestionPage({ onBack, onNavigate }) {
   const [availability, setAvailability] = useState('loading')
   const [config, setConfig] = useState(null)
+
+  // Opening /question from the homepage or directly must start at the title.
+  // The browser may otherwise restore an old scroll position on mobile,
+  // while the site's global CSS animates normal scrollTo calls.
+  // Run before paint and never rerun when availability or form fields change.
+  useLayoutEffect(() => {
+    const previous = window.history.scrollRestoration
+    window.history.scrollRestoration = 'manual'
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    return () => { window.history.scrollRestoration = previous }
+  }, [])
 
   useEffect(() => {
     let cancelled = false

@@ -92,7 +92,7 @@ function QuestionCheckout({ config }) {
             return data.id
           },
           onApprove: async (data) => {
-            setStatus('Paiement confirmé. Enregistrement de votre demande…')
+            setStatus('Approbation reçue. Vérification sécurisée du paiement…')
             const res = await fetch('/api/rdv-config?questionAction=capture', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -133,9 +133,13 @@ function QuestionCheckout({ config }) {
         <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Demande enregistrée</p>
         <h2 className="mt-3 font-georgia text-2xl font-medium text-deep md:text-3xl">C’est noté ✦</h2>
         <p className="mx-auto mt-4 max-w-lg font-georgia leading-relaxed text-mist">
-          Je prends personnellement connaissance de votre demande et je vous transmets une réponse personnelle et développée par e-mail{due ? `, au plus tard le ${due}` : ' sous 72 heures ouvrées'}. Un e-mail de confirmation vient de vous être envoyé.
+          {config.env === 'sandbox'
+            ? 'Paiement fictif PayPal Sandbox validé et demande enregistrée sur le banc de test. Aucun paiement réel ni e-mail client n’a été envoyé.'
+            : <>Je prends personnellement connaissance de votre demande et je vous transmets une réponse personnelle et développée par e-mail{due ? `, au plus tard le ${due}` : ' sous 72 heures ouvrées'}. Un e-mail de confirmation est prévu ; vérifiez aussi vos courriers indésirables.</>}
         </p>
-        <p className="mt-4 font-georgia text-sm text-mist">Vous n’avez rien d’autre à faire : la réponse arrivera directement dans votre boîte e-mail.</p>
+        {config.env !== 'sandbox' && (
+          <p className="mt-4 font-georgia text-sm text-mist">Votre réponse arrivera directement dans votre boîte e-mail.</p>
+        )}
       </div>
     )
   }

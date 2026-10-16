@@ -127,7 +127,7 @@ test('historical approved five-order repair: exact PayPal GET evidence, one atom
   }
   const paypalGet = async (env, access, method, path) => {
     assert.equal(env, 'live'); assert.equal(access, 'test_access'); assert.equal(method, 'GET')
-    assert.doesNotMatch(path, /\\/capture$|\\/refund/)
+    assert.equal(path.endsWith('/capture') || path.includes('/refund'), false)
     getCalls.push(path)
     const orderId = path.startsWith('/v2/checkout/orders/')
       ? path.split('/').at(-1)

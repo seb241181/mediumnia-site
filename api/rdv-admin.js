@@ -138,6 +138,7 @@ async function handleMe(req, res, supabase, userId) {
     calendar:          (connections || []).find(c  => c.practitioner_id  === p.id) || null,
     upcoming_bookings: (bookings    || []).filter(b => b.practitioner_id === p.id),
     exceptions:        (exceptions  || []).filter(e => e.practitioner_id === p.id),
+    owner_cancel_enabled: process.env.RDV_OWNER_CANCEL_ENABLED === 'true' && process.env.VERCEL_ENV === 'production',
     pending_requests:  (requests    || []).filter(r => r.practitioner_id === p.id).map(r => ({
       ...r,
       google_event_id: r.confirmed_booking_id ? (googleEventMap[r.confirmed_booking_id] ?? null) : null,

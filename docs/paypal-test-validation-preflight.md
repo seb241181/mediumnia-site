@@ -133,3 +133,19 @@ Staging vérifié READY sur `f35af2e9b65c1daa45b29b096ff3d859070b28b2` :
 - Trois tests simulés du rapprochement et un test de sécurité d'interface ajoutés (confirmation puis replay idempotent, état APPROVED, montant divergent, un seul appel `capture`).
 - **Aucune commande Sandbox existante n'a été modifiée ou marquée payée pendant cette correction.** Test du nouveau commit Staging requis avant d'envisager toute opération de rapprochement en TEST et GO explicite distinct.
 - **PROD NO-GO** ; tester séparément le vrai webhook PayPal signé et rapprocher les 5 commandes historiques Production.
+
+## Confirmation des deux captures Sandbox — 16 octobre 2026
+
+Deux réponses séparées du diagnostic PayPal, dont la seconde avec `test_order_index=1`, montrent chacune :
+
+- `database_status=payment_pending` et `capture_claimed=true` ;
+- `provider_order_status=COMPLETED` ;
+- `provider_purchase_unit_count=1` ;
+- `provider_capture_count=1` ;
+- `provider_capture_status=COMPLETED` et `provider_capture_detail_status=COMPLETED` ;
+- `evidence_classification=capture_confirmed_readonly`, `evidence_reason=capture_consistent` ;
+- `capture_post_retried=false` pour ces lectures.
+
+**Résultat :** les deux commandes fictives PayPal sont confirmées séparément, mais les deux lignes MediumIA TEST n'étaient pas enregistrées comme payées lors de la dernière lecture. Ne surtout pas lancer de nouvelle capture. Le correctif `reconcile` (relecture GET fournisseur, puis mise à jour conditionnelle) existe sur la PR #156, avec Staging READY et zéro test en échec au commit `52cb0c639c3afd6fd0ec023c4a4d6da143342ce3`.
+
+**Point de décision :** après GO explicite pour une mutation **Supabase TEST uniquement**, rapprocher les deux commandes préalablement prouvées sans appel POST PayPal capture, vérifier `paid`, `paypal_capture_id` unique, `paid_at`, `due_at`, `confirmation_email_status=sandbox_skipped`, puis revérifier l'idempotence (aucune notification réelle). Production et commandes réelles restent hors périmètre.

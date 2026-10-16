@@ -260,7 +260,10 @@ test('diagnostic Sandbox : un paiement fournisseur confirme reste strictement en
       return {
         select() { selects += 1; return this },
         eq() { return this }, not() { return this }, gte() { return this },
-        order() { return this }, limit() { return this },
+        order() { return this }, range(start, end) {
+          assert.ok((start === 0 || start === 1) && end === start)
+          return this
+        },
         maybeSingle: async () => ({ data: guidanceRow({
           capture_started_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
@@ -277,6 +280,7 @@ test('diagnostic Sandbox : un paiement fournisseur confirme reste strictement en
     assert.equal(output.body.capture_post_retried, false)
     assert.equal(output.body.provider_order_status, 'COMPLETED')
     assert.equal(output.body.provider_capture_count, 1)
+    assert.equal(output.body.test_order_index, 0)
     assert.equal(output.body.evidence_classification, 'capture_confirmed_readonly')
     assert.equal(selects, 1)
     assert.deepEqual(paypal.calls.map((call) => call.method), ['POST', 'GET', 'GET'])

@@ -23,6 +23,15 @@ test('tarifs e-mail : 19,90 € pour 1 question et 29,90 € pour 2', () => {
   assert.match(EMAIL_QUESTION_TERMS_VERSION, /^email-question-/)
 })
 
+test('Sandbox : confirmation indique paiement fictif et aucun e-mail client', () => {
+  const page = read('src/components/QuestionPage.jsx')
+  assert.match(page, /config\.env === 'sandbox'/)
+  assert.match(page, /Paiement fictif PayPal Sandbox validé/)
+  assert.match(page, /Aucun paiement réel ni e-mail client n’a été envoyé/)
+  assert.doesNotMatch(page, /Un e-mail de confirmation vient de vous être envoyé/)
+  assert.match(page, /Approbation reçue\. Vérification sécurisée du paiement/)
+})
+
 test('PayPal reste obligatoirement en sandbox hors production', () => {
   const beforeVercel = process.env.VERCEL_ENV
   const beforePayPal = process.env.PAYPAL_ENV

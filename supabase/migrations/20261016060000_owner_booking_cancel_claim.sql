@@ -1,6 +1,9 @@
 -- PR #158 — transaction-safe owner cancellation claim (PREPARED ONLY).
 -- Do not deploy to PROD without a dedicated reviewed GO.
 -- PayPal provider calls are never performed in SQL.
+SET LOCAL lock_timeout = '2s';
+SET LOCAL statement_timeout = '30s';
+
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS owner_cancel_claim_id uuid,
   ADD COLUMN IF NOT EXISTS owner_cancel_claimed_at timestamptz;

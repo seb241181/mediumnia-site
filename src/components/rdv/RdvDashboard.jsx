@@ -1532,10 +1532,10 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       }}
                       className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 font-georgia text-sm font-semibold text-deep hover:bg-gold/20"
                     >
-                      Voir mes demandes — ${(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} en attente
+                      Voir mes demandes — {(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} en attente
                     </button>
                     <span className="font-georgia text-xs text-mist">
-                      ${(activePractitioner.pending_requests || []).filter(req => req.status === 'contacted').length} contactées
+                      {(activePractitioner.pending_requests || []).filter(req => req.status === 'contacted').length} contactées
                     </span>
                   </div>
                 </div>

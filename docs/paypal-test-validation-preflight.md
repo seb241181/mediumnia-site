@@ -99,3 +99,26 @@ Production : NO-GO. Migration TEST et transactions Sandbox : en attente de GO se
 - Nouveau garde-fou applicatif et trois tests : plusieurs unites d'achat ou captures dans la meme commande PayPal ne peuvent pas etre validees comme une vente ordinaire.
 - Staging Vercel `mediumia-pr156` exclusivement. Aucun achat PayPal Sandbox veritablement approuve lors de cette reprise, aucun webhook signe reel, aucun email client, aucune migration ou fusion Production.
 - **NO-GO Production et reouverture** avant preuve du paiement Sandbox, du webhook signe, de la notification, du rapprochement historique et de la revalidation du build.
+
+## Test Sandbox manuel via Staging protegé - 16 octobre 2026
+
+Environnement isolé : projet Vercel `mediumia-pr156` ID `prj_o2q8ZuXcy1ilVbVbgoasAzH4Gbzx`; Supabase serveur et front pointent vers `wnbwhnqiulsdjcvkuwos`. `PAYPAL_ENV=sandbox`. Vercel Authentication reste activée ; les ventes Production restent suspendues. Le flag `EMAIL_QUESTIONS_PURCHASES_SUSPENDED=false` ne s'applique qu'à la Preview du projet dédié.
+
+Staging vérifié READY sur `f35af2e9b65c1daa45b29b096ff3d859070b28b2` :
+`https://mediumia-pr156-abuqoegva-seguins-projects-a1d4673f.vercel.app/question`
+
+### Parcours avec un acheteur PayPal Sandbox (jamais réel)
+
+1. Ouvrir le Staging connecté au compte Vercel autorisé ; vérifier que l'offre indique le mode d'essai avant toute approbation PayPal. Utiliser seulement une identité de démonstration, une adresse `example.invalid`, une question et un contexte fictifs.
+2. Cliquer sur PayPal et utiliser exclusivement le **compte personnel acheteur Sandbox** depuis PayPal Developer > Sandbox Accounts. Ne jamais entrer ses identifiants PayPal réels.
+3. Ne confirmer qu'une commande fictive ; relever l'identifiant technique d'ordre via les outils de test privés, jamais les mots de passe.
+4. Vérifier que la commande est `COMPLETED` chez PayPal Sandbox, avec une seule capture et le montant attendu, puis `paid` dans Supabase TEST avec un `paypal_capture_id` unique et questions/contextes inchangés.
+5. Vérifier la relecture idempotente de la confirmation (HTTP 200 sans nouveau POST) et la concurrence contrôlée uniquement avec le même ordre Sandbox. Ne jamais redemander un paiement si l'état reste incertain : rapprocher en GET.
+6. Contrôler le registre `mediumia_email_question_paypal_events` et la réception d'un **véritable** webhook PayPal Sandbox avec signature vérifiable. Attention : le Webhooks Simulator PayPal génère de faux événements **non vérifiables** par `verify-webhook-signature` et ne prouve pas cette étape. Le Staging est protégé par Vercel Authentication ; configurer un accès de livraison webhook strictement réservé au TEST avant le test de réception (sans désactiver la protection de tout le projet).
+7. En Sandbox, `sendPurchaseEmails` ne contacte aucun destinataire réel (`sandbox_skipped`). L'écran a été corrigé pour ne pas promettre l'envoi d'un courriel de test.
+
+**Bloqueur actuel :** l'approbation acheteur Sandbox et le webhook signé ne sont pas encore observés. L'état READY de Vercel et la présence des secrets (masqués) ne prouvent pas un paiement de bout en bout.
+
+**Avant Production :** rapprochement PayPal Live des cinq commandes historiques `payment_pending` en lecture seule ; les deux migrations nécessaires et la configuration du vrai webhook ; approbation explicite distincte pour migration, fusion, déploiement et réouverture.
+
+**Question commerciale indépendante :** les tarifs du code sont actuellement 19,90 € (q1) et 29,90 € (q2). Les confronter aux tarifs voulus par Sébastien avant ouverture.

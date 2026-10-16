@@ -114,7 +114,7 @@ async function handleMe(req, res, supabase, userId) {
     supabase.from('booking_requests')
       .select('*')
       .in('practitioner_id', ids)
-      .in('status', ['pending', 'contacted', 'scheduled'])
+      .in('status', ['pending', 'contacted', 'scheduled', 'handled'])
       .order('created_at', { ascending: false })
       .limit(100),
   ])
@@ -514,12 +514,40 @@ async function handleRequests(req, res, supabase, userId) {
     const { id, status, operation, practitioner_notes, travel_fee_cents, final_price_cents, scheduled_at } = req.body || {}
     if (!id) return res.status(400).json({ error: 'id requis' })
 
-    const VALID_STATUSES = ['pending', 'contacted', 'scheduled', 'rejected', 'cancelled']
+    const VALID_STATUSES = ['pending', 'contacted', 'scheduled', 'rejected', 'cancelled', 'handled']
     if (status && !VALID_STATUSES.includes(status)) return res.status(400).json({ error: 'status invalide' })
 
     const { data: request, error: reqErr } = await supabase
       .from('booking_requests').select('*').eq('id', id).eq('practitioner_id', pid).single()
     if (reqErr || !request) return res.status(404).json({ error: 'Demande introuvable' })
+
+    // Owner-only reversible archive for Lumia / site requests already dealt with.
+    // Changing this label must NEVER create a booking, modify Google Calendar,
+    // take payment, or notify a customer.
+    if (status === 'handled' || request.status === 'handled') {
+      const allowed = Object.keys(req.body || {})
+        .every((field) => ['id', 'practitioner_id', 'status'].includes(field))
+      const archiveAllowed = status === 'handled'
+        && ['pending', 'contacted'].includes(request.status)
+        && !request.confirmed_booking_id
+      const reopenAllowed = status === 'pending'
+        && request.status === 'handled'
+        && !request.confirmed_booking_id
+      if (!allowed || (!archiveAllowed && !reopenAllowed)) {
+        return res.status(409).json({ error: 'transition_archivage_interdite' })
+      }
+      const { data: changed, error: changeError } = await supabase
+        .from('booking_requests')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('practitioner_id', pid)
+        .eq('status', request.status)
+        .is('confirmed_booking_id', null)
+        .select('*').maybeSingle()
+      if (changeError) return res.status(503).json({ error: 'archivage_indisponible' })
+      if (!changed) return res.status(409).json({ error: 'demande_modifiee_entre_temps' })
+      return res.status(200).json({ request: changed })
+    }
 
     // ── operation=sync_google : retry synchronisation Google Calendar ──────────
     if (operation === 'sync_google') {

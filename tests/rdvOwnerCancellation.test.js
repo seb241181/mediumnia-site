@@ -8,7 +8,7 @@ const USER_ID = '9ee96529-568a-49de-b5d8-bb2359fb99d2'
 const input = { id: BOOKING_ID, practitioner_id: PRACTITIONER_ID, confirm: true }
 
 function makeDb({ owned = true, googleEventId = 'google-test-123', entries = [
-  { gross_cents: 2000, direction: 'income', payment_method: 'paypal' },
+  { gross_cents: 2000, direction: 'income', payment_method: 'cash' },
 ], email = 'test@example.invalid', giftRedemptions = [], balancePayments = [],
   holdIds = [], depositPayments = [], reservationPaymentCents = 0,
   paymentLookupError = false } = {}) {
@@ -28,8 +28,42 @@ function makeDb({ owned = true, googleEventId = 'google-test-123', entries = [
     paymentLookupError,
     updateCalls: 0,
     lookupCalls: 0,
+    claimCalls: 0, finishCalls: 0, ownerClaim: null,
+    writePaymentAfterClaim(payment) {
+      if (this.ownerClaim && this.booking.status === 'confirmed') {
+        throw new Error('owner_booking_cancellation_in_progress')
+      }
+      this.balancePayments.push(payment)
+    },
   }
   const db = {
+    rpc(action, input) {
+      if (action === 'claim_owner_booking_cancel') {
+        state.claimCalls++
+        if (state.booking.status === 'cancelled') return Promise.resolve({ data: { ok: true, already_cancelled: true }, error: null })
+        if (state.ownerClaim) return Promise.resolve({ data: { ok: false, error: 'owner_cancel_pending_review' }, error: null })
+        const captured = [...state.depositPayments, ...state.balancePayments]
+        if (captured.some(p => p.status !== 'captured' || !p.paypal_capture_id)) {
+          return Promise.resolve({ data: { ok: false, error: 'payment_in_progress_requires_review' }, error: null })
+        }
+        const provider = captured.reduce((sum, p) => sum + Number(p.amount_cents ?? 2000), 0)
+        const ledger = state.entries.filter(p => p.payment_method === 'paypal').reduce((sum, p) => sum + (p.direction === 'refund' ? -p.gross_cents : p.gross_cents), 0)
+        if (provider !== ledger) return Promise.resolve({ data: { ok: false, error: 'payment_reconciliation_required' }, error: null })
+        state.ownerClaim = 'e20d0a47-6c6f-4d6b-a9a1-647d60cb6d59'
+        const paid = state.entries.reduce((sum, entry) => sum + (entry.direction === 'refund' ? -entry.gross_cents : entry.gross_cents), 0)
+        return Promise.resolve({ data: { ok: true, claim_id: state.ownerClaim, paid_cents: paid, financial_review_required: paid > 0 }, error: null })
+      }
+      if (action === 'finalize_owner_booking_cancel') {
+        state.finishCalls++
+        if (input.p_claim_id !== state.ownerClaim || state.booking.status !== 'confirmed' || input.p_google_confirmed !== true) {
+          return Promise.resolve({ data: { ok: false, error: 'cancel_finalize_blocked' }, error: null })
+        }
+        state.updateCalls++
+        Object.assign(state.booking, { status: 'cancelled', cancel_reason: 'practitioner_manual' })
+        return Promise.resolve({ data: { ok: true, cancelled: true }, error: null })
+      }
+      throw new Error('Unexpected RPC: ' + action)
+    },
     from(table) {
       state.lookupCalls++
       const builder = {
@@ -223,4 +257,49 @@ test('feature flag éteint : accès refusé sans lecture ni écriture', async ()
   assert.equal(result.body.error, 'owner_cancel_not_enabled')
   assert.equal(state.lookupCalls, 0)
   assert.equal(state.updateCalls, 0)
+})
+
+test('claim SQL exclusif : deux annulations concurrentes ne peuvent pas supprimer deux fois Google', async () => {
+  const { db, state } = makeDb({ entries: [] })
+  let deletes = 0
+  let allowFirst
+  const barrier = new Promise(resolve => { allowFirst = resolve })
+  const first = run(db, { deleteGoogle: async () => { deletes++; await barrier; return { status: 'deleted' } } })
+  // Wait until first invocation reaches the Google phase after obtaining the SQL claim.
+  for (let tick = 0; tick < 15 && state.claimCalls < 1; tick++) await new Promise(resolve => setImmediate(resolve))
+  assert.equal(state.claimCalls, 1)
+  const second = await run(db, { deleteGoogle: async () => assert.fail('Second invocation must not call Google') })
+  assert.equal(second.status, 409)
+  assert.equal(second.body.error, 'owner_cancel_pending_review')
+  allowFirst()
+  const result = await first
+  assert.equal(result.status, 200)
+  assert.equal(state.updateCalls, 1)
+  assert.equal(deletes, 1)
+})
+
+test('une insertion de paiement simulée pendant Google est refusée par le claim', async () => {
+  const { db, state } = makeDb({ entries: [] })
+  const result = await run(db, {
+    deleteGoogle: async () => {
+      assert.throws(() => state.writePaymentAfterClaim({ status: 'captured', amount_cents: 2000 }),
+        /owner_booking_cancellation_in_progress/)
+      return { status: 'deleted' }
+    },
+  })
+  assert.equal(result.status, 200)
+  assert.equal(state.balancePayments.length, 0)
+})
+
+test('suppression Google incertaine : le claim est retenu et le second essai bloqué', async () => {
+  const { db, state } = makeDb({ entries: [] })
+  const first = await run(db, { deleteGoogle: async () => ({ status: 'failed' }) })
+  assert.equal(first.status, 503)
+  assert.equal(first.body.manual_review_required, true)
+  assert.ok(state.ownerClaim)
+  const second = await run(db, { deleteGoogle: async () => assert.fail('No second Google delete') })
+  assert.equal(second.status, 409)
+  assert.equal(second.body.error, 'owner_cancel_pending_review')
+  assert.equal(state.updateCalls, 0)
+  assert.equal(state.finishCalls, 0)
 })

@@ -89,3 +89,13 @@ Les scripts npm reecrivent des sources ; exclure leurs sorties du commit dans le
 checkout isole. Aucun changement aux sources Coulisses par rapport a main n'est autorise.
 
 Production : NO-GO. Migration TEST et transactions Sandbox : en attente de GO separes.
+
+## Actualisation TEST du 16 octobre 2026
+
+- Migration `email_question_capture_claim_test` appliquee sur Supabase TEST `wnbwhnqiulsdjcvkuwos`, version `20261016053730` ; aucun changement Production.
+- Colonne `capture_started_at` verifiee : `timestamptz`, nullable, sans valeur par defaut.
+- Test reel TEST : insertion d'une commande strictement fictive dans une transaction, premier claim acquis, deuxieme claim refuse, `ROLLBACK` reussi, controle independant : 0 residu.
+- Script versionne : `tests/sql/email_question_capture_claim_rollback_test.sql`.
+- Nouveau garde-fou applicatif et trois tests : plusieurs unites d'achat ou captures dans la meme commande PayPal ne peuvent pas etre validees comme une vente ordinaire.
+- Staging Vercel `mediumia-pr156` exclusivement. Aucun achat PayPal Sandbox veritablement approuve lors de cette reprise, aucun webhook signe reel, aucun email client, aucune migration ou fusion Production.
+- **NO-GO Production et reouverture** avant preuve du paiement Sandbox, du webhook signe, de la notification, du rapprochement historique et de la revalidation du build.

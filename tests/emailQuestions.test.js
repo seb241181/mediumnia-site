@@ -11,6 +11,7 @@ import {
   createQuestionOrder,
   emailQuestionEnv,
   emailQuestionPurchasesSuspended,
+  emailQuestionLiveWebhookReady,
   emailQuestionsOpen,
 } from '../lib/emailQuestions.js'
 
@@ -39,6 +40,35 @@ test('client : apres approbation incertaine, aucun deuxieme appel a capture', ()
   assert.match(page, /\[0, 1200, 3000, 6000\]/)
   assert.equal((page.match(/request\('capture'\)/g) || []).length, 1)
   assert.match(page, /Ne recommencez pas le reglement|Ne recommencez pas le règlement/)
+})
+
+test('LIVE : aucune nouvelle guidance payante sans identifiant de webhook PayPal signé', async () => {
+  const previous = process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+  const beforeSuspend = process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+  try {
+    delete process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+    process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = 'false'
+    assert.equal(emailQuestionLiveWebhookReady('live'), false)
+    assert.equal(emailQuestionLiveWebhookReady('sandbox'), true)
+    const result = { code: null, body: null,
+      status(code) { this.code = code; return this },
+      json(payload) { this.body = payload; return this },
+    }
+    await createQuestionOrder({ method: 'POST', body: {} }, result, {
+      from: () => assert.fail('DB must not be touched'),
+    }, 'live')
+    assert.equal(result.code, 503)
+    assert.equal(result.body.error, 'paypal_webhook_not_configured')
+    process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = 'WH-INVALID'
+    assert.equal(emailQuestionLiveWebhookReady('live'), false)
+    process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = '1234ABCD5678EFGH'
+    assert.equal(emailQuestionLiveWebhookReady('live'), true)
+  } finally {
+    if (previous === undefined) delete process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID
+    else process.env.PAYPAL_EMAIL_QUESTIONS_WEBHOOK_ID = previous
+    if (beforeSuspend === undefined) delete process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED
+    else process.env.EMAIL_QUESTIONS_PURCHASES_SUSPENDED = beforeSuspend
+  }
 })
 
 test('PayPal reste obligatoirement en sandbox hors production', () => {

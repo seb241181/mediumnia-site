@@ -71,6 +71,21 @@ test('LIVE : aucune nouvelle guidance payante sans identifiant de webhook PayPal
   }
 })
 
+test('admin: les 5 commandes historiques disposent d’une vérification fournisseur strictement en lecture seule', () => {
+  const ui = read('src/components/rdv/EmailQuestionsPanel.jsx')
+  const handler = read('lib/emailQuestions.js')
+  assert.match(ui, /paymentPending\.map/)
+  assert.match(ui, /onClick=\{checkPendingPayPal\}/)
+  assert.match(ui, /op: 'paypal_readonly_preview'/)
+  assert.match(ui, /Vérifier les paiements chez PayPal — lecture seule/)
+  assert.match(ui, /Aucun débit, remboursement, e-mail ou changement de statut/)
+  const diagnostic = handler.split("if (input.op === 'paypal_readonly_preview')")[1]?.split("if (input.op === 'start')")[0]
+  assert.ok(diagnostic, 'owner-only read-only diagnosis available')
+  assert.match(diagnostic, /paypalAccessToken\(row\.paypal_env\)/)
+  assert.match(diagnostic, /paypalRequest\(row\.paypal_env, access, 'GET'/)
+  assert.doesNotMatch(diagnostic, /paypalRequest\([^\n]*'POST'|\.update\(|\.insert\(|sendEmail\(/)
+})
+
 test('PayPal reste obligatoirement en sandbox hors production', () => {
   const beforeVercel = process.env.VERCEL_ENV
   const beforePayPal = process.env.PAYPAL_ENV

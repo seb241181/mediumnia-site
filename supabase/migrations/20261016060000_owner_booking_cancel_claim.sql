@@ -39,6 +39,38 @@ BEGIN
 END;
 $function$;
 
+-- Keep automatic cancellation and other booking editors from changing the
+-- identity/date/status of a booking while its owner cancel is unresolved.
+-- The owner finalize RPC is the sole allowed confirmed -> cancelled transition.
+CREATE OR REPLACE FUNCTION public.guard_owner_booking_cancel_status()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_temp AS $function$
+BEGIN
+  IF OLD.owner_cancel_claim_id IS NOT NULL AND OLD.status = 'confirmed'
+     AND (
+       NEW.owner_cancel_claim_id IS DISTINCT FROM OLD.owner_cancel_claim_id
+       OR NEW.status IS DISTINCT FROM OLD.status
+          AND (NEW.status IS DISTINCT FROM 'cancelled'
+            OR NEW.cancel_reason IS DISTINCT FROM 'practitioner_manual')
+       OR NEW.balance_cancel_claimed_at IS DISTINCT FROM OLD.balance_cancel_claimed_at
+       OR NEW.practitioner_id IS DISTINCT FROM OLD.practitioner_id
+       OR NEW.service_id IS DISTINCT FROM OLD.service_id
+       OR NEW.starts_at IS DISTINCT FROM OLD.starts_at
+       OR NEW.ends_at IS DISTINCT FROM OLD.ends_at
+       OR NEW.google_event_id IS DISTINCT FROM OLD.google_event_id
+     )
+  THEN
+    RAISE EXCEPTION 'owner_booking_cancellation_in_progress'
+      USING ERRCODE = '55P03';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+DROP TRIGGER IF EXISTS guard_owner_cancel_booking_status ON public.bookings;
+CREATE TRIGGER guard_owner_cancel_booking_status BEFORE UPDATE
+  ON public.bookings FOR EACH ROW
+  EXECUTE FUNCTION public.guard_owner_booking_cancel_status();
+
 DROP TRIGGER IF EXISTS guard_owner_cancel_balance_payments ON public.rdv_balance_payments;
 CREATE TRIGGER guard_owner_cancel_balance_payments BEFORE INSERT OR UPDATE OR DELETE
   ON public.rdv_balance_payments FOR EACH ROW
@@ -189,3 +221,4 @@ REVOKE ALL ON FUNCTION public.finalize_owner_booking_cancel(uuid, uuid, uuid, uu
 GRANT EXECUTE ON FUNCTION public.claim_owner_booking_cancel(uuid, uuid, uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.finalize_owner_booking_cancel(uuid, uuid, uuid, uuid, boolean) TO service_role;
 REVOKE ALL ON FUNCTION public.guard_owner_booking_cancellation_write() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.guard_owner_booking_cancel_status() FROM PUBLIC, anon, authenticated;

@@ -33,6 +33,20 @@ test('Sandbox : confirmation indique paiement fictif et aucun e-mail client', ()
   assert.match(page, /Approbation reçue\. Vérification sécurisée du paiement/)
 })
 
+test('la page Guidance par e-mail s’ouvre en haut sans réinitialiser le formulaire', () => {
+  const app = read('src/App.jsx')
+  const page = read('src/components/QuestionPage.jsx')
+  // SPA link from an already scrolled homepage: no inherited smooth scroll.
+  assert.match(app, /if \(v === 'question'\) window\.scrollTo\(\{ top: 0, left: 0, behavior: 'instant' \}\)/)
+  // Direct link /question and browser restores: synchronous before first paint.
+  assert.match(page, /useLayoutEffect\(\(\) => \{/)
+  assert.match(page, /window\.history\.scrollRestoration = 'manual'/)
+  assert.match(page, /window\.scrollTo\(\{ top: 0, left: 0, behavior: 'instant' \}\)/)
+  assert.match(page, /return \(\) => \{ window\.history\.scrollRestoration = previous \}/)
+  assert.ok(page.indexOf('useLayoutEffect(() => {') < page.indexOf("fetch('/api/rdv-config?questionAction=config'"))
+  assert.match(page, /\}, \[\]\)\s*\n\s*useEffect\(\(\) => \{/)
+})
+
 test('client : apres approbation incertaine, aucun deuxieme appel a capture', () => {
   const page = read('src/components/QuestionPage.jsx')
   assert.match(page, /result\.retryable === true/)

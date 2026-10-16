@@ -36,7 +36,7 @@ function shiftDay(value, delta) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-function BookingRow({ booking, practitionerId, session, onSaved, onCancelled }) {
+function BookingRow({ booking, practitionerId, session, onSaved, onCancelled, ownerCancelEnabled }) {
   const [method, setMethod] = useState('')
   const [amount, setAmount] = useState(() => (booking.remaining_cents / 100).toFixed(2).replace('.', ','))
   const [paidAt, setPaidAt] = useState(() => localInput(defaultPaymentDate(booking)))
@@ -118,7 +118,7 @@ function BookingRow({ booking, practitionerId, session, onSaved, onCancelled }) 
       )}
 
       <div className="mt-3">
-        <OwnerCancelBookingButton booking={booking} practitionerId={practitionerId} session={session} onChanged={onCancelled} />
+        <OwnerCancelBookingButton booking={booking} practitionerId={practitionerId} session={session} onChanged={onCancelled} enabled={ownerCancelEnabled} />
       </div>
 
       {canCollect && (
@@ -159,7 +159,7 @@ function BookingRow({ booking, practitionerId, session, onSaved, onCancelled }) 
   )
 }
 
-export default function DailyPayments({ practitionerId, session, onSaved, onCancelled }) {
+export default function DailyPayments({ practitionerId, session, onSaved, onCancelled, ownerCancelEnabled = false }) {
   const [day, setDay] = useState(todayValue)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -227,7 +227,7 @@ export default function DailyPayments({ practitionerId, session, onSaved, onCanc
                 {actionableBookings.length > 0 ? (
                   <ul className="mt-4 space-y-3" aria-label="Rendez-vous à suivre">
                     {actionableBookings.map(b => (
-                      <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} onCancelled={onCancelled} />
+                      <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} onCancelled={onCancelled} ownerCancelEnabled={ownerCancelEnabled} />
                     ))}
                   </ul>
                 ) : (
@@ -241,7 +241,7 @@ export default function DailyPayments({ practitionerId, session, onSaved, onCanc
                     <p className="px-4 pb-2 font-georgia text-[11px] text-mist">Soldés d'après les écritures MediumIA. Cela ne remplace pas le rapprochement bancaire ou PayPal.</p>
                     <ul className="space-y-2 px-3 pb-3" aria-label="Rendez-vous soldés dans MediumIA">
                       {settledBookings.map(b => (
-                        <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} onCancelled={onCancelled} />
+                        <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} onCancelled={onCancelled} ownerCancelEnabled={ownerCancelEnabled} />
                       ))}
                     </ul>
                   </details>

@@ -9,6 +9,7 @@ import {
   sendPurchaseEmails,
   inspectLatestSandboxGuidance,
   reconcileQuestionOrder,
+  runTwoSandboxReconciliations,
 } from '../lib/emailQuestions.js'
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
@@ -363,6 +364,117 @@ test('reconcile: wrong amount never marks paid despite COMPLETED', withPayPalEnv
     assert.equal(paypal.calls.filter(c => c.href.endsWith('/capture')).length, 0)
   } finally { paypal.restore() }
 }))
+
+test('TEST two-order recovery: isolated and fail closed for Production', async () => {
+  const envNames = ['VERCEL_ENV', 'PAYPAL_ENV', 'VERCEL_PROJECT_ID', 'VERCEL_URL',
+    'SUPABASE_URL', 'EMAIL_QUESTIONS_SANDBOX_RECONCILE_ENABLED',
+    'EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED']
+  const prior = Object.fromEntries(envNames.map(k => [k, process.env[k]]))
+  try {
+    Object.assign(process.env, {
+      VERCEL_ENV: 'preview', PAYPAL_ENV: 'sandbox',
+      VERCEL_PROJECT_ID: 'prj_o2q8ZuXcy1ilVbVbgoasAzH4Gbzx',
+      VERCEL_URL: 'mediumia-pr156-test.vercel.app',
+      SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co',
+      EMAIL_QUESTIONS_SANDBOX_RECONCILE_ENABLED: 'true',
+      EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED: 'true',
+    })
+    const forbiddenDb = { from() { assert.fail('unexpected database access') } }
+    let o = response()
+    process.env.VERCEL_ENV = 'production'
+    await runTwoSandboxReconciliations({ method: 'POST', headers: {
+      origin: 'https://mediumia-pr156-test.vercel.app', host: 'mediumia-pr156-test.vercel.app',
+    } }, o, forbiddenDb, 'sandbox')
+    assert.equal(o.code, 404)
+    process.env.VERCEL_ENV = 'preview'
+    process.env.SUPABASE_URL = 'https://uotkpygeqqnekpolezts.supabase.co'
+    o = response()
+    await runTwoSandboxReconciliations({ method: 'POST' }, o, forbiddenDb, 'sandbox')
+    assert.equal(o.code, 404)
+    process.env.SUPABASE_URL = 'https://wnbwhnqiulsdjcvkuwos.supabase.co'
+    o = response()
+    await runTwoSandboxReconciliations({ method: 'POST', headers: {
+      origin: 'https://evil.invalid', host: 'mediumia-pr156-test.vercel.app',
+    } }, o, forbiddenDb, 'sandbox')
+    assert.equal(o.code, 403)
+    o = { ...response(), setHeader() {}, send(body) { this.html = body; return this } }
+    await runTwoSandboxReconciliations({ method: 'GET' }, o, forbiddenDb, 'sandbox')
+    assert.equal(o.code, 200)
+    assert.match(o.html, /method="POST"/)
+    assert.match(o.html, /Deux captures PayPal Sandbox/)
+  } finally {
+    for (const key of envNames) {
+      if (prior[key] == null) delete process.env[key]
+      else process.env[key] = prior[key]
+    }
+  }
+})
+
+test('TEST two-order recovery: precisely two approved rows, provider recovery called without emails', async () => {
+  const envNames = ['VERCEL_ENV', 'VERCEL_PROJECT_ID', 'VERCEL_URL', 'SUPABASE_URL',
+    'EMAIL_QUESTIONS_SANDBOX_RECONCILE_ENABLED', 'EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED']
+  const prior = Object.fromEntries(envNames.map(k => [k, process.env[k]]))
+  Object.assign(process.env, {
+    VERCEL_ENV: 'preview', VERCEL_PROJECT_ID: 'prj_o2q8ZuXcy1ilVbVbgoasAzH4Gbzx',
+    VERCEL_URL: 'mediumia-pr156-test.vercel.app',
+    SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co',
+    EMAIL_QUESTIONS_SANDBOX_RECONCILE_ENABLED: 'true',
+    EMAIL_QUESTIONS_SANDBOX_DIAGNOSTIC_ENABLED: 'true',
+  })
+  const ids = [
+    '01b55fff-fd30-4308-82b0-e69c74e18295',
+    '3f397909-21d1-4990-8c5d-c8cfb58a8e4d',
+  ]
+  const records = ids.map((id, i) => ({
+    id, paypal_order_id: 'FAKE-ORDER-' + i, paypal_env: 'sandbox',
+    pack: 'q1', question_count: 1, amount_cents: 1990, currency: 'EUR',
+    status: 'payment_pending', capture_started_at: '2026-10-16T07:16:30Z',
+    paypal_capture_id: null, paypal_refund_id: null, created_at: '2026-10-16T07:16:26Z',
+    confirmation_email_status: null,
+  }))
+  const db = {
+    from(table) {
+      assert.equal(table, 'mediumia_email_questions')
+      return { select() { return this }, eq(key, id) {
+        assert.equal(key, 'id'); this.id = id; return this
+      }, async maybeSingle() {
+        return { data: records.find(row => row.id === this.id), error: null }
+      } }
+    },
+  }
+  const calls = []
+  const reconcile = async (req, res, _, env, { sendPurchase }) => {
+    assert.equal(req.method, 'POST')
+    assert.equal(env, 'sandbox')
+    assert.equal(await sendPurchase({}, {}), 'sandbox_skipped')
+    calls.push(req.body.orderId)
+    res.status(200).json({ ok: true, reconciled: true })
+  }
+  const request = { method: 'POST', headers: {
+    host: 'mediumia-pr156-test.vercel.app',
+    origin: 'https://mediumia-pr156-test.vercel.app',
+  } }
+  try {
+    let output = response()
+    await runTwoSandboxReconciliations(request, output, db, 'sandbox', { reconcile })
+    assert.equal(output.code, 200)
+    assert.equal(output.body.sandbox_only, true)
+    assert.equal(output.body.no_provider_capture_post, true)
+    assert.equal(output.body.no_real_email, true)
+    assert.deepEqual(calls, ['FAKE-ORDER-0', 'FAKE-ORDER-1'])
+    calls.length = 0
+    records[1].amount_cents = 100
+    output = response()
+    await runTwoSandboxReconciliations(request, output, db, 'sandbox', { reconcile })
+    assert.equal(output.code, 409)
+    assert.equal(calls.length, 0)
+  } finally {
+    for (const key of envNames) {
+      if (prior[key] == null) delete process.env[key]
+      else process.env[key] = prior[key]
+    }
+  }
+})
 
 test('webhook : les en-têtes de signature absents sont rejetés avant tout accès DB ou PayPal', withPayPalEnv(async () => {
   let touched = false

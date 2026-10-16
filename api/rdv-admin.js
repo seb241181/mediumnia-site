@@ -1,4 +1,6 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
+import { getRequestCounts } from '../lib/rdvRequestCounts.js'
+import { getManualCancellationPreview } from '../lib/rdvManualCancellationPreview.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
 import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
 import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
@@ -130,8 +132,11 @@ async function handleMe(req, res, supabase, userId) {
     googleEventMap = Object.fromEntries((syncedBookings || []).map(b => [b.id, b.google_event_id || null]))
   }
 
+  const requestCounts = {}
+  for (const practitioner of practitioners) requestCounts[practitioner.id] = await getRequestCounts(supabase, practitioner.id)
   const result = practitioners.map(p => ({
     ...p,
+    request_counts: requestCounts[p.id],
     services:          (services    || []).filter(s => s.practitioner_id === p.id),
     availability_rules:(rules       || []).filter(r => r.practitioner_id === p.id),
     calendar:          (connections || []).find(c  => c.practitioner_id  === p.id) || null,
@@ -507,7 +512,17 @@ async function handleRequests(req, res, supabase, userId) {
     q = q.order('created_at', { ascending: false }).limit(100)
     const { data, error } = await q
     if (error) return res.status(500).json({ error: 'db_error', code: error.code })
-    return res.status(200).json({ requests: data || [] })
+    const linkedIds = (data || []).filter(request => request.confirmed_booking_id).map(request => request.confirmed_booking_id)
+    let eventIds = {}
+    if (linkedIds.length) {
+      const linked = await supabase.from('bookings').select('id, google_event_id')
+        .eq('practitioner_id', pid).in('id', linkedIds)
+      if (linked.error) return res.status(503).json({ error: 'booking_sync_lookup_unavailable' })
+      eventIds = Object.fromEntries((linked.data || []).map(booking => [booking.id, booking.google_event_id]))
+    }
+    return res.status(200).json({ requests: (data || []).map(request => ({ ...request,
+      google_event_id: request.confirmed_booking_id ? eventIds[request.confirmed_booking_id] || null : null,
+    })) })
   }
 
   if (req.method === 'PUT') {
@@ -819,6 +834,11 @@ export default async function handler(req, res) {
     case 'exceptions':   return handleExceptions(req, res, supabase, userId)
     case 'requests':     return handleRequests(req, res, supabase, userId)
     case 'bookings':     return handleBookings(req, res, supabase, userId)
+    case 'booking-cancel-preview': {
+      const result = await getManualCancellationPreview({ db: supabase, userId, method: req.method,
+        practitionerId: req.query.practitioner_id, bookingId: req.query.booking_id })
+      return res.status(result.status).json(result.body)
+    }
     case 'booking-balances': {
       if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
       const result = await getBookingBalances({ supabase, userId, practitionerId: req.query.practitioner_id, ids: req.query.ids })

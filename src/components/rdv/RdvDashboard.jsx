@@ -3,6 +3,9 @@ import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
+import RequestShortcuts from './RequestShortcuts.jsx'
+import UpcomingBookings from './UpcomingBookings.jsx'
+import { filterRequests } from './rdvCoulissesHelpers.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -769,7 +772,22 @@ function requestDisplayName(req) {
   return name || req.customer_phone || 'Client à identifier'
 }
 
-function RequestsSection({ requests, services, practitionerId, session, onChanged }) {
+function RequestsSection({ requests, services, practitionerId, session, onChanged, statusFilter = 'all' }) {
+  const [filteredResult, setFilteredResult] = useState(null)
+  const filterKey = `${practitionerId}:${statusFilter}`
+  useEffect(() => {
+    if (statusFilter === 'all') return
+    const controller = new AbortController()
+    const query = new URLSearchParams({ action: 'requests', practitioner_id: practitionerId, status: statusFilter })
+    fetch(`/api/rdv-admin?${query}`, { headers: authHeader(session), signal: controller.signal })
+      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error('requests_unavailable'); return body })
+      .then(body => { if (!controller.signal.aborted) setFilteredResult({ key: filterKey, requests: body.requests }) })
+      .catch(() => { if (!controller.signal.aborted) setFilteredResult({ key: filterKey, error: true }) })
+    return () => controller.abort()
+  }, [practitionerId, statusFilter, filterKey, session, requests])
+  const currentFilter = filteredResult?.key === filterKey ? filteredResult : null
+  const visibleRequests = statusFilter === 'all' ? requests
+    : currentFilter?.requests || filterRequests(requests || [], statusFilter)
   const [expandedId, setExpandedId] = useState(null)
   const [form, setForm] = useState({ date: '', time: '', travelFee: '', finalPrice: '', notes: '' })
   const [saving, setSaving] = useState(false)
@@ -896,10 +914,11 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
 
   const inp = "border border-gold/20 rounded-xl px-3 py-2 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60 w-full"
 
-  if (!requests || requests.length === 0) {
+  if (currentFilter?.error) return <p role="alert" className="font-georgia text-sm text-red-800">Demandes indisponibles. Réessayez plus tard.</p>
+  if (!visibleRequests || visibleRequests.length === 0) {
     return (
       <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-8 text-center">
-        <p className="font-georgia text-sm text-mist">Aucune demande en cours.</p>
+        <p className="font-georgia text-sm text-mist">{statusFilter !== 'all' && !currentFilter ? 'Chargement des demandes…' : 'Aucune demande pour ce statut.'}</p>
       </div>
     )
   }
@@ -909,7 +928,8 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">{error}</div>
       )}
-      {requests.map(req => {
+      {visibleRequests.length === 100 && <p className="font-georgia text-xs text-mist">100 dernières demandes</p>}
+      {visibleRequests.map(req => {
         const svc = services.find(s => s.id === req.service_id)
         const isExpanded = expandedId === req.id
         const canConfirm = req.status === 'pending' || req.status === 'contacted'
@@ -1173,6 +1193,14 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
   const [editingSettings, setEditingSettings] = useState(false)
   // Les Coulisses : montrer le travail quotidien avant les reglages techniques.
   const [activePanel, setActivePanel] = useState('rdv')
+  const [requestFilter, setRequestFilter] = useState('all')
+  const [requestFocus, setRequestFocus] = useState(0)
+  const requestsHeading = useRef(null)
+  useEffect(() => {
+    if (!requestFocus || activePanel !== 'rdv') return
+    requestsHeading.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    requestsHeading.current?.focus({ preventScroll: true })
+  }, [requestFocus, activePanel])
 
   // OAuth URL notice from redirect
   useEffect(() => {
@@ -1492,7 +1520,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       {
                         id: 'rdv',
                         title: 'Rendez-vous',
-                        detail: `Aujourd’hui · ${(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} demande(s) à traiter`,
+                        detail: `Aujourd’hui · ${activePractitioner.request_counts?.pending ?? '—'} demande(s) à traiter`,
                       },
                       {
                         id: 'email',
@@ -1522,6 +1550,9 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     ))}
                   </nav>
                 </div>
+
+                <RequestShortcuts counts={activePractitioner.request_counts} selected={requestFilter}
+                  onSelect={status => { setRequestFilter(status); setActivePanel('rdv'); setRequestFocus(value => value + 1) }} />
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {/* Contenu de la rubrique choisie */}
@@ -1718,21 +1749,22 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                   />
 
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
-                  {(activePractitioner.pending_requests?.length > 0 ||
-                    activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
+                  {(
                     <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Demandes</p>
-                          <h2 className="font-georgia text-lg font-medium">Demandes de rendez-vous</h2>
+                          <h2 ref={requestsHeading} tabIndex={-1} className="scroll-mt-6 font-georgia text-lg font-medium">Demandes de rendez-vous</h2>
                         </div>
-                        {activePractitioner.pending_requests?.filter(r => r.status === 'pending').length > 0 && (
+                        {activePractitioner.request_counts?.pending > 0 && (
                           <span className="font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
-                            {activePractitioner.pending_requests.filter(r => r.status === 'pending').length} en attente
+                            {activePractitioner.request_counts.pending} en attente
                           </span>
                         )}
                       </div>
                       <RequestsSection
+                        key={activePractitioner.id}
+                        statusFilter={requestFilter}
                         requests={activePractitioner.pending_requests || []}
                         services={activePractitioner.services || []}
                         practitionerId={activePractitioner.id}
@@ -1743,52 +1775,10 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                   )}
 
                   {/* Upcoming bookings */}
-                  <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Agenda</p>
-                        <h2 className="font-georgia text-lg font-medium">Rendez-vous des prochains jours</h2>
-                      </div>
-                      {futureBookings.length > 0 && (
-                        <StatusBadge status="ok" />
-                      )}
-                    </div>
-
-                    {futureBookings.length === 0 ? (
-                      <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-10 text-center">
-                        <p className="text-gold text-3xl mb-3">◈</p>
-                        <p className="font-georgia text-sm text-mist leading-relaxed max-w-xs mx-auto">
-                          Aucun autre rendez-vous prévu après aujourd’hui.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {futureBookings.map(b => {
-                          const svc = activePractitioner.services.find(s => s.id === b.service_id)
-                          const date = new Date(b.starts_at)
-                          // Visio = WhatsApp / FaceTime (demande Lumia), sinon « canal à confirmer » ; jamais Meet.
-                          const visio = videoLabel((activePractitioner.pending_requests || []).find(r => r.confirmed_booking_id === b.id))
-                            || (Array.isArray(svc?.modality) && svc.modality.length > 0 && svc.modality.every(m => m === 'video') ? 'Visio — canal à confirmer' : null)
-                          return (
-                            <div key={b.id} className="rounded-xl border border-gold/15 bg-white/40 px-4 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                              <div className="min-w-0">
-                                <p className="font-georgia text-sm font-semibold text-deep">{b.customer_first_name} {b.customer_last_name}</p>
-                                <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}{visio ? ` · ${visio}` : ''}</p>
-                              </div>
-                              <button
-                                onClick={() => handleResendConfirmation(b)}
-                                disabled={resendingBookingId === b.id}
-                                className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                              >
-                                {resendingBookingId === b.id && <Spinner />}
-                                Renvoyer la confirmation
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </section>
+                  <UpcomingBookings bookings={futureBookings} services={activePractitioner.services || []}
+                    practitionerId={activePractitioner.id} session={session} onResend={handleResendConfirmation}
+                    resendingBookingId={resendingBookingId}
+                    videoLabel={booking => videoLabel((activePractitioner.pending_requests || []).find(request => request.confirmed_booking_id === booking.id))} />
 
                   {/* Caisse accessible dans Rendez-vous (y compris /rdv#encaisser). */}
                   <AccountingSection

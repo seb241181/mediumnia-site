@@ -122,3 +122,14 @@ Staging vérifié READY sur `f35af2e9b65c1daa45b29b096ff3d859070b28b2` :
 **Avant Production :** rapprochement PayPal Live des cinq commandes historiques `payment_pending` en lecture seule ; les deux migrations nécessaires et la configuration du vrai webhook ; approbation explicite distincte pour migration, fusion, déploiement et réouverture.
 
 **Question commerciale indépendante :** les tarifs du code sont actuellement 19,90 € (q1) et 29,90 € (q2). Les confronter aux tarifs voulus par Sébastien avant ouverture.
+
+## Constats du 16 octobre 2026 — approbation Sandbox confirmée
+
+- Le navigateur de test a rencontré l'erreur de confirmation après paiement ; deux commandes q1 Sandbox, toutes deux `payment_pending` mais `capture_started_at` non nul, ont été observées dans Supabase TEST.
+- Un diagnostic **PayPal GET order + GET capture** (sans mutation) transmis par l'utilisateur confirme sur **une** des commandes : order COMPLETED, 1 purchase unit, 1 capture COMPLETED, détail capture COMPLETED et `capture_confirmed_readonly` / `capture_consistent`. Le diagnostic provenait de l'ancienne version sans indice de commande ; le statut de l'autre commande n'est **pas encore confirmé**.
+- La cause exacte de l'erreur initiale n'est pas prouvée. Une propagation PayPal différée est une explication plausible ; l'avertissement Node `url.parse` n'est pas causalement établi.
+- Correctif **GET-only** ajouté à `lib/emailQuestions.js` : endpoint `questionAction=reconcile`, validation fournisseur de la commande ET de la capture, unicité des purchase units et captures, montant / devise / corrélation, transition DB `payment_pending -> paid` conditionnelle et notification émise seulement par le gagnant. Ne contient **aucun POST PayPal capture**, même avec une réponse réseau perdue.
+- `QuestionPage.jsx` exécute une unique tentative initiale `capture`, puis uniquement `reconcile` sur les erreurs explicitement retryables. Il ne recrée aucune commande et affiche de ne pas recommencer à payer.
+- Trois tests simulés du rapprochement et un test de sécurité d'interface ajoutés (confirmation puis replay idempotent, état APPROVED, montant divergent, un seul appel `capture`).
+- **Aucune commande Sandbox existante n'a été modifiée ou marquée payée pendant cette correction.** Test du nouveau commit Staging requis avant d'envisager toute opération de rapprochement en TEST et GO explicite distinct.
+- **PROD NO-GO** ; tester séparément le vrai webhook PayPal signé et rapprocher les 5 commandes historiques Production.

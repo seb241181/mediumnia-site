@@ -20,6 +20,11 @@ app = replaceRequired(
 )
 
 const routeSeoHelpers = `const ROUTE_META = {
+  arche: {
+    title: 'L’Arche — Communauté spirituelle gratuite | Projet de Sébastien Seguin',
+    description: 'L’Arche se prépare : un réseau gratuit et bienveillant pour échanger sur la spiritualité, explorer ses questionnements et se rencontrer sans jugement.',
+    robots: 'noindex,nofollow',
+  },
   home: {
     title: 'MediumIA — Médiumnité, formation, consultations & réseau',
     description: 'MediumIA réunit formation à la médiumnité, consultations, Chronosphère, Oracle Au-delà de l’Âme et réseau de praticiens du spirituel et du bien-être.',

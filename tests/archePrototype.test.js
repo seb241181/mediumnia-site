@@ -1,0 +1,182 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8')
+
+test('L’Arche est séparée, différée et non indexée dans le code final généré', () => {
+  const app = read('src/App.jsx')
+  const patch = read('scripts/apply-arche-isolation.mjs')
+  const packageJson = JSON.parse(read('package.json'))
+  assert.match(app, /const ArchePage = lazy\(\(\) => import\('\.\/components\/ArchePage'\)\)/)
+  assert.doesNotMatch(app, /import ArchePage from '\.\/components\/ArchePage'/)
+  assert.match(app, /view === 'arche'[\s\S]*<DeferredRoute><ArchePage/)
+  assert.match(app, /p === '\/arche' \? 'arche'/)
+  assert.match(app, /view !== 'arche'/)
+  assert.match(patch, /meta\.robots \|\| \(isPrivate/)
+  assert.match(app, /robots\.setAttribute\('content', meta\.robots/)
+  assert.match(app, /robots: 'noindex,nofollow'/)
+  for (const key of ['predev','pretest','prebuild']) {
+    assert.match(packageJson.scripts[key], /apply-home-growth-path\.mjs && node scripts\/apply-arche-isolation\.mjs/)
+  }
+  const meta = read('scripts/apply-route-seo-cro.mjs')
+  assert.match(meta, /robots: 'noindex,nofollow'/)
+})
+
+test('La vitrine conduit à une connexion fictive distincte de l’application', () => {
+  const page = read('src/components/ArchePage.jsx')
+  assert.match(page, /data-arche-prototype="v2"/)
+  assert.match(page, /function LoginScreen/)
+  assert.match(page, /setScreen\('login'\)/)
+  assert.match(page, /screen === 'login'/)
+  assert.match(page, /screen === 'app'/)
+  assert.match(page, /ArcheAppPreview nickname=\{nickname \|\| 'Étoile du Nord'\}/)
+  assert.match(page, /simulation locale/)
+})
+
+test('Le blanc domine et les 4 ambiances restent réservées aux courts textes', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(app, /bg-white/)
+  assert.match(app, /#FAFAF7/)
+  assert.match(app, /#ECEAF2/)
+  assert.match(app, /#1A1535/)
+  assert.match(app, /#C9A84C/)
+  assert.doesNotMatch(app, /text-\[#C9A84C\]|text-gold/i)
+  for (const mood of ['Clair','Doux','Nuit','Brume']) assert.ok(app.includes("label: '"+mood+"'"))
+  assert.match(app, /draft\.length > 160 \|\| format !== 'normal' \? 'clear' : theme/)
+  assert.match(app, /Texte long : l’ambiance revient automatiquement à Clair/)
+})
+
+test('Question et sujet sensible : lecture conditionnelle et autorisations de réponses', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(app, /isQuestion \? 'border-l-4 border-l-\[#C9A84C\]'/)
+  assert.match(app, /Sujet sensible : \{post\.topic/)
+  assert.match(app, /Lire avec attention/)
+  assert.match(app, /const \[showSensitive, setShowSensitive\] = useState\(false\)/)
+  assert.match(app, /setReplyPolicy/)
+  assert.match(app, /policy !== 'contacts'/)
+  assert.match(app, /policy !== 'closed'/)
+  assert.match(app, /Réponses réservées aux proches/)
+  assert.doesNotMatch(app, /<button[^>]*>Réponses limitées aux proches<\/button>/)
+})
+
+test('Les menus et demandes permettent masquer, signaler, bloquer et ignorer', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(app, /\['Masquer','Signaler'/)
+  assert.match(app, /onModerate\(action, post\)/)
+  assert.match(app, /Aucun signalement réel envoyé|aucun signalement réel envoyé/i)
+  assert.match(app, /setBlocked/)
+  assert.match(app, /setHidden/)
+  assert.match(app, /Annuler le masquage/)
+  assert.match(app, />Accepter<\/button>/)
+  assert.match(app, />Ignorer<\/button>/)
+  assert.match(app, />Bloquer<\/button>/)
+  assert.match(app, /Invitation ignorée/)
+  assert.match(app, /Historique masqué/)
+})
+
+test('La Lueur respecte le consentement du destinataire et reste privée', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(app, /const \[incomingLueur, setIncomingLueur\] = useState\(false\)/)
+  assert.match(app, /const recipientAcceptsLueur = selected === 'aurore'/)
+  assert.match(app, /!recipientAcceptsLueur/)
+  assert.match(app, /!incomingLueur/)
+  assert.match(app, /Moi → Confidentialité/)
+  assert.match(app, /J’autorise mes proches à m’envoyer des Lueurs/)
+  assert.match(app, /Aurore vous envoie une Lueur/)
+  assert.doesNotMatch(app, /function ArcheLoginPreview/)
+})
+
+test('Présence protégée, pastilles dessinées et humeur limitée aux proches', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(app, /function PresenceDot/)
+  assert.match(app, /status === 'invisible'\) return null/)
+  assert.match(app, /rounded-full bg-\[#377946\]/)
+  assert.match(app, /isClose \? person\.status : 'invisible'/)
+  assert.match(app, /const \[presence, setPresence\] = useState\('invisible'\)/)
+  assert.match(app, /Phrase d’humeur \(visible par vos proches seulement\)/)
+  assert.match(app, /lueur \? ' arche-lueur ring-4 ring-\[#C9A84C\]\/35/)
+})
+
+test('Réactions discrètes, réponses repliées, police système et mobile plein écran', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(app, /Je te comprends/)
+  assert.match(app, /Moi aussi/)
+  assert.match(app, /aria-pressed=\{localReactions\.includes/)
+  assert.match(app, /const \[showReplies, setShowReplies\] = useState\(false\)/)
+  assert.match(app, /showReplies &&/)
+  assert.match(app, /prefers-reduced-motion:reduce/)
+  assert.match(app, /fontFamily: 'system-ui/)
+  assert.match(app, /mobileThread/)
+  assert.match(app, /Revenir aux rencontres/)
+  assert.match(app, /id="arche-dm-draft"/)
+  assert.match(app, /fixed inset-x-0 bottom-0/)
+  assert.match(app, /pb-\[env\(safe-area-inset-bottom\)\]/)
+  assert.match(app, /min-h-14/)
+  assert.match(app, /min-h-11/)
+})
+
+test('La maquette n’effectue aucune écriture distante ni stockage navigateur', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(app, /data-arche-app-preview="local-only"/)
+  assert.match(app, /Prototype privé : toutes les données ci-dessous sont fictives et locales/)
+  assert.doesNotMatch(app, /supabase|\.insert\(|\.upsert\(|supabase\.from\(|\bfetch\s*\(|axios|signInWithPassword|signUp\(|localStorage|sessionStorage/)
+})
+
+test('Le launcher et la fenêtre GlobalAccount sont réellement exclus sur /arche', () => {
+  const compiled = read('src/components/GlobalAccount.jsx')
+  const archePatch = read('scripts/apply-arche-isolation.mjs')
+  assert.match(compiled, /const hideLauncher = pathname\.startsWith\('\/rdv\/'\) \|\| pathname === '\/arche'/)
+  assert.match(compiled, /\{!hideLauncher && \(/)
+  assert.match(compiled, /\{open && !hideLauncher && \(/)
+  assert.match(archePatch, /const globalAccountPath/)
+  assert.match(archePatch, /GlobalAccount patch drift/)
+  assert.doesNotMatch(read('scripts/apply-lumia-assistant-console.mjs'), /view (?:===|!==) 'arche'/)
+  const app = read('src/App.jsx')
+  assert.match(app, /showGuardian = [^\n]*view !== 'arche'/)
+  assert.match(app, /isPrivate = [^\n]*view === 'arche'/)
+})
+
+test('Le signalement de conversation et les autres protections restent accessibles', () => {
+  const source = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(source, /Bloquer et signaler/)
+  assert.match(source, /Signaler<\/button>/)
+  assert.match(source, /blockContact\(true\)/)
+  assert.match(source, /onNotice\(withReport/)
+  assert.match(source, /setMessages\(\[\]\)/)
+  assert.match(source, /recipientAcceptsLueur/)
+})
+
+test('Changer d’onglet ne démonte pas les publications, les conversations ou leurs états', () => {
+  const source = read('src/components/ArcheSocialPrototype.jsx')
+  for (const id of ['feed', 'salon', 'cercles', 'messages', 'profile']) {
+    assert.ok(source.includes("<div hidden={view !== '"+id+"'}>"), 'Vue toujours montée : '+id)
+  }
+  assert.doesNotMatch(source, /view==='messages'&&<MessagesView/)
+})
+
+test('Icônes vectorielles et champs suffisamment contrastés', () => {
+  const source = read('src/components/ArcheSocialPrototype.jsx')
+  assert.match(source, /function AppIcon/)
+  assert.match(source, /<AppIcon name=\{item.icon\} size=\{20\}\/>/)
+  assert.match(source, /<AppIcon name="bell"\/>/)
+  assert.doesNotMatch(source, /\['⌂','◉','◎','✉','◯'\]/)
+  assert.match(source, /placeholder:text-\[#4A3F6B\]/)
+  assert.match(source, /arche-lueur/)
+  assert.match(source, /reaction.label/)
+})
+
+
+test('La revue mobile/desktop garde les bonnes cibles et les retours visibles seulement sur leur onglet', () => {
+  const app = read('src/components/ArcheSocialPrototype.jsx')
+  const e2e = read('tests/e2e/arche-touch.spec.mjs')
+  assert.match(app, /aria-label="Navigation latérale L’Arche"/)
+  assert.match(app, /placeholder:text-\[#4A3F6B\] md:block/)
+  assert.match(app, /className=\{primary\+' shrink-0 px-5'\}>Envoyer/)
+  assert.match(app, /function navigateTo\(nextView\) \{ setNotice\(''\); setView\(nextView\) \}/)
+  assert.match(app, /onClick=\{\(\)=>navigateTo\(item\.id\)\}/)
+  assert.match(e2e, /page\.locator\('\[data-arche-app-preview="local-only"\]'\)/)
+  assert.match(e2e, /Navigation latérale L’Arche/)
+  assert.doesNotMatch(e2e, /await expect\(page\.getByRole\('navigation', \{ name: \/Navigation principale L’Arche\/i \}\)\)\.toBeVisible\(\)/)
+  assert.match(e2e, /npm install --no-save @playwright\/test@1\.56\.1/)
+  assert.match(e2e, /document\.elementFromPoint/)
+})

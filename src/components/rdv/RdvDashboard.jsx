@@ -3,6 +3,8 @@ import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
+import OwnerCancelBookingButton from './OwnerCancelBookingButton.jsx'
+import BookingPaymentStatus from './BookingPaymentStatus.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1572,6 +1574,21 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                       </button>
                     ))}
                   </nav>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePanel('rdv')
+                        window.setTimeout(() => document.getElementById('mediumia-rdv-requests')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+                      }}
+                      className="rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 font-georgia text-sm font-semibold text-deep hover:bg-gold/20"
+                    >
+                      Voir mes demandes — {(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} en attente
+                    </button>
+                    <span className="font-georgia text-xs text-mist">
+                      {(activePractitioner.pending_requests || []).filter(req => req.status === 'contacted').length} contactées
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1766,12 +1783,12 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                   <DailyPayments
                     practitionerId={activePractitioner.id}
                     session={session}
+                    onCancelled={() => loadMe(session)}
+                    ownerCancelEnabled={activePractitioner.owner_cancel_enabled}
                   />
 
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
-                  {(activePractitioner.pending_requests?.length > 0 ||
-                    activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
-                    <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                  <section id="mediumia-rdv-requests" className="scroll-mt-6 rounded-2xl border border-gold/25 bg-white/60 p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Demandes</p>
@@ -1791,7 +1808,6 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                         onChanged={() => loadMe(session)}
                       />
                     </section>
-                  )}
 
                   {/* Upcoming bookings */}
                   <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
@@ -1826,14 +1842,24 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                                 <p className="font-georgia text-sm font-semibold text-deep">{b.customer_first_name} {b.customer_last_name}</p>
                                 <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}{visio ? ` · ${visio}` : ''}</p>
                               </div>
-                              <button
-                                onClick={() => handleResendConfirmation(b)}
-                                disabled={resendingBookingId === b.id}
-                                className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                              >
-                                {resendingBookingId === b.id && <Spinner />}
-                                Renvoyer la confirmation
-                              </button>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <BookingPaymentStatus booking={b} practitionerId={activePractitioner.id} session={session} />
+                                <OwnerCancelBookingButton
+                                  booking={b}
+                                  practitionerId={activePractitioner.id}
+                                  session={session}
+                                  onChanged={() => loadMe(session)}
+                                  enabled={activePractitioner.owner_cancel_enabled}
+                                />
+                                <button
+                                  onClick={() => handleResendConfirmation(b)}
+                                  disabled={resendingBookingId === b.id}
+                                  className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                                >
+                                  {resendingBookingId === b.id && <Spinner />}
+                                  Renvoyer la confirmation
+                                </button>
+                              </div>
                             </div>
                           )
                         })}

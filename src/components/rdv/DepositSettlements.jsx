@@ -265,6 +265,13 @@ export default function DepositSettlements({ practitionerId, session, onChanged 
   const [data, setData] = useState(null)
   const [nonce, setNonce] = useState(0)
 
+  // Une annulation propriétaire peut ouvrir un dossier d'arrhes à traiter.
+  useEffect(() => {
+    const reload = () => setNonce(value => value + 1)
+    window.addEventListener('mediumia:booking-cancelled', reload)
+    return () => window.removeEventListener('mediumia:booking-cancelled', reload)
+  }, [])
+
   useEffect(() => {
     if (!practitionerId || !session?.access_token) return
     let cancelled = false

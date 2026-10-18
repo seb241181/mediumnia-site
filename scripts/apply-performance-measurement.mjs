@@ -103,8 +103,8 @@ const routeReplacements = [
     `  if (view === 'reseau-form')  return <DeferredRoute><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</DeferredRoute>`,
   ],
   [
-    `  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />`,
-    `  if (view === 'rdv-dashboard') return <DeferredRoute><RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} /></DeferredRoute>`,
+    `  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} onOpenLumia={openLumiaForBooking} />`,
+    `  if (view === 'rdv-dashboard') return <DeferredRoute><RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} onOpenLumia={openLumiaForBooking} /></DeferredRoute>`,
   ],
   [
     `  if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>`,

@@ -18,14 +18,24 @@ try {
       const url = new URL(route.request().url())
       if (url.origin !== new URL(base).origin) return route.abort()
       if (url.pathname === '/api/rdv-admin') {
-        assert.equal(route.request().method(), 'GET')
-        assert.equal(url.searchParams.get('action'), 'agenda')
+        const action = url.searchParams.get('action')
+        if (action === 'agenda-history') return route.fulfill({ json: { history: [] } })
+        if (route.request().method() === 'POST') {
+          const body = route.request().postDataJSON()
+          if (action === 'agenda' && body.op === 'reschedule') {
+            assert.equal(body.starts_at_local, '2026-10-20T14:30')
+            return route.fulfill({ json: { ok: true, google_sync: 'synced' } })
+          }
+          if (action === 'agenda-sync' && body.op === 'retry') return route.fulfill({ json: { status: 'synced' } })
+          return route.fulfill({ status: 400, json: { error: 'unexpected_test_operation' } })
+        }
+        assert.equal(action, 'agenda')
         requests++
         const from = url.searchParams.get('from'), to = url.searchParams.get('to')
         const now = new Date()
         now.setUTCHours(9, 0, 0, 0)
         const end = new Date(now.getTime() + 3600000)
-        const record = { id: 'booking:fictional', source: 'mediumia', title: 'Camille TEST', start: now.toISOString(), end: end.toISOString(), status: 'confirmed', payment: { total_cents: 5000, paid_cents: 2000, remaining_cents: 3000 }, permissions: { move: false, cancel: false, refund: false } }
+        const record = { id: 'booking:fictional', booking_id: 'fictional-booking-id', updated_at: '2026-10-18T08:00:00.000Z', google_linked: true, source: 'mediumia', title: 'Camille TEST', start: now.toISOString(), end: end.toISOString(), status: 'confirmed', payment: { total_cents: 5000, paid_cents: 2000, remaining_cents: 3000 }, permissions: { move: false, cancel: false, refund: false } }
         return route.fulfill({ json: { start: from, end: to, sources: { google: 'ready', finance: 'ready', mediumia: 'ready' }, events: [record, { ...record, id: 'google:fictional', title: 'Créneau Google TEST', source: 'google', start: new Date(now.getTime() + 7200000).toISOString(), end: new Date(end.getTime() + 7200000).toISOString(), payment: null }] } })
       }
       return route.continue()
@@ -40,6 +50,14 @@ try {
     assert.match(await page.getByRole('complementary').innerText(), /30,00/)
     assert.match(await page.getByRole('complementary').innerText(), /Non vérifié auprès du prestataire/)
     checks += 2
+    await page.getByLabel('Déplacer vers (heure de Paris)').fill('2026-10-20T14:30')
+    page.once('dialog', dialog => dialog.accept())
+    await page.getByRole('button', { name: 'Confirmer le déplacement' }).click()
+    await page.getByRole('status').filter({ hasText: /Rendez-vous déplacé/ }).waitFor()
+    checks += 2
+    await page.getByRole('button', { name: 'Préparer l’annulation dans Lumia' }).click()
+    assert.match(await page.evaluate(() => window.__agendaLumiaDraft), /^Annule le rendez-vous du /)
+    checks++
     await page.screenshot({ path: new URL(`${name}-detail.png`, output).pathname, fullPage: true })
     await page.getByRole('button', { name: 'Fermer le détail' }).click()
     await page.getByLabel(/^Origine/).selectOption('google')

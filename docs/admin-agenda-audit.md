@@ -101,3 +101,44 @@ ajoutee. permissions.move/cancel/refund restent fausses cote serveur.
    isole explicitement, jamais une Preview heritant des secrets Production.
 5. Revue finale distincte avant tout GO Production. Aucun deplacement/annulation
    reel, aucun remboursement, aucun e-mail et aucun deploiement lance ici.
+
+## Lot 2 prepare localement - 18 octobre 2026
+
+- Replanification depuis le detail d'un rendez-vous MediumIA confirme. Le serveur
+  revalide le proprietaire, la version du booking, les regles/exceptions, la duree,
+  les buffers, les reservations/arrhes/offres actives et les conflits Google. L'heure
+  locale ambiguë ou inexistante lors d'un changement DST est refusee.
+- La mutation est transactionnelle : verrou d'idempotence puis verrou par praticien,
+  verrouillage NOWAIT du booking et des lignes financieres, mise a jour du booking,
+  historique et outbox Google dans la meme transaction. Le meme idempotency key rend
+  le replay exact; un autre clic concurrent avec version obsolete est refuse.
+- La projection Google utilise GET puis PATCH conditionnel If-Match, sans notification
+  Google (`sendUpdates=none`). Une reponse ambigue est reconciliee par GET avant retry;
+  l'outbox passe par pending/running/retry/synced/review. Une replanification suivante
+  est refusee tant qu'une synchronisation precedente reste ouverte.
+- L'annulation est lancee dans la vraie conversation Lumia, avec l'horaire pre-rempli;
+  l'envoi du message cree un vrai preview, puis un code GO explicite reste necessaire.
+  Aucun raccourci de droit, fausse conversation, remboursement ou message au client.
+- L'historique proprietaire combine les deplacements de l'agenda et les intentions Lumia
+  d'annulation. Les rendez-vous Google-only restent en lecture seule et financierement
+  inconnus. Les annulations <48h et >48h n'ont pas de politique financiere inventee;
+  le noyau Lumia existant bloque les cas de paiement/arrhes non stables et n'effectue
+  aucun remboursement automatique.
+- Migration additive locale : `20261018165006_rdv_agenda_operations.sql`, registre
+  d'historique/outbox et RPC service_role uniquement. Pas de migration Supabase TEST ou
+  Production appliquee. Une vraie execution PostgreSQL reste indispensable : Docker
+  local n'est pas disponible et l'environnement TEST distant n'a pas ete utilise.
+- Validation locale : 902/902 tests Node, build Vite reussi, verification du bundle
+  ChronoSphere V2 et 30 routes prerendues. Scenarios simulant DST, PATCH Google ambigu,
+  refus Google 403 en revue manuelle, reconciliation sans double PATCH et cycle retry
+  vers synced. Pas de test de concurrence
+  multi-connexion PostgreSQL ni d'essai Google/Supabase authentifie reel.
+- Le test navigateur de lot 2 est prepare pour simuler formulaire, message de succes
+  et transfert du brouillon Lumia; non execute car `playwright` manque dans ce checkout.
+- Les hooks apply-* historiques ont casse sur l'ancre RDV et le heading pilote; ancres
+  ciblees alignees dans les scripts correspondants afin que pretest/prebuild conservent
+  l'entree Lumia. Verification en copies jetables, sorties de hooks non integrees.
+- Blocages de mise en fusion : revue SQL avec PostgreSQL; tests concurrency et H-48 sur
+  Supabase TEST isole; test admin authentifie TEST; tri des 14 alertes `npm audit` avant
+  tout deploiement; revue diff et validation de Sébastien.
+- NO-GO Production, migration distante, remboursement, e-mail client et fusion.

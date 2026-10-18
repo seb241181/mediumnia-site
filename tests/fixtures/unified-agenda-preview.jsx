@@ -10,4 +10,4 @@ if (location.hostname === '127.0.0.1' && new URLSearchParams(location.search).ha
     return Promise.resolve(Response.json({ start: url.searchParams.get('from'), end: url.searchParams.get('to'), sources: { google: 'not_connected', finance: 'ready' }, events: [{ id: 'booking:fictional', source: 'mediumia', title: 'Camille TEST', start: start.toISOString(), end: new Date(start.getTime() + 3600000).toISOString(), status: 'confirmed', payment: { total_cents: 5000, paid_cents: 2000, remaining_cents: 3000 } }] }))
   }
 }
-createRoot(document.getElementById('root')).render(<UnifiedAgenda practitionerId="00000000-0000-4000-8000-000000000001" session={{ access_token: 'fictional-local-only' }} />)
+createRoot(document.getElementById('root')).render(<UnifiedAgenda practitionerId="00000000-0000-4000-8000-000000000001" session={{ access_token: 'fictional-local-only' }} onOpenLumia={draft => { window.__agendaLumiaDraft = draft }} />)

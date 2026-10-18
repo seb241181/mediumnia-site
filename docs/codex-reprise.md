@@ -1,5 +1,47 @@
 # Reprise Codex - MediumIA
 
+## Reprise du 18 octobre 2026 - agenda unifie, lot 2
+
+- Projet : seb241181/mediumnia-site ; branche locale codex/admin-unified-agenda.
+- PR cible : #165, brouillon. PR #156 conservee sans modification.
+- GO du proprietaire : developpement et tests locaux uniquement ; aucun remboursement,
+  message client, migration distante, fusion ou changement Production.
+- PR #165 demande un reschedule idempotent Paris avec verrou/version, outbox Google
+  durable, annulation par le vrai parcours Lumia, historique et aucun remboursement
+  automatique. Sa consigne antérieure « aucune action distante » reste respectee ici.
+- Termine localement : replanification owner-only, validation des disponibilites,
+  buffers, duree de service et heure DST; transaction SQL versionnee et idempotente;
+  outbox Google avec reprise GET avant tout second PATCH; historique des deplacements
+  et des intentions Lumia; acces a Lumia avec brouillon date/heure sans execution auto.
+- Aucun email client ni paiement/remboursement n'est declenche par ces actions.
+  Google-only reste sans client/paiement; le registre MediumIA n'est pas affirme comme
+  verification provider. Les arrhes restent bloquees aux gardes du noyau Lumia.
+- Migration additive preparee seulement :
+  supabase/migrations/20261018165006_rdv_agenda_operations.sql. Aucun DDL distant.
+- Tests finaux : npm test 902/902, 0 echec, 0 skip; build complet reussi avec
+  902 tests, controle bundle ChronoSphere V2 et 30 routes. Tests cibles agenda 16/16.
+- ESLint cible sur operations/agenda reussi.
+- Test navigateur local et captures non executes : la dependance `playwright` est
+  absente de ce checkout. Tentative sur serveur loopback arretee sans appel externe.
+- Le cycle npm test/build a ete execute dans une copie jetable car les hooks apply-*
+  reecrivent des sources. Deux ancres de patch historiques ont ete alignees au nouveau
+  wiring de Lumia. Les sorties de validation n'ont pas ete integrees a la branche.
+- Blocage : Docker local absent; PostgreSQL multi-connexion, isolation Supabase TEST,
+  transactions Google reelles et parcours authentifie TEST restent non verifies.
+  Aucun evenement Google reel n'a ete deplace/annule. La politique n'invente pas de
+  difference de remboursement avant/apres H-48 : annulation Lumia existante, aucune
+  restitution automatique, arrhes a rapprocher separement.
+- Restant : revue SQL avec moteur PostgreSQL; tester concurrence vraie, fuseau/DST,
+  buffers, erreurs Google ambigues et reprise; tester les cas <48h/>48h contre TEST;
+  verifier affichage admin authentifie TEST; trier les alertes npm audit avant toute
+  mise en production.
+- Prochaine action exacte : revue technique finale du diff puis commit/push de la
+  branche et mise a jour de PR #165, autorises par la demande courante. Ne pas fusionner
+  ni lancer de deploiement manuel. Les essais transactionnels/test-authentifies attendent
+  un GO distinct pour migration Supabase TEST.
+- Production : NO-GO. Aucun secret, donnee client, migration distante ou action externe
+  conservee ou executee dans cette etape.
+
 ## Reprise du 18 octobre 2026 - agenda administrateur
 
 - Projet confirme par le proprietaire : seb241181/mediumnia-site ; issue

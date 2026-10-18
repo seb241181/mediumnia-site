@@ -175,18 +175,30 @@ dashboard = replaceRequired(
   'pilotage access visibility',
 )
 
-const headingEnd = `        <div className="mb-8">
+const headingEnd = `        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
           <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">ESPACE PRO</p>
           <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">MediumIA Rendez-vous</h1>
           <p className="font-georgia text-mist">Votre pratique. Votre agenda. Vos rendez-vous réunis.</p>
+          </div>
+          <button type="button" onClick={onOpenLumia} className="min-h-10 rounded border border-gold/40 bg-deep px-4 py-2 font-georgia text-sm font-semibold text-gold">
+            Parler à Lumia
+          </button>
         </div>
 
         {/* Loading */}`
 
-const headingWithTabs = `        <div className="mb-8">
+const headingWithTabs = `        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
           <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">ESPACE PRO</p>
           <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">{workspace === 'pilotage' ? 'Pilotage MediumIA' : 'MediumIA Rendez-vous'}</h1>
           <p className="font-georgia text-mist">{workspace === 'pilotage' ? 'Comprendre les parcours pour décider quoi améliorer.' : 'Votre pratique. Votre agenda. Vos rendez-vous réunis.'}</p>
+          </div>
+          {workspace !== 'pilotage' && (
+            <button type="button" onClick={onOpenLumia} className="min-h-10 rounded border border-gold/40 bg-deep px-4 py-2 font-georgia text-sm font-semibold text-gold">
+              Parler à Lumia
+            </button>
+          )}
         </div>
 
         {canSeePilotage && (

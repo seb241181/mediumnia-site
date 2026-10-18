@@ -40,6 +40,7 @@ import { decrypt, encrypt, refreshGoogleToken } from '../lib/googleOAuth.js'
 import { sendEmail, escapeHtml } from '../lib/transactionalEmail.js'
 import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 import { getUnifiedAgenda } from '../lib/rdvUnifiedAgenda.js'
+import { getAgendaBookingHistory, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
 import { bookingCancellationUrl, createCancellationToken } from '../lib/bookingCancellation.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$|^[a-z0-9]{2}$/
@@ -842,8 +843,26 @@ export default async function handler(req, res) {
 
   switch (action) {
     case 'agenda': {
+      let result
+      if (req.method === 'GET') result = await getUnifiedAgenda({ supabase, userId, query: req.query })
+      else if (req.method === 'POST' && req.body?.op === 'reschedule') result = await rescheduleAgendaBooking({ supabase, userId, input: req.body })
+      else result = { status: 405, body: { error: 'Method not allowed' } }
+      return res.status(result.status).json(result.body)
+    }
+    case 'agenda-history': {
       if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
-      const result = await getUnifiedAgenda({ supabase, userId, query: req.query })
+      const result = await getAgendaBookingHistory({ supabase, userId, bookingId: String(req.query.booking_id || '') })
+      return res.status(result.status).json(result.body)
+    }
+    case 'agenda-sync': {
+      if (req.method !== 'POST' || req.body?.op !== 'retry') return res.status(405).json({ error: 'Method not allowed' })
+      const bookingId = String(req.body.booking_id || '')
+      const owned = await supabase.from('bookings').select('id')
+        .eq('id', bookingId).eq('booking_practitioners.owner_id', userId)
+        .not('google_event_id', 'is', null).maybeSingle()
+      if (owned.error) return res.status(503).json({ error: 'booking_unavailable' })
+      if (!owned.data) return res.status(404).json({ error: 'booking_not_found' })
+      const result = await processRdvCalendarSyncJob({ supabase, userId, bookingId, idempotencyKey: req.body.idempotency_key })
       return res.status(result.status).json(result.body)
     }
     case 'me':           return handleMe(req, res, supabase, userId)

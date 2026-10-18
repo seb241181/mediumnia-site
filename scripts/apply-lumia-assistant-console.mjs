@@ -22,6 +22,11 @@ function replaceRequired(source, before, after, label) {
 }
 
 let app = await readFile(appPath, 'utf8')
+let dashboard = await readFile(dashboardPath, 'utf8')
+
+if (app.includes("if (view === 'rdv-lumia')") && dashboard.includes('onOpenLumia={onOpenLumia}')) {
+  console.log('MediumIA Lumia: agenda cancellation route already wired; legacy patch skipped')
+} else {
 
 app = insertAfter(
   app,
@@ -67,8 +72,6 @@ app = replaceRequired(
 )
 
 await writeFile(appPath, app)
-
-let dashboard = await readFile(dashboardPath, 'utf8')
 
 dashboard = replaceRequired(
   dashboard,
@@ -143,5 +146,6 @@ function moveRdvPrioritiesFirst(source) {
 dashboard = moveRdvPrioritiesFirst(dashboard)
 
 await writeFile(dashboardPath, dashboard)
+}
 
 console.log('Lumia assistant console: private RDV route and button applied')

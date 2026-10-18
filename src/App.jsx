@@ -14,6 +14,7 @@ import ReseauJoindre from './components/ReseauJoindre'
 import RdvDashboard from './components/rdv/RdvDashboard'
 import RdvPublic from './components/rdv/RdvPublic'
 import RdvCancellation from './components/rdv/RdvCancellation'
+import LumiaAssistantPage from './components/rdv/LumiaAssistantPage'
 import ChronospherePage from './components/ChronospherePage'
 import ChronosphereExamplePage from './components/ChronosphereExamplePage'
 import ChronosphereMaxPage from './components/ChronosphereMaxPage'
@@ -177,6 +178,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
 
 function pathToView(p) {
   return p === '/rdv/annuler' ? 'rdv-cancellation'
+    : p === '/rdv/lumia' ? 'rdv-lumia'
     : p.startsWith('/rdv/') ? 'rdv-public'
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
@@ -204,6 +206,7 @@ function pathToView(p) {
 
 export default function App() {
   const [view, setView] = useState(() => pathToView(window.location.pathname))
+  const [lumiaDraft, setLumiaDraft] = useState('')
 
   useEffect(() => {
     const onPop = () => setView(pathToView(window.location.pathname))
@@ -229,6 +232,7 @@ export default function App() {
   const openReseauDir   = () => nav('/reseau',           'reseau-dir')
   const openReseauForm  = () => nav('/reseau/rejoindre', 'reseau-form')
   const openRdvDashboard = () => nav('/rdv',             'rdv-dashboard')
+  const openLumiaForBooking = (draft = '') => { setLumiaDraft(typeof draft === 'string' ? draft : ''); nav('/rdv/lumia', 'rdv-lumia') }
   const openRdvPublic   = (slug, source = null) => nav(`/rdv/${slug}${source ? `?src=${encodeURIComponent(source)}` : ''}`, 'rdv-public')
   const openQuestion    = () => nav('/question',          'question')
   const openVideos      = () => nav('/videos',            'videos')
@@ -266,7 +270,8 @@ export default function App() {
   if (view === 'avis')         return <><ReviewsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-dir')   return <><ReseauDirectory onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'reseau-form')  return <><ReseauJoindre onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} />
+  if (view === 'rdv-dashboard') return <RdvDashboard onBack={backHome} onOpenPublic={openRdvPublic} onOpenLumia={openLumiaForBooking} />
+  if (view === 'rdv-lumia') return <LumiaAssistantPage onBack={openRdvDashboard} initialMessage={lumiaDraft} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
   return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onNavigate={legalNav} />{guardian}</>

@@ -71,7 +71,7 @@ pas validation d'une synchronisation distante ni d'un schema deploye.
 - 15/15 nouveaux tests serveur avec doubles de test, notamment owner, panne,
   pagination, doublon Google, lien hors fenetre et paiement inconnu.
 - npm test : 896/896, zero echec/skip. npm run build : reussi, 896 tests prebuild,
-  verification bundle V2 et 30 pages prer endues (URL TEST et cle factice).
+  verification bundle V2 et 30 pages HTML (URL TEST et cle factice).
 - ESLint cible : reussi. 18 controles navigateur desktop 1440 et mobile 390,
   fuseau navigateur New York pour ne pas dependre du fuseau du Mac ; donnees
   fictives, routes API interceptees, requetes externes bloquees. Captures dans

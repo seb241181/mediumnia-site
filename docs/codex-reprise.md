@@ -27,6 +27,12 @@
   avant application distante. Ne pas activer les boutons sans ces protections.
 - GO developpement et tests isoles. NO-GO Production, paiement/remboursement reel,
   envoi client, migration distante et fusion. Aucun secret conserve ici.
+- Premier commit fonctionnel : 2409ef54f7dc320585eab31ca665867368d8357b.
+- PR #165 creee en brouillon, branche poussee ; PR #156 inchangee. Controle GitHub :
+  Vercel Preview automatique en cours au premier controle, pas de validation distante
+  revendiquee. Aucun deploiement manuel ni Production lance.
+- Demo locale fictive : http://127.0.0.1:4193/tests/fixtures/unified-agenda-preview.html?demo
+  (serveur Vite local ; aucune donnee/authentification reelle).
 
 ## Archives PR #156
 

@@ -33,6 +33,11 @@ function cancellationDraft(iso) {
 }
 
 export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) {
+  const [initialView] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches
+    ? 'timeGridDay'
+    : 'timeGridWeek')
+  const [calendarView, setCalendarView] = useState(initialView)
+  const [calendarTitle, setCalendarTitle] = useState('')
   const [range, setRange] = useState(null)
   const [snapshot, setSnapshot] = useState({ events: [], sources: {}, loading: true, error: '' })
   const [origin, setOrigin] = useState('all')
@@ -47,6 +52,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
   const [history, setHistory] = useState([])
   const [historyError, setHistoryError] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
+  const calendarRef = useRef(null)
   const selectedRef = useRef(null)
   const datesSet = useCallback(info => {
     const next = { from: info.start.toISOString(), to: info.end.toISOString() }
@@ -54,6 +60,11 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
     selectedRef.current = null
     setSelected(null)
   }, [])
+  const handleDatesSet = useCallback(info => {
+    setCalendarView(info.view.type)
+    setCalendarTitle(info.view.title)
+    datesSet(info)
+  }, [datesSet])
 
   useEffect(() => {
     if (!range || !session?.access_token) return
@@ -170,14 +181,28 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
     {snapshot.sources.finance === 'unavailable' && <p role="status">Paiements indisponibles : les montants restent inconnus.</p>}
     <div className="agenda-layout">
       <div className="agenda-calendar">
-        <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, luxonPlugin]} locale={frLocale} timeZone="Europe/Paris"
-          initialView="timeGridWeek" firstDay={1} height={720} slotMinTime="00:00:00" slotMaxTime="24:00:00" scrollTime="08:00:00"
-          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'timeGridDay,timeGridWeek,dayGridMonth' }}
-          buttonText={{ today: 'Aujourd’hui', day: 'Jour', week: 'Semaine', month: 'Mois' }}
-          editable={false} selectable={false} events={events} datesSet={datesSet} dayMaxEvents={3}
-          eventContent={info => <button className="agenda-event" title={info.event.title} onClick={() => selectAgendaEvent(info.event.extendedProps.record)} aria-label={`${info.timeText} ${info.event.title}`}>
-            <span>{info.timeText}</span><strong>{info.event.title}</strong>
-          </button>} />
+        <div className="agenda-calendar-toolbar" aria-label="Commandes de l’agenda">
+          <div className="agenda-calendar-navigation" role="group" aria-label="Navigation des dates">
+            <button type="button" aria-label="Période précédente" title="Période précédente" onClick={() => calendarRef.current?.getApi().prev()}>‹</button>
+            <button type="button" aria-label="Période suivante" title="Période suivante" onClick={() => calendarRef.current?.getApi().next()}>›</button>
+            <button type="button" onClick={() => calendarRef.current?.getApi().today()}>Aujourd’hui</button>
+          </div>
+          <h3 aria-live="polite">{calendarTitle}</h3>
+          <div className="agenda-calendar-views" role="group" aria-label="Vues de l’agenda">
+            {[
+              ['timeGridDay', 'Jour'], ['timeGridWeek', 'Semaine'], ['dayGridMonth', 'Mois'],
+            ].map(([view, label]) => <button key={view} type="button" aria-pressed={calendarView === view} onClick={() => calendarRef.current?.getApi().changeView(view)}>{label}</button>)}
+          </div>
+        </div>
+        <div className={`agenda-calendar-scroll agenda-calendar-scroll--${calendarView}`}>
+          <FullCalendar ref={calendarRef} plugins={[dayGridPlugin, timeGridPlugin, luxonPlugin]} locale={frLocale} timeZone="Europe/Paris"
+            initialView={initialView} firstDay={1} height={720} slotMinTime="00:00:00" slotMaxTime="24:00:00" scrollTime="08:00:00"
+            headerToolbar={false}
+            editable={false} selectable={false} events={events} datesSet={handleDatesSet} dayMaxEvents={3}
+            eventContent={info => <button className="agenda-event" title={info.event.title} onClick={() => selectAgendaEvent(info.event.extendedProps.record)} aria-label={`${info.timeText} ${info.event.title}`}>
+              <span>{info.timeText}</span><strong>{info.event.title}</strong>
+            </button>} />
+        </div>
         <p className="agenda-legend"><span>MediumIA</span><span>Google uniquement</span><span>{events.length} événement{events.length > 1 ? 's' : ''}</span></p>
       </div>
       {selected && <aside className="agenda-detail" aria-label="Détail du rendez-vous">

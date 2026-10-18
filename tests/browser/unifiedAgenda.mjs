@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { mkdir } from 'node:fs/promises'
+import { resolve, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
 const { chromium } = createRequire(import.meta.url)('playwright')
 const base = process.env.AGENDA_TEST_URL || 'http://127.0.0.1:4193'
-const output = new URL('../../docs/agenda-captures/', import.meta.url)
+const output = process.env.AGENDA_TEST_CAPTURE_DIR
+  ? pathToFileURL(`${resolve(process.env.AGENDA_TEST_CAPTURE_DIR)}${sep}`)
+  : new URL('../../docs/agenda-captures/', import.meta.url)
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
 let checks = 0
@@ -41,6 +45,15 @@ try {
       return route.continue()
     })
     await page.goto(`${base}/tests/fixtures/unified-agenda-preview.html`)
+    const expectedInitialView = name === 'mobile' ? '.fc-timeGridDay-view' : '.fc-timeGridWeek-view'
+    assert.equal(await page.locator(expectedInitialView).count(), 1)
+    const toolbarButtons = page.locator('.agenda-calendar-toolbar button')
+    const initialButtonBounds = await toolbarButtons.evaluateAll(buttons => buttons.map(button => {
+      const { left, right } = button.getBoundingClientRect()
+      return { left, right }
+    }))
+    assert.ok(initialButtonBounds.every(({ left, right }) => left >= 0 && right <= innerWidth))
+    checks += 2
     await page.getByRole('button', { name: 'Mois', exact: true }).click()
     await page.getByRole('button', { name: /Camille TEST/ }).first().waitFor()
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
@@ -69,6 +82,18 @@ try {
     await page.getByRole('button', { name: 'Fermer le détail' }).click()
     await page.getByLabel(/^Origine/).selectOption('all')
     await page.getByRole('button', { name: 'Semaine', exact: true }).click()
+    if (name === 'mobile') {
+      const weekViewport = page.locator('.agenda-calendar-scroll--timeGridWeek')
+      const dimensions = await weekViewport.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
+      assert.ok(dimensions.scroll > dimensions.client)
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+      const weekButtonBounds = await toolbarButtons.evaluateAll(buttons => buttons.map(button => {
+        const { left, right } = button.getBoundingClientRect()
+        return { left, right }
+      }))
+      assert.ok(weekButtonBounds.every(({ left, right }) => left >= 0 && right <= innerWidth))
+      checks += 3
+    }
     await page.getByRole('button', { name: 'Jour', exact: true }).click()
     assert.equal(await page.locator('.fc-timeGridDay-view').count(), 1)
     checks++

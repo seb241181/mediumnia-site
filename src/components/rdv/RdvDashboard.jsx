@@ -3,6 +3,7 @@ import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
+import UnifiedAgenda from './UnifiedAgenda.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1763,6 +1764,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     {activePanel === 'rdv' && (
                       <>
                   {/* Agenda quotidien complet, y compris les horaires déjà passés aujourd'hui. */}
+                  <UnifiedAgenda key={activePractitioner.id} practitionerId={activePractitioner.id} session={session} />
                   <DailyPayments
                     practitionerId={activePractitioner.id}
                     session={session}

@@ -39,6 +39,7 @@ import { requireAuth, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { decrypt, encrypt, refreshGoogleToken } from '../lib/googleOAuth.js'
 import { sendEmail, escapeHtml } from '../lib/transactionalEmail.js'
 import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
+import { getUnifiedAgenda } from '../lib/rdvUnifiedAgenda.js'
 import { bookingCancellationUrl, createCancellationToken } from '../lib/bookingCancellation.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$|^[a-z0-9]{2}$/
@@ -840,6 +841,11 @@ export default async function handler(req, res) {
   const action = req.query.action || 'me'
 
   switch (action) {
+    case 'agenda': {
+      if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+      const result = await getUnifiedAgenda({ supabase, userId, query: req.query })
+      return res.status(result.status).json(result.body)
+    }
     case 'me':           return handleMe(req, res, supabase, userId)
     case 'services':     return handleServices(req, res, supabase, userId)
     case 'availability': return handleAvailability(req, res, supabase, userId)

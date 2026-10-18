@@ -1,4 +1,34 @@
-# Reprise Codex - MediumIA PR #156
+# Reprise Codex - MediumIA
+
+## Reprise du 18 octobre 2026 - agenda administrateur
+
+- Projet confirme par le proprietaire : seb241181/mediumnia-site ; issue
+  seb241181/mediumia#1 = cahier des charges uniquement.
+- Checkout propre isole : /private/tmp/mediumia-unified-agenda.
+- Branche : codex/admin-unified-agenda ; base main recuperee :
+  23a5df6f06d73984312695e8d3727bcba9d6d694.
+- Audit source et plan : docs/admin-agenda-audit.md. Les preuves PayPal historiques
+  ci-dessous sont conservees, sans refaire les audits ni modifier la PR #156.
+- Termine : lecture issue, clarification depot, audit cible auth/RDV/finance/
+  Google/Lumia. Aucun acces ni changement de donnees Production.
+- Termine : consultation owner-only, vues jour/semaine/mois Paris, filtres et detail
+  des paiements du registre. Pas de verification PayPal distante revendiquee.
+- Restant : replanification/annulation protegees, historique, modalite choisie,
+  validation authentifiee TEST. Ce lot est volontairement non executable en mutation.
+- Blocage technique identifie : le sync Google existant ne deplace pas les
+  evenements lies ; ne pas le reutiliser comme une replanification.
+- Tests de cette branche : 15 nouveaux tests serveur passes ; npm test 896/896,
+  build complet reussi avec 896 tests prebuild, lint cible reussi, 18 controles
+  navigateur desktop/mobile fictifs et externes bloques. Captures agenda-captures.
+- Les scripts apply-* generent 29 changements hors scope, retires de ce checkout
+  uniquement depuis l'index contenant le lot manuel. Ne pas les committer.
+- Prochaine action : concevoir la replanification atomique et l'outbox (version,
+  conflits/buffers, paiements en cours, reprise Google), puis presenter le SQL local
+  avant application distante. Ne pas activer les boutons sans ces protections.
+- GO developpement et tests isoles. NO-GO Production, paiement/remboursement reel,
+  envoi client, migration distante et fusion. Aucun secret conserve ici.
+
+## Archives PR #156
 
 ## Reprise du 15 octobre 2026 - synchronisation et preflight TEST
 

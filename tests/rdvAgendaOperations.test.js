@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
-import { parseParisWallTime, processRdvCalendarSyncJob } from '../lib/rdvAgendaOperations.js'
+import { parseParisWallTime, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
 import { moveBookingGoogleEvent } from '../lib/googleCalendarEvents.js'
 import { encrypt } from '../lib/googleOAuth.js'
 
@@ -29,6 +29,97 @@ test('agenda reschedule migration persists action and Google outbox atomically w
   assert.match(sql, /INSERT INTO public\.rdv_booking_action_history[\s\S]*INSERT INTO public\.rdv_calendar_sync_jobs/)
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.rdv_admin_reschedule_booking[\s\S]*TO service_role/)
   assert.doesNotMatch(sql, /sendEmail|paypal_capture|refund/i)
+})
+
+test('reschedule retry after a lost HTTP response replays the committed owner action before stale-version checks', async () => {
+  const bookingId = '00000000-0000-4000-8000-000000000001'
+  const historyId = '00000000-0000-4000-8000-000000000002'
+  const calls = []
+  const booking = {
+    id: bookingId, practitioner_id: 'practitioner-1', service_id: 'service-1',
+    starts_at: '2026-10-18T12:00:00.000Z', ends_at: '2026-10-18T13:00:00.000Z',
+    updated_at: '2026-10-18T12:30:00.000Z', status: 'confirmed', booking_source: 'mediumia',
+    google_event_id: 'google-1', service: { id: 'service-1', duration_min: 60 },
+    practitioner: { id: 'practitioner-1', owner_id: 'owner-1' },
+  }
+  const history = {
+    id: historyId, booking_id: bookingId,
+    next_starts_at: '2026-10-18T13:30:00+00:00', next_ends_at: '2026-10-18T14:30:00+00:00',
+    result: { ok: true, booking_id: bookingId, starts_at: '2026-10-18T13:30:00.000Z', ends_at: '2026-10-18T14:30:00.000Z', google_sync: 'pending' },
+  }
+  const job = {
+    id: 'job-1', status: 'synced', booking_id: bookingId,
+    idempotency_key: `rdv.google.update:${historyId}`,
+  }
+  const supabase = {
+    from(table) {
+      let filters = {}
+      const query = {
+        select() { return query },
+        eq(key, value) { filters[key] = value; calls.push(['eq', table, key, value]); return query },
+        async maybeSingle() {
+          if (table === 'bookings') return { data: filters.id === bookingId && filters['practitioner.owner_id'] === 'owner-1' ? booking : null, error: null }
+          if (table === 'rdv_booking_action_history') return { data: filters.actor_id === 'owner-1' && filters.idempotency_key === 'retry-key-123' ? history : null, error: null }
+          if (table === 'rdv_calendar_sync_jobs') return { data: job, error: null }
+          assert.fail(`unexpected query: ${table}`)
+        },
+        order() { return query }, limit() { return query },
+      }
+      return query
+    },
+    async rpc() { assert.fail('a committed idempotency replay must not mutate again') },
+  }
+  const replay = await rescheduleAgendaBooking({
+    supabase, userId: 'owner-1', now: new Date('2026-10-18T10:00:00Z'),
+    input: {
+      booking_id: bookingId, idempotency_key: 'retry-key-123',
+      expected_updated_at: '2026-10-18T12:00:00.000Z',
+      starts_at_local: '2026-10-18T15:30',
+    },
+  })
+  assert.equal(replay.status, 200)
+  assert.equal(replay.body.idempotent, true)
+  assert.equal(replay.body.google_sync, 'synced')
+  assert.ok(calls.some(call => call[1] === 'bookings' && call[2] === 'practitioner.owner_id'))
+  assert.ok(calls.some(call => call[1] === 'rdv_booking_action_history' && call[2] === 'actor_id'))
+
+  const conflictingReplay = await rescheduleAgendaBooking({
+    supabase, userId: 'owner-1', now: new Date('2026-10-18T10:00:00Z'),
+    input: { booking_id: bookingId, idempotency_key: 'retry-key-123', expected_updated_at: 'stale', starts_at_local: '2026-10-18T16:30' },
+  })
+  assert.equal(conflictingReplay.status, 409)
+  assert.equal(conflictingReplay.body.error, 'idempotency_conflict')
+})
+
+test('reschedule fails closed when the authenticated user does not own the practitioner', async () => {
+  const filters = {}
+  let historyRead = false
+  let mutation = false
+  const supabase = {
+    from(table) {
+      const query = {
+        select() { return query },
+        eq(key, value) { filters[key] = value; return query },
+        async maybeSingle() {
+          assert.equal(table, 'bookings')
+          return { data: null, error: null }
+        },
+      }
+      if (table === 'rdv_booking_action_history') historyRead = true
+      return query
+    },
+    async rpc() { mutation = true; return { data: null, error: null } },
+  }
+  const response = await rescheduleAgendaBooking({
+    supabase, userId: 'not-owner', input: {
+      booking_id: '00000000-0000-4000-8000-000000000001', idempotency_key: 'owner-check-123',
+      expected_updated_at: '2026-10-18T12:00:00.000Z', starts_at_local: '2026-10-18T15:30',
+    },
+  })
+  assert.equal(response.status, 409)
+  assert.deepEqual(filters, { id: '00000000-0000-4000-8000-000000000001', 'practitioner.owner_id': 'not-owner' })
+  assert.equal(historyRead, false)
+  assert.equal(mutation, false)
 })
 
 function googleDb() {
@@ -91,13 +182,13 @@ test('permanent Google permission refusal enters manual review instead of retryi
   }
 })
 
-test('durable Google outbox keeps retry after a temporary failure and then reaches synced', async () => {
+test('orphaned pending Google outbox job can be owner-retried after interruption and reaches synced', async () => {
   const now = new Date('2026-10-18T10:00:00.000Z')
   const job = {
     id: 'job-1', booking_id: '00000000-0000-4000-8000-000000000001', practitioner_id: 'p-1',
     google_event_id: 'event-1', previous_starts_at: '2026-10-18T12:00:00.000Z', previous_ends_at: '2026-10-18T13:00:00.000Z',
     target_starts_at: '2026-10-18T13:00:00.000Z', target_ends_at: '2026-10-18T14:00:00.000Z',
-    idempotency_key: 'job-key', status: 'retry', attempt_count: 1, claimed_at: null, completed_at: null,
+    idempotency_key: 'job-key', status: 'pending', attempt_count: 0, claimed_at: null, completed_at: null,
   }
   const booking = { ...job, id: job.booking_id, starts_at: job.target_starts_at, ends_at: job.target_ends_at, status: 'confirmed', booking_source: 'mediumia' }
   const state = { job: { ...job } }
@@ -126,5 +217,5 @@ test('durable Google outbox keeps retry after a temporary failure and then reach
   const second = await processRdvCalendarSyncJob({ supabase, userId: 'owner', bookingId: job.booking_id, now: new Date(now.getTime() + 1000), moveEvent })
   assert.equal(second.body.status, 'synced')
   assert.equal(state.job.status, 'synced')
-  assert.equal(state.job.attempt_count, 3)
+  assert.equal(state.job.attempt_count, 2)
 })

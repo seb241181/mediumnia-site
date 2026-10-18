@@ -36,11 +36,55 @@
   verifier affichage admin authentifie TEST; trier les alertes npm audit avant toute
   mise en production.
 - Prochaine action exacte : revue technique finale du diff puis commit/push de la
-  branche et mise a jour de PR #165, autorises par la demande courante. Ne pas fusionner
-  ni lancer de deploiement manuel. Les essais transactionnels/test-authentifies attendent
-  un GO distinct pour migration Supabase TEST.
+  branche et mise a jour de PR #165 effectues. Commit lot 2 :
+  b2b5f13c6e50bb9cc491799148a11ef94dad68b3. La PR reste brouillon, ouverte et non
+  fusionnee. Vercel a demarre automatiquement un Preview apres le push; ne pas l'ouvrir
+  tant que l'isolation TEST n'est pas prouvee. Ne lancer aucun deploiement manuel.
+- Prochaine action exacte : demander un GO distinct pour appliquer la migration sur
+  Supabase TEST isole; apres ce GO, executer concurrence PostgreSQL multi-connexion et
+  verification authentifiee TEST. Aucun GO TEST recu dans cette etape.
 - Production : NO-GO. Aucun secret, donnee client, migration distante ou action externe
   conservee ou executee dans cette etape.
+
+## Revue corrective PR #165 - securite et reprise
+
+- Commentaire de revue traite : #6252742534. La relation PostgREST utilise maintenant
+  le filtre sur l'alias `practitioner.owner_id`; la route `agenda-sync` passe par le
+  meme helper owner-only que les autres actions agenda.
+- Rejeu reschedule : le serveur cherche d'abord l'historique idempotent du proprietaire
+  et rejoue le resultat enregistre avant de comparer la version stale ou de recalculer
+  les disponibilites. Une cle reutilisee pour un autre creneau est refusee. Un replay
+  exact peut relancer le job Google par sa cle durable sans refaire la mutation DB.
+- Outbox : un job `pending` orphelin ou `retry` est reprenable par l'action explicite
+  owner-only; les erreurs ambigues Google sont reconciliees par GET avant PATCH. Il n'y
+  a pas de worker/cron automatique prouve : la reprise depend du retry explicite dans
+  l'agenda ou du replay reschedule. Les jobs `review` restent bloques pour intervention.
+- Tests locaux de la correction : tests cibles agenda 8/8 reussis, incluant perte de
+  reponse puis replay exact sans RPC supplementaire, conflit de cle, reprise pending,
+  refus owner fail-closed, PATCH ambigu sans deuxieme mutation et erreur permanente
+  en revue. Suite complete : 904/904, aucun echec ni skip; build complet dans une
+  copie propre reussi, bundle ChronoSphere V2 verifie et 30 pages generees; ESLint
+  cible et verification syntaxique reussis.
+- Isolation relue sans dechiffrer de valeurs : Supabase TEST confirme `wnbwhnqiulsdjcvkuwos`;
+  les tables `rdv_booking_action_history` et `rdv_calendar_sync_jobs` sont absentes,
+  conforme a une migration encore non appliquee. Sur Vercel `mediumia-site`, aucune
+  variable Preview ciblee pour `codex/admin-unified-agenda` n'a ete trouvee; des variables
+  Preview partagees existent. Leurs valeurs n'ont pas ete dechiffrees, donc la cible
+  Supabase et l'absence de capacite d'e-mail reel ne sont pas demontrees. Ne pas ouvrir
+  ni utiliser la Preview comme environnement de test. Aucun secret n'a ete dechiffre.
+- Blocage publication : pousser sur la branche declenche le deploiement Preview Vercel;
+  sans isolation prouvee, la nouvelle version ne doit pas etre publiee/ouverte. Les
+  corrections restent locales jusqu'a configuration Preview ciblee TEST sans e-mail
+  reel, puis nouvelle verification des seuls noms/cibles d'environnement.
+- Restant : migration jamais appliquee; concurrence PostgreSQL multi-connexion, vraie
+  auth PostgREST et Google TEST non valides. Pas de worker/cron : reprise de l'outbox
+  manuelle owner-only, pas d'engagement de reprise automatique. Aucun remboursement,
+  message, mutation Google ou action Production.
+- Prochaine action exacte : isoler les variables Preview de `codex/admin-unified-agenda`
+  sur Supabase TEST et neutraliser tout transport d'e-mail; ensuite seulement pousser
+  la correction pour mise a jour du diff PR #165. Demander ensuite un GO distinct avant
+  migration TEST et essais multi-connexion. Ne pas ouvrir la Preview avant preuve.
+- Production : NO-GO. PR #156 preservee, migrations non appliquees, aucun changement Google.
 
 ## Reprise du 18 octobre 2026 - agenda administrateur
 

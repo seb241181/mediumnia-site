@@ -40,7 +40,7 @@ import { decrypt, encrypt, refreshGoogleToken } from '../lib/googleOAuth.js'
 import { sendEmail, escapeHtml } from '../lib/transactionalEmail.js'
 import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 import { getUnifiedAgenda } from '../lib/rdvUnifiedAgenda.js'
-import { getAgendaBookingHistory, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
+import { getAgendaBookingHistory, getOwnedAgendaBooking, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
 import { bookingCancellationUrl, createCancellationToken } from '../lib/bookingCancellation.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$|^[a-z0-9]{2}$/
@@ -857,11 +857,9 @@ export default async function handler(req, res) {
     case 'agenda-sync': {
       if (req.method !== 'POST' || req.body?.op !== 'retry') return res.status(405).json({ error: 'Method not allowed' })
       const bookingId = String(req.body.booking_id || '')
-      const owned = await supabase.from('bookings').select('id')
-        .eq('id', bookingId).eq('booking_practitioners.owner_id', userId)
-        .not('google_event_id', 'is', null).maybeSingle()
+      const owned = await getOwnedAgendaBooking(supabase, userId, bookingId)
       if (owned.error) return res.status(503).json({ error: 'booking_unavailable' })
-      if (!owned.data) return res.status(404).json({ error: 'booking_not_found' })
+      if (!owned.data || !owned.data.google_event_id || owned.data.booking_source !== 'mediumia') return res.status(404).json({ error: 'booking_not_found' })
       const result = await processRdvCalendarSyncJob({ supabase, userId, bookingId, idempotencyKey: req.body.idempotency_key })
       return res.status(result.status).json(result.body)
     }

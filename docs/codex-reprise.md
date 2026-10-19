@@ -1,5 +1,24 @@
 # Reprise Codex - MediumIA
 
+## Correctif local - simulation agenda TEST sans connexion Google
+
+- Base : branche `codex/admin-unified-agenda`, HEAD local `5b501841`.
+- Ajoute un mode de simulation fermé par défaut, activable uniquement par
+  `RDV_AGENDA_TEST_SIMULATION=true` dans le Preview du projet Vercel agenda TEST,
+  avec l'URL Supabase TEST exacte, le praticien `seb-test`, une adresse
+  `qa-interface-...@example.invalid` et `google_event_id IS NULL`.
+- Seule la lecture Google d'occupation est omise pour ce jeu de démonstration.
+  Les requêtes PostgreSQL de disponibilité et la RPC transactionnelle
+  versionnée/idempotente restent obligatoires; les contrôles financiers SQL ne
+  sont pas modifiés. Toute autre réservation garde le contrôle Google et renvoie
+  `google_calendar_unavailable` si le calendrier est indisponible.
+- Vérifications locales : tests agenda ciblés 11/11, ESLint cible et build Vite
+  réussis (avertissement préexistant de chunk > 500 kB). Aucun accès Supabase,
+  Google, PayPal, e-mail/SMS, migration, push ou déploiement n'a été effectué.
+- Restant : revue du diff. Ne pas activer la variable distante, pousser ni
+  déployer sans autorisation distincte; vérifier ensuite uniquement le Preview TEST.
+- Production : NO-GO.
+
 ## Reprise du 18 octobre 2026 - agenda unifie, lot 2
 
 - Projet : seb241181/mediumnia-site ; branche locale codex/admin-unified-agenda.

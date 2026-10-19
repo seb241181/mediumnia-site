@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
-import { parseParisWallTime, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
+import { isAgendaTestSimulationAllowed, parseParisWallTime, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
 import { moveBookingGoogleEvent } from '../lib/googleCalendarEvents.js'
 import { encrypt } from '../lib/googleOAuth.js'
 
@@ -120,6 +120,119 @@ test('reschedule fails closed when the authenticated user does not own the pract
   assert.deepEqual(filters, { id: '00000000-0000-4000-8000-000000000001', 'practitioner.owner_id': 'not-owner' })
   assert.equal(historyRead, false)
   assert.equal(mutation, false)
+})
+
+const agendaSimulationEnv = {
+  RDV_AGENDA_TEST_SIMULATION: 'true',
+  VERCEL_ENV: 'preview',
+  VERCEL_PROJECT_ID: 'prj_nN2EVd745rBErLSi8PPo9qz6Lu5l',
+  SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co',
+}
+
+function rescheduleFixtureDb({ email = 'qa-interface-mobile-001@example.invalid', googleEventId = null } = {}) {
+  const tables = []
+  const booking = {
+    id: '00000000-0000-4000-8000-000000000111', practitioner_id: 'test-practitioner', service_id: 'test-service',
+    starts_at: '2026-10-18T10:00:00.000Z', ends_at: '2026-10-18T11:00:00.000Z',
+    updated_at: '2026-10-18T09:00:00.000Z', status: 'confirmed', booking_source: 'mediumia',
+    customer_email: email, google_event_id: googleEventId,
+    service: { id: 'test-service', duration_min: 60 },
+    practitioner: {
+      id: 'test-practitioner', slug: 'seb-test', owner_id: 'test-owner',
+      buffer_before_min: 0, buffer_after_min: 0, max_per_day: null,
+      min_advance_hours: 0, booking_horizon_days: 365,
+    },
+  }
+  let rpcCalls = 0
+  return {
+    tables,
+    booking,
+    get rpcCalls() { return rpcCalls },
+    from(table) {
+      tables.push(table)
+      const query = {
+        select() { return query }, eq() { return query }, gte() { return query }, lte() { return query },
+        lt() { return query }, neq() { return query }, in() { return query }, gt() { return query }, order() { return query },
+        async maybeSingle() {
+          if (table === 'bookings') return { data: booking, error: null }
+          if (table === 'rdv_booking_action_history') return { data: null, error: null }
+          return { data: null, error: null }
+        },
+        async single() { return { data: null, error: { code: 'PGRST116' } } },
+        then(resolve, reject) {
+          const data = table === 'booking_availability_rules'
+            ? [{ day_of_week: 1, start_time: '09:00:00', end_time: '17:00:00' }]
+            : []
+          return Promise.resolve({ data, error: null }).then(resolve, reject)
+        },
+      }
+      return query
+    },
+    async rpc() {
+      rpcCalls += 1
+      return { data: { ok: true, booking_id: booking.id, starts_at: '2026-10-20T12:30:00.000Z', ends_at: '2026-10-20T13:30:00.000Z', google_sync: 'not_required' }, error: null }
+    },
+  }
+}
+
+test('agenda simulation is restricted to the TEST Preview, TEST Supabase and synthetic unlinked seb-test bookings', () => {
+  const booking = { customer_email: 'qa-interface-mobile-001@example.invalid', google_event_id: null }
+  const practitioner = { slug: 'seb-test' }
+  assert.equal(isAgendaTestSimulationAllowed({ booking, practitioner, env: agendaSimulationEnv }), true)
+  for (const changes of [
+    { VERCEL_ENV: 'production' },
+    { VERCEL_PROJECT_ID: 'prj_mediumia_site' },
+    { SUPABASE_URL: 'https://uotkpygeqqnekpolezts.supabase.co' },
+    { SUPABASE_URL: 'http://wnbwhnqiulsdjcvkuwos.supabase.co' },
+    { RDV_AGENDA_TEST_SIMULATION: 'false' },
+  ]) {
+    assert.equal(isAgendaTestSimulationAllowed({ booking, practitioner, env: { ...agendaSimulationEnv, ...changes } }), false)
+  }
+  assert.equal(isAgendaTestSimulationAllowed({ booking: { ...booking, google_event_id: 'google-event' }, practitioner, env: agendaSimulationEnv }), false)
+  assert.equal(isAgendaTestSimulationAllowed({ booking: { ...booking, customer_email: 'customer@example.com' }, practitioner, env: agendaSimulationEnv }), false)
+  assert.equal(isAgendaTestSimulationAllowed({ booking, practitioner: { slug: 'other' }, env: agendaSimulationEnv }), false)
+})
+
+test('TEST simulation skips only Google reads and retains database availability plus the idempotent RPC', async () => {
+  const supabase = rescheduleFixtureDb()
+  let fetchCalls = 0
+  const response = await rescheduleAgendaBooking({
+    supabase, userId: 'test-owner', env: agendaSimulationEnv, now: new Date('2026-10-18T08:00:00.000Z'),
+    fetchImpl: async () => { fetchCalls += 1; throw new Error('external request forbidden in test') },
+    input: {
+      booking_id: supabase.booking.id, idempotency_key: 'agenda.test.simulation.1',
+      expected_updated_at: supabase.booking.updated_at, starts_at_local: '2026-10-20T14:30',
+    },
+  })
+  assert.equal(response.status, 200)
+  assert.equal(supabase.rpcCalls, 1)
+  assert.equal(fetchCalls, 0)
+  for (const table of ['booking_availability_rules', 'booking_exceptions', 'bookings', 'rdv_booking_holds', 'booking_slot_offers']) {
+    assert.ok(supabase.tables.includes(table), `missing availability check: ${table}`)
+  }
+  assert.equal(supabase.tables.includes('booking_calendar_connections'), false)
+})
+
+test('Google outage stays explicit and TEST simulation is unavailable in Production or for Google-linked bookings', async () => {
+  for (const { env, googleEventId } of [
+    { env: agendaSimulationEnv, googleEventId: 'google-event' },
+    { env: { ...agendaSimulationEnv, VERCEL_ENV: 'production' }, googleEventId: null },
+  ]) {
+    const supabase = rescheduleFixtureDb({ googleEventId })
+    let fetchCalls = 0
+    const response = await rescheduleAgendaBooking({
+      supabase, userId: 'test-owner', env, now: new Date('2026-10-18T08:00:00.000Z'),
+      fetchImpl: async () => { fetchCalls += 1; throw new Error('external request forbidden in test') },
+      input: {
+        booking_id: supabase.booking.id, idempotency_key: 'agenda.test.google-fails',
+        expected_updated_at: supabase.booking.updated_at, starts_at_local: '2026-10-20T14:30',
+      },
+    })
+    assert.equal(response.status, 503)
+    assert.equal(response.body.error, 'google_calendar_unavailable')
+    assert.equal(supabase.rpcCalls, 0)
+    assert.equal(fetchCalls, 0)
+  }
 })
 
 function googleDb() {

@@ -128,7 +128,7 @@ traces d'exécution et retour de preuves pour chaque action.
 ## Démonstration IA à un bouton (Phase 1 expérimentale, 20 octobre 2026)
 
 - Le module lib/mediumiaTeamLiveDemo.js fait circuler un cas inventé entre deux rôles IA successifs et indépendants. Aucun texte libre ni identifiant client n'entre dans le moteur.
-- api/mediumia-team-demo.js n'est accessible qu'en Vercel Preview, branche dédiée, et avec le drapeau serveur MEDIUMIA_TEAM_AI_DEMO_ENABLED=true. Aucune action réelle n'est autorisée.
+- L'action de démonstration /api/rdv-admin?action=mediumia-team-demo n'est accessible qu'en Vercel Preview, branche dédiée, et avec le drapeau serveur MEDIUMIA_TEAM_AI_DEMO_ENABLED=true. Aucune action réelle n'est autorisée.
 - Le bureau de direction propose un bouton unique « Faire travailler mon équipe IA » quand le serveur est configuré, et indique sinon qu'il faut terminer la connexion.
 - Aucun outil ni accès Supabase/Google/PayPal/Resend n'est transmis aux modèles. Les réponses restent des avis sur données fictives, pas des vérifications.
 - Les deux drapeaux de préversion sont activés uniquement pour la branche codex/mediumia-agent-team-phase0 dans le projet Vercel mediumia-site, lequel possède déjà une clé Anthropic en environnement Preview. Aucune clé n'a été copiée, et la configuration Production est inchangée.
@@ -138,3 +138,7 @@ traces d'exécution et retour de preuves pour chaque action.
 Tests : node --test tests/mediumiaTeamLiveDemo.test.js
 
 Prochaine étape : valider l'appel du modèle en ouvrant la préversion, puis seulement envisager des sources TEST en lecture seule.
+
+### Compatibilité Vercel Hobby
+
+Le projet utilise déjà la limite de 12 fonctions Serverless. La démonstration IA a été intégrée dans la fonction existante api/rdv-admin.js via lib/mediumiaTeamDemoApi.js, sans créer de fonction supplémentaire. L'action reste fermée hors Preview dédié. L'ancienne route dédiée a été retirée après l'échec de construction exceeded_serverless_functions_per_deployment.

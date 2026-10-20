@@ -24,7 +24,7 @@ export default function MediumiaTeamDashboard() {
 
   useEffect(() => {
     let active = true
-    fetch('/api/mediumia-team-demo', {cache: 'no-store'})
+    fetch('/api/rdv-admin?action=mediumia-team-demo', {cache: 'no-store'})
       .then(r => r.ok ? r.json() : {available:false})
       .then(d => { if(active) setAiEnabled(d.available === true) })
       .catch(() => { if(active) setAiEnabled(false) })
@@ -37,7 +37,7 @@ export default function MediumiaTeamDashboard() {
     setAiError('')
     setAiResult(null)
     try {
-      const r = await fetch('/api/mediumia-team-demo', {
+      const r = await fetch('/api/rdv-admin?action=mediumia-team-demo', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({workflowId:selected}),

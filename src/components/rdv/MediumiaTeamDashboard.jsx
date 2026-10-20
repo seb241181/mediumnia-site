@@ -5,6 +5,7 @@ import {
   planMediumiaTeamWorkflow,
 } from '../../../lib/mediumiaTeamOrchestrator.js'
 import { buildMediumiaTeamDemo } from '../../../lib/mediumiaTeamDemoReports.js'
+import MediumiaTeamTestRead from './MediumiaTeamTestRead.jsx'
 
 // Prototype interne : aucune API, aucune lecture client, aucune écriture.
 const CHOICES = {
@@ -241,6 +242,8 @@ export default function MediumiaTeamDashboard() {
           </div>
         )}
       </section>
+
+      <MediumiaTeamTestRead />
 
       <section aria-labelledby="two-agents-demo" className="rounded-2xl border border-gold/30 bg-white/70 p-5 sm:p-6">
         <p className="font-georgia text-[11px] uppercase tracking-widest text-gold">Prochaine étape · IA réelle, cas fictifs</p>

@@ -86,9 +86,9 @@ test('provider errors return a neutral code, not a token',async()=>{
 })
 
 test('briefing strips literal Markdown and remains readable when the model is verbose', () => {
-  const ugly = '\\*\\*Réservation\\*\\* : pas confirmée.\\n#### Action\\n- Vérifier le créneau.\\n- Préparer le message.'
+  const ugly = '\\*\\*Réservation\\*\\* : pas confirmée.\n#### Action\n- Vérifier le créneau.\n- Préparer le message.'
   const cleaned = formatMediumiaTeamDemoReply(ugly)
-  assert.equal(cleaned, 'Réservation : pas confirmée.\\nAction\\nVérifier le créneau.\\nPréparer le message.')
+  assert.equal(cleaned, 'Réservation : pas confirmée.\nAction\nVérifier le créneau.\nPréparer le message.')
   assert.equal(formatMediumiaTeamDemoReply(null), '')
   const long = 'Un détail à vérifier. ' + 'Phrase de rapport trop longue. '.repeat(60)
   const shortened = formatMediumiaTeamDemoReply(long)

@@ -142,3 +142,20 @@ Prochaine étape : valider l'appel du modèle en ouvrant la préversion, puis se
 ### Compatibilité Vercel Hobby
 
 Le projet utilise déjà la limite de 12 fonctions Serverless. La démonstration IA a été intégrée dans la fonction existante api/rdv-admin.js via lib/mediumiaTeamDemoApi.js, sans créer de fonction supplémentaire. L'action reste fermée hors Preview dédié. L'ancienne route dédiée a été retirée après l'échec de construction exceeded_serverless_functions_per_deployment.
+
+
+## Lecture réelle des données Supabase TEST (Phase 1, 20 octobre 2026)
+
+- **Base autorisée :** Supabase TEST `wnbwhnqiulsdjcvkuwos` exclusivement.
+- Une fonction SQL `public.mediumia_team_test_read_v1()` a été créée uniquement sur ce projet via une migration nommée `mediumia_team_test_read_v1_owner_scoped`.
+- Fonction `STABLE SECURITY DEFINER` : exige `auth.uid()` et correspondance avec le `owner_id` du praticien `seb-test`; exécution révoquée pour `anon`, accordée à `authenticated`.
+- La fonction n'effectue **aucune écriture** et ne renvoie que des compteurs, jusqu'à cinq horaires confirmés, le titre limité de prestation et des états de paiement enregistrés en TEST. Aucun nom, e-mail, téléphone, message, token ou identifiant PayPal n'est retourné.
+- L'interface `MediumiaTeamTestRead.jsx` utilise un **client Supabase TEST distinct** et sa propre session : connexion du propriétaire TEST requise une fois dans la préversion.
+- Le projet Vercel mediumia-site reçoit uniquement des variables **Preview limitées à `codex/mediumia-agent-team-phase0`**, dont l'URL exacte du projet TEST et une clé publishable publique TEST. Aucun rôle service, aucune variable PROD nouvelle.
+- La lecture est déclenchée à la demande par `rpc('mediumia_team_test_read_v1')`. Aucune écriture, aucun remboursement, aucun e-mail, aucune consultation PayPal ni Google. Les états de paiements sont **ceux de la base TEST**, pas une preuve de l'organisme financier.
+- Le panneau est séparé de la démonstration à deux modèles IA : **à ce stade, les modèles IA n'ingèrent pas automatiquement les données TEST**. Toute extension d'analyse devra utiliser une vérification serveur du JWT TEST, une synthèse minimisée et des droits de lecture seulement.
+- Aucun changement en production MediumIA ; PR #168 toujours brouillon.
+
+Vérification directe de la migration TEST : `anon_can_execute=false`, `auth_can_execute=true`, `security_definer=true`, `volatility=stable`.
+
+**Essai propriétaire :** ouvrir la préversion, trouver « Lumia ouvre les yeux », se connecter au compte MediumIA TEST (pas le compte du site public), puis cliquer sur « Lire mes données TEST ».

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   TEAM_LIVE_DEMO_SCENARIOS,
   createTeamDemoProvider,
+  buildMediumiaTeamDemoPrompt,
   formatMediumiaTeamDemoReply,
   resolveTeamDemoConfiguration,
   runTeamLiveDemo,
@@ -39,9 +40,11 @@ test('two different prompts are sent sequentially; handoff stays untrusted', asy
   assert.match(calls[1].userText,/NON FIABLE/)
   assert.match(calls[1].userText,/Premier avis/)
   assert.match(calls[0].userText,/Aucun client réel/)
-  assert.match(calls[0].systemPrompt,/FORMAT PRIORITAIRE POUR CET ESSAI/)
-  assert.match(calls[1].systemPrompt,/sans titres, puces, listes/)
-  assert.match(calls[0].userText,/Pas de rapport, pas de listes, pas de Markdown/)
+  assert.match(calls[0].userText,/Dans ce TEST, les modèles IA ne peuvent consulter/)
+  assert.equal(result.summary, 'Deuxième avis : rédiger un brouillon.')
+  assert.match(calls[0].systemPrompt,/une synchronisation Google Agenda existe/)
+  assert.match(calls[1].systemPrompt,/Ne répète pas le diagnostic de Lumia RDV/)
+  assert.match(calls[0].userText,/sans Markdown ni répétitions/)
 })
 
 test('all scenarios are allowlisted with exactly two isolated roles',async()=>{
@@ -94,4 +97,21 @@ test('briefing strips literal Markdown and remains readable when the model is ve
   const shortened = formatMediumiaTeamDemoReply(long)
   assert.ok(shortened.length < 825)
   assert.ok(shortened.endsWith('…'))
+})
+
+test('each demo role receives a distinct brief, not the full administrative checklist', () => {
+  const rdv = buildMediumiaTeamDemoPrompt('rdv')
+  const communication = buildMediumiaTeamDemoPrompt('communication')
+  const finance = buildMediumiaTeamDemoPrompt('finance')
+  const technique = buildMediumiaTeamDemoPrompt('technique')
+  assert.ok(rdv && communication && finance && technique)
+  assert.equal(buildMediumiaTeamDemoPrompt('constructor'), null)
+  assert.equal(buildMediumiaTeamDemoPrompt(null), null)
+  assert.match(rdv, /Google Agenda existe/)
+  assert.match(communication, /brouillon de deux phrases/)
+  assert.match(finance, /justificatif PayPal manquant/)
+  assert.match(technique, /contrôle de rapprochement/)
+  assert.notEqual(rdv, communication)
+  assert.ok(rdv.length < 1900)
+  assert.doesNotMatch(rdv, /FORMAT DE RESTITUTION/)
 })

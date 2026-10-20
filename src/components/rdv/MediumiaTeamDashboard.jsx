@@ -266,20 +266,32 @@ export default function MediumiaTeamDashboard() {
         {aiError && <p role="alert" className="mt-3 font-georgia text-sm text-red-800">{aiError}</p>}
         {aiResult && (
           <div aria-live="polite" className="mt-5 space-y-3">
-            <p className="font-georgia text-xs font-semibold text-deep">
-              Résultats générés par IA · dossier fictif · aucune opération exécutée
-            </p>
-            {aiResult.responses.map((item,index) => (
-              <article key={item.agentId} className="rounded-xl border border-gold/25 bg-cream/70 p-4">
-                <h4 className="font-georgia text-sm font-semibold text-deep">
-                  {index+1}. {Object.values(MEDIUMIA_TEAM_AGENTS).find(a => a.id === item.agentId)?.name || 'Agent'}
-                </h4>
-                <p className="mt-2 whitespace-pre-wrap font-georgia text-sm leading-7 text-deep">{item.reply}</p>
-              </article>
-            ))}
-            <p className="font-georgia text-xs text-mist">
-              Ces analyses ne sont pas des vérifications réelles et ne déclenchent aucune action.
-            </p>
+            <div className="rounded-2xl border border-gold/30 bg-cream/80 p-5">
+              <p className="font-georgia text-[11px] uppercase tracking-widest text-gold">
+                Le résultat de l'équipe
+              </p>
+              <p className="mt-3 whitespace-pre-wrap font-georgia text-base leading-7 text-deep">
+                {aiResult.summary || aiResult.responses.at(-1)?.reply}
+              </p>
+              <p className="mt-3 font-georgia text-xs text-mist">
+                Exemple fictif · aucune réservation ni transaction modifiée
+              </p>
+            </div>
+            <details className="rounded-xl border border-gold/25 bg-white/80 p-4">
+              <summary className="cursor-pointer font-georgia text-sm font-semibold text-deep">
+                Voir le travail des deux agents
+              </summary>
+              <div className="mt-4 space-y-3">
+                {aiResult.responses.map((item,index) => (
+                  <article key={item.agentId} className="rounded-xl border border-gold/25 bg-cream/70 p-4">
+                    <h4 className="font-georgia text-sm font-semibold text-deep">
+                      {index+1}. {Object.values(MEDIUMIA_TEAM_AGENTS).find(a => a.id === item.agentId)?.name || 'Agent'}
+                    </h4>
+                    <p className="mt-2 whitespace-pre-wrap font-georgia text-sm leading-7 text-deep">{item.reply}</p>
+                  </article>
+                ))}
+              </div>
+            </details>
           </div>
         )}
       </section>

@@ -123,3 +123,18 @@ traces d'exécution et retour de preuves pour chaque action.
 - Le déploiement est protégé par l'accès Vercel ; aucune validation de parcours par un utilisateur final n'a encore été réalisée dans le navigateur.
 
 **Suite du chantier** : Phase 1, connecter uniquement des contrôles de lecture aux agents en Supabase TEST, puis auditer chaque sortie avant toute mise à disposition d'actions. Ne jamais réutiliser un jeton réel de client ou une clé PayPal LIVE dans les simulations.
+
+
+## Démonstration IA à un bouton (Phase 1 expérimentale, 20 octobre 2026)
+
+- Le module lib/mediumiaTeamLiveDemo.js fait circuler un cas inventé entre deux rôles IA successifs et indépendants. Aucun texte libre ni identifiant client n'entre dans le moteur.
+- api/mediumia-team-demo.js n'est accessible qu'en Vercel Preview, branche dédiée, et avec le drapeau serveur MEDIUMIA_TEAM_AI_DEMO_ENABLED=true. Aucune action réelle n'est autorisée.
+- Le bureau de direction propose un bouton unique « Faire travailler mon équipe IA » quand le serveur est configuré, et indique sinon qu'il faut terminer la connexion.
+- Aucun outil ni accès Supabase/Google/PayPal/Resend n'est transmis aux modèles. Les réponses restent des avis sur données fictives, pas des vérifications.
+- Les deux drapeaux de préversion sont activés uniquement pour la branche codex/mediumia-agent-team-phase0 dans le projet Vercel mediumia-site, lequel possède déjà une clé Anthropic en environnement Preview. Aucune clé n'a été copiée, et la configuration Production est inchangée.
+- L'autre projet Vercel mediumia-agenda-test conserve le simulateur statique ; sa connexion à un modèle IA n'est pas activée.
+- La protection Vercel limite l'accès à la préversion et les deux appels IA restent courts ; ne pas fusionner avant validation du propriétaire.
+
+Tests : node --test tests/mediumiaTeamLiveDemo.test.js
+
+Prochaine étape : valider l'appel du modèle en ouvrant la préversion, puis seulement envisager des sources TEST en lecture seule.

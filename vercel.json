@@ -197,7 +197,7 @@
     "api/rdv-config.js": {
       "maxDuration": 300
     },
-    "api/mediumia-team-demo.js": {
+    "api/rdv-admin.js": {
       "maxDuration": 60
     }
   }

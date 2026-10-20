@@ -7,9 +7,9 @@ const ORIGINAL = [
   "export function Example() {",
   "  return <>",
   "                    ].filter(item => item.id !== 'email' || activePractitioner.slug === 'sebastien-seguin').map(item => (",
-  "                     {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (",
-  "                       <EmailQuestionsPanel session={session} />",
-  "                     )}",
+  "                    {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (",
+  "                      <EmailQuestionsPanel session={session} />",
+  "                    )}",
   "  </>",
   "}",
 ].join('\n')

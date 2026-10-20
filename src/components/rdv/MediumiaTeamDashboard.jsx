@@ -268,18 +268,23 @@ export default function MediumiaTeamDashboard() {
           <div aria-live="polite" className="mt-5 space-y-3">
             <div className="rounded-2xl border border-gold/30 bg-cream/80 p-5">
               <p className="font-georgia text-[11px] uppercase tracking-widest text-gold">
-                Le résultat de l'équipe
+                Ton briefing
               </p>
               <p className="mt-3 whitespace-pre-wrap font-georgia text-base leading-7 text-deep">
-                {aiResult.summary || aiResult.responses.at(-1)?.reply}
+                {aiResult.summary || 'Les agents ont préparé leur analyse fictive.'}
               </p>
+              {aiResult.nextStep && (
+                <p className="mt-3 font-georgia text-sm leading-6 text-deep">
+                  <strong>La suite :</strong> {aiResult.nextStep}
+                </p>
+              )}
               <p className="mt-3 font-georgia text-xs text-mist">
-                Exemple fictif · aucune réservation ni transaction modifiée
+                Exemple fictif · aucune réservation, transaction ou message modifié
               </p>
             </div>
             <details className="rounded-xl border border-gold/25 bg-white/80 p-4">
               <summary className="cursor-pointer font-georgia text-sm font-semibold text-deep">
-                Voir le travail des deux agents
+                Voir les analyses et le brouillon des agents
               </summary>
               <div className="mt-4 space-y-3">
                 {aiResult.responses.map((item,index) => (

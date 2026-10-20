@@ -4,6 +4,8 @@ import {
   sanitizeTeamTestAnalysis,
   isMediumiaTeamTestAnalysisEnabled,
   analyzeVerifiedTeamTest,
+  formatTeamTestAppointmentParis,
+  formatTeamTestAmountEuro,
 } from '../lib/mediumiaTeamTestAnalysis.js'
 
 const fixture = {
@@ -46,4 +48,23 @@ test('only normalized counters may reach agents, with no personal data', async (
   assert.deepEqual(notes.map(n=>n.role),['rdv','finance'])
   assert.equal(notes.length,2)
   assert.doesNotMatch(JSON.stringify(requests), /never-send|example.invalid|Guidance visio test|forbidden/)
+})
+
+test('agent briefing uses Paris clock and euro amounts, without leaking raw UTC/centimes', async () => {
+  assert.match(formatTeamTestAppointmentParis('2026-10-23T12:00:00Z'), /23 octobre 2026.*14:00/)
+  assert.match(formatTeamTestAppointmentParis('2026-10-26T09:00:00Z'), /26 octobre 2026.*10:00/)
+  assert.equal(formatTeamTestAmountEuro(7000).replace(/\s/g, ''), '70,00€')
+  assert.equal(formatTeamTestAppointmentParis('not-a-date'), null)
+  assert.equal(formatTeamTestAmountEuro(-7000), null)
+  const notes=[]
+  await analyzeVerifiedTeamTest(sanitizeTeamTestAnalysis(fixture), async query => {
+    notes.push(query)
+    return 'Résumé de test.'
+  })
+  const appointmentPayload = JSON.parse(notes[0].userText)
+  const financePayload = JSON.parse(notes[1].userText)
+  assert.match(appointmentPayload.data.firstUpcomingParis, /14:00/)
+  assert.equal(appointmentPayload.data.firstUpcomingAt, undefined)
+  assert.equal(financePayload.data.capturedCents, undefined)
+  assert.equal(financePayload.data.capturedEuros.replace(/\s/g, ''), '70,00€')
 })

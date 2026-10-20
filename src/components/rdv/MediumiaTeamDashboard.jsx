@@ -70,8 +70,8 @@ export default function MediumiaTeamDashboard() {
           </span>
         </div>
         <p className="mt-4 max-w-3xl font-georgia text-sm leading-7 text-cream/85">
-          Découvrez le rôle de chaque agent et le déroulé des missions. Aucun agent
-          n’est encore connecté à un modèle IA ou à vos comptes.
+          Découvrez le rôle de chaque agent et le déroulé des missions. Sur la préversion autorisée,
+          deux agents peuvent analyser ensemble un cas fictif, sans accès à vos comptes.
         </p>
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
@@ -89,7 +89,7 @@ export default function MediumiaTeamDashboard() {
 
       <section aria-labelledby="members-heading" className="rounded-2xl border border-gold/25 bg-white/70 p-5 sm:p-6">
         <h3 id="members-heading" className="font-georgia text-xl text-deep">Votre équipe</h3>
-        <p className="mt-1 font-georgia text-xs text-mist">Chaque rôle dispose de son prompt. Aucune connexion active.</p>
+        <p className="mt-1 font-georgia text-xs text-mist">Chaque rôle possède son prompt. Aucun accès aux vrais dossiers clients.</p>
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(MEDIUMIA_TEAM_AGENTS).map(([key, agent]) => (
             <article key={agent.id} className={
@@ -108,7 +108,7 @@ export default function MediumiaTeamDashboard() {
               <span className={
                 'mt-4 inline-block rounded-full border px-2 py-1 font-georgia text-[10px] ' +
                 (key === 'coordinator' ? 'border-gold/40 text-gold' : 'border-gold/25 text-mist')
-              }>Prompt prêt · inactif</span>
+              }>Prompt prêt · sans accès client</span>
             </article>
           ))}
         </div>

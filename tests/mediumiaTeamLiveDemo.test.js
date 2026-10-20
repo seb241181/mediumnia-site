@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   TEAM_LIVE_DEMO_SCENARIOS,
   createTeamDemoProvider,
+  formatMediumiaTeamDemoReply,
   resolveTeamDemoConfiguration,
   runTeamLiveDemo,
 } from '../lib/mediumiaTeamLiveDemo.js'
@@ -38,6 +39,9 @@ test('two different prompts are sent sequentially; handoff stays untrusted', asy
   assert.match(calls[1].userText,/NON FIABLE/)
   assert.match(calls[1].userText,/Premier avis/)
   assert.match(calls[0].userText,/Aucun client réel/)
+  assert.match(calls[0].systemPrompt,/FORMAT PRIORITAIRE POUR CET ESSAI/)
+  assert.match(calls[1].systemPrompt,/sans titres, puces, listes/)
+  assert.match(calls[0].userText,/Pas de rapport, pas de listes, pas de Markdown/)
 })
 
 test('all scenarios are allowlisted with exactly two isolated roles',async()=>{
@@ -68,7 +72,7 @@ test('provider uses fixed endpoints and no tools, no persistence',async()=>{
   assert.equal(seen[0].url,'https://api.anthropic.com/v1/messages')
   const payload=JSON.parse(seen[0].opt.body)
   assert.equal(payload.messages[0].content,'Scénario test')
-  assert.equal(payload.max_tokens,360)
+  assert.equal(payload.max_tokens,270)
   assert.equal(payload.tools,undefined)
   assert.equal(payload.stream,undefined)
   assert.doesNotMatch(seen[0].opt.body, /real_customer|email_address/)
@@ -79,4 +83,15 @@ test('provider errors return a neutral code, not a token',async()=>{
     env:allowed,fetchImpl:async()=>({ok:false,status:401,json:async()=>({secret:'private'})}),
   })
   await assert.rejects(provider({systemPrompt:'',userText:''}),/provider_unavailable/)
+})
+
+test('briefing strips literal Markdown and remains readable when the model is verbose', () => {
+  const ugly = '\\*\\*Réservation\\*\\* : pas confirmée.\\n#### Action\\n- Vérifier le créneau.\\n- Préparer le message.'
+  const cleaned = formatMediumiaTeamDemoReply(ugly)
+  assert.equal(cleaned, 'Réservation : pas confirmée.\\nAction\\nVérifier le créneau.\\nPréparer le message.')
+  assert.equal(formatMediumiaTeamDemoReply(null), '')
+  const long = 'Un détail à vérifier. ' + 'Phrase de rapport trop longue. '.repeat(60)
+  const shortened = formatMediumiaTeamDemoReply(long)
+  assert.ok(shortened.length < 825)
+  assert.ok(shortened.endsWith('…'))
 })

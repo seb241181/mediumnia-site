@@ -109,3 +109,17 @@ traces d'exécution et retour de preuves pour chaque action.
 - Ce drapeau est paramétré uniquement pour la branche `codex/mediumia-agent-team-phase0` dans le projet Vercel **mediumia-agenda-test**, sur les déploiements Preview. Il n'est pas défini pour le projet public mediumia-site.
 - Aucune fonction de pilotage réel, aucune tâche persistée, aucune API, aucun envoi ni remboursement n'est activé.
 - Vérification : `tests/mediumiaTeamDashboardPatch.test.js` et build Preview. Ne pas fusionner tant qu'une validation de l'interface et des permissions n'a pas été faite.
+
+
+## Phase 0 — Bureau de direction, vérification TEST (20 octobre 2026)
+
+- Interface de simulation : src/components/rdv/MediumiaTeamDashboard.jsx.
+- Injection de l'onglet dans Les Coulisses par scripts/apply-mediumia-team-dashboard.mjs, à la fin de la chaîne de construction historique.
+- Affichage limité au praticien prévu, avec interrupteur de compilation VITE_MEDIUMIA_TEAM_PHASE0, activé seulement dans l'environnement Vercel Preview de la branche codex/mediumia-agent-team-phase0.
+- Les variables SUPABASE_URL et VITE_SUPABASE_URL de ce projet Vercel TEST pointent vers le projet Supabase TEST, et non la production.
+- PR #168 toujours en brouillon ; aucune fusion vers main ni autorisation d'exécution des agents.
+- Vercel TEST : déploiement READY du commit a9c407a1a07ac2f4d6c8afa333853540475701f7, construction Vite réussie. La chaîne prebuild inclut les tests Node et le patch affiche « execution remains disabled ».
+- Aucune fonction de messagerie, de remboursement, d'annulation ou de modification de réservation n'est raccordée à cette nouvelle interface.
+- Le déploiement est protégé par l'accès Vercel ; aucune validation de parcours par un utilisateur final n'a encore été réalisée dans le navigateur.
+
+**Suite du chantier** : Phase 1, connecter uniquement des contrôles de lecture aux agents en Supabase TEST, puis auditer chaque sortie avant toute mise à disposition d'actions. Ne jamais réutiliser un jeton réel de client ou une clé PayPal LIVE dans les simulations.

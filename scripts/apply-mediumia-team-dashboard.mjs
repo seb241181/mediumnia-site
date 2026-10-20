@@ -17,9 +17,9 @@ const NAV_AFTER = [
 ].join('\n')
 
 const BODY_BEFORE = [
-  "                     {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (",
-  "                       <EmailQuestionsPanel session={session} />",
-  "                     )}",
+  "                    {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (",
+  "                      <EmailQuestionsPanel session={session} />",
+  "                    )}",
 ].join('\n')
 const BODY_AFTER = [
   BODY_BEFORE,
@@ -27,7 +27,7 @@ const BODY_AFTER = [
   "                     {activePanel === 'equipe' && activePractitioner.slug === 'sebastien-seguin'",
   "                       && import.meta.env.VITE_MEDIUMIA_TEAM_PHASE0 === 'true' && (",
   "                         <MediumiaTeamDashboard />",
-  "                       )}",
+  "                      )}",
 ].join('\n')
 
 function replaceOrFail(source, before, after, label) {

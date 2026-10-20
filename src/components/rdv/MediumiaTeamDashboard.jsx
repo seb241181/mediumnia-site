@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   MEDIUMIA_TEAM_AGENTS,
   MEDIUMIA_TEAM_WORKFLOWS,
@@ -16,7 +16,41 @@ const CHOICES = {
 export default function MediumiaTeamDashboard() {
   const [selected, setSelected] = useState('rdv.reschedule')
   const [visibleCount, setVisibleCount] = useState(0)
+  const [aiEnabled, setAiEnabled] = useState(false)
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiResult, setAiResult] = useState(null)
+  const [aiError, setAiError] = useState('')
   const plan = planMediumiaTeamWorkflow(selected)
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/mediumia-team-demo', {cache: 'no-store'})
+      .then(r => r.ok ? r.json() : {available:false})
+      .then(d => { if(active) setAiEnabled(d.available === true) })
+      .catch(() => { if(active) setAiEnabled(false) })
+    return () => { active = false }
+  }, [])
+
+  async function askAiTeam() {
+    if(!aiEnabled || aiBusy) return
+    setAiBusy(true)
+    setAiError('')
+    setAiResult(null)
+    try {
+      const r = await fetch('/api/mediumia-team-demo', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({workflowId:selected}),
+      })
+      const d = await r.json()
+      if(!r.ok || !d.ok || !d.syntheticData || !Array.isArray(d.responses)) throw new Error('ai_unavailable')
+      setAiResult(d)
+    } catch {
+      setAiError("L'équipe IA n'a pas pu répondre. Aucun changement n'a été effectué.")
+    } finally {
+      setAiBusy(false)
+    }
+  }
   const demo = buildMediumiaTeamDemo(selected, visibleCount)
 
   return (
@@ -90,7 +124,7 @@ export default function MediumiaTeamDashboard() {
             <button
               key={id}
               type="button"
-              onClick={() => { setSelected(id); setVisibleCount(0) }}
+              onClick={() => { setSelected(id); setVisibleCount(0); setAiResult(null); setAiError('') }}
               aria-pressed={id === selected}
               className={
                 'rounded-xl border px-4 py-2.5 font-georgia text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ' +
@@ -204,6 +238,48 @@ export default function MediumiaTeamDashboard() {
                 </p>
               )}
             </section>
+          </div>
+        )}
+      </section>
+
+      <section aria-labelledby="two-agents-demo" className="rounded-2xl border border-gold/30 bg-white/70 p-5 sm:p-6">
+        <p className="font-georgia text-[11px] uppercase tracking-widest text-gold">Prochaine étape · IA réelle, cas fictifs</p>
+        <h3 id="two-agents-demo" className="mt-1 font-georgia text-xl text-deep">Deux agents réfléchissent ensemble</h3>
+        <p className="mt-2 font-georgia text-sm leading-7 text-mist">
+          Un seul bouton, deux spécialistes : le deuxième lit le compte rendu du premier.
+          Ils travaillent uniquement sur un dossier inventé. Aucun vrai client ni paiement.
+        </p>
+        {aiEnabled ? (
+          <button
+            type="button"
+            disabled={aiBusy}
+            onClick={askAiTeam}
+            className="mt-4 rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-semibold text-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            {aiBusy ? 'Les agents réfléchissent…' : 'Faire travailler mon équipe IA'}
+          </button>
+        ) : (
+          <p role="status" className="mt-4 inline-block rounded-xl border border-gold/30 bg-cream px-4 py-3 font-georgia text-sm text-mist">
+            Connexion au modèle IA à finaliser sur TEST. La simulation précédente fonctionne déjà.
+          </p>
+        )}
+        {aiError && <p role="alert" className="mt-3 font-georgia text-sm text-red-800">{aiError}</p>}
+        {aiResult && (
+          <div aria-live="polite" className="mt-5 space-y-3">
+            <p className="font-georgia text-xs font-semibold text-deep">
+              Résultats générés par IA · dossier fictif · aucune opération exécutée
+            </p>
+            {aiResult.responses.map((item,index) => (
+              <article key={item.agentId} className="rounded-xl border border-gold/25 bg-cream/70 p-4">
+                <h4 className="font-georgia text-sm font-semibold text-deep">
+                  {index+1}. {Object.values(MEDIUMIA_TEAM_AGENTS).find(a => a.id === item.agentId)?.name || 'Agent'}
+                </h4>
+                <p className="mt-2 whitespace-pre-wrap font-georgia text-sm leading-7 text-deep">{item.reply}</p>
+              </article>
+            ))}
+            <p className="font-georgia text-xs text-mist">
+              Ces analyses ne sont pas des vérifications réelles et ne déclenchent aucune action.
+            </p>
           </div>
         )}
       </section>

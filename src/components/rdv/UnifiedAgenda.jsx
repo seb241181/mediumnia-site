@@ -4,6 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import luxonPlugin from '@fullcalendar/luxon3'
 import frLocale from '@fullcalendar/core/locales/fr'
+import { rescheduleErrorMessage } from '../../lib/rdvAgendaMessages.js'
 import './UnifiedAgenda.css'
 
 const money = value => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100)
@@ -135,11 +136,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
       setActionMessage(data.google_sync === 'retry' ? 'Rendez-vous déplacé. La synchronisation Google est en attente ; aucune notification client n’a été envoyée.' : data.google_sync === 'review' ? 'Rendez-vous déplacé, mais Google demande une vérification manuelle.' : 'Rendez-vous déplacé et synchronisation enregistrée. Aucun message client n’a été envoyé.')
       setRefreshKey(value => value + 1)
     } catch (error) {
-      setActionMessage(error.message === 'slot_unavailable'
-        ? 'Ce créneau n’est plus disponible.'
-        : error.message === 'google_calendar_unavailable'
-          ? 'Google Calendar est indisponible. Le déplacement n’a pas été effectué.'
-          : 'Déplacement non effectué : vérifiez le créneau et réessayez.')
+      setActionMessage(rescheduleErrorMessage(error.message))
     } finally { setActionBusy(false) }
   }
 

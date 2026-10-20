@@ -12,6 +12,9 @@ export default function MediumiaTeamTestRead() {
   const [busy, setBusy] = useState(false)
   const [report, setReport] = useState(null)
   const [error, setError] = useState('')
+  const [analysis, setAnalysis] = useState(null)
+  const [analysisError, setAnalysisError] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
 
   useEffect(() => {
     if (!mediumiaTeamTestClient) { setReady(true); return }
@@ -20,7 +23,7 @@ export default function MediumiaTeamTestRead() {
       if (active) { setSession(data.session || null); setReady(true) }
     }).catch(() => { if(active) setReady(true) })
     const {data:{subscription}} = mediumiaTeamTestClient.auth.onAuthStateChange((_event,current) => {
-      if(active) { setSession(current); if(!current) setReport(null) }
+      if(active) { setSession(current); if(!current) { setReport(null); setAnalysis(null) } }
     })
     return () => { active = false; subscription.unsubscribe() }
   }, [])
@@ -44,11 +47,41 @@ export default function MediumiaTeamTestRead() {
     if(busy || !session) return
     setBusy(true)
     setError('')
+    setAnalysis(null)
+    setAnalysisError('')
     try { setReport(await readMediumiaTeamTest()) }
     catch {
       setReport(null)
       setError('Impossible de lire le compte propriétaire TEST. Aucune donnée n’a été modifiée.')
     } finally { setBusy(false) }
+  }
+
+  async function requestAnalysis() {
+    if(analyzing || busy || !session || !report) return
+    setAnalyzing(true)
+    setAnalysisError('')
+    setAnalysis(null)
+    try {
+      const {data:{session:latest}} = await mediumiaTeamTestClient.auth.getSession()
+      if(!latest?.access_token) throw new Error('login_required')
+      const reply = await fetch('/api/rdv-admin?action=mediumia-team-test-analysis', {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          Authorization:'Bearer ' + latest.access_token,
+        },
+        body:'{}',
+      })
+      const result = await reply.json()
+      if(!reply.ok || result.mode !== 'test_read_only' || result.ok !== true ||
+          result.clientIdentityIncluded !== false || result.actionsExecuted !== 0)
+        throw new Error('analysis_failed')
+      setAnalysis(result)
+    } catch {
+      setAnalysisError("L'analyse TEST n'est pas disponible pour le moment. Aucun changement n'a été effectué.")
+    } finally {
+      setAnalyzing(false)
+    }
   }
 
   if (!mediumiaTeamTestClient) return null
@@ -128,6 +161,41 @@ export default function MediumiaTeamTestRead() {
                   </ul>
                 </div>
               )}
+              <div className="rounded-xl border border-gold/25 bg-white/85 p-4">
+                <h4 className="font-georgia text-base font-semibold text-deep">Le briefing des agents sur TEST</h4>
+                <p className="mt-1 font-georgia text-xs leading-5 text-mist">
+                  Lumia et Finances recevront uniquement les compteurs anonymes revérifiés côté serveur.
+                  Pas de noms de clients, d'accès à Google Agenda ou à PayPal.
+                </p>
+                <button type="button" onClick={requestAnalysis} disabled={analyzing || busy}
+                  className="mt-3 rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-semibold text-gold disabled:opacity-50">
+                  {analyzing ? 'Lumia et Finances analysent…' : 'Faire analyser les données TEST'}
+                </button>
+                {analysis && (
+                  <div aria-live="polite" className="mt-4 space-y-3">
+                    <p className="font-georgia text-sm font-semibold text-deep">
+                      Résultat : {analysis.summary?.upcoming || 0} rendez-vous à venir,
+                      { ' '}{analysis.summary?.captured || 0} paiement(s) marqué(s) capturé(s) dans TEST.
+                    </p>
+                    {analysis.reports?.map(item => (
+                      <article key={item.role} className="rounded-xl border border-gold/25 bg-cream/70 p-3">
+                        <h5 className="font-georgia text-sm font-semibold text-deep">
+                          {item.role === 'rdv' ? 'Lumia Rendez-vous' : 'Finances'}
+                        </h5>
+                        <p className="mt-2 whitespace-pre-wrap font-georgia text-sm leading-6 text-deep">{item.answer}</p>
+                      </article>
+                    ))}
+                    {analysis.aiStatus !== 'ready' &&
+                      <p className="font-georgia text-xs text-mist">
+                        Les compteurs sont vérifiés dans TEST ; les commentaires IA sont momentanément indisponibles.
+                      </p>}
+                    <p className="font-georgia text-xs text-mist">
+                      Analyse de lecture seule · aucune action exécutée, aucun paiement vérifié auprès de PayPal.
+                    </p>
+                  </div>
+                )}
+                {analysisError && <p role="alert" className="mt-3 font-georgia text-sm text-red-800">{analysisError}</p>}
+              </div>
               <p className="font-georgia text-xs text-mist">
                 Source : Supabase TEST · lecture vérifiée par le compte propriétaire.
                 Les montants sont ceux enregistrés en TEST, pas une confirmation bancaire.

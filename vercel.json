@@ -196,6 +196,9 @@
   "functions": {
     "api/rdv-config.js": {
       "maxDuration": 300
+    },
+    "api/mediumia-team-demo.js": {
+      "maxDuration": 60
     }
   }
 }

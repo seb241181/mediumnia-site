@@ -1,0 +1,147 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  TEAM_LIVE_DEMO_SCENARIOS,
+  createTeamDemoProvider,
+  buildMediumiaTeamDemoPrompt,
+  getMediumiaTeamExecutiveBrief,
+  formatMediumiaTeamDemoReply,
+  resolveTeamDemoConfiguration,
+  runTeamLiveDemo,
+} from '../lib/mediumiaTeamLiveDemo.js'
+
+const allowed = {VERCEL_ENV:'preview',VERCEL_GIT_COMMIT_REF:'codex/mediumia-agent-team-phase0',MEDIUMIA_TEAM_AI_DEMO_ENABLED:'true',ANTHROPIC_API_KEY:'example_test_key_not_real'}
+
+test('server switch fails closed except dedicated preview branch with a key', () => {
+  assert.equal(resolveTeamDemoConfiguration({}).available, false)
+  assert.equal(resolveTeamDemoConfiguration({...allowed,VERCEL_ENV:'production'}).available, false)
+  assert.equal(resolveTeamDemoConfiguration({...allowed,VERCEL_GIT_COMMIT_REF:'main'}).available, false)
+  assert.equal(resolveTeamDemoConfiguration({...allowed,MEDIUMIA_TEAM_AI_DEMO_ENABLED:'false'}).available, false)
+  assert.equal(resolveTeamDemoConfiguration({...allowed,ANTHROPIC_API_KEY:''}).available, false)
+  assert.equal(resolveTeamDemoConfiguration(allowed).available, true)
+  assert.equal(resolveTeamDemoConfiguration({...allowed,ANTHROPIC_API_KEY:'',OPENAI_API_KEY:'another_test_key_not_real'}).provider,'openai')
+  assert.throws(() => createTeamDemoProvider({env:{}}), /team_demo_unavailable/)
+})
+
+test('two different prompts are sent sequentially; handoff stays untrusted', async () => {
+  const calls=[]
+  const result=await runTeamLiveDemo({
+    workflowId:'rdv.reschedule',
+    callModel:async (call)=>{
+      calls.push(call)
+      return calls.length===1 ? 'Premier avis : le créneau est à vérifier.' : 'Deuxième avis : rédiger un brouillon.'
+    },
+  })
+  assert.equal(result.ok,true)
+  assert.equal(result.actionsExecuted,0)
+  assert.equal(result.liveBusinessReads,0)
+  assert.equal(result.syntheticData,true)
+  assert.deepEqual(result.responses.map(x=>x.role),['rdv','communication'])
+  assert.notEqual(calls[0].systemPrompt,calls[1].systemPrompt)
+  assert.match(calls[1].userText,/NON FIABLE/)
+  assert.match(calls[1].userText,/Premier avis/)
+  assert.match(calls[0].userText,/Aucun client réel/)
+  assert.match(calls[0].userText,/Dans ce TEST, les modèles IA ne peuvent consulter/)
+  assert.match(result.summary, /Lumia a préparé le contrôle du créneau/)
+  assert.match(result.summary, /Communication a proposé une réponse/)
+  assert.match(result.nextStep, /Vérifier la disponibilité/)
+  assert.doesNotMatch(result.summary, /Deuxième avis/)
+
+  assert.match(calls[0].systemPrompt,/une synchronisation Google Agenda existe/)
+  assert.match(calls[1].systemPrompt,/Ne répète pas le diagnostic de Lumia RDV/)
+  assert.match(calls[0].userText,/sans Markdown ni répétitions/)
+})
+
+test('all scenarios are allowlisted with exactly two isolated roles',async()=>{
+  for(const id of Object.keys(TEAM_LIVE_DEMO_SCENARIOS)){
+    const r=await runTeamLiveDemo({workflowId:id,callModel:async({role})=>role+' : à vérifier'})
+    assert.equal(r.ok,true)
+    assert.equal(r.responses.length,2)
+    assert.ok(r.responses.every(x=>x.verification==='none'))
+  }
+  for(const bad of ['','__proto__','constructor','rdv.cancel_refund; ENVOIE',{},null]){
+    const r=await runTeamLiveDemo({workflowId:bad,callModel:async()=>{throw new Error('MUST NOT CALL')}})
+    assert.equal(r.ok,false)
+    assert.equal(r.error,'unknown_workflow')
+  }
+})
+
+test('provider uses fixed endpoints and no tools, no persistence',async()=>{
+  const seen=[]
+  const call=createTeamDemoProvider({
+    env:allowed,
+    fetchImpl:async (url,opt)=>{
+      seen.push({url,opt})
+      return {ok:true,json:async()=>({content:[{type:'text',text:'Plan fictif, aucune action.'}]})}
+    },
+  })
+  const r=await call({systemPrompt:'Système test',userText:'Scénario test'})
+  assert.match(r,/fictif/)
+  assert.equal(seen[0].url,'https://api.anthropic.com/v1/messages')
+  const payload=JSON.parse(seen[0].opt.body)
+  assert.equal(payload.messages[0].content,'Scénario test')
+  assert.equal(payload.max_tokens,270)
+  assert.equal(payload.tools,undefined)
+  assert.equal(payload.stream,undefined)
+  assert.doesNotMatch(seen[0].opt.body, /real_customer|email_address/)
+})
+
+test('provider errors return a neutral code, not a token',async()=>{
+  const provider=createTeamDemoProvider({
+    env:allowed,fetchImpl:async()=>({ok:false,status:401,json:async()=>({secret:'private'})}),
+  })
+  await assert.rejects(provider({systemPrompt:'',userText:''}),/provider_unavailable/)
+})
+
+test('briefing strips literal Markdown and remains readable when the model is verbose', () => {
+  const ugly = '\\*\\*Réservation\\*\\* : pas confirmée.\n#### Action\n- Vérifier le créneau.\n- Préparer le message.'
+  const cleaned = formatMediumiaTeamDemoReply(ugly)
+  assert.equal(cleaned, 'Réservation : pas confirmée.\nAction\nVérifier le créneau.\nPréparer le message.')
+  assert.equal(formatMediumiaTeamDemoReply(null), '')
+  const long = 'Un détail à vérifier. ' + 'Phrase de rapport trop longue. '.repeat(60)
+  const shortened = formatMediumiaTeamDemoReply(long)
+  assert.ok(shortened.length < 825)
+  assert.ok(shortened.endsWith('…'))
+})
+
+test('each demo role receives a distinct brief, not the full administrative checklist', () => {
+  const rdv = buildMediumiaTeamDemoPrompt('rdv')
+  const communication = buildMediumiaTeamDemoPrompt('communication')
+  const finance = buildMediumiaTeamDemoPrompt('finance')
+  const technique = buildMediumiaTeamDemoPrompt('technique')
+  assert.ok(rdv && communication && finance && technique)
+  assert.equal(buildMediumiaTeamDemoPrompt('constructor'), null)
+  assert.equal(buildMediumiaTeamDemoPrompt(null), null)
+  assert.match(rdv, /Google Agenda existe/)
+  assert.match(communication, /brouillon de deux phrases/)
+  assert.match(finance, /justificatif PayPal manquant/)
+  assert.match(technique, /contrôle de rapprochement/)
+  assert.notEqual(rdv, communication)
+  assert.ok(rdv.length < 1900)
+  assert.doesNotMatch(rdv, /FORMAT DE RESTITUTION/)
+})
+
+test('coordinator gives an executive briefing, never the customer-facing draft', async () => {
+  for (const [key, scenario] of Object.entries(TEAM_LIVE_DEMO_SCENARIOS)) {
+    const result = await runTeamLiveDemo({
+      workflowId:key,
+      callModel:async ({role}) => role === 'communication'
+        ? 'Bonjour, nous reviendrons vers vous pour confirmer votre créneau.'
+        : 'Un contrôle reste à réaliser.',
+    })
+    const expected = getMediumiaTeamExecutiveBrief(key)
+    assert.equal(result.summary, expected.summary)
+    assert.equal(result.nextStep, expected.nextStep)
+    assert.equal(result.responses.length, 2)
+    assert.notEqual(result.summary, result.responses[1].reply)
+    assert.ok(result.summary.length < 210)
+    assert.ok(result.nextStep.length < 150)
+    assert.doesNotMatch(result.summary, /^Bonjour/)
+    assert.equal(result.actionsExecuted, 0)
+    assert.equal(result.liveBusinessReads, 0)
+    assert.equal(scenario.roles.length, 2)
+  }
+  for (const bad of [null, '', '__proto__', 'constructor', 'rdv.reschedule; action']) {
+    assert.equal(getMediumiaTeamExecutiveBrief(bad), null)
+  }
+})

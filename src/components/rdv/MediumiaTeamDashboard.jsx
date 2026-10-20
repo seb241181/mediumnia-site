@@ -4,6 +4,7 @@ import {
   MEDIUMIA_TEAM_WORKFLOWS,
   planMediumiaTeamWorkflow,
 } from '../../../lib/mediumiaTeamOrchestrator.js'
+import { buildMediumiaTeamDemo } from '../../../lib/mediumiaTeamDemoReports.js'
 
 // Prototype interne : aucune API, aucune lecture client, aucune écriture.
 const CHOICES = {
@@ -14,7 +15,9 @@ const CHOICES = {
 
 export default function MediumiaTeamDashboard() {
   const [selected, setSelected] = useState('rdv.reschedule')
+  const [visibleCount, setVisibleCount] = useState(0)
   const plan = planMediumiaTeamWorkflow(selected)
+  const demo = buildMediumiaTeamDemo(selected, visibleCount)
 
   return (
     <section aria-labelledby="team-heading" className="space-y-6">
@@ -87,7 +90,7 @@ export default function MediumiaTeamDashboard() {
             <button
               key={id}
               type="button"
-              onClick={() => setSelected(id)}
+              onClick={() => { setSelected(id); setVisibleCount(0) }}
               aria-pressed={id === selected}
               className={
                 'rounded-xl border px-4 py-2.5 font-georgia text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ' +
@@ -132,6 +135,75 @@ export default function MediumiaTeamDashboard() {
                 </li>
               ))}
             </ol>
+
+            <section aria-labelledby="team-rehearsal-title" className="mt-6 rounded-2xl border border-gold/30 bg-cream/70 p-4 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-georgia text-[10px] uppercase tracking-widest text-gold">
+                    Atelier de démonstration
+                  </p>
+                  <h4 id="team-rehearsal-title" className="mt-1 font-georgia text-lg text-deep">
+                    Voir les agents se transmettre le travail
+                  </h4>
+                  <p className="mt-2 font-georgia text-xs leading-6 text-mist">
+                    Un exemple entièrement fictif, programmé à l’avance. Aucun modèle IA
+                    ne réfléchit ici, aucun client n’est consulté et aucune opération ne peut partir.
+                  </p>
+                </div>
+                <span className="rounded-full border border-gold/30 bg-white px-3 py-1 text-xs text-deep">
+                  {demo.visibleCount} / {demo.totalSteps} étapes simulées
+                </span>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={demo.complete}
+                  onClick={() => setVisibleCount(n => Math.min(n + 1, demo.totalSteps))}
+                  className="rounded-xl bg-deep px-4 py-2.5 font-georgia text-sm font-semibold text-gold disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {demo.visibleCount === 0 ? 'Lancer la simulation' : demo.complete ? 'Simulation terminée' : 'Voir la transmission suivante'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(0)}
+                  disabled={demo.visibleCount === 0}
+                  className="rounded-xl border border-gold/40 bg-white px-4 py-2.5 font-georgia text-sm text-deep disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Recommencer
+                </button>
+              </div>
+
+              {demo.visibleCount > 0 && (
+                <ol aria-live="polite" className="mt-5 space-y-3">
+                  {demo.steps.map(report => (
+                    <li key={report.mission} className="rounded-xl border border-gold/25 bg-white/85 p-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-georgia text-sm font-semibold text-deep">
+                          {report.order}. {Object.values(MEDIUMIA_TEAM_AGENTS).find(a => a.id === report.agent)?.name}
+                        </span>
+                        <span className="rounded-full border border-gold/30 bg-cream px-2 py-1 font-georgia text-[10px] text-mist">
+                          Résultat fictif
+                        </span>
+                      </div>
+                      <p className="mt-2 font-georgia text-xs leading-6 text-deep">
+                        {report.simulatedFinding}
+                      </p>
+                      <p className="mt-2 border-t border-gold/20 pt-2 font-georgia text-xs leading-6 text-mist">
+                        Transmission : {report.handoff}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              {demo.complete && (
+                <p role="status" className="mt-4 rounded-xl border border-gold/30 bg-white p-3 font-georgia text-xs leading-6 text-deep">
+                  Simulation terminée : {demo.totalSteps} étapes expliquées, zéro appel à un modèle IA,
+                  zéro client consulté, zéro action externe. Les validations restent à concevoir côté serveur.
+                </p>
+              )}
+            </section>
           </div>
         )}
       </section>

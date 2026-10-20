@@ -78,3 +78,24 @@ Ne pas fusionner ou déployer de nouvelle capacité d'exécution multi-agent pen
 Commande : node --test tests/mediumiaTeamOrchestrator.test.js
 
 Contrôlent les cinq rôles, les trois parcours, l'exigence d'accord sur les écritures, le refus des instructions libres et l'absence d'exécution externe.
+
+## Phase 0 — Prompts spécialisés (20 octobre 2026)
+
+Le module `lib/mediumiaTeamPrompts.js` ajoute **cinq prompts système statiques**,
+correspondant aux cinq rôles du catalogue : Coordinateur, Lumia RDV,
+Finances, Communication et Technique.
+
+- Leur construction passe par `getMediumiaTeamPrompt(roleKey)` : uniquement des
+  identifiants de rôles autorisés ; aucune interpolation de contenu client.
+- Ils fixent la différence entre données vérifiées, points à vérifier et actions proposées.
+- Ils exigent une confirmation humaine distincte pour annulations, déplacements,
+  remboursements, communications et déploiements.
+- Ils ne constituent ni des clés d'accès ni des autorisations.
+- Le module reste **inerte** : aucun modèle IA n'est instancié, aucun outil n'est
+  appelé, aucune route API ni UI n'est exposée par ce changement.
+
+Tests dédiés : `node --test tests/mediumiaTeamPrompts.test.js`
+
+L'étape suivante sera une intégration au runtime MediumIA en environnement TEST,
+avec séparation prompts système / données non fiables, permissions serveur par rôle,
+traces d'exécution et retour de preuves pour chaque action.

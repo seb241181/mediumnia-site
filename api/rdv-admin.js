@@ -7,6 +7,7 @@ import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, tra
 import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
 import { handleLumiaInboxApi } from '../lib/lumiaMessageInbox.js'
 import { handleLumiaBookingCancelApi } from '../lib/lumiaBookingCancelApi.js'
+import { handleMediumiaTeamDemo } from '../lib/mediumiaTeamDemoApi.js'
 import { handleEmailQuestionsAdmin } from '../lib/emailQuestions.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
@@ -830,6 +831,12 @@ export default async function handler(req, res) {
   if (req.query.action === 'lumia-message-intake') {
     const result = await handleLumiaInboxApi({ req })
     return res.status(result.status).json(result.body)
+  }
+
+  // Démonstration synthétique de l'équipe IA, isolée par SSO Vercel Preview.
+  // Ne touche à aucune donnée RDV et reste fermée par défaut.
+  if (req.query.action === 'mediumia-team-demo') {
+    return handleMediumiaTeamDemo(req, res)
   }
 
   const auth = await requireAuth(req)

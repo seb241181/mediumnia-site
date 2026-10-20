@@ -4,6 +4,7 @@ import {
   TEAM_LIVE_DEMO_SCENARIOS,
   createTeamDemoProvider,
   buildMediumiaTeamDemoPrompt,
+  getMediumiaTeamExecutiveBrief,
   formatMediumiaTeamDemoReply,
   resolveTeamDemoConfiguration,
   runTeamLiveDemo,
@@ -41,7 +42,11 @@ test('two different prompts are sent sequentially; handoff stays untrusted', asy
   assert.match(calls[1].userText,/Premier avis/)
   assert.match(calls[0].userText,/Aucun client réel/)
   assert.match(calls[0].userText,/Dans ce TEST, les modèles IA ne peuvent consulter/)
-  assert.equal(result.summary, 'Deuxième avis : rédiger un brouillon.')
+  assert.match(result.summary, /Lumia a préparé le contrôle du créneau/)
+  assert.match(result.summary, /Communication a proposé une réponse/)
+  assert.match(result.nextStep, /Vérifier la disponibilité/)
+  assert.doesNotMatch(result.summary, /Deuxième avis/)
+
   assert.match(calls[0].systemPrompt,/une synchronisation Google Agenda existe/)
   assert.match(calls[1].systemPrompt,/Ne répète pas le diagnostic de Lumia RDV/)
   assert.match(calls[0].userText,/sans Markdown ni répétitions/)
@@ -114,4 +119,29 @@ test('each demo role receives a distinct brief, not the full administrative chec
   assert.notEqual(rdv, communication)
   assert.ok(rdv.length < 1900)
   assert.doesNotMatch(rdv, /FORMAT DE RESTITUTION/)
+})
+
+test('coordinator gives an executive briefing, never the customer-facing draft', async () => {
+  for (const [key, scenario] of Object.entries(TEAM_LIVE_DEMO_SCENARIOS)) {
+    const result = await runTeamLiveDemo({
+      workflowId:key,
+      callModel:async ({role}) => role === 'communication'
+        ? 'Bonjour, nous reviendrons vers vous pour confirmer votre créneau.'
+        : 'Un contrôle reste à réaliser.',
+    })
+    const expected = getMediumiaTeamExecutiveBrief(key)
+    assert.equal(result.summary, expected.summary)
+    assert.equal(result.nextStep, expected.nextStep)
+    assert.equal(result.responses.length, 2)
+    assert.notEqual(result.summary, result.responses[1].reply)
+    assert.ok(result.summary.length < 210)
+    assert.ok(result.nextStep.length < 150)
+    assert.doesNotMatch(result.summary, /^Bonjour/)
+    assert.equal(result.actionsExecuted, 0)
+    assert.equal(result.liveBusinessReads, 0)
+    assert.equal(scenario.roles.length, 2)
+  }
+  for (const bad of [null, '', '__proto__', 'constructor', 'rdv.reschedule; action']) {
+    assert.equal(getMediumiaTeamExecutiveBrief(bad), null)
+  }
 })

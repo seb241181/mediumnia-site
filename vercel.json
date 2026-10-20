@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/equipe-ia-demo",
+      "destination": "/index.html"
+    },
+    {
       "source": "/api/rdv-balance-cron",
       "destination": "/api/rdv-config?rdvBalanceAction=cron"
     },

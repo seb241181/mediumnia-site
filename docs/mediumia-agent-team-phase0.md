@@ -99,3 +99,13 @@ Tests dédiés : `node --test tests/mediumiaTeamPrompts.test.js`
 L'étape suivante sera une intégration au runtime MediumIA en environnement TEST,
 avec séparation prompts système / données non fiables, permissions serveur par rôle,
 traces d'exécution et retour de preuves pour chaque action.
+
+## Tableau de bord Phase 0 — TEST uniquement
+
+- Prototype visuel : `src/components/rdv/MediumiaTeamDashboard.jsx`.
+- Trois simulations locales sans dossier client, appel réseau ni écriture.
+- L'onglet **Équipe IA** est injecté dans les Coulisses `/rdv` uniquement pour le profil `sebastien-seguin` déjà authentifié, après tous les scripts de migration frontend existants.
+- **Désactivé par défaut**. Il requiert la variable de build publique `VITE_MEDIUMIA_TEAM_PHASE0=true`.
+- Ce drapeau est paramétré uniquement pour la branche `codex/mediumia-agent-team-phase0` dans le projet Vercel **mediumia-agenda-test**, sur les déploiements Preview. Il n'est pas défini pour le projet public mediumia-site.
+- Aucune fonction de pilotage réel, aucune tâche persistée, aucune API, aucun envoi ni remboursement n'est activé.
+- Vérification : `tests/mediumiaTeamDashboardPatch.test.js` et build Preview. Ne pas fusionner tant qu'une validation de l'interface et des permissions n'a pas été faite.

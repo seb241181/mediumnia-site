@@ -13,7 +13,7 @@ test('TEST-only Supabase project with independent auth and no service role', asy
   assert.match(source, /mediumia-team-test-owner-v1/)
   assert.match(source, /mediumia_team_test_read_v1/)
   assert.match(source, /mediumiaTeamTestClient\.auth\.getSession/)
-  assert.doesNotMatch(source, /SERVICE_ROLE|uotkpygeqqnekpolezts|@mail\.mediumia\.fr|/ )
+  assert.doesNotMatch(source, /SERVICE_ROLE|uotkpygeqqnekpolezts|mail\.mediumia\.fr/ )
 })
 
 test('team reader logs into TEST and never includes any writing or emailing method', async () => {

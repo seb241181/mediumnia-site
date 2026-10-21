@@ -150,6 +150,7 @@ export default function RdvDepositCheckout({
             amountCents: status.amountCents,
             servicePriceCents: status.servicePriceCents,
             balanceCents: status.balanceCents,
+            email_confirmation: status.email_confirmation,
           })
           return true
         }

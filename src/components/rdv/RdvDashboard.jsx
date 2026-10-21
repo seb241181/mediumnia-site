@@ -1525,7 +1525,10 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                     }`}
                   >
                     {p.photo_url && <img src={p.photo_url} alt="" className="w-6 h-6 rounded-full object-cover" />}
-                    {p.name.split(' ')[0]}
+                    <span className="text-left">
+                      <span className="block">{p.name}</span>
+                      <span className="block font-mono text-[10px] opacity-70">{p.slug}</span>
+                    </span>
                   </button>
                 ))}
               </div>

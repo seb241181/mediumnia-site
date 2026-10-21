@@ -353,7 +353,7 @@ test('14. aucun titre, description, lieu, participant, jeton ni identifiant d’
   assert.ok(!text.includes('2026-10-13T12:00:00.000Z'))
   const url = new URL(google.calls[0].url)
   assert.equal(google.calls[0].method, 'GET')
-  assert.equal(url.searchParams.get('fields'), 'items(status,transparency,summary,start,end),nextPageToken')
+  assert.equal(url.searchParams.get('fields'), 'items(id,status,transparency,summary,start,end),nextPageToken')
   assert.ok(!/description|attendees|location/.test(url.searchParams.get('fields')))
 })
 

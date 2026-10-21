@@ -63,6 +63,7 @@ export default function GiftCardRedeem({ practitionerSlug, service, dateStr, tim
         servicePriceCents: data.service_price_cents,
         balanceCents: data.balance_due_cents,
         paidWithGift: true,
+        email_confirmation: data.email_confirmation,
       })
     } catch {
       setError('Erreur réseau. Vérifiez votre connexion et réessayez.')

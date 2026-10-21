@@ -19,10 +19,16 @@
     "smoke": "node scripts/smoke-render.mjs"
   },
   "dependencies": {
+    "@fullcalendar/core": "6.1.20",
+    "@fullcalendar/daygrid": "6.1.20",
+    "@fullcalendar/luxon3": "6.1.20",
+    "@fullcalendar/react": "6.1.20",
+    "@fullcalendar/timegrid": "6.1.20",
     "@photostructure/tz-lookup": "^11.6.1",
     "@supabase/supabase-js": "^2.112.3",
     "astronomy-engine": "^2.1.19",
     "free-human-design": "^1.0.1",
+    "luxon": "3.7.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

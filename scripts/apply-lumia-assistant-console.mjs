@@ -22,6 +22,11 @@ function replaceRequired(source, before, after, label) {
 }
 
 let app = await readFile(appPath, 'utf8')
+let dashboard = await readFile(dashboardPath, 'utf8')
+
+if (app.includes("if (view === 'rdv-lumia')") && dashboard.includes('onOpenLumia={onOpenLumia}')) {
+  console.log('MediumIA Lumia: agenda cancellation route already wired; legacy patch skipped')
+} else {
 
 app = insertAfter(
   app,
@@ -68,8 +73,6 @@ app = replaceRequired(
 
 await writeFile(appPath, app)
 
-let dashboard = await readFile(dashboardPath, 'utf8')
-
 dashboard = replaceRequired(
   dashboard,
   "export default function RdvDashboard({ onBack, onOpenPublic }) {",
@@ -107,6 +110,15 @@ dashboard = replaceRequired(
 // Dans l'espace Rendez-vous, les demandes entrantes et les prochains RDV
 // doivent précéder les réglages techniques. Appliqué APRÈS les patchs historiques.
 function moveRdvPrioritiesFirst(source) {
+  // Les nouvelles Coulisses affichent deja les rendez-vous en premier dans un onglet dedie.
+  // Ne pas deplacer des fragments JSX entre les onglets : conserver le reordonnancement
+  // historique pour les versions sans navigation et la securite anti-drift de ces versions.
+  if (source.includes("const [activePanel, setActivePanel] = useState('rdv')")
+    && source.includes("{activePanel === 'rdv' && (")
+    && source.includes("{activePanel === 'config' && (")) {
+    return source
+  }
+
   const emailPanel = "                  {activePractitioner.slug === 'sebastien-seguin' && <EmailQuestionsPanel session={session} />}"
   const requests = '                  {/* Demandes de déplacement et demandes reçues par message (Lumia) */}'
   const upcoming = '                  {/* Upcoming bookings */}'
@@ -134,5 +146,6 @@ function moveRdvPrioritiesFirst(source) {
 dashboard = moveRdvPrioritiesFirst(dashboard)
 
 await writeFile(dashboardPath, dashboard)
+}
 
 console.log('Lumia assistant console: private RDV route and button applied')

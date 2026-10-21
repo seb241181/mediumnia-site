@@ -28,6 +28,7 @@ export default function EmailQuestionsPanel({ session }) {
   const [working, setWorking] = useState(null)
   const [answers, setAnswers] = useState({})
   const [notice, setNotice] = useState('')
+  const [paymentProofs, setPaymentProofs] = useState({})
 
   const api = useCallback(async (method = 'GET', body = null) => {
     const res = await fetch('/api/rdv-admin?action=email-questions', {
@@ -83,6 +84,34 @@ export default function EmailQuestionsPanel({ session }) {
     } finally {
       setWorking(null)
     }
+  }
+
+  // This owner-only operation calls the existing PayPal GET-only admin preview.
+  // No capture/refund endpoint is used and no database status is changed.
+  async function checkPendingPayPal() {
+    if (working) return
+    setWorking('readonly_check')
+    setNotice('Lecture des commandes PayPal en cours ; aucun paiement ne sera déclenché.')
+    let checked = 0
+    let failed = 0
+    for (const item of paymentPending) {
+      try {
+        const preview = await api('POST', { id: item.id, op: 'paypal_readonly_preview' })
+        setPaymentProofs((prev) => ({ ...prev, [item.id]: {
+          classification: preview.evidence?.classification || 'manual_review',
+          reason: preview.evidence?.reason || 'unknown',
+          orderStatus: preview.evidence?.orderStatus || 'unknown',
+          captureStatus: preview.evidence?.captureStatus || 'unknown',
+          detailStatus: preview.evidence?.detailStatus || 'unknown',
+        } }))
+        checked++
+      } catch {
+        failed++
+        setPaymentProofs((prev) => ({ ...prev, [item.id]: { classification: 'unavailable', reason: 'provider_lookup_failed' } }))
+      }
+    }
+    setWorking(null)
+    setNotice(`Vérification PayPal terminée : ${checked} dossier(s) consulté(s), ${failed} échec(s). Aucun débit, remboursement, e-mail ou changement de statut.`)
   }
 
   if (!session?.access_token) return null
@@ -191,11 +220,34 @@ export default function EmailQuestionsPanel({ session }) {
             Vérifiez les transactions avant de traiter une demande. Des commandes peuvent être des doublons.
             Cette liste permet uniquement de lire les questions ; aucune réponse, validation ou opération financière n'est disponible ici.
           </p>
+          <button
+            type="button"
+            disabled={Boolean(working)}
+            onClick={checkPendingPayPal}
+            className="mt-4 rounded-xl border border-gold/30 bg-cream px-4 py-2.5 font-georgia text-xs font-medium text-deep disabled:opacity-50"
+          >
+            {working === 'readonly_check' ? 'Vérification PayPal en cours…' : 'Vérifier les paiements chez PayPal — lecture seule'}
+          </button>
           <div className="mt-4 space-y-3">
             {paymentPending.map((row) => (
               <article key={row.id} className="rounded-xl border border-gold/20 bg-cream/40 p-4">
                 <p className="font-georgia text-sm font-semibold text-deep">{row.first_name}</p>
                 <p className="font-georgia text-xs text-mist">{row.email} · {money(row.amount_cents)} · PayPal : {row.paypal_order_id}</p>
+                {paymentProofs[row.id] && (
+                  <div role="status" className="mt-2 rounded-lg border border-gold/20 bg-white/80 p-3 font-georgia text-xs text-deep">
+                    {paymentProofs[row.id].classification === 'capture_confirmed_readonly'
+                      ? 'Capture PayPal confirmée en lecture seule : examen des doublons nécessaire avant toute régularisation.'
+                      : paymentProofs[row.id].classification === 'unavailable'
+                        ? 'PayPal non consultable avec la configuration actuelle : vérification des identifiants nécessaire.'
+                        : 'Paiement non confirmé ou incohérent : vérification manuelle nécessaire.'}
+                    <p className="mt-1 text-mist">
+                      Motif : {paymentProofs[row.id].reason}
+                      {paymentProofs[row.id].orderStatus && ` · Commande : ${paymentProofs[row.id].orderStatus}`}
+                      {paymentProofs[row.id].captureStatus && ` · Capture : ${paymentProofs[row.id].captureStatus}`}
+                      {paymentProofs[row.id].detailStatus && ` · Détail : ${paymentProofs[row.id].detailStatus}`}
+                    </p>
+                  </div>
+                )}
                 <div className="mt-3 space-y-3">
                   {(Array.isArray(row.questions) ? row.questions : []).map((item, i) => (
                     <div key={i} className="rounded-lg border border-gold/15 bg-white/70 p-3">

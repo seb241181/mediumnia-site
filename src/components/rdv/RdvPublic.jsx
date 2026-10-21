@@ -5,6 +5,7 @@ import { GoogleReviewCard, Stars, useGoogleReviews } from '../ReviewsPage'
 import { commonDepositCents, descriptionParagraphs, groupServices } from '../../lib/rdvServiceGroups.js'
 import VideoInterview from '../VideoInterview'
 import { trackMediumiaMetric } from '../../lib/mediumiaMetrics.js'
+import { getRdvEmailConfirmation } from '../../../lib/rdvEmailConfirmation.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1089,6 +1090,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
     }
     setBookingResult({
       ...result,
+      email_confirmation: result.email_confirmation ?? result.emailConfirmation ?? result.emailStatus,
       amountCents: result.amountCents ?? service.reservationPaymentCents,
       servicePriceCents: result.servicePriceCents ?? service.price_cents,
       balanceCents: result.balanceCents ?? Math.max(0, service.price_cents - service.reservationPaymentCents),
@@ -1135,13 +1137,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
     const paidInFull = hasOnlinePayment
       && Number(bookingResult.balanceCents) === 0
       && Number(bookingResult.amountCents) >= servicePriceCents
-    const confirmationCopy = bookingResult.paidWithGift
-      ? `Votre carte cadeau a réglé ${(bookingResult.amountCents / 100).toFixed(2).replace('.', ',')} € et un e-mail de confirmation vous est envoyé.`
-      : hasOnlinePayment
-      ? (paidInFull
-        ? 'Votre prestation a été réglée intégralement et un e-mail de confirmation vous est envoyé.'
-        : 'Vos arrhes ont été réglées et un e-mail de confirmation vous est envoyé.')
-      : 'Votre réservation est confirmée et un e-mail de confirmation vous est envoyé.'
+    const emailConfirmation = getRdvEmailConfirmation(bookingResult.email_confirmation)
 
     return (
       <div className="cosmic-page cosmic-page--rdv min-h-screen bg-cream flex flex-col">
@@ -1155,7 +1151,14 @@ export default function RdvPublic({ onBack, onNavigate }) {
             <p className="text-gold text-5xl mb-6">✦</p>
             <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-4">Réservation confirmée</p>
             <h1 className="font-georgia font-medium text-3xl text-deep leading-tight mb-2">Votre rendez-vous est confirmé.</h1>
-            <p className="font-georgia text-mist text-base mb-8">{confirmationCopy}</p>
+            <p className="font-georgia text-mist text-base mb-2">
+              {bookingResult.paidWithGift
+                ? `Votre carte cadeau a réglé ${(bookingResult.amountCents / 100).toFixed(2).replace('.', ',')} €.`
+                : hasOnlinePayment
+                ? (paidInFull ? 'Votre prestation a été réglée intégralement.' : 'Vos arrhes ont été réglées.')
+                : 'Votre réservation est confirmée.'}
+            </p>
+            <p className="font-georgia text-mist text-sm mb-8" role="status" aria-live="polite">{emailConfirmation.message}</p>
             <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
               {practitioner && <p className="font-georgia text-sm"><span className="text-mist">Praticien :</span> <strong>{practitioner.name}</strong></p>}
               <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.displayTitle || service.title}</strong></p>
@@ -1176,7 +1179,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                 date,
                 time,
                 durationMin: service.duration_min,
-                details: `${service.displayTitle || service.title}${practitioner ? ` avec ${practitioner.name}` : ''} (${service.modalityLabel}). Toutes les informations figurent dans votre e-mail de confirmation.`,
+                details: `${service.displayTitle || service.title}${practitioner ? ` avec ${practitioner.name}` : ''} (${service.modalityLabel}). ${emailConfirmation.sent === true ? 'Toutes les informations figurent dans votre e-mail de confirmation.' : 'Les détails de votre rendez-vous sont affichés sur cette page.'}`,
               })
               return (
                 <div className="mb-8">

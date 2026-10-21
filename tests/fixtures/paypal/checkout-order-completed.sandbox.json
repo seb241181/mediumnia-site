@@ -1,0 +1,29 @@
+{
+  "id": "9P99943869582473S",
+  "intent": "CAPTURE",
+  "status": "COMPLETED",
+  "purchase_units": [
+    {
+      "reference_id": "MEDIUMIA_EMAIL_Q2",
+      "custom_id": "11111111-2222-4333-8444-555555555555",
+      "amount": {
+        "currency_code": "EUR",
+        "value": "29.90"
+      },
+      "payments": {
+        "captures": [
+          {
+            "id": "3Y662965014333303",
+            "status": "COMPLETED",
+            "amount": {
+              "currency_code": "EUR",
+              "value": "29.90"
+            },
+            "final_capture": true,
+            "create_time": "2026-10-14T18:42:15Z"
+          }
+        ]
+      }
+    }
+  ]
+}

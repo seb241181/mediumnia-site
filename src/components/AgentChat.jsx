@@ -9,13 +9,13 @@ function formatConversationDate(value) {
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 }
 
-export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', documentsEnabled = true }) {
+export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', documentsEnabled = true, initialMessage = '' }) {
   const [agent, setAgent] = useState(null)
   const [conversationId, setConversationId] = useState(null)
   const [conversations, setConversations] = useState([])
-  const [newConversationRequested, setNewConversationRequested] = useState(false)
+  const [newConversationRequested, setNewConversationRequested] = useState(Boolean(initialMessage))
   const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialMessage)
   const [status, setStatus] = useState('loading')
   const [sending, setSending] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -60,6 +60,13 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
 
       const availableConversations = conversationRows || []
       setConversations(availableConversations)
+      if (initialMessage) {
+        setConversationId(null)
+        setNewConversationRequested(true)
+        setMessages([])
+        setStatus('ready')
+        return
+      }
       const latest = availableConversations[0]
       if (latest) {
         setConversationId(latest.id)
@@ -85,7 +92,7 @@ export default function AgentChat({ agentId, onBack, backLabel = 'Mes agents', d
 
     load()
     return () => { active = false }
-  }, [agentId])
+  }, [agentId, initialMessage])
 
   useEffect(() => {
     if (workspaceTab === 'chat') endRef.current?.scrollIntoView({ behavior: 'smooth' })

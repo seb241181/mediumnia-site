@@ -12,7 +12,13 @@ if (!source.includes("import ManualPaymentModal from './ManualPaymentModal.jsx'"
   changed = true
 }
 
-if (source.includes('export default function AccountingSection({ practitionerId, session })')) {
+if (source.includes('export default function AccountingSection({ practitionerId, session, showDailyPayments = true })')) {
+  source = source.replace(
+    'export default function AccountingSection({ practitionerId, session, showDailyPayments = true })',
+    'export default function AccountingSection({ practitionerId, session, services = [], upcomingBookings = [], showDailyPayments = true })'
+  )
+  changed = true
+} else if (source.includes('export default function AccountingSection({ practitionerId, session })')) {
   source = source.replace(
     'export default function AccountingSection({ practitionerId, session })',
     'export default function AccountingSection({ practitionerId, session, services = [], upcomingBookings = [] })'

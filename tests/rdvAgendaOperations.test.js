@@ -5,6 +5,8 @@ import process from 'node:process'
 import { isAgendaTestSimulationAllowed, parseParisWallTime, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
 import { moveBookingGoogleEvent } from '../lib/googleCalendarEvents.js'
 import { encrypt } from '../lib/googleOAuth.js'
+import { parisDayBounds, loadGoogleBusy } from '../lib/rdvAvailability.js'
+import { mergeAgendaEvents } from '../lib/rdvUnifiedAgenda.js'
 
 test('Paris wall-time parser accepts a unique local time and returns its UTC instant', () => {
   const value = parseParisWallTime('2026-10-18T14:30')
@@ -17,6 +19,18 @@ test('Paris wall-time parser rejects nonexistent, ambiguous and malformed DST ti
   assert.equal(parseParisWallTime('2026-10-25T02:30'), null)
   assert.equal(parseParisWallTime('2026-10-18T14:30:00'), null)
   assert.equal(parseParisWallTime('2026-02-30T14:30'), null)
+})
+
+test('Paris wall-time parser accepts unambiguous time just before autumn clock change', () => {
+  const value = parseParisWallTime('2026-10-25T01:30')
+  assert.ok(value)
+  assert.equal(value.toUTC().toISO(), '2026-10-24T23:30:00.000Z')
+})
+
+test('Paris wall-time parser returns correct UTC offset in winter time', () => {
+  const value = parseParisWallTime('2026-12-15T10:00')
+  assert.ok(value)
+  assert.equal(value.toUTC().toISO(), '2026-12-15T09:00:00.000Z')
 })
 
 test('agenda reschedule migration persists action and Google outbox atomically with owner-only service execution', async () => {
@@ -331,4 +345,124 @@ test('orphaned pending Google outbox job can be owner-retried after interruption
   assert.equal(second.body.status, 'synced')
   assert.equal(state.job.status, 'synced')
   assert.equal(state.job.attempt_count, 2)
+})
+
+test('incomplete Google response (missing start/end dateTime) triggers retry instead of manual review', async () => {
+  const oldKey = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+  process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = '3'.repeat(64)
+  try {
+    const fetchImpl = async () => new Response(JSON.stringify({ status: 'confirmed', etag: '"etag"' }), { status: 200 })
+    const result = await moveBookingGoogleEvent({
+      supabase: googleDb(), practitionerId: 'owner-safe', googleEventId: 'event-safe',
+      previous: { starts_at: '2026-10-18T12:30:00.000Z', ends_at: '2026-10-18T13:30:00.000Z' },
+      target: { starts_at: '2026-10-18T13:30:00.000Z', ends_at: '2026-10-18T14:30:00.000Z' }, fetchImpl,
+    })
+    assert.deepEqual(result, { status: 'retry', reason: 'google_response_incomplete' })
+  } finally {
+    if (oldKey === undefined) delete process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+    else process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = oldKey
+  }
+})
+
+test('sync job reaching 8 attempts with persistent failure enters review', async () => {
+  const now = new Date('2026-10-18T10:00:00.000Z')
+  const job = {
+    id: 'job-8', booking_id: '00000000-0000-4000-8000-000000000001', practitioner_id: 'p-1',
+    google_event_id: 'event-1', previous_starts_at: '2026-10-18T12:00:00.000Z', previous_ends_at: '2026-10-18T13:00:00.000Z',
+    target_starts_at: '2026-10-18T13:00:00.000Z', target_ends_at: '2026-10-18T14:00:00.000Z',
+    idempotency_key: 'job-key-8', status: 'retry', attempt_count: 7, claimed_at: null, completed_at: null,
+  }
+  const booking = { ...job, id: job.booking_id, starts_at: job.target_starts_at, ends_at: job.target_ends_at, status: 'confirmed', booking_source: 'mediumia' }
+  const state = { job: { ...job } }
+  const supabase = { from(table) {
+    let patch = null
+    const filters = {}
+    const q = {
+      select() { return q }, eq(key, value) { filters[key] = value; return q }, order() { return q }, limit() { return q },
+      update(value) { patch = value; return q },
+      async maybeSingle() {
+        if (table === 'bookings') return { data: booking, error: null }
+        if (!patch) return { data: { ...state.job }, error: null }
+        if (filters.id !== state.job.id || (filters.status && filters.status !== state.job.status)
+          || (filters.claimed_at && filters.claimed_at !== state.job.claimed_at)) return { data: null, error: null }
+        state.job = { ...state.job, ...patch }
+        return { data: { ...state.job }, error: null }
+      },
+    }
+    return q
+  } }
+  const moveEvent = async () => ({ status: 'retry', reason: 'google_network_uncertain' })
+  const result = await processRdvCalendarSyncJob({ supabase, userId: 'owner', bookingId: job.booking_id, now, moveEvent })
+  assert.equal(result.body.status, 'review')
+  assert.equal(state.job.status, 'review')
+  assert.equal(state.job.attempt_count, 8)
+})
+
+test('parisDayBounds returns 25-hour day on autumn DST transition (Oct 25 2026)', () => {
+  const bounds = parisDayBounds('2026-10-25')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 25)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-10-24T22:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-10-25T23:00:00.000Z')
+})
+
+test('parisDayBounds returns 23-hour day on spring DST transition (Mar 29 2026)', () => {
+  const bounds = parisDayBounds('2026-03-29')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 23)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-03-28T23:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-03-29T22:00:00.000Z')
+})
+
+test('parisDayBounds returns 24-hour day on a normal summer day', () => {
+  const bounds = parisDayBounds('2026-07-15')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 24)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-07-14T22:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-07-15T22:00:00.000Z')
+})
+
+test('parisDayBounds returns 24-hour day on a normal winter day', () => {
+  const bounds = parisDayBounds('2026-12-15')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 24)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-12-14T23:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-12-15T23:00:00.000Z')
+})
+
+test('loadGoogleBusy rejects response with missing items array', async () => {
+  const oldKey = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+  process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = '3'.repeat(64)
+  try {
+    const key = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+    const tokenEnc = encrypt('fake-access-token', key)
+    const refreshEnc = encrypt('fake-refresh-token', key)
+    const expiry = new Date(Date.now() + 3600_000).toISOString()
+    const connection = { access_token_enc: tokenEnc, refresh_token_enc: refreshEnc, token_expiry: expiry, google_calendar_id: 'test@group.calendar.google.com' }
+    const chain = () => {
+      const q = { select() { return q }, eq() { return q }, single() { return Promise.resolve({ data: connection, error: null }) } }
+      return q
+    }
+    const db = { from: chain }
+    const fetchImpl = async () => new Response(JSON.stringify({ kind: 'calendar#events' }), { status: 200 })
+    const result = await loadGoogleBusy({ db, practitionerId: 'p1', timeMin: '2026-10-18T00:00:00Z', timeMax: '2026-10-19T00:00:00Z', fetchImpl })
+    assert.equal(result.ok, false)
+    assert.equal(result.error, 'calendar_response_incomplete')
+  } finally {
+    if (oldKey === undefined) delete process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+    else process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = oldKey
+  }
+})
+
+test('mergeAgendaEvents includes sync job status for bookings with active jobs', () => {
+  const bookings = [
+    { id: 'b1', starts_at: '2026-10-18T12:00:00Z', ends_at: '2026-10-18T13:00:00Z', status: 'confirmed', updated_at: '2026-10-18T11:00:00Z', google_event_id: 'g1' },
+    { id: 'b2', starts_at: '2026-10-18T14:00:00Z', ends_at: '2026-10-18T15:00:00Z', status: 'confirmed', updated_at: '2026-10-18T11:00:00Z', google_event_id: null },
+  ]
+  const syncJobs = { b1: { status: 'retry', error: 'google_network_uncertain', attempts: 3, updated_at: '2026-10-18T12:30:00Z' } }
+  const events = mergeAgendaEvents({ bookings, syncJobs, googleEvents: [], linkedIds: new Set(), calendarId: 'cal' })
+  const b1 = events.find(e => e.booking_id === 'b1')
+  const b2 = events.find(e => e.booking_id === 'b2')
+  assert.deepEqual(b1.google_sync, { status: 'retry', error: 'google_network_uncertain', attempts: 3, updated_at: '2026-10-18T12:30:00Z' })
+  assert.equal(b2.google_sync, null)
 })

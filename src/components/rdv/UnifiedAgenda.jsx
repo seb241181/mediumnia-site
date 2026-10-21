@@ -212,6 +212,10 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
         <h3>{selected.title}</h3>
         <p>{selected.allDay ? 'Journée entière' : new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' }).format(new Date(selected.start))}</p>
         <p>{statusLabel[selected.status] || selected.status}</p>
+        {selected.google_sync && <p className="agenda-sync-status" role="status" data-sync={selected.google_sync.status}>
+          Synchronisation Google : {selected.google_sync.status === 'pending' ? 'en attente' : selected.google_sync.status === 'running' ? 'en cours' : selected.google_sync.status === 'retry' ? `nouvelle tentative requise (${selected.google_sync.attempts || 0} essai${(selected.google_sync.attempts || 0) > 1 ? 's' : ''})` : selected.google_sync.status === 'review' ? 'vérification manuelle requise' : selected.google_sync.status}
+          {selected.google_sync.error && <> — {selected.google_sync.error}</>}
+        </p>}
         <h4>Paiement</h4>
         {selected.payment ? <><dl><dt>Montant</dt><dd>{money(selected.payment.total_cents)}</dd><dt>Enregistré net</dt><dd>{money(selected.payment.paid_cents)}</dd><dt>Reste à régler</dt><dd>{money(selected.payment.remaining_cents)}</dd></dl><p>Registre MediumIA. Non vérifié auprès du prestataire dans cet agenda.</p></> : <p>{selected.source === 'google' ? 'Aucun paiement MediumIA associé.' : 'Montants inconnus.'}</p>}
         {selected.source === 'mediumia' && selected.status === 'confirmed' && <>
@@ -224,7 +228,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
             Préparer l’annulation dans Lumia
           </button>
           <p className="agenda-action-status">Lumia présentera l’action et son code de confirmation. L’annulation ne part qu’après validation explicite dans cette conversation. Aucun remboursement automatique.</p>
-          {selected.google_linked && <button className="agenda-secondary-action" type="button" disabled={actionBusy} onClick={retryGoogleSync}>Retenter la synchronisation Google</button>}
+          {(selected.google_linked || selected.google_sync) && <button className="agenda-secondary-action" type="button" disabled={actionBusy || selected.google_sync?.status === 'review'} onClick={retryGoogleSync}>{selected.google_sync?.status === 'review' ? 'Intervention manuelle requise' : 'Retenter la synchronisation Google'}</button>}
         </>}
         {actionMessage && <p className="agenda-action-status" role="status">{actionMessage}</p>}
         <h4>Historique</h4>

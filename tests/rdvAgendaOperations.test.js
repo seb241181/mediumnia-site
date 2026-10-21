@@ -19,6 +19,18 @@ test('Paris wall-time parser rejects nonexistent, ambiguous and malformed DST ti
   assert.equal(parseParisWallTime('2026-02-30T14:30'), null)
 })
 
+test('Paris wall-time parser accepts unambiguous time just before autumn clock change', () => {
+  const value = parseParisWallTime('2026-10-25T01:30')
+  assert.ok(value)
+  assert.equal(value.toUTC().toISO(), '2026-10-24T23:30:00.000Z')
+})
+
+test('Paris wall-time parser returns correct UTC offset in winter time', () => {
+  const value = parseParisWallTime('2026-12-15T10:00')
+  assert.ok(value)
+  assert.equal(value.toUTC().toISO(), '2026-12-15T09:00:00.000Z')
+})
+
 test('agenda reschedule migration persists action and Google outbox atomically with owner-only service execution', async () => {
   const sql = await readFile(new URL('../supabase/migrations/20261018165006_rdv_agenda_operations.sql', import.meta.url), 'utf8')
   assert.match(sql, /PERFORM public\.lumia_require_service_role\(\)/)
@@ -331,4 +343,55 @@ test('orphaned pending Google outbox job can be owner-retried after interruption
   assert.equal(second.body.status, 'synced')
   assert.equal(state.job.status, 'synced')
   assert.equal(state.job.attempt_count, 2)
+})
+
+test('incomplete Google response (missing start/end dateTime) triggers retry instead of manual review', async () => {
+  const oldKey = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+  process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = '3'.repeat(64)
+  try {
+    const fetchImpl = async () => new Response(JSON.stringify({ status: 'confirmed', etag: '"etag"' }), { status: 200 })
+    const result = await moveBookingGoogleEvent({
+      supabase: googleDb(), practitionerId: 'owner-safe', googleEventId: 'event-safe',
+      previous: { starts_at: '2026-10-18T12:30:00.000Z', ends_at: '2026-10-18T13:30:00.000Z' },
+      target: { starts_at: '2026-10-18T13:30:00.000Z', ends_at: '2026-10-18T14:30:00.000Z' }, fetchImpl,
+    })
+    assert.deepEqual(result, { status: 'retry', reason: 'google_response_incomplete' })
+  } finally {
+    if (oldKey === undefined) delete process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+    else process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = oldKey
+  }
+})
+
+test('sync job reaching 8 attempts with persistent failure enters review', async () => {
+  const now = new Date('2026-10-18T10:00:00.000Z')
+  const job = {
+    id: 'job-8', booking_id: '00000000-0000-4000-8000-000000000001', practitioner_id: 'p-1',
+    google_event_id: 'event-1', previous_starts_at: '2026-10-18T12:00:00.000Z', previous_ends_at: '2026-10-18T13:00:00.000Z',
+    target_starts_at: '2026-10-18T13:00:00.000Z', target_ends_at: '2026-10-18T14:00:00.000Z',
+    idempotency_key: 'job-key-8', status: 'retry', attempt_count: 7, claimed_at: null, completed_at: null,
+  }
+  const booking = { ...job, id: job.booking_id, starts_at: job.target_starts_at, ends_at: job.target_ends_at, status: 'confirmed', booking_source: 'mediumia' }
+  const state = { job: { ...job } }
+  const supabase = { from(table) {
+    let patch = null
+    const filters = {}
+    const q = {
+      select() { return q }, eq(key, value) { filters[key] = value; return q }, order() { return q }, limit() { return q },
+      update(value) { patch = value; return q },
+      async maybeSingle() {
+        if (table === 'bookings') return { data: booking, error: null }
+        if (!patch) return { data: { ...state.job }, error: null }
+        if (filters.id !== state.job.id || (filters.status && filters.status !== state.job.status)
+          || (filters.claimed_at && filters.claimed_at !== state.job.claimed_at)) return { data: null, error: null }
+        state.job = { ...state.job, ...patch }
+        return { data: { ...state.job }, error: null }
+      },
+    }
+    return q
+  } }
+  const moveEvent = async () => ({ status: 'retry', reason: 'google_network_uncertain' })
+  const result = await processRdvCalendarSyncJob({ supabase, userId: 'owner', bookingId: job.booking_id, now, moveEvent })
+  assert.equal(result.body.status, 'review')
+  assert.equal(state.job.status, 'review')
+  assert.equal(state.job.attempt_count, 8)
 })

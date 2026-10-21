@@ -6,13 +6,14 @@ const practitioner = '00000000-0000-4000-8000-000000000001'
 const query = { practitioner_id: practitioner, from: '2026-10-01T00:00:00Z', to: '2026-11-01T00:00:00Z' }
 const booking = { id: practitioner, starts_at: '2026-10-18T09:00:00Z', ends_at: '2026-10-18T10:00:00Z', status: 'confirmed', google_event_id: 'linked' }
 const event = id => ({ id, summary: 'Fictif', start: { date: '2026-10-18' }, end: { date: '2026-10-19' } })
-function db({ owner = true, ownerError = false, linksError = false, bookingsError = false } = {}) {
+function db({ owner = true, ownerError = false, linksError = false, bookingsError = false, syncJobs = [] } = {}) {
   const calls = []
   return { calls, from(table) {
-    const q = { select() { return q }, eq(...args) { calls.push([table, ...args]); return q }, lt() { return q }, gt() { return q }, order() { return q },
+    const q = { select() { return q }, eq(...args) { calls.push([table, ...args]); return q }, lt() { return q }, gt() { return q },
+      order() { return table === 'rdv_calendar_sync_jobs' ? { data: syncJobs, error: null } : q },
       async maybeSingle() { return { data: owner ? { id: practitioner } : null, error: ownerError } },
       async range() { return { data: [booking], error: bookingsError } },
-      async in() { return { data: [{ google_event_id: 'outside' }], error: linksError } },
+      in() { return table === 'rdv_calendar_sync_jobs' ? q : { data: [{ google_event_id: 'outside' }], error: linksError } },
     }
     return q
   } }

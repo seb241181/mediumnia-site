@@ -5,6 +5,8 @@ import process from 'node:process'
 import { isAgendaTestSimulationAllowed, parseParisWallTime, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
 import { moveBookingGoogleEvent } from '../lib/googleCalendarEvents.js'
 import { encrypt } from '../lib/googleOAuth.js'
+import { parisDayBounds, loadGoogleBusy } from '../lib/rdvAvailability.js'
+import { mergeAgendaEvents } from '../lib/rdvUnifiedAgenda.js'
 
 test('Paris wall-time parser accepts a unique local time and returns its UTC instant', () => {
   const value = parseParisWallTime('2026-10-18T14:30')
@@ -394,4 +396,73 @@ test('sync job reaching 8 attempts with persistent failure enters review', async
   assert.equal(result.body.status, 'review')
   assert.equal(state.job.status, 'review')
   assert.equal(state.job.attempt_count, 8)
+})
+
+test('parisDayBounds returns 25-hour day on autumn DST transition (Oct 25 2026)', () => {
+  const bounds = parisDayBounds('2026-10-25')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 25)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-10-24T22:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-10-25T23:00:00.000Z')
+})
+
+test('parisDayBounds returns 23-hour day on spring DST transition (Mar 29 2026)', () => {
+  const bounds = parisDayBounds('2026-03-29')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 23)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-03-28T23:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-03-29T22:00:00.000Z')
+})
+
+test('parisDayBounds returns 24-hour day on a normal summer day', () => {
+  const bounds = parisDayBounds('2026-07-15')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 24)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-07-14T22:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-07-15T22:00:00.000Z')
+})
+
+test('parisDayBounds returns 24-hour day on a normal winter day', () => {
+  const bounds = parisDayBounds('2026-12-15')
+  const durationHours = (bounds.end - bounds.start) / 3_600_000
+  assert.equal(durationHours, 24)
+  assert.equal(new Date(bounds.start).toISOString(), '2026-12-14T23:00:00.000Z')
+  assert.equal(new Date(bounds.end).toISOString(), '2026-12-15T23:00:00.000Z')
+})
+
+test('loadGoogleBusy rejects response with missing items array', async () => {
+  const oldKey = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+  process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = '3'.repeat(64)
+  try {
+    const key = process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+    const tokenEnc = encrypt('fake-access-token', key)
+    const refreshEnc = encrypt('fake-refresh-token', key)
+    const expiry = new Date(Date.now() + 3600_000).toISOString()
+    const connection = { access_token_enc: tokenEnc, refresh_token_enc: refreshEnc, token_expiry: expiry, google_calendar_id: 'test@group.calendar.google.com' }
+    const chain = () => {
+      const q = { select() { return q }, eq() { return q }, single() { return Promise.resolve({ data: connection, error: null }) } }
+      return q
+    }
+    const db = { from: chain }
+    const fetchImpl = async () => new Response(JSON.stringify({ kind: 'calendar#events' }), { status: 200 })
+    const result = await loadGoogleBusy({ db, practitionerId: 'p1', timeMin: '2026-10-18T00:00:00Z', timeMax: '2026-10-19T00:00:00Z', fetchImpl })
+    assert.equal(result.ok, false)
+    assert.equal(result.error, 'calendar_response_incomplete')
+  } finally {
+    if (oldKey === undefined) delete process.env.CALENDAR_TOKEN_ENCRYPTION_KEY
+    else process.env.CALENDAR_TOKEN_ENCRYPTION_KEY = oldKey
+  }
+})
+
+test('mergeAgendaEvents includes sync job status for bookings with active jobs', () => {
+  const bookings = [
+    { id: 'b1', starts_at: '2026-10-18T12:00:00Z', ends_at: '2026-10-18T13:00:00Z', status: 'confirmed', updated_at: '2026-10-18T11:00:00Z', google_event_id: 'g1' },
+    { id: 'b2', starts_at: '2026-10-18T14:00:00Z', ends_at: '2026-10-18T15:00:00Z', status: 'confirmed', updated_at: '2026-10-18T11:00:00Z', google_event_id: null },
+  ]
+  const syncJobs = { b1: { status: 'retry', error: 'google_network_uncertain', attempts: 3, updated_at: '2026-10-18T12:30:00Z' } }
+  const events = mergeAgendaEvents({ bookings, syncJobs, googleEvents: [], linkedIds: new Set(), calendarId: 'cal' })
+  const b1 = events.find(e => e.booking_id === 'b1')
+  const b2 = events.find(e => e.booking_id === 'b2')
+  assert.deepEqual(b1.google_sync, { status: 'retry', error: 'google_network_uncertain', attempts: 3, updated_at: '2026-10-18T12:30:00Z' })
+  assert.equal(b2.google_sync, null)
 })

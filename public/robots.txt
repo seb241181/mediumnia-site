@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /rdv/annuler
+Sitemap: https://mediumia.fr/sitemap.xml

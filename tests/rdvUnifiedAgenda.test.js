@@ -69,3 +69,17 @@ test('finance outage never becomes a zero balance or an unpaid assertion', async
 test('invalid practitioner and range cause no database access', async () => {
   assert.equal((await getUnifiedAgenda({ supabase: {}, userId: 'owner', query: { ...query, practitioner_id: 'bad' } })).status, 400)
 })
+test('sync job read failure returns 503, never hides sync status', async () => {
+  const broken = { calls: [], from(table) {
+    const q = { select() { return q }, eq(...args) { broken.calls.push([table, ...args]); return q }, lt() { return q }, gt() { return q },
+      order() { return table === 'rdv_calendar_sync_jobs' ? { data: null, error: { message: 'connection lost' } } : q },
+      async maybeSingle() { return { data: { id: practitioner }, error: null } },
+      async range() { return { data: [booking], error: null } },
+      in() { return table === 'rdv_calendar_sync_jobs' ? q : { data: [{ google_event_id: 'outside' }], error: null } },
+    }
+    return q
+  } }
+  const result = await getUnifiedAgenda({ supabase: broken, userId: 'owner', query, loadGoogle: google, loadBalances: balances })
+  assert.equal(result.status, 503)
+  assert.equal(result.body.error, 'sync_jobs_unavailable')
+})

@@ -228,7 +228,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
             Préparer l’annulation dans Lumia
           </button>
           <p className="agenda-action-status">Lumia présentera l’action et son code de confirmation. L’annulation ne part qu’après validation explicite dans cette conversation. Aucun remboursement automatique.</p>
-          {(selected.google_linked || selected.google_sync) && <button className="agenda-secondary-action" type="button" disabled={actionBusy} onClick={retryGoogleSync}>Retenter la synchronisation Google</button>}
+          {(selected.google_linked || selected.google_sync) && <button className="agenda-secondary-action" type="button" disabled={actionBusy || selected.google_sync?.status === 'review'} onClick={retryGoogleSync}>{selected.google_sync?.status === 'review' ? 'Intervention manuelle requise' : 'Retenter la synchronisation Google'}</button>}
         </>}
         {actionMessage && <p className="agenda-action-status" role="status">{actionMessage}</p>}
         <h4>Historique</h4>

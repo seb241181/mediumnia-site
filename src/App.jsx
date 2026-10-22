@@ -69,7 +69,7 @@ function FeaturedAccompagnement({ onOpen }) {
               <p className="font-georgia text-cream/75 text-base pb-1">/ mois</p>
             </div>
             <p className="font-georgia text-cream/75 text-sm mt-2">après une Découverte à {money(offer.discoveryCents)} pour commencer</p>
-            <p className="font-georgia text-cream/55 text-xs mt-2">{offer.regularCount} mensualités puis une dernière étape de {money(offer.finalCents)} · Total maximum {money(offer.capCents)} · arrêt et reprise possibles · ou en une fois</p>
+            <p className="font-georgia text-cream/55 text-xs mt-2">{offer.regularCount} mensualités puis une dernière étape de {money(offer.finalCents)} · Total maximum {money(offer.capCents)} · arrêt et reprise possibles · Formation complète à 597 € en une fois aussi disponible</p>
           </div>
         ) : (
           <>
@@ -82,7 +82,7 @@ function FeaturedAccompagnement({ onOpen }) {
           onClick={(event) => { event.preventDefault(); onOpen() }}
           className="inline-block font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold text-base hover:bg-gold/90 transition-colors"
         >
-          Découvrir la formation →
+          Voir les formules de la formation →
         </a>
       </div>
       <div className="shrink-0 md:w-72">

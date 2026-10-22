@@ -54,7 +54,7 @@ test('home order: hero, Formation with progressive payment, Consulter, avis, Dé
   assert.doesNotMatch(app, /function FeaturedChronosphere|function OracleChronosphereBridge|Pour éviter toute confusion|Le socle arrive/)
   assert.match(app, /Découvrez la méthode avant de choisir votre formule/)
   assert.match(app, /25 modules, 84 exercices guidés et des rencontres pédagogiques en visio/)
-  assert.doesNotMatch(app.slice(app.indexOf('function FeaturedAccompagnement'), app.indexOf('const HOME_RAIL')), /597 €|29 €|48 €|money\\(offer/, 'Le bandeau de l’accueil présente la méthode sans tarifs')
+  assert.doesNotMatch(app.slice(app.indexOf('function FeaturedAccompagnement'), app.indexOf('const HOME_RAIL')), /597 €|29 €|48 €|money/, 'Le bandeau de l’accueil présente la méthode sans tarifs')
   const band = await read('src/components/PractitionersBand.jsx')
   // L'Espace pro a rejoint l'en-tête (27/09/2026) : plus de doublon en bas de page.
   assert.doesNotMatch(band, /Espace Pro/)

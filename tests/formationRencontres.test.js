@@ -34,9 +34,9 @@ test('page : le bloc utilise les dates partagées, sans lien de visio ni inscrip
   assert.match(source, /import \{ RENCONTRES_CYCLE_1 \} from '\.\.\/\.\.\/lib\/formationRencontres\.js'/)
   assert.match(section(), /<time dateTime=\{r\.startsAt\}/)
   assert.match(section(), /Le samedi, de 10 h à 12 h \(heure de Paris\)/)
-  assert.match(section(), /sans supplément pour les élèves de la formation complète \(597 €\)/)
-  assert.match(section(), /Réservations pas encore ouvertes/)
-  assert.match(source, /Les réservations ne sont pas encore ouvertes\. Les modalités de réservation, le nombre de places par rencontre et les conditions d'accès seront communiqués/)
+  assert.match(section(), /sans supplément pour les élèves de la formation complète \(597 €\), réglée en une fois ou au terme du parcours progressif\. La Découverte à 29 € seule n'y donne pas accès\./)
+  assert.match(section(), /Réservations : ouverture prochainement/)
+  assert.match(source, /Les réservations ouvriront prochainement, depuis votre espace élève\. Chaque rencontre se déroule en petit groupe : 5 places au lancement\./)
   assert.match(source, /Si vous n'êtes pas encore prêt pour un thème, vous le retrouverez lors d'une prochaine programmation/)
   assert.doesNotMatch(source, /zoom\.us|meet\.google|teams\.microsoft/i)
   assert.doesNotMatch(section(), /<button|<a |href=|onClick|FormationCheckout|modules? \d/i)
@@ -96,7 +96,8 @@ test('éligibilité : seules les rencontres comprises dans les 12 mois d’accè
 
 test('assistant : le catalogue annonce les cinq dates sans ouvrir de réservation', () => {
   for (const r of RENCONTRES_CYCLE_1) assert.ok(MEDIUMIA_PUBLIC_CATALOG.includes(`${r.label} (${r.theme.toLowerCase()})`), r.id)
-  assert.match(MEDIUMIA_PUBLIC_CATALOG, /Les réservations ne sont PAS encore ouvertes/)
+  assert.match(MEDIUMIA_PUBLIC_CATALOG, /Les réservations ne sont PAS encore ouvertes : elles ouvriront prochainement/)
+  assert.match(MEDIUMIA_PUBLIC_CATALOG, /La formule Découverte à 29 € seule ne donne pas accès aux rencontres/)
   assert.match(MEDIUMIA_PUBLIC_CATALOG, /ceux dont les paiements atteignent 597 €, en une fois ou par le parcours progressif/)
   assert.doesNotMatch(MEDIUMIA_PUBLIC_CATALOG, /zoom\.us|meet\.google|teams\.microsoft|modules? 1 ?[-–à]/i)
 })

@@ -26,6 +26,12 @@ const ERRORS = {
   auth_required: 'Votre session a expiré : reconnectez-vous.',
 }
 const errorText = (code) => ERRORS[code] || 'Une erreur est survenue. Réessayez dans un instant.'
+const loginErrorText = (error) => {
+  if (error?.status === 429 || ['over_email_send_rate_limit', 'over_request_rate_limit'].includes(error?.code)) {
+    return 'Trop de liens de connexion ont été demandés. L’envoi d’e-mails est temporairement limité : réessayez plus tard.'
+  }
+  return 'Impossible d’envoyer le lien de connexion pour le moment. Vérifiez l’adresse de votre compte élève et réessayez plus tard.'
+}
 
 const PARTICIPANT_STATUS = { booked: 'Inscrit', attended: 'Présent', absent: 'Absent', released: 'Rattrapage accordé' }
 
@@ -48,7 +54,7 @@ function Login() {
     if (!supabase) { setStatus('Connexion indisponible pour le moment.'); return }
     setStatus('…')
     const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { emailRedirectTo: `${window.location.origin}/formation/rencontres`, shouldCreateUser: false } })
-    setStatus(error ? 'Aucun compte élève trouvé pour cette adresse. Utilisez l’e-mail de votre achat.' : 'sent')
+    setStatus(error ? loginErrorText(error) : 'sent')
   }
   if (status === 'sent') return <p role="status" className="rounded-2xl border border-gold/30 bg-white/80 p-5 font-georgia text-sm text-deep">Un lien de connexion vient de vous être envoyé à {email}. Ouvrez-le sur cet appareil pour revenir ici.</p>
   return (

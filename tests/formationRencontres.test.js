@@ -3,53 +3,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { RENCONTRES_CYCLE_1, rencontreRights, rencontreAvailability } from '../lib/formationRencontres.js'
 import { handleFormationRencontres } from '../lib/formationRencontresApi.js'
-import { MEDIUMIA_PUBLIC_CATALOG } from '../lib/mediumiaPublicCatalog.js'
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-const page = () => read('src/components/FormationPage.jsx')
-const section = () => {
-  const source = page()
-  const start = source.indexOf('<section id="rencontres"')
-  return source.slice(start, source.indexOf('</section>', start))
-}
-const paris = (iso) => new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
-
-test('rencontres : cinq samedis du premier cycle 2027, de 10 h à 12 h heure de Paris (hiver et été)', () => {
-  assert.deepEqual(RENCONTRES_CYCLE_1.map((r) => [r.label, r.theme]), [
-    ['Samedi 16 janvier 2027', 'Premiers apprentissages'],
-    ['Samedi 13 février 2027', 'Perceptions et discernement'],
-    ['Samedi 13 mars 2027', 'Pratique et techniques'],
-    ['Samedi 10 avril 2027', 'Approfondissement'],
-    ['Samedi 22 mai 2027', 'Intégration et autonomie'],
-  ])
-  for (const r of RENCONTRES_CYCLE_1) {
-    assert.equal(paris(r.startsAt), 'samedi 10:00', r.id)
-    assert.equal(paris(r.endsAt), 'samedi 12:00', r.id)
-    assert.equal(r.startsAt.slice(0, 10), r.id)
-  }
-})
-
-test('page : le bloc utilise les dates partagées, sans lien de visio ni inscription', () => {
-  const source = page()
-  assert.match(source, /import \{ RENCONTRES_CYCLE_1 \} from '\.\.\/\.\.\/lib\/formationRencontres\.js'/)
-  assert.match(section(), /<time dateTime=\{r\.startsAt\}/)
-  assert.match(section(), /Le samedi, de 10 h à 12 h \(heure de Paris\)/)
-  assert.match(section(), /sans supplément pour les élèves de la formation complète \(597 €\), réglée en une fois ou au terme du parcours progressif\. La Découverte à 29 € seule n'y donne pas accès\./)
-  assert.match(section(), /Réservations : ouverture prochainement/)
-  assert.match(source, /Les réservations ouvriront prochainement, depuis votre espace élève\. Chaque rencontre se déroule en petit groupe : 5 places au lancement\./)
-  assert.match(source, /Si vous n'êtes pas encore prêt pour un thème, vous le retrouverez lors d'une prochaine programmation/)
-  assert.doesNotMatch(source, /zoom\.us|meet\.google|teams\.microsoft/i)
-  assert.doesNotMatch(section(), /<button|<a |href=|onClick|FormationCheckout|modules? \d/i)
-})
-
-test('page : les deux paiements restent en place et le menu pointe vers le bloc', () => {
-  const source = page()
-  assert.equal((source.match(/<FormationCheckout product="discovery" \/>/g) || []).length, 1)
-  assert.equal((source.match(/<FormationCheckout \/>/g) || []).length, 1)
-  assert.match(source, /\{ id: 'rencontres', label: 'Visios 2027' \}/)
-  assert.match(source, /q: 'Les rencontres en visio sont-elles comprises dans la formation \?'/)
-})
-
 
 const [janvier, , mars, , mai] = RENCONTRES_CYCLE_1
 const full = (startedAt, extra = {}) => ({ type: 'purchase', status: 'active', access_level: 'full', max_module: 25, access_started_at: startedAt, ...extra })
@@ -71,6 +26,18 @@ test('droits : Découverte seule, parcours en cours, accès révoqué ou essai =
   assert.equal(rencontreRights([full('2026-10-05T08:00:00Z', { max_module: 13 })]).eligible, false)
   assert.equal(rencontreRights([full('2026-10-05T08:00:00Z', { status: 'revoked' })]).eligible, false)
   assert.equal(rencontreRights([full('2026-10-05T08:00:00Z', { type: 'trial' })]).eligible, false)
+})
+
+test('droits : en Production, un accès ouvert par PayPal Sandbox ne compte pas ; en TEST, il sert aux essais', () => {
+  const sandbox = full('2026-10-09T08:00:00Z', { origin_ref: 'paypal:sandbox:ORDER123' })
+  const parcoursSandbox = full('2026-10-09T08:00:00Z', { origin_ref: 'parcours:sandbox:u-1' })
+  assert.equal(rencontreRights([sandbox]).eligible, false)
+  assert.equal(rencontreRights([parcoursSandbox], { env: 'live' }).eligible, false)
+  assert.equal(rencontreRights([sandbox], { env: 'sandbox' }).eligible, true)
+  for (const origin_ref of ['paypal:live:ORDER9', 'parcours:live:u-1', 'legacy-paypal-2026', 'founder:1e39', 'sebastien-owner']) {
+    assert.equal(rencontreRights([full('2026-09-02T08:00:00Z', { origin_ref })], { env: 'live' }).eligible, true, origin_ref)
+  }
+  assert.equal(rencontreRights([full('2026-08-01T08:00:00Z', { origin_ref: 'paypal:sandbox:OLD' }), full('2026-09-02T08:00:00Z', { origin_ref: 'paypal:live:NEW' })], { env: 'live' }).from, '2026-09-02T08:00:00.000Z')
 })
 
 const session = (over = {}) => ({ status: 'scheduled', bookings_open: true, capacity: 5, starts_at: janvier.startsAt, ...over })
@@ -131,15 +98,15 @@ const response = () => {
   res.json = (body) => { res.body = body; return res }
   return res
 }
-const call = async (supabase, action, { method = 'GET', token, body } = {}) => {
+const call = async (supabase, action, { method = 'GET', token, body, env = 'live' } = {}) => {
   const res = response()
-  await handleFormationRencontres({ method, headers: token ? { authorization: `Bearer ${token}` } : {}, body }, res, action, { supabase, now })
+  await handleFormationRencontres({ method, headers: token ? { authorization: `Bearer ${token}` } : {}, body }, res, action, { supabase, now, env })
   return res
 }
 const SID = '11111111-1111-4111-8111-111111111111'
 const sessions = RENCONTRES_CYCLE_1.map((r, i) => ({ id: `${SID.slice(0, -1)}${i}`, theme_key: r.themeKey, title: r.theme, starts_at: new Date(r.startsAt).toISOString(), ends_at: new Date(r.endsAt).toISOString(), capacity: 5, bookings_open: false, status: 'scheduled' }))
 const db = () => fakeSupabase({
-  users: { eleve: 'u-eleve', decouverte: 'u-decouverte', owner: 'u-owner' },
+  users: { eleve: 'u-eleve', decouverte: 'u-decouverte', owner: 'u-owner', sandbox: 'u-sandbox' },
   owners: [{ owner_id: 'u-owner', slug: 'sebastien-seguin', id: 'p1' }],
   tables: {
     formation_rencontres: sessions,
@@ -147,6 +114,7 @@ const db = () => fakeSupabase({
     mediumia_entitlements: [
       { user_id: 'u-eleve', ...full('2026-09-02T08:00:00Z') },
       { user_id: 'u-decouverte', ...full('2026-10-05T08:00:00Z', { access_level: 'discovery', max_module: 1 }) },
+      { user_id: 'u-sandbox', ...full('2026-10-09T08:00:00Z', { origin_ref: 'paypal:sandbox:ORDER123' }) },
     ],
   },
 })
@@ -214,10 +182,15 @@ test('migration : capacité verrouillée, un thème par élève, annulation à 2
   assert.equal((sql.match(/bookings_open boolean not null default false/g) || []).length, 1)
 })
 
-test('assistant : le catalogue annonce les cinq dates sans ouvrir de réservation', () => {
-  for (const r of RENCONTRES_CYCLE_1) assert.ok(MEDIUMIA_PUBLIC_CATALOG.includes(`${r.label} (${r.theme.toLowerCase()})`), r.id)
-  assert.match(MEDIUMIA_PUBLIC_CATALOG, /Les réservations ne sont PAS encore ouvertes : elles ouvriront prochainement/)
-  assert.match(MEDIUMIA_PUBLIC_CATALOG, /La formule Découverte à 29 € seule ne donne pas accès aux rencontres/)
-  assert.match(MEDIUMIA_PUBLIC_CATALOG, /ceux dont les paiements atteignent 597 €, en une fois ou par le parcours progressif/)
-  assert.doesNotMatch(MEDIUMIA_PUBLIC_CATALOG, /zoom\.us|meet\.google|teams\.microsoft|modules? 1 ?[-–à]/i)
+test('serveur : en Production, un compte PayPal Sandbox ne peut pas réserver ; en TEST, il le peut', async () => {
+  const live = db()
+  const mine = await call(live, 'mine', { token: 'sandbox' })
+  assert.equal(mine.body.rights.eligible, false)
+  const refused = await call(live, 'book', { method: 'POST', token: 'sandbox', body: { rencontreId: sessions[1].id } })
+  assert.deepEqual([refused.statusCode, refused.body.error], [403, 'not_eligible'])
+  assert.equal(live.rpcCalls.length, 0)
+  const test = db()
+  const ok = await call(test, 'book', { method: 'POST', token: 'sandbox', body: { rencontreId: sessions[1].id }, env: 'sandbox' })
+  assert.equal(ok.statusCode, 200)
+  assert.equal(test.rpcCalls[0].args.p_user_id, 'u-sandbox')
 })

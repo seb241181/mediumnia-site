@@ -41,6 +41,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/formation/rencontres",
+      "destination": "/index.html"
+    },
+    {
       "source": "/conferences",
       "destination": "/index.html"
     },

@@ -6,7 +6,7 @@ const formation = () => fs.readFileSync(new URL('../src/components/FormationPage
 
 test('formation: first screen, payment choices, then expandable information and free trials', () => {
   const source = formation()
-  const order = ['id="formation-top"', 'id="offre"', 'id="programme"', 'id="formation-apercu-reel"', 'id="essayer"', 'id="essai-assistant"', 'id="formateur"', 'id="faq"']
+  const order = ['id="formation-top"', 'id="programme"', 'id="formation-apercu-reel"', 'id="essayer"', 'id="essai-assistant"', 'id="formateur"', 'id="faq"', 'id="offre"']
   const positions = order.map((marker) => source.indexOf(marker))
   assert.ok(positions.every((p) => p >= 0), JSON.stringify(positions))
   assert.deepEqual([...positions].sort((a, b) => a - b), positions)

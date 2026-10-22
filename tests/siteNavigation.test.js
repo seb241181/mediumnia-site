@@ -52,10 +52,9 @@ test('home order: hero, Formation with progressive payment, Consulter, avis, Dé
   assert.ok(positions.every((p) => p > 0), JSON.stringify(positions))
   assert.deepEqual([...positions].sort((a, b) => a - b), positions)
   assert.doesNotMatch(app, /function FeaturedChronosphere|function OracleChronosphereBridge|Pour éviter toute confusion|Le socle arrive/)
-  assert.match(app, /Paiement progressif/)
-  assert.match(app, /pour commencer/)
-  assert.match(app, /offer\.regularCount/)
-  assert.match(app, /Total maximum/)
+  assert.match(app, /Découvrez la méthode avant de choisir votre formule/)
+  assert.match(app, /25 modules, 84 exercices guidés et des rencontres pédagogiques en visio/)
+  assert.doesNotMatch(app.slice(app.indexOf('function FeaturedAccompagnement'), app.indexOf('const HOME_RAIL')), /597 €|29 €|48 €|money\(offer/), 'Le bandeau de l’accueil présente la méthode sans tarifs')
   const band = await read('src/components/PractitionersBand.jsx')
   // L'Espace pro a rejoint l'en-tête (27/09/2026) : plus de doublon en bas de page.
   assert.doesNotMatch(band, /Espace Pro/)
@@ -87,18 +86,14 @@ test('Formation first screen: promise, audience, human-first positioning and Dis
   const page = await read('src/components/FormationPage.jsx')
   const top = page.slice(page.indexOf('id="formation-top"'), page.indexOf('Ce parcours est pour vous si'))
   assert.match(top, /<h1[^>]*>Développer sa médiumnité, pas à pas<\/h1>/)
-  // L'acheteur doit voir immédiatement la formation intégrale à 597 €, sans perdre la Découverte à 29 €.
+  // Première impression : la méthode et son contenu avant les formules commerciales.
   assert.match(top, /J’ai conçu et écrit cette méthode/)
-  assert.match(top, /Formation complète/)
-  assert.match(top, /25 modules, 84 exercices guidés et accès immédiat/)
-  assert.match(top, /Ou commencer par 29 €/)
-  assert.match(top, /Formation complète · 597 € TTC/)
-  // Deux voies d'achat visibles : aucun bouton générique n'ouvre un paiement à l'insu de l'acheteur.
-  assert.doesNotMatch(top.slice(0, top.indexOf('id="offre"')), /Commencer ma découverte/)
-  assert.match(top, /data-formation-positioning="human-first-v1"/)
+  assert.match(top, /Une méthode complète, à votre rythme/)
+  assert.match(top, /25 modules répartis en 4 niveaux/)
+  assert.match(top, /Découvrir le programme →/)
   assert.match(top, /Ce qui rend cette méthode particulière/)
-  // Plus de tableau de chiffres au premier écran : mensualités et plafond en section secondaire.
-  assert.doesNotMatch(top, /money\(offer\.|par mois|plafonné|48 €/)
+  assert.doesNotMatch(top.slice(0, top.indexOf('id="offre"')), /597 € TTC|Découverte · 29 € TTC/)
+  assert.match(top, /data-formation-positioning="human-first-v1"/)
   // Only the validated installment phrase, nowhere the old detail.
   assert.doesNotMatch(page, /4X|6X|12X|24X/)
   // Details kept but folded.

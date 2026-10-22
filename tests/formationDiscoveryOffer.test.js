@@ -203,12 +203,13 @@ test('discovery and full rights remain server-scoped', () => {
   assert.doesNotMatch(publicPatch, /p_max_module|access_level\s*:/)
 })
 
-test('public Formation page exposes complete 597 EUR first and preserves the full Discovery option', () => {
+test('public Formation page presents installments first in bottom pricing and preserves both purchase options', () => {
   const page = read('src/components/FormationPage.jsx')
   const catalog = read('lib/mediumiaPublicCatalog.js')
   const paypal = read('lib/paypalSandbox.js')
   const terms = read('public/cgv-formation.html')
 
+  assert.ok(page.indexOf('id="formation-progressive"') < page.indexOf('id="formation-complete"'))
   assert.ok(page.indexOf('id="formation-complete"') < page.indexOf('id="formation-decouverte"'))
   assert.match(page, /Introduction complète/)
   assert.match(page, /Module 1 — L’Intention comme Porte/)

@@ -54,3 +54,14 @@ test('annonce : l’assistant connaît les cinq dates sans ouvrir de réservatio
   assert.match(MEDIUMIA_PUBLIC_CATALOG, /La formule Découverte à 29 € seule ne donne pas accès aux rencontres/)
   assert.doesNotMatch(MEDIUMIA_PUBLIC_CATALOG, /zoom\.us|meet\.google|teams\.microsoft|\/formation\/rencontres/i)
 })
+
+test('annonce : en page publiée, les rencontres précèdent immédiatement les trois exercices offerts', () => {
+  const source = page()
+  const main = source.slice(source.indexOf('export default function FormationPage'))
+  const start = main.indexOf('<section id="rencontres"')
+  const exercises = main.indexOf('<FormationExerciseLead />')
+  assert.ok(start >= 0 && exercises > start, 'Les rencontres doivent précéder les exercices offerts')
+  assert.ok(main.slice(start, exercises).trimEnd().endsWith('</section>'), 'Aucun autre bloc ne doit séparer les rencontres des exercices')
+  const script = read('scripts/apply-formation-simple-checkout.mjs')
+  assert.ok(script.indexOf("{ id: 'rencontres', label: 'Visios 2027' }") < script.indexOf("{ id: 'formation-exercices-gratuits', label: 'Exercices offerts' }"))
+})

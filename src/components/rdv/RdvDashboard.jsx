@@ -3,6 +3,7 @@ import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
+import UnifiedAgenda from './UnifiedAgenda.jsx'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1202,7 +1203,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function RdvDashboard({ onBack, onOpenPublic }) {
+export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   const { session, loading: authLoading, signIn, signOut } = useAuth()
 
   // Dashboard data
@@ -1481,10 +1482,15 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
         <Notice notice={notice} onClose={() => setNotice(null)} />
 
         {/* Page heading */}
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
           <p className="font-georgia text-gold tracking-[0.24em] text-[11px] uppercase mb-2">ESPACE PRO</p>
           <h1 className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-2">MediumIA Rendez-vous</h1>
           <p className="font-georgia text-mist">Votre pratique. Votre agenda. Vos rendez-vous réunis.</p>
+          </div>
+          <button type="button" onClick={onOpenLumia} className="min-h-10 rounded border border-gold/40 bg-deep px-4 py-2 font-georgia text-sm font-semibold text-gold">
+            Parler à Lumia
+          </button>
         </div>
 
         {/* Loading */}
@@ -1519,7 +1525,10 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     }`}
                   >
                     {p.photo_url && <img src={p.photo_url} alt="" className="w-6 h-6 rounded-full object-cover" />}
-                    {p.name.split(' ')[0]}
+                    <span className="text-left">
+                      <span className="block">{p.name}</span>
+                      <span className="block font-mono text-[10px] opacity-70">{p.slug}</span>
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1763,6 +1772,7 @@ export default function RdvDashboard({ onBack, onOpenPublic }) {
                     {activePanel === 'rdv' && (
                       <>
                   {/* Agenda quotidien complet, y compris les horaires déjà passés aujourd'hui. */}
+                  <UnifiedAgenda key={activePractitioner.id} practitionerId={activePractitioner.id} session={session} onOpenLumia={onOpenLumia} />
                   <DailyPayments
                     practitionerId={activePractitioner.id}
                     session={session}

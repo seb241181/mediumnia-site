@@ -3,7 +3,7 @@ import { useAuth } from '../../lib/useAuth'
 
 const LUMIA_AGENT_ID = 'fcd33963-3e5f-4726-abec-b9c5c5ee4fe2'
 
-export default function LumiaAssistantPage({ onBack }) {
+export default function LumiaAssistantPage({ onBack, initialMessage = '' }) {
   const { session, loading } = useAuth()
 
   if (loading) {
@@ -41,6 +41,7 @@ export default function LumiaAssistantPage({ onBack }) {
         onBack={onBack}
         backLabel="Retour à l’agenda"
         documentsEnabled={false}
+        initialMessage={initialMessage}
       />
     </main>
   )

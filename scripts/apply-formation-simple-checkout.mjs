@@ -1,9 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
-// Page Formation simplifiée (mobile d'abord) : la Découverte à 29 € en premier,
+// Page Formation : découverte pédagogique d'abord, tarifs et inscription en bas,
 // un bouton toujours visible, les consentements contrôlés au moment de
 // poursuivre, les 3 exercices offerts hors de l'accordéon de l'assistant, les
-// mensualités et le paiement complet en section secondaire.
+// avec paiement progressif présenté en premier lorsqu'il est commercialement ouvert.
 // Dernier patch du prebuild : les ancres visent la page APRÈS les patchs
 // historiques (formation-proof, funnel, email-lead, discovery-offer).
 // Aucune règle commerciale ni aucun montant serveur n'est modifié.
@@ -32,7 +32,6 @@ let page = await readFile(pagePath, 'utf8')
 if (!page.includes(SENTINEL)) {
   // ── Imports et état devenus inutiles (montants mensuels hors du premier écran) ──
   page = replaceOnce(page, "import { money, parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'", "import { parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'", 'parcours import')
-  page = replaceOnce(page, "export default function FormationPage({ onBack, onNavigate }) {\n  const offer = useParcoursOffer()\n", "export default function FormationPage({ onBack, onNavigate }) {\n", 'page offer')
 
   // ── Constantes : contenu de la Découverte (inchangé), sommaire réordonné ──
   page = replaceBetween(page, 'const HERO_APPORTS = [', 'const FORMATION_SECTIONS = [', `// Contenu exact de la Découverte (inchangé, désormais visible sans clic).
@@ -40,19 +39,18 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
 
 `, 'hero apports')
   page = replaceBetween(page, 'const FORMATION_SECTIONS = [', '// Téléphone, tablette et petits écrans', `const FORMATION_SECTIONS = [
-  { id: 'offre', label: 'Formules' },
-  { id: 'formation-complete', label: 'Formation complète' },
+  { id: 'programme', label: 'Programme' },
   { id: 'rencontres', label: 'Visios 2027' },
   { id: 'formation-exercices-gratuits', label: 'Exercices offerts' },
-  { id: 'programme', label: 'Programme' },
   { id: 'formation-apercu-reel', label: 'Aperçu' },
   { id: 'formateur', label: 'À propos' },
   { id: 'faq', label: 'FAQ' },
+  { id: 'offre', label: 'Tarifs et inscription' },
 ]
 
 `, 'sections')
   page = replaceOnce(page, 'font-georgia text-xs font-bold text-gold">Rejoindre</a>', 'font-georgia text-xs font-bold text-gold">Commencer</a>', 'section bar cta')
-  page = replaceOnce(page, "<PageRail items={FORMATION_SECTIONS} cta={{ label: 'Rejoindre la formation', target: 'offre' }} />", "<PageRail items={FORMATION_SECTIONS} cta={{ label: 'Commencer — 29 €', target: 'offre' }} />", 'page rail cta')
+  page = replaceOnce(page, "<PageRail items={FORMATION_SECTIONS} cta={{ label: 'Rejoindre la formation', target: 'offre' }} />", "<PageRail items={FORMATION_SECTIONS} cta={{ label: 'Voir les formules', target: 'offre' }} />", 'page rail cta')
 
   // ── Exercices offerts : présentés comme une première expérience ──
   page = replaceOnce(page, 'mb-3">Expérimenter avant de décider</p>', 'mb-3">Une première expérience</p>', 'lead eyebrow')
@@ -112,28 +110,33 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
           <div ref={containerRef} className={showButtons ? 'min-h-[48px]' : 'hidden'} />
           <p className="font-georgia text-xs text-mist text-center mt-3">Paiement sécurisé par PayPal. Quand PayPal le propose, vous pouvez aussi payer par carte bancaire.</p>`, 'checkout button')
 
-  // ── Premier écran : formation complète 597 € et Découverte 29 € ──
-  page = replaceBetween(page, '        {/* ── Premier écran : quoi, pour qui, ce que ça apporte, prix, comment rejoindre ── */}', '        <section id="offre"', `        {/* ── Premier écran : ce qu'on apprend, ce que l'on reçoit pour 29 €, comment commencer ── */}
+  // ── Accueil pédagogique sans tarifs : le visiteur découvre avant les prix ──
+  page = replaceBetween(page, '        {/* ── Premier écran : quoi, pour qui, ce que ça apporte, prix, comment rejoindre ── */}', '        <section id="offre"', `        {/* ── Premier écran : transmettre la méthode avant de présenter les formules ── */}
         <section id="formation-top" data-formation-positioning="human-first-v1" className="px-6 pt-6 pb-8 md:pt-12 md:pb-16">
           <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
             <div>
               <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Formation MediumIA · en ligne</p>
               <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-[1.08] mb-5">Développer sa médiumnité, pas à pas</h1>
-              <p className="font-georgia text-lg md:text-xl text-deep/85 leading-relaxed">J’ai conçu et écrit cette méthode à partir de plus de douze ans de pratique, pour vous aider à comprendre ce que vous percevez, dans la clarté et à votre rythme.</p>
+              <p className="font-georgia text-lg md:text-xl text-deep/85 leading-relaxed mb-4">J’ai conçu et écrit cette méthode à partir de plus de douze ans de pratique, pour vous aider à comprendre ce que vous percevez, dans la clarté et à votre rythme.</p>
+              <p className="font-georgia text-sm md:text-base text-mist leading-relaxed">Une transmission construite autour de la pratique, de l'expérience personnelle et du discernement, avec un accompagnement humain.</p>
             </div>
-            <aside className="rounded-2xl border-2 border-gold/55 bg-white/90 p-5 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="Les formules de la Formation MediumIA">
-              <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold mb-2">Formation complète</p>
-              <p className="font-georgia text-deep leading-none mb-3"><span className="text-5xl font-medium">597 €</span> <span className="text-base text-mist">TTC</span></p>
-              <p className="font-georgia text-sm text-mist leading-relaxed mb-4">25 modules, 84 exercices guidés et accès immédiat à la méthode complète.</p>
+            <aside className="rounded-2xl border-2 border-gold/55 bg-white/90 p-5 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="Découvrir la méthode MediumIA">
+              <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold mb-2">Ce que vous allez découvrir</p>
+              <h2 className="font-georgia text-2xl font-medium text-deep mb-4">Une méthode complète, à votre rythme</h2>
+              <ul className="font-georgia text-sm text-deep space-y-2 mb-5">
+                {['25 modules répartis en 4 niveaux', '84 exercices pour expérimenter', 'Des rencontres en visio avec Sébastien', 'Des supports à conserver et un assistant facultatif'].map((item) => (
+                  <li key={item} className="flex gap-3 items-start"><span className="text-gold" aria-hidden="true">✓</span><span>{item}</span></li>
+                ))}
+              </ul>
               <div className="flex flex-col gap-3">
-                <button type="button" onClick={() => goTo('formation-complete')} className="font-georgia px-5 py-3 rounded-lg bg-deep text-gold font-bold">Voir la formation complète →</button>
-                <button type="button" onClick={() => goTo('formation-decouverte')} className="font-georgia px-4 py-2 rounded-lg border border-gold/50 text-deep font-medium">Ou commencer par 29 €</button>
+                <button type="button" onClick={() => { const programme = document.getElementById('programme'); if (programme) programme.open = true; goTo('programme') }} className="font-georgia px-5 py-3 rounded-lg bg-deep text-gold font-bold">Découvrir le programme →</button>
+                <button type="button" onClick={() => goTo('rencontres')} className="font-georgia px-4 py-2 rounded-lg border border-gold/50 text-deep font-medium">Voir les rencontres en visio</button>
               </div>
             </aside>
           </div>
         </section>
 
-        {/* ── Ce qui rend la méthode particulière : trois repères, sans promesse de résultat ── */}
+        {/* ── Les valeurs de la méthode ── */}
         <section className="px-6 pb-10" aria-labelledby="formation-methode">
           <div className="max-w-5xl mx-auto">
             <h2 id="formation-methode" className="font-georgia font-medium text-2xl md:text-3xl text-center mb-6">Ce qui rend cette méthode particulière</h2>
@@ -155,9 +158,21 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
   page = replaceBetween(page, '        <section id="offre"', '        <section className="bg-deep/[0.04] px-6 py-12">', `        <section id="offre" ${SENTINEL} className="px-6 py-12 scroll-mt-40">
           <div className="max-w-5xl mx-auto">
             <div className="mb-7 text-center">
-              <p className="font-georgia text-gold tracking-[0.2em] uppercase text-xs mb-2">Trois façons de commencer</p>
+              <p className="font-georgia text-gold tracking-[0.2em] uppercase text-xs mb-2">Choisir son rythme</p>
               <h2 className="font-georgia text-3xl md:text-4xl font-medium text-deep mb-3">Choisissez votre formule MediumIA</h2>
-              <p className="font-georgia text-sm md:text-base text-mist max-w-2xl mx-auto">La formation complète comprend 25 modules et 84 exercices. Accédez-y directement ou commencez par la Découverte, sans obligation de poursuivre.</p>
+              <p className="font-georgia text-sm md:text-base text-mist max-w-2xl mx-auto">Après avoir exploré la méthode, choisissez le rythme qui vous convient. Les trois formules sont présentées ici, à la fin de la page.</p>
+            </div>
+            <div id="formation-progressive" className="scroll-mt-40 mb-7 rounded-2xl border-2 border-gold/60 bg-gold/10 p-5 md:p-7">
+              <p className="font-georgia text-xs uppercase tracking-[0.2em] text-gold mb-2">Option à découvrir en premier</p>
+              <h3 className="font-georgia text-2xl font-medium text-deep mb-3">Paiement progressif, à votre rythme</h3>
+              {offer ? (
+                <ParcoursOffer />
+              ) : (
+                <div className="rounded-xl border border-gold/30 bg-white/85 p-5 font-georgia">
+                  <p className="font-medium text-deep mb-2">Parcours progressif momentanément fermé aux nouvelles inscriptions</p>
+                  <p className="text-sm leading-relaxed text-mist">Lorsqu'il est ouvert, il débute par la Découverte à 29 €, puis des étapes mensuelles à 48 € et une dernière à 40 €, pour un total de 597 €. Vous pouvez toujours choisir la formation complète ci-dessous. PayPal peut éventuellement proposer un paiement fractionné sur l'achat complet, selon votre éligibilité ; ce n'est pas garanti.</p>
+                </div>
+              )}
             </div>
             <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
               <div id="formation-complete" className="scroll-mt-40 rounded-2xl border-2 border-gold/60 bg-white/90 p-6 md:p-8 shadow-[0_16px_46px_rgba(26,21,53,0.09)]">
@@ -184,9 +199,6 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
                 <FormationCheckout product="discovery" />
               </div>
             </div>
-            <div id="formation-progressive" className="scroll-mt-40">
-              <ParcoursOffer />
-            </div>
           </div>
         </section>
 
@@ -207,6 +219,19 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
   const rencontresMarkup = page.slice(rencontresStart, rencontresEnd + rencontresClosing.length)
   page = replaceOnce(page, rencontresMarkup, '', 'remove old rencontres position')
   page = replaceOnce(page, '        <FormationExerciseLead />\n', `${rencontresMarkup}\n        <FormationExerciseLead />\n`, 'visios directly before free exercises')
+
+  // ── Tarifs en fin de page, après programme, aperçu, assistant, approche et FAQ ──
+  const offerMarker = '        <section id="offre"'
+  const offerStart = page.indexOf(offerMarker)
+  if (offerStart < 0 || page.indexOf(offerMarker, offerStart + 1) >= 0) {
+    throw new Error('Formation simple checkout patch drift: bloc tarifs')
+  }
+  const offerClosing = '\n        </section>\n'
+  const offerEnd = page.indexOf(offerClosing, offerStart)
+  if (offerEnd < 0) throw new Error('Formation simple checkout patch drift: fin tarifs')
+  const offerMarkup = page.slice(offerStart, offerEnd + offerClosing.length)
+  page = replaceOnce(page, offerMarkup, '', 'remove early tariffs')
+  page = replaceOnce(page, '        <section className="px-6 py-14 text-center border-t border-gold/20">', `${offerMarkup}\n        <section className="px-6 py-14 text-center border-t border-gold/20">`, 'append tariffs after FAQ')
 
   // ── Accordéon de l'assistant : l'outil seul ──
   page = replaceOnce(page, 'Ouvrir uniquement si vous souhaitez essayer l’outil complémentaire ou recevoir les exercices offerts.', 'Ouvrir pour essayer l’outil complémentaire : 5 messages offerts, sans inscription.', 'assistant summary')

@@ -41,6 +41,22 @@ const FAQ = [
   { q: 'Est-ce que ce parcours est lié à une religion ?', r: "Non. MediumIA n'est rattachée à aucune religion ni à aucun dogme. L'approche est laïque, fondée sur l'expérience directe, le discernement et le respect de votre liberté. Quelles que soient vos croyances, vous restez souverain de votre chemin." },
   { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, l'assistant intégré et les modules PDF sont accessibles en ligne. Après confirmation du paiement, votre accès est activé sur l'adresse e-mail utilisée avec PayPal." },
   { q: FAQ_PAY_QUESTION, r: "Oui. La Formation MediumIA est à 597 € TTC. Paiement en plusieurs fois disponible avec PayPal selon éligibilité." },
+  { q: 'Les rencontres en visio sont-elles comprises dans la formation ?', r: "Oui. Le premier cycle de cinq rencontres pédagogiques en visio, le samedi de 10 h à 12 h (heure de Paris), de janvier à mai 2027, est prévu sans supplément pour les élèves de la formation complète. Vous y participez selon votre progression : un thème pour lequel vous n'êtes pas encore prêt pourra être retrouvé lors d'une prochaine programmation. Les réservations ne sont pas encore ouvertes ; leurs modalités, le nombre de places et les conditions d'accès seront communiqués avant leur ouverture." },
+]
+
+// Premier cycle annoncé le 22/10/2026 : dates fixes, réservations pas encore ouvertes.
+const RENCONTRES_CYCLE_1 = [
+  { date: '2027-01-16', jour: 'Samedi 16 janvier 2027', theme: 'Premiers apprentissages' },
+  { date: '2027-02-13', jour: 'Samedi 13 février 2027', theme: 'Perceptions et discernement' },
+  { date: '2027-03-13', jour: 'Samedi 13 mars 2027', theme: 'Pratique et techniques' },
+  { date: '2027-04-10', jour: 'Samedi 10 avril 2027', theme: 'Approfondissement' },
+  { date: '2027-05-22', jour: 'Samedi 22 mai 2027', theme: 'Intégration et autonomie' },
+]
+
+const RENCONTRES_INFOS = [
+  { titre: 'À votre rythme', texte: "Vous avancez dans les modules à votre rythme. Chaque rencontre correspond à une étape du parcours : vous participez à celles qui correspondent à vos acquis. Si vous n'êtes pas encore prêt pour un thème, vous le retrouverez lors d'une prochaine programmation." },
+  { titre: 'Réservation', texte: "Les réservations ne sont pas encore ouvertes. Les modalités de réservation, le nombre de places par rencontre et les conditions d'accès seront communiqués aux élèves avant leur ouverture. Le lien privé de la visio sera envoyé uniquement aux participants inscrits." },
+  { titre: 'Prochains cycles', texte: "Les cinq thèmes seront reprogrammés lors de prochains cycles, pour les élèves qui commencent plus tard ou qui manquent une rencontre. Les nouvelles dates seront annoncées sur cette page." },
 ]
 
 const POUR_QUI = [
@@ -123,6 +139,7 @@ const FORMATION_SECTIONS = [
   { id: 'programme', label: 'Programme' },
   { id: 'formation-apercu-reel', label: 'Aperçu' },
   { id: 'offre', label: 'Tarif' },
+  { id: 'rencontres', label: 'Visios 2027' },
   { id: 'essayer', label: 'Essayer' },
   { id: 'formateur', label: 'À propos' },
   { id: 'faq', label: 'FAQ' },
@@ -432,6 +449,41 @@ export default function FormationPage({ onBack, onNavigate }) {
             <div className="grid sm:grid-cols-2 gap-3">
               {POUR_QUI.map((item, i) => (
                 <div key={i} className="flex gap-3 items-start rounded-xl border border-gold/25 p-4 bg-white/60"><span className="text-gold shrink-0 mt-0.5" aria-hidden="true">—</span><p className="font-georgia text-deep text-sm leading-relaxed">{item}</p></div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="rencontres" data-formation-rencontres="cycle-1-2027" aria-labelledby="rencontres-titre" className="px-6 py-14 scroll-mt-40">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <p className="font-georgia text-gold tracking-[0.24em] text-xs uppercase mb-4">Avec Sébastien, en visio · premier cycle 2027</p>
+              <h2 id="rencontres-titre" className="font-georgia font-medium text-3xl md:text-4xl leading-tight mb-4 [text-wrap:balance]">5 rencontres pédagogiques en direct, incluses dans la formation complète</h2>
+              <p className="font-georgia text-mist text-base leading-relaxed">En plus des modules, je vous retrouve en visio pour pratiquer, poser vos questions et avancer en groupe. Les cinq rencontres de ce premier cycle sont prévues sans supplément pour les élèves de la formation complète (597 €).</p>
+            </div>
+
+            <div className="rounded-2xl border-2 border-gold/40 bg-white/85 shadow-[0_16px_46px_rgba(26,21,53,0.07)] overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gold/20 bg-gold/10 px-5 py-4 md:px-7">
+                <p className="font-georgia text-sm font-bold text-deep">Le samedi, de 10 h à 12 h (heure de Paris)</p>
+                <span className="rounded-full border border-deep/20 bg-white/80 px-3 py-1 font-georgia text-[11px] uppercase tracking-[0.14em] text-deep">Réservations pas encore ouvertes</span>
+              </div>
+              <ol className="divide-y divide-gold/15">
+                {RENCONTRES_CYCLE_1.map((r, i) => (
+                  <li key={r.date} className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1 px-5 py-4 md:grid-cols-[auto_minmax(0,15rem)_minmax(0,1fr)] md:px-7">
+                    <span className="font-georgia text-gold text-sm tracking-widest tabular-nums" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                    <time dateTime={`${r.date}T10:00+01:00`} className="font-georgia text-deep font-medium">{r.jour}</time>
+                    <span className="col-start-2 md:col-start-3 font-georgia text-deep/80">{r.theme}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {RENCONTRES_INFOS.map((item) => (
+                <div key={item.titre} className="rounded-xl border border-gold/25 bg-white/60 p-5">
+                  <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold mb-2">{item.titre}</p>
+                  <p className="font-georgia text-sm leading-relaxed text-deep/85">{item.texte}</p>
+                </div>
               ))}
             </div>
           </div>

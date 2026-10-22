@@ -42,6 +42,7 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
   page = replaceBetween(page, 'const FORMATION_SECTIONS = [', '// Téléphone, tablette et petits écrans', `const FORMATION_SECTIONS = [
   { id: 'offre', label: 'Découverte 29 €' },
   { id: 'formation-exercices-gratuits', label: 'Exercices offerts' },
+  { id: 'rencontres', label: 'Visios 2027' },
   { id: 'programme', label: 'Programme' },
   { id: 'formation-apercu-reel', label: 'Aperçu' },
   { id: 'formateur', label: 'À propos' },

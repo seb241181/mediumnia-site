@@ -32,14 +32,12 @@ import DiscoverSection from './components/DiscoverSection'
 import VideoInterview from './components/VideoInterview'
 import VideosPage from './components/VideosPage'
 import PractitionersBand from './components/PractitionersBand'
-import { money, useParcoursOffer } from './lib/parcoursOffer.js'
 
 function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir, onOpenConferences }) {
   return <SiteNav current="home" onOpenFormation={onOpenFormation} onOpenConferences={onOpenConferences} onOpenReseauDir={onOpenReseauDir} />
 }
 
 function FeaturedAccompagnement({ onOpen }) {
-  const offer = useParcoursOffer()
   const features = [
     { icon: '◇', label: '25 modules PDF', sub: '4 niveaux · 269 pages' },
     { icon: '◌', label: '84 exercices guidés', sub: 'Progressifs et pratiques' },
@@ -61,22 +59,10 @@ function FeaturedAccompagnement({ onOpen }) {
           J’ai construit cette formation en 25 modules et 4 niveaux à partir de ma pratique.
           L’assistant MediumIA est facultatif : il complète ma méthode, il ne la remplace pas.
         </p>
-        {offer ? (
-          <div className="mb-7 rounded-2xl border border-gold/30 bg-white/[0.06] p-5 max-w-xl">
-            <p className="font-georgia text-gold tracking-[0.18em] text-[10px] uppercase mb-2">Paiement progressif</p>
-            <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
-              <p className="font-georgia text-cream text-4xl font-medium">{money(offer.stepCents)}</p>
-              <p className="font-georgia text-cream/75 text-base pb-1">/ mois</p>
-            </div>
-            <p className="font-georgia text-cream/75 text-sm mt-2">après une Découverte à {money(offer.discoveryCents)} pour commencer</p>
-            <p className="font-georgia text-cream/55 text-xs mt-2">{offer.regularCount} mensualités puis une dernière étape de {money(offer.finalCents)} · Total maximum {money(offer.capCents)} · arrêt et reprise possibles · Formation complète à 597 € en une fois aussi disponible</p>
-          </div>
-        ) : (
-          <>
-            <p className="font-georgia text-cream text-3xl font-medium mb-1">597 € TTC</p>
-            <p className="font-georgia text-cream/60 text-sm mb-7">Paiement sécurisé par carte bancaire ou PayPal.</p>
-          </>
-        )}
+        <div className="mb-7 rounded-2xl border border-gold/30 bg-white/[0.06] p-5 max-w-xl">
+          <p className="font-georgia text-gold tracking-[0.18em] text-[10px] uppercase mb-3">Découvrez la méthode avant de choisir votre formule</p>
+          <p className="font-georgia text-cream/80 text-sm leading-relaxed">25 modules, 84 exercices guidés et des rencontres pédagogiques en visio. Les possibilités de paiement, dont le parcours progressif lorsqu'il est ouvert, sont expliquées à la fin de la présentation.</p>
+        </div>
         <a
           href="/formation"
           onClick={(event) => { event.preventDefault(); onOpen() }}

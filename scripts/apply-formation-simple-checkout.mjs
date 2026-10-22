@@ -41,8 +41,8 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
 `, 'hero apports')
   page = replaceBetween(page, 'const FORMATION_SECTIONS = [', '// Téléphone, tablette et petits écrans', `const FORMATION_SECTIONS = [
   { id: 'offre', label: 'Découverte 29 €' },
-  { id: 'formation-exercices-gratuits', label: 'Exercices offerts' },
   { id: 'rencontres', label: 'Visios 2027' },
+  { id: 'formation-exercices-gratuits', label: 'Exercices offerts' },
   { id: 'programme', label: 'Programme' },
   { id: 'formation-apercu-reel', label: 'Aperçu' },
   { id: 'formateur', label: 'À propos' },
@@ -195,6 +195,20 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
         <FormationExerciseLead />
 
 `, 'offer')
+
+  // ── Visios 2027 : visibles immédiatement avant les trois exercices offerts ──
+  // Le script déplace la section après l'offre ; elle reste hors de l'accordéon.
+  const rencontresMarker = '        <section id="rencontres"'
+  const rencontresStart = page.indexOf(rencontresMarker)
+  if (rencontresStart < 0 || page.indexOf(rencontresMarker, rencontresStart + 1) >= 0) {
+    throw new Error('Formation simple checkout patch drift: section rencontres')
+  }
+  const rencontresClosing = '\n        </section>\n'
+  const rencontresEnd = page.indexOf(rencontresClosing, rencontresStart)
+  if (rencontresEnd < 0) throw new Error('Formation simple checkout patch drift: fin rencontres')
+  const rencontresMarkup = page.slice(rencontresStart, rencontresEnd + rencontresClosing.length)
+  page = replaceOnce(page, rencontresMarkup, '', 'remove old rencontres position')
+  page = replaceOnce(page, '        <FormationExerciseLead />\n', `${rencontresMarkup}\n        <FormationExerciseLead />\n`, 'visios directly before free exercises')
 
   // ── Accordéon de l'assistant : l'outil seul ──
   page = replaceOnce(page, 'Ouvrir uniquement si vous souhaitez essayer l’outil complémentaire ou recevoir les exercices offerts.', 'Ouvrir pour essayer l’outil complémentaire : 5 messages offerts, sans inscription.', 'assistant summary')

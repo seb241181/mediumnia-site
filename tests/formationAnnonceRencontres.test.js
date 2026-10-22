@@ -60,3 +60,14 @@ test('annonce : aucune table, fonction ni route de réservation dans cette livra
   assert.doesNotMatch(read('api/rdv-config.js'), /rencontresAction/)
   assert.doesNotMatch(read('src/App.jsx'), /formation-rencontres|FormationRencontresPage/)
 })
+
+test('annonce : en page publiée, les rencontres précèdent immédiatement les trois exercices offerts', () => {
+  const source = page()
+  const main = source.slice(source.indexOf('export default function FormationPage'))
+  const start = main.indexOf('<section id="rencontres"')
+  const exercises = main.indexOf('<FormationExerciseLead />')
+  assert.ok(start >= 0 && exercises > start, 'Les rencontres doivent précéder les exercices offerts')
+  assert.ok(main.slice(start, exercises).trimEnd().endsWith('</section>'), 'Aucun autre bloc ne doit séparer les rencontres des exercices')
+  const script = read('scripts/apply-formation-simple-checkout.mjs')
+  assert.ok(script.indexOf("{ id: 'rencontres', label: 'Visios 2027' }") < script.indexOf("{ id: 'formation-exercices-gratuits', label: 'Exercices offerts' }"))
+})

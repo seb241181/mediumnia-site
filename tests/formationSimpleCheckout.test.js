@@ -38,17 +38,22 @@ test('carte bancaire : aucune promesse « sans compte PayPal » non vérifiée',
   assert.match(source, /Quand PayPal le propose, vous pouvez aussi payer par carte bancaire/)
 })
 
-test('offre : la Découverte d’abord ; mensualités et 597 € dans une section secondaire repliée', () => {
+test('offre : achat complet 597 €, Découverte 29 € et parcours progressif visibles sans accordéon', () => {
   const source = page()
   const offre = source.slice(source.indexOf('id="offre"'), source.indexOf('<FormationExerciseLead />'))
-  assert.ok(offre.indexOf('<FormationCheckout product="discovery" />') < offre.indexOf('<details'))
-  assert.ok(offre.indexOf('<details') < offre.indexOf('<ParcoursOffer />'))
-  assert.ok(offre.indexOf('<ParcoursOffer />') < offre.indexOf('<FormationCheckout />'))
-  assert.match(offre, /Et ensuite \? Continuer au mois ou tout débloquer/)
-  assert.match(offre, /Si vous continuez, vos 29 € sont déduits des 597 € du parcours complet\./)
-  // Fin de page : un seul appel, plus de tableau de chiffres.
+  const complet = offre.indexOf('id="formation-complete"')
+  const decouverte = offre.indexOf('id="formation-decouverte"')
+  const progressif = offre.indexOf('id="formation-progressive"')
+  assert.ok(complet >= 0 && decouverte > complet && progressif > decouverte)
+  assert.match(offre, /Formation complète · 597 € TTC/)
+  assert.match(offre, /Découverte · 29 € TTC/)
+  assert.ok(offre.indexOf('<FormationCheckout />') < offre.indexOf('<FormationCheckout product="discovery" />'))
+  assert.match(offre, /<ParcoursOffer \/>/)
+  assert.doesNotMatch(offre, /<details/, 'Aucune offre ne doit être cachée derrière un accordéon')
+  // Pied de page : accès distincts aux deux paiements.
   const fin = source.slice(source.lastIndexOf('<section className="px-6 py-14 text-center border-t border-gold/20">'))
-  assert.match(fin, /Commencer ma découverte — 29&nbsp;€/)
+  assert.match(fin, /Accéder à la formation complète — 597 €/)
+  assert.match(fin, /Découverte — 29 €/)
   assert.doesNotMatch(fin, /money\(|mensualités|par mois/)
 })
 

@@ -43,7 +43,7 @@ test('Formation page lead reuses the existing Oracle Lambda route', () => {
   assert.doesNotMatch(patch, /api\/formation-email/i)
 })
 
-test('Formation lead UI is optional, non-prechecked and visible right after the Discovery offer', () => {
+test('Formation lead UI is optional, non-prechecked and visible before bottom pricing', () => {
   const patch = read('scripts/apply-formation-email-lead.mjs')
   assert.match(patch, /const \[consent, setConsent\] = useState\(false\)/)
   assert.match(patch, /disabled=\{!consent \|\| loading \|\| done\}/)
@@ -52,7 +52,7 @@ test('Formation lead UI is optional, non-prechecked and visible right after the 
   const page = read('src/components/FormationPage.jsx')
   // Sortis de l'accordéon de l'assistant : une première expérience, visible sans clic.
   assert.equal(page.split('<FormationExerciseLead />').length, 2, 'rendered once')
-  assert.ok(page.indexOf('id="offre"') < page.indexOf('<FormationExerciseLead />'))
+  assert.ok(page.indexOf('<FormationExerciseLead />') < page.indexOf('id="offre"'), 'Les exercices gratuits viennent avant les prix')
   assert.ok(page.indexOf('<FormationExerciseLead />') < page.indexOf('id="essayer"'))
   assert.doesNotMatch(page, /<TrialChat \/>[\s\S]*<\/section>\n\n        <FormationExerciseLead \/>/)
   assert.match(page, /la formation, elle, va beaucoup plus loin/)

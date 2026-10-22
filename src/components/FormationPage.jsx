@@ -7,6 +7,7 @@ import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
 import SiteNav from './SiteNav'
 import PageRail from './PageRail'
+import { RENCONTRES_CYCLE_1 } from '../../lib/formationRencontres.js'
 import '../styles/formation-page.css'
 
 const NIVEAUX = [
@@ -42,15 +43,6 @@ const FAQ = [
   { q: "Puis-je suivre ce parcours depuis l'étranger ?", r: "Oui. L'application, l'assistant intégré et les modules PDF sont accessibles en ligne. Après confirmation du paiement, votre accès est activé sur l'adresse e-mail utilisée avec PayPal." },
   { q: FAQ_PAY_QUESTION, r: "Oui. La Formation MediumIA est à 597 € TTC. Paiement en plusieurs fois disponible avec PayPal selon éligibilité." },
   { q: 'Les rencontres en visio sont-elles comprises dans la formation ?', r: "Oui. Le premier cycle de cinq rencontres pédagogiques en visio, le samedi de 10 h à 12 h (heure de Paris), de janvier à mai 2027, est prévu sans supplément pour les élèves de la formation complète. Vous y participez selon votre progression : un thème pour lequel vous n'êtes pas encore prêt pourra être retrouvé lors d'une prochaine programmation. Les réservations ne sont pas encore ouvertes ; leurs modalités, le nombre de places et les conditions d'accès seront communiqués avant leur ouverture." },
-]
-
-// Premier cycle annoncé le 22/10/2026 : dates fixes, réservations pas encore ouvertes.
-const RENCONTRES_CYCLE_1 = [
-  { date: '2027-01-16', jour: 'Samedi 16 janvier 2027', theme: 'Premiers apprentissages' },
-  { date: '2027-02-13', jour: 'Samedi 13 février 2027', theme: 'Perceptions et discernement' },
-  { date: '2027-03-13', jour: 'Samedi 13 mars 2027', theme: 'Pratique et techniques' },
-  { date: '2027-04-10', jour: 'Samedi 10 avril 2027', theme: 'Approfondissement' },
-  { date: '2027-05-22', jour: 'Samedi 22 mai 2027', theme: 'Intégration et autonomie' },
 ]
 
 const RENCONTRES_INFOS = [
@@ -469,9 +461,9 @@ export default function FormationPage({ onBack, onNavigate }) {
               </div>
               <ol className="divide-y divide-gold/15">
                 {RENCONTRES_CYCLE_1.map((r, i) => (
-                  <li key={r.date} className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1 px-5 py-4 md:grid-cols-[auto_minmax(0,15rem)_minmax(0,1fr)] md:px-7">
+                  <li key={r.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1 px-5 py-4 md:grid-cols-[auto_minmax(0,15rem)_minmax(0,1fr)] md:px-7">
                     <span className="font-georgia text-gold text-sm tracking-widest tabular-nums" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                    <time dateTime={`${r.date}T10:00+01:00`} className="font-georgia text-deep font-medium">{r.jour}</time>
+                    <time dateTime={r.startsAt} className="font-georgia text-deep font-medium">{r.label}</time>
                     <span className="col-start-2 md:col-start-3 font-georgia text-deep/80">{r.theme}</span>
                   </li>
                 ))}

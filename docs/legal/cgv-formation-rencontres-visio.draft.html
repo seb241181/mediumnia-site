@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>CGV — Rencontres en visio (projet)</title>
+  <!--
+    PROJET — NON PUBLIÉ. Ce fichier est hors de public/ : il n'est pas déployé.
+    Il décrit les ajouts à reporter dans public/cgv-formation.html (CGV publiées du
+    26 septembre 2026) et dans docs/legal/cgv-formation-parcours-au-mois.draft.html.
+    Règle d'éligibilité correspondante, testée : lib/formationRencontres.js.
+    À la publication (GO du propriétaire), créer une nouvelle version des conditions
+    côté serveur (lib/paypalSandbox.js TERMS_VERSION, lib/formationPath.js
+    PATH_TERMS_VERSION) : ce changement touche le code de paiement et se fait à part.
+  -->
+  <style>
+    :root { font-family: Georgia, 'Times New Roman', serif; color: #1a1535; background: #f7f1e7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f7f1e7; }
+    main { width: min(820px, calc(100% - 40px)); margin: 0 auto; padding: 48px 0 72px; }
+    h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 500; margin: 0 0 8px; text-wrap: balance; }
+    h2 { font-size: 19px; margin: 34px 0 10px; }
+    h3 { font-size: 16px; margin: 22px 0 6px; color: #1a1535; }
+    p, li { line-height: 1.7; color: #5e5868; }
+    strong { color: #1a1535; }
+    .meta { font-size: 14px; color: #7a7482; margin-bottom: 34px; }
+    .draft { border: 2px dashed #9b7629; background: #fff8e6; border-radius: 14px; padding: 14px 18px; margin-bottom: 28px; color: #1a1535; font-size: 15px; }
+    .where { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #9b7629; margin: 30px 0 4px; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; margin: 8px 0 4px; }
+    th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(183,145,63,.25); color: #5e5868; font-size: 15px; }
+    th { color: #1a1535; font-weight: 600; }
+    .new { border-left: 3px solid #9b7629; padding-left: 14px; }
+    .a-valider { display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: 999px; background: #fff0c2; border: 1px solid #9b7629; color: #1a1535; font-size: 12px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CGV — Rencontres pédagogiques en visio</h1>
+    <p class="meta">Projet d’ajout aux conditions générales de vente de l’accompagnement MediumIA — préparé le 22 octobre 2026</p>
+    <p class="draft"><strong>Projet — non publié.</strong> Ajouts à reporter dans les CGV publiées et dans le brouillon du parcours au mois, au plus tard en même temps que le bloc « Visios 2027 » de la page Formation. Les passages marqués <span class="a-valider">à valider</span> doivent être tranchés par le propriétaire, et relus juridiquement si indiqué, avant publication. Retirer ce bandeau et ces marques avant de publier.</p>
+
+    <p class="where">Article 3 — Contenu de l’offre · phrase ajoutée à la fin</p>
+    <div class="new">
+      <p>La Formation complète donne également droit, sans supplément, aux rencontres pédagogiques en visio décrites à l’article 3 bis, dans les conditions de cet article.</p>
+    </div>
+
+    <p class="where">Nouvel article, après l’article 3</p>
+    <div class="new">
+      <h2>3 bis. Rencontres pédagogiques en visio</h2>
+
+      <h3>Nature</h3>
+      <p>Les rencontres pédagogiques sont des séances collectives de deux heures, en visioconférence, animées par Sébastien Seguin. Elles complètent les modules : pratique guidée, questions sur le parcours et échanges en groupe. Elles ne constituent ni une consultation médiumnique individuelle, ni une lecture personnelle.</p>
+
+      <h3>Bénéficiaires</h3>
+      <p>Les rencontres sont réservées au client dont le total payé pour la Formation complète, déduction faite des remboursements, atteint 597 € TTC, que ce soit par un achat en une fois, par le paiement du solde après la Découverte MediumIA, ou par la dernière échéance du parcours au mois. Tant que ce montant n’est pas atteint (Découverte seule ou parcours au mois en cours), le client n’a pas droit aux rencontres. Aucun paiement supplémentaire n’est demandé pour y participer.</p>
+
+      <h3>Période</h3>
+      <p>Le client peut participer aux rencontres qui ont lieu pendant sa période d’accès de 12 mois à l’application (article 6), comptée à partir du paiement qui a complété la Formation complète. <span class="a-valider">à valider : durée</span></p>
+
+      <h3>Calendrier</h3>
+      <p>Les rencontres ont lieu le samedi, de 10 h à 12 h, heure de Paris. Le premier cycle comprend cinq rencontres :</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Thème</th></tr></thead>
+          <tbody>
+            <tr><td>Samedi 16 janvier 2027</td><td>Premiers apprentissages</td></tr>
+            <tr><td>Samedi 13 février 2027</td><td>Perceptions et discernement</td></tr>
+            <tr><td>Samedi 13 mars 2027</td><td>Pratique et techniques</td></tr>
+            <tr><td>Samedi 10 avril 2027</td><td>Approfondissement</td></tr>
+            <tr><td>Samedi 22 mai 2027</td><td>Intégration et autonomie</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Les cinq thèmes sont reprogrammés lors de cycles ultérieurs, dont les dates sont publiées sur la page Formation. MediumIA s’engage à programmer chacun des cinq thèmes au moins une fois par période de 12 mois. <span class="a-valider">à valider : engagement de fréquence</span></p>
+
+      <h3>Progression</h3>
+      <p>Le client avance dans les modules à son rythme et choisit les rencontres qui correspondent à ses acquis. S’il n’est pas encore prêt pour un thème, il peut le suivre lors d’une programmation ultérieure, pendant sa période d’accès.</p>
+
+      <h3>Réservation et places</h3>
+      <p>La participation se fait uniquement sur réservation. Les réservations ouvrent à une date annoncée aux élèves. Le nombre de places est limité pour chaque rencontre et indiqué à l’ouverture des réservations. Le client peut réserver une rencontre par thème et par cycle. <span class="a-valider">à valider : jauge et règle de réservation</span> Le lien de connexion est personnel, ne doit pas être transmis, et n’est envoyé qu’aux participants inscrits.</p>
+
+      <h3>Annulation, absence et report</h3>
+      <p>Si MediumIA annule ou reporte une rencontre, les inscrits en sont informés et une nouvelle date leur est proposée. Le client qui ne peut plus participer annule sa réservation pour libérer sa place. En cas d’absence, il peut réserver la prochaine programmation du même thème pendant sa période d’accès, dans la limite des places disponibles. <span class="a-valider">à valider : délai d’annulation</span></p>
+      <p>Les rencontres étant comprises dans le prix de la Formation complète sans supplément, elles ne donnent lieu à aucun remboursement séparé. <span class="a-valider">à valider juridiquement</span></p>
+
+      <h3>Enregistrement et confidentialité</h3>
+      <p>Les rencontres ne sont pas enregistrées, sauf information préalable des participants et accord de leur part. Chacun s’engage à respecter la confidentialité de ce que partagent les autres participants.</p>
+    </div>
+
+    <p class="where">Article 6 — Activation et durée d’accès · phrase ajoutée</p>
+    <div class="new">
+      <p>Pour la Formation complète, la participation aux rencontres pédagogiques en visio suit la même période d’accès (article 3 bis).</p>
+    </div>
+
+    <p class="where">Article 7 — Rétractation · phrase ajoutée</p>
+    <div class="new">
+      <p>Les rencontres pédagogiques en visio sont un élément de service distinct, fourni à date déterminée et compris dans le prix de la Formation complète. <span class="a-valider">à valider juridiquement : régime de rétractation de cet élément de service</span></p>
+    </div>
+
+    <p class="where">Article 10 — Responsabilité et nature de l’accompagnement · phrase ajoutée</p>
+    <div class="new">
+      <p>Les rencontres collectives en visio sont un temps d’enseignement et de pratique. Elles ne constituent pas une consultation individuelle et n’engagent aucun résultat particulier.</p>
+    </div>
+  </main>
+</body>
+</html>

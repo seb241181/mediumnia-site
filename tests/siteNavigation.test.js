@@ -87,12 +87,13 @@ test('Formation first screen: promise, audience, human-first positioning and Dis
   const page = await read('src/components/FormationPage.jsx')
   const top = page.slice(page.indexOf('id="formation-top"'), page.indexOf('Ce parcours est pour vous si'))
   assert.match(top, /<h1[^>]*>Développer sa médiumnité, pas à pas<\/h1>/)
-  // Premier écran simplifié : ce qu'on apprend, ce que l'on reçoit pour 29 €, comment commencer.
+  // L'acheteur doit voir immédiatement la formation intégrale à 597 €, sans perdre la Découverte à 29 €.
   assert.match(top, /J’ai conçu et écrit cette méthode/)
-  assert.match(top, /Pour commencer/)
-  assert.match(top, /La Découverte : l’introduction, le Module 1 complet et ses exercices\./)
-  assert.match(top, /Sans obligation de poursuivre\./)
-  // Un seul bouton d'achat : celui de la carte Découverte (pas de bouton qui ne fait que défiler).
+  assert.match(top, /Formation complète/)
+  assert.match(top, /25 modules, 84 exercices guidés et accès immédiat/)
+  assert.match(top, /Ou commencer par 29 €/)
+  assert.match(top, /Formation complète · 597 € TTC/)
+  // Deux voies d'achat visibles : aucun bouton générique n'ouvre un paiement à l'insu de l'acheteur.
   assert.doesNotMatch(top.slice(0, top.indexOf('id="offre"')), /Commencer ma découverte/)
   assert.match(top, /data-formation-positioning="human-first-v1"/)
   assert.match(top, /Ce qui rend cette méthode particulière/)

@@ -40,7 +40,8 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
 
 `, 'hero apports')
   page = replaceBetween(page, 'const FORMATION_SECTIONS = [', '// Téléphone, tablette et petits écrans', `const FORMATION_SECTIONS = [
-  { id: 'offre', label: 'Découverte 29 €' },
+  { id: 'offre', label: 'Formules' },
+  { id: 'formation-complete', label: 'Formation complète' },
   { id: 'rencontres', label: 'Visios 2027' },
   { id: 'formation-exercices-gratuits', label: 'Exercices offerts' },
   { id: 'programme', label: 'Programme' },
@@ -111,7 +112,7 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
           <div ref={containerRef} className={showButtons ? 'min-h-[48px]' : 'hidden'} />
           <p className="font-georgia text-xs text-mist text-center mt-3">Paiement sécurisé par PayPal. Quand PayPal le propose, vous pouvez aussi payer par carte bancaire.</p>`, 'checkout button')
 
-  // ── Premier écran : la Découverte, en quelques secondes ──
+  // ── Premier écran : formation complète 597 € et Découverte 29 € ──
   page = replaceBetween(page, '        {/* ── Premier écran : quoi, pour qui, ce que ça apporte, prix, comment rejoindre ── */}', '        <section id="offre"', `        {/* ── Premier écran : ce qu'on apprend, ce que l'on reçoit pour 29 €, comment commencer ── */}
         <section id="formation-top" data-formation-positioning="human-first-v1" className="px-6 pt-6 pb-8 md:pt-12 md:pb-16">
           <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
@@ -120,12 +121,14 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
               <h1 className="font-georgia font-medium text-4xl md:text-6xl leading-[1.08] mb-5">Développer sa médiumnité, pas à pas</h1>
               <p className="font-georgia text-lg md:text-xl text-deep/85 leading-relaxed">J’ai conçu et écrit cette méthode à partir de plus de douze ans de pratique, pour vous aider à comprendre ce que vous percevez, dans la clarté et à votre rythme.</p>
             </div>
-            <aside className="rounded-2xl border-2 border-gold/55 bg-white/90 p-5 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="La Découverte en bref">
-              <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold mb-2">Pour commencer</p>
-              <p className="font-georgia text-deep leading-none mb-3"><span className="text-5xl font-medium">29 €</span></p>
-              <p className="font-georgia text-base text-deep leading-relaxed">La Découverte : l’introduction, le Module 1 complet et ses exercices.</p>
-              <p className="font-georgia text-sm text-mist mt-1 mb-3">Sans obligation de poursuivre.</p>
-              <button onClick={() => { const programme = document.getElementById('programme'); if (programme) programme.open = true; goTo('programme') }} className="font-georgia text-sm text-deep underline decoration-gold/60 underline-offset-4">Voir le programme complet</button>
+            <aside className="rounded-2xl border-2 border-gold/55 bg-white/90 p-5 md:p-8 shadow-[0_18px_50px_rgba(26,21,53,0.08)]" aria-label="Les formules de la Formation MediumIA">
+              <p className="font-georgia text-xs uppercase tracking-[0.18em] text-gold mb-2">Formation complète</p>
+              <p className="font-georgia text-deep leading-none mb-3"><span className="text-5xl font-medium">597 €</span> <span className="text-base text-mist">TTC</span></p>
+              <p className="font-georgia text-sm text-mist leading-relaxed mb-4">25 modules, 84 exercices guidés et accès immédiat à la méthode complète.</p>
+              <div className="flex flex-col gap-3">
+                <button type="button" onClick={() => goTo('formation-complete')} className="font-georgia px-5 py-3 rounded-lg bg-deep text-gold font-bold">Voir la formation complète →</button>
+                <button type="button" onClick={() => goTo('formation-decouverte')} className="font-georgia px-4 py-2 rounded-lg border border-gold/50 text-deep font-medium">Ou commencer par 29 €</button>
+              </div>
             </aside>
           </div>
         </section>
@@ -150,45 +153,40 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
   // ── Offre : la Découverte d'abord ; mensualités et 597 € en section secondaire ──
   page = replaceOnce(page, '        <FormationExerciseLead />\n', '', 'lead out of assistant accordion')
   page = replaceBetween(page, '        <section id="offre"', '        <section className="bg-deep/[0.04] px-6 py-12">', `        <section id="offre" ${SENTINEL} className="px-6 py-12 scroll-mt-40">
-          <div className="max-w-2xl mx-auto">
-            <div className="rounded-2xl border-2 border-gold/45 bg-white/85 p-6 md:p-8 shadow-[0_16px_46px_rgba(26,21,53,0.07)]">
-              <div className="text-center mb-6">
-                <p className="font-georgia text-[11px] text-gold tracking-[0.2em] uppercase mb-2">La Découverte</p>
-                <h2 className="font-georgia text-3xl md:text-4xl font-medium text-deep">29 €, pour découvrir la méthode</h2>
-                <p className="font-georgia text-sm text-mist mt-2">Sans obligation de poursuivre : vous décidez après avoir pratiqué.</p>
-              </div>
-              <ul className="font-georgia text-base text-deep space-y-2 mb-5">
-                {DISCOVERY_ITEMS.map((item) => (
-                  <li key={item} className="flex gap-3 items-start"><span className="text-gold shrink-0" aria-hidden="true">✓</span><span>{item}</span></li>
-                ))}
-              </ul>
-              <p className="rounded-xl border border-gold/30 bg-gold/10 px-4 py-3 text-center font-georgia text-sm leading-relaxed text-deep mb-6">Si vous continuez, vos 29 € sont déduits des 597 € du parcours complet.</p>
-              <FormationCheckout product="discovery" />
+          <div className="max-w-5xl mx-auto">
+            <div className="mb-7 text-center">
+              <p className="font-georgia text-gold tracking-[0.2em] uppercase text-xs mb-2">Trois façons de commencer</p>
+              <h2 className="font-georgia text-3xl md:text-4xl font-medium text-deep mb-3">Choisissez votre formule MediumIA</h2>
+              <p className="font-georgia text-sm md:text-base text-mist max-w-2xl mx-auto">La formation complète comprend 25 modules et 84 exercices. Accédez-y directement ou commencez par la Découverte, sans obligation de poursuivre.</p>
             </div>
-
-            <details className="group mt-5 rounded-2xl border-2 border-gold/25 bg-white/70 text-left open:border-gold/45">
-              <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-5 [&::-webkit-details-marker]:hidden">
-                <div className="flex-1">
-                  <p className="font-georgia text-base font-bold text-deep">Et ensuite ? Continuer au mois ou tout débloquer</p>
-                  <p className="font-georgia text-xs text-mist mt-1">Mensualités, total et paiement complet à 597 € TTC.</p>
-                </div>
-                <DetailsMark className="text-gold/70 text-2xl" />
-              </summary>
-              <div className="border-t border-gold/15 px-4 pb-6 md:px-8">
-                <ParcoursOffer />
-                <div className="mt-8">
-                  <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold mb-1 text-center">Autre option</p>
-                  <p className="font-georgia text-lg font-bold text-deep text-center mb-4">Tout débloquer maintenant · 597 € TTC</p>
-                  <ul className="font-georgia text-sm text-deep space-y-2 mb-6">
-                    {['25 modules PDF téléchargeables (269 pages)','Application MediumIA sur mobile et ordinateur','Assistant MediumIA facultatif','84 exercices guidés','Carnet de pratique intégré',"12 mois d'accès à l'application"].map((item) => (
-                      <li key={item} className="flex gap-3 items-start"><span className="text-gold shrink-0 mt-0.5" aria-hidden="true">✓</span><span>{item}</span></li>
-                    ))}
-                  </ul>
-                  <FormationCreditNotice />
-                  <FormationCheckout />
-                </div>
+            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              <div id="formation-complete" className="scroll-mt-40 rounded-2xl border-2 border-gold/60 bg-white/90 p-6 md:p-8 shadow-[0_16px_46px_rgba(26,21,53,0.09)]">
+                <p className="font-georgia text-xs font-bold tracking-[0.2em] uppercase text-gold mb-2">La formation intégrale</p>
+                <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep mb-2">Formation complète · 597 € TTC</h3>
+                <p className="font-georgia text-sm text-mist leading-relaxed mb-5">Débloquez directement les 25 modules, les 84 exercices guidés, votre carnet de pratique et les contenus PDF téléchargeables.</p>
+                <ul className="font-georgia text-sm text-deep space-y-2 mb-6">
+                  {['25 modules en 4 niveaux', '84 exercices guidés', 'Application MediumIA et assistant facultatif', "12 mois d’accès à l’application ; PDF personnels conservés", 'Cinq rencontres en visio 2027 selon les conditions annoncées'].map((item) => (
+                    <li key={item} className="flex gap-3 items-start"><span className="text-gold shrink-0" aria-hidden="true">✓</span><span>{item}</span></li>
+                  ))}
+                </ul>
+                <FormationCreditNotice />
+                <FormationCheckout />
               </div>
-            </details>
+              <div id="formation-decouverte" className="scroll-mt-40 rounded-2xl border-2 border-gold/35 bg-white/85 p-6 md:p-8 shadow-[0_16px_46px_rgba(26,21,53,0.07)]">
+                <p className="font-georgia text-xs font-bold tracking-[0.2em] uppercase text-gold mb-2">Sans obligation de poursuivre</p>
+                <h3 className="font-georgia text-2xl md:text-3xl font-medium text-deep mb-2">Découverte · 29 € TTC</h3>
+                <p className="font-georgia text-sm text-mist mb-5">Essayez l'introduction et le Module 1 complet avant de décider. Les 29 € sont déduits du prix total de 597 € si vous poursuivez.</p>
+                <ul className="font-georgia text-sm text-deep space-y-2 mb-6">
+                  {DISCOVERY_ITEMS.map((item) => (
+                    <li key={item} className="flex gap-3 items-start"><span className="text-gold shrink-0" aria-hidden="true">✓</span><span>{item}</span></li>
+                  ))}
+                </ul>
+                <FormationCheckout product="discovery" />
+              </div>
+            </div>
+            <div id="formation-progressive" className="scroll-mt-40">
+              <ParcoursOffer />
+            </div>
           </div>
         </section>
 
@@ -214,11 +212,14 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
   page = replaceOnce(page, 'Ouvrir uniquement si vous souhaitez essayer l’outil complémentaire ou recevoir les exercices offerts.', 'Ouvrir pour essayer l’outil complémentaire : 5 messages offerts, sans inscription.', 'assistant summary')
   page = replaceOnce(page, 'Si vous le souhaitez, vous pouvez aussi essayer l’assistant ou recevoir 3 exercices par e-mail.', 'Si vous le souhaitez, vous pouvez aussi essayer l’assistant.', 'assistant intro')
 
-  // ── Fin de page : un seul appel, sans tableau de chiffres ──
+  // ── Fin de page : accès distincts à la formation complète et à la Découverte ──
   page = replaceBetween(page, '        <section className="px-6 py-14 text-center border-t border-gold/20">', '      </main>', `        <section className="px-6 py-14 text-center border-t border-gold/20">
-          <p className="font-georgia text-2xl text-deep mb-1">Commencer par la Découverte</p>
-          <p className="font-georgia text-sm text-mist mb-6">29 € · introduction, Module 1 complet et exercices · sans obligation de poursuivre</p>
-          <button onClick={() => goTo('offre')} className="font-georgia px-8 py-4 rounded-lg bg-deep text-gold font-bold">Commencer ma découverte — 29&nbsp;€</button>
+          <h2 className="font-georgia text-2xl text-deep mb-2">Choisissez votre formation</h2>
+          <p className="font-georgia text-sm text-mist mb-6">597 € TTC pour les 25 modules, ou Découverte à 29 € pour commencer sans engagement.</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button type="button" onClick={() => goTo('formation-complete')} className="font-georgia px-7 py-4 rounded-lg bg-deep text-gold font-bold">Accéder à la formation complète — 597 €</button>
+            <button type="button" onClick={() => goTo('formation-decouverte')} className="font-georgia px-7 py-4 rounded-lg border-2 border-gold/40 text-deep font-bold">Découverte — 29 €</button>
+          </div>
           <div className="mt-8"><button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">← Retour à MediumIA</button></div>
         </section>
 `, 'final cta')

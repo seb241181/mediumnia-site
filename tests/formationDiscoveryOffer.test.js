@@ -203,22 +203,22 @@ test('discovery and full rights remain server-scoped', () => {
   assert.doesNotMatch(publicPatch, /p_max_module|access_level\s*:/)
 })
 
-test('public Formation page presents the Discovery first and keeps its content complete and visible', () => {
+test('public Formation page exposes complete 597 EUR first and preserves the full Discovery option', () => {
   const page = read('src/components/FormationPage.jsx')
   const catalog = read('lib/mediumiaPublicCatalog.js')
   const paypal = read('lib/paypalSandbox.js')
   const terms = read('public/cgv-formation.html')
 
-  assert.ok(page.indexOf('Pour commencer') < page.indexOf('29 €, pour découvrir la méthode'))
+  assert.ok(page.indexOf('id="formation-complete"') < page.indexOf('id="formation-decouverte"'))
   assert.match(page, /Introduction complète/)
   assert.match(page, /Module 1 — L’Intention comme Porte/)
   assert.match(page, /Exercices du Module 1/)
   assert.match(page, /Carnet de pratique intégré/)
   assert.match(page, /Assistant MediumIA facultatif pendant 30 jours/)
   assert.match(page, /PDF Découverte personnel/)
-  assert.match(page, /Si vous continuez, vos 29 € sont déduits des 597 € du parcours complet/)
+  assert.match(page, /Les 29 € sont déduits du prix total de 597 € si vous poursuivez/)
   assert.match(page, /Sans obligation de poursuivre/)
-  assert.match(page, /25 modules PDF téléchargeables \(269 pages\)/)
+  assert.match(page, /25 modules en 4 niveaux/)
   assert.match(page, /<FormationCheckout product="discovery" \/>/)
   assert.match(catalog, /Prix public : 29 € TTC/)
   assert.match(paypal, /mediumia_grant_purchase_access_atomic/)

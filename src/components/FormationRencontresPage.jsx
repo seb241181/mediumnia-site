@@ -194,7 +194,12 @@ export default function FormationRencontresPage({ onBack, onNavigate }) {
   }, [token, call])
 
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }) }, [])
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    // Fetch on the next animation frame to avoid cascading state updates while
+    // React is still committing this mount.
+    const frame = window.requestAnimationFrame(() => { void refresh() })
+    return () => window.cancelAnimationFrame(frame)
+  }, [refresh])
   // Refresh stale tabs after returning from payment/another device. A stored
   // toast must never continue to claim a booking when the DB was changed.
   useEffect(() => {

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { handleFormationRencontres } from '../lib/formationRencontresApi.js'
 import { CONFERENCE_FIVE_PLAN } from '../lib/conferenceFiveInstallments.js'
+import { evaluateFiveBridge, loadFiveBridgeRights, fiveBridgeEnabled } from '../lib/conferenceFiveRencontresTest.js'
 
 const SID = '11111111-1111-4111-8111-111111111111'
 const student = 'test-five-pay-student'
@@ -76,7 +77,13 @@ test('booking HTTP: active plan with no validated payment is rejected, no RPC',a
     assert.equal(none.res.statusCode,403)
     assert.equal(none.res.body.error,'not_eligible')
     assert.equal(none.db.calls.length,0)
-    const three=await call({contract,transactions:[capture(1),capture(2),capture(3)]})
+    assert.equal(fiveBridgeEnabled(process.env, 'sandbox'), true, 'TEST flag should enable the bridge')
+    const threeCaptures=[capture(1),capture(2),capture(3)]
+    const pure=evaluateFiveBridge({userId:student,contract,transactions:threeCaptures,now})
+    assert.equal(pure?.eligible, true, 'pure bridge should allow three settled charges')
+    const rights=await loadFiveBridgeRights(fakeDb({contract,transactions:threeCaptures}),student,'sandbox',now)
+    assert.equal(rights?.eligible, true, 'database adapter should find approved rights')
+    const three=await call({contract,transactions:threeCaptures})
     assert.equal(three.res.statusCode,200)
     assert.equal(three.db.calls.length,1)
     assert.equal(three.db.calls[0].name,'formation_rencontre_book')

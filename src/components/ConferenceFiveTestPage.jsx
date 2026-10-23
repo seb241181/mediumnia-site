@@ -147,6 +147,17 @@ export default function ConferenceFiveTestPage({ onBack }) {
               <div role="status" className="rounded-xl border border-gold/35 p-4 text-sm">
                 {report.paidInstalments} sur 5 échéances reconnues · reste {money(report.remainingCents)}.
                 <p className="mt-2 text-xs">État PayPal : {report.paypalStatus} · aucun accès réel attribué.</p>
+                <p className="mt-2 text-xs">
+                  Calendrier officiel PayPal : <strong>{report.billingScheduleVerified ? 'vérifié' : 'à vérifier — accès suspendu'}</strong>.
+                </p>
+                {report.billingScheduleVerified && report.nextBillingAt && (
+                  <p className="mt-1 text-xs">Prochaine échéance prévue : {new Intl.DateTimeFormat('fr-FR', {
+                    timeZone: 'Europe/Paris', day: 'numeric', month: 'long', year: 'numeric',
+                  }).format(new Date(report.nextBillingAt))}.</p>
+                )}
+                {report.billingScheduleVerified && report.paidInstalments > 0 && report.status === 'active' && (
+                  <a href="/formation/rencontres" className="mt-3 inline-block font-bold underline">Tester mes rencontres en visio</a>
+                )}
               </div>
             )}
             <button className="text-sm underline" onClick={refresh}>Actualiser</button>

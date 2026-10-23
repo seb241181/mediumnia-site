@@ -64,7 +64,7 @@ async function call(state, timestamp=now) {
   const db=fakeDb(state),res=response()
   await handleFormationRencontres({
     method:'POST',headers:{authorization:'Bearer good'},body:{rencontreId:SID},
-  },res,'book',{supabase:db,env:'sandbox',now:timestamp})
+  },res,'book',{supabase:db,env:'sandbox',now:timestamp,paymentVerifier: async () => true})
   return {res, db}
 }
 test('booking HTTP: active plan with no validated payment is rejected, no RPC',async()=>{

@@ -83,6 +83,15 @@ test('operator verifies a booked 5x attendee only after provider recheck',async(
     assert.equal(allowed.statusCode,200)
     assert.deepEqual(allowed.body,{eligible:true,reason:null,checkedAt:now.toISOString()})
     assert.equal(rechecks,1)
+    // The provider may finish reconciliation milliseconds AFTER the request
+    // timestamp; do not reject a valid attendee for a small bounded skew.
+    const postSync={...contract,provider_last_checked_at:new Date(now.getTime()+5000).toISOString()}
+    const checked=await ask(fakeDb({contractRow:postSync}))
+    assert.equal(checked.statusCode,200)
+    assert.equal(checked.body.eligible,true)
+    const farFuture={...contract,provider_last_checked_at:new Date(now.getTime()+60000).toISOString()}
+    assert.equal((await ask(fakeDb({contractRow:farFuture}))).body.eligible,false)
+
     const mine=await askMine(fakeDb(),async()=>{rechecks++;return true})
     assert.equal(mine.statusCode,200)
     assert.equal(mine.body.rights.eligible,true,'view must refresh an active test subscription')

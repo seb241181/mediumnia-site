@@ -105,6 +105,38 @@ test('operator verifies a booked 5x attendee only after provider recheck',async(
     assert.equal(missing.body.eligible,false)
     const refunded=await ask(fakeDb({tx:[...payments,{...payments[0],provider_id:'REFUND-1',kind:'refund'}]}))
     assert.equal(refunded.body.eligible,false)
+    // Negative access matrix, always against in-memory records — no writes to
+    // a real subscription, no fabricated PayPal transactions persisted.
+    const denied = [
+      ['suspended_subscription', {contractRow:{...contract,status:'suspended'}}],
+      ['cancelled_subscription', {contractRow:{...contract,status:'cancelled'}}],
+      ['unapproved_meetings', {contractRow:{...contract,meetings_approved:false}}],
+      ['missing_first_payment', {contractRow:{...contract,first_paid_at:null}}],
+      ['missing_provider_schedule', {contractRow:{...contract,paypal_next_billing_at:null}}],
+      ['unverified_cycle', {contractRow:{...contract,paypal_regular_cycles_completed:4}}],
+      ['pending_capture', {tx:[...payments.slice(0,2),{...payments[2],status:'PENDING'}]}],
+      ['partial_refund', {tx:[...payments,{...payments[0],provider_id:'REFUND-PARTIAL',kind:'refund',amount_cents:1996}]}],
+      ['foreign_subscription', {tx:[...payments.slice(0,2),{...payments[2],paypal_subscription_id:'I-SOMEBODYELSE'}]}],
+      ['wrong_capture_amount', {tx:[...payments.slice(0,2),{...payments[2],amount_cents:9999}]}],
+      ['duplicate_capture', {tx:[...payments,payments[0]]}],
+      ['future_verification', {contractRow:{...contract,provider_last_checked_at:'2027-01-15T10:01:00Z'}}],
+      ['stale_verification', {contractRow:{...contract,provider_last_checked_at:'2027-01-15T09:40:00Z'}}],
+    ]
+    for (const [scenario, fixture] of denied) {
+      const decision=await ask(fakeDb(fixture))
+      assert.equal(decision.statusCode,200,scenario)
+      assert.equal(decision.body.eligible,false,scenario)
+      assert.equal('join_url' in decision.body,false,scenario)
+      assert.equal('password' in decision.body,false,scenario)
+    }
+    const missedPayment=await ask(
+      fakeDb({contractRow:{...contract,provider_last_checked_at:'2027-01-24T09:59:00Z'}}),
+      'owner',async()=>true,new Date('2027-01-24T10:00:00Z'),
+    )
+    assert.equal(missedPayment.body.eligible,false,'fourth monthly charge overdue')
+    const negativeProvider=await ask(fakeDb(),'owner',async()=>false)
+    assert.equal(negativeProvider.body.eligible,false,'provider explicitly denied')
+
     const cancelled=await ask(fakeDb({b:{...booking,status:'cancelled'}}))
     assert.deepEqual(cancelled.body,{eligible:false,reason:'booking_not_active'})
     const failedProvider=await ask(fakeDb(), 'owner', async()=>{throw Error('PayPal Sandbox unavailable')})

@@ -17,6 +17,7 @@ import { handleCustomerReviews } from '../lib/customerReviews.js'
 import { handleGiftCards } from '../lib/giftCards.js'
 import { handleFormationPath } from '../lib/formationPath.js'
 import { handleFormationRencontres } from '../lib/formationRencontresApi.js'
+import { handleConferenceFiveSandbox } from '../lib/conferenceFiveSandboxPayPal.js'
 import { handleDefi } from '../lib/defiIntuitionServer.js'
 import { handleCspReport } from '../lib/cspReport.js'
 import { handleEmailQuestions } from '../lib/emailQuestions.js'
@@ -70,6 +71,9 @@ export default async function handler(req, res) {
   if (formationPathAction) {
     return handleFormationPath(req, res, formationPathAction)
   }
+
+  const conferenceFiveAction = req.query?.conferenceFiveAction
+  if (conferenceFiveAction) return handleConferenceFiveSandbox(req, res, conferenceFiveAction)
 
   const rencontresAction = req.query?.rencontresAction
   if (rencontresAction) {

@@ -41,6 +41,23 @@
 - L'accès intégral aux modules et l'e-mail de bienvenue de la formation complète ne sont déclenchés qu'aux conditions métier finalisées et une fois le règlement complet effectué.
 - Les offres existantes (597 €, Découverte 29 €, parcours 48 €/mois et Pass conférence comptant) continuent inchangées.
 
-## Situation actuelle du chantier
+## Réalisé le 23 octobre 2026 — TEST seulement
 
-**Préparation partielle uniquement :** règles pures + tests, décision de droits visio provisoires + présente spécification. La fonction `conferenceFiveMeetingEligibility` est isolée : elle **n'est pas branchée à l'API `/formation/rencontres` de la PR #169**, ni à Supabase ; elle impose une identité approuvée, un abonnement précis, un paiement initial et les échéances dues, sans remboursement. L'intégration croisée avec #169 nécessitera un raccord explicite avec lecture côté serveur de données vérifiées. Pas d'API de paiement, de migration, d'abonnement, de lien commercial ni de déploiement TEST opérationnel. Cette branche ne doit pas être considérée prête pour un encaissement réel.
+- Prix et échéancier `499 € = 5 × 99,80 €`, calculs purs, règles de paiements vérifiés, remboursements et tests.
+- Création de `conference_five_contracts`, `conference_five_transactions` et `conference_five_audit` **dans Supabase TEST uniquement** ; RLS activé et lecture/écriture client révoquées. Tables encore vides.
+- Handler `lib/conferenceFiveSandboxPayPal.js` : recherche d'une invitation personnelle approuvée par le propriétaire, compte élève existant associé à un participant réellement marqué présent, création d'un plan Sandbox fini (cinq cycles), consentement d'essai explicite, et relecture des transactions PayPal par le serveur.
+- API derrière la fonction **existante** `/api/rdv-config?conferenceFiveAction=…` ; ne crée pas une treizième fonction Vercel, limite du forfait Hobby.
+- Prévisualisation `/formation/conference-5x-test` : accueil, connexion élève, simulation d'abonnement Sandbox, synchronisation et suivi, masqués hors du domaine TEST.
+- Vérification des environnements : activation du handler **uniquement** si Vercel n'est pas en Production, que `SUPABASE_URL` vaut exactement le projet TEST et que `CONFERENCE_FIVE_SANDBOX_ENABLED=true` (non activé ici).
+- Aucun appel PayPal réel, aucune invitation de cliente réelle, aucun e-mail commercial, aucun droit de formation modifié et aucun changement de Production.
+- Les tests statiques et les tests unitaires sont exécutés lors des builds Vercel ; le parcours Sandbox réel reste à vérifier après configuration isolée.
+
+## Encore bloquant avant une vente
+
+1. Examen juridique et CGV de l'offre en cinq mensualités sur plus de trois mois.
+2. Accès progressif au contenu de formation à définir et à implémenter. **Aucun accès intégral au premier paiement.**
+3. Intégration transactionnelle des droits de visio `conferenceFiveMeetingEligibility` à la PR #169 : aujourd'hui, la règle est pure et testée, **non branchée à l'API de réservation**. La réservation existante reste limitée aux droits formation complète ; ne prétendre aucune admission temporaire validée.
+4. Vérification en PayPal Sandbox par compte test uniquement, sans secret au frontend, avec approbation et réconciliation réelles, remboursements/échecs.
+5. Validation d'un chemin d'invitation individuel pour la cliente concernée, qui doit être réellement présente dans la conférence et posséder un compte élève.
+
+**NO-GO Production, NO-GO paiement réel, NO-GO envoi client** en attendant la revue juridique et les tests complets.

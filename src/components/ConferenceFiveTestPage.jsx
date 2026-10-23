@@ -93,6 +93,11 @@ export default function ConferenceFiveTestPage({ onBack }) {
     }
   }
 
+  // The preview screen is never a second public offer on the live site.
+  const inTestProject = String(import.meta.env.VITE_SUPABASE_URL || '').startsWith('https://wnbwhnqiulsdjcvkuwos.supabase.co')
+    && window.location.hostname === 'mediumia-pr156-seguins-projects-a1d4673f.vercel.app'
+  if (!inTestProject) return <main className="p-10 text-center">Page de démonstration non disponible.</main>
+
   return (
     <main className="min-h-screen bg-cream px-5 py-10 font-georgia text-deep">
       <div className="mx-auto max-w-2xl rounded-3xl border border-gold/35 bg-white p-6 shadow-lg sm:p-10">

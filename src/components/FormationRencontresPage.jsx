@@ -227,7 +227,11 @@ export default function FormationRencontresPage({ onBack, onNavigate }) {
             : (
               <>
                 {data.rights.eligible
-                  ? <p className="rounded-2xl border border-gold/30 bg-gold/10 px-5 py-4 font-georgia text-sm text-deep">Vos droits aux rencontres courent jusqu’au <strong>{shortDate(data.rights.until)}</strong>. Une participation est incluse pour chacun des cinq thèmes ; vous pouvez annuler jusqu’à {data.cancelHours} heures avant une rencontre.</p>
+                  ? data.rights.provisional
+                    ? <p className="rounded-2xl border border-gold/30 bg-gold/10 px-5 py-4 font-georgia text-sm text-deep">
+                        Offre conférence en cinq mensualités · accès aux rencontres <strong>provisoire et sous condition de paiement à jour</strong>. La date indicative de fin de droits est le <strong>{shortDate(data.rights.until)}</strong> ; les paiements sont revérifiés à chaque réservation et avant la communication du lien de visio. Une participation par thème est incluse, annulable jusqu’à {data.cancelHours} heures avant.
+                      </p>
+                    : <p className="rounded-2xl border border-gold/30 bg-gold/10 px-5 py-4 font-georgia text-sm text-deep">Vos droits aux rencontres courent jusqu’au <strong>{shortDate(data.rights.until)}</strong>. Une participation est incluse pour chacun des cinq thèmes ; vous pouvez annuler jusqu’à {data.cancelHours} heures avant une rencontre.</p>
                   : <div className="rounded-2xl border border-gold/30 bg-white/85 px-5 py-4 font-georgia text-sm text-deep"><p>Les rencontres sont incluses dans la formation complète (597 €). La Découverte seule n’y donne pas accès. Si vous suivez le parcours progressif, elles s’ouvriront dès que votre parcours sera complet.</p><a href="/formation/parcours" className="mt-2 inline-block font-bold text-gold underline">Voir mon parcours</a></div>}
 
                 {message && <p role={message.tone === 'error' ? 'alert' : 'status'} className={`rounded-xl px-4 py-3 font-georgia text-sm ${message.tone === 'error' ? 'border border-red-700/30 bg-red-50 text-red-900' : 'border border-emerald-700/30 bg-emerald-50 text-emerald-900'}`}>{message.text}</p>}

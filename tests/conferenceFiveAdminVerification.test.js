@@ -47,6 +47,7 @@ function fakeDb({tx=payments,b=booking,contractRow=contract}={}) {
         select(){return q},
         eq(k,v){filters.push(r=>r[k]===v);return q},
         in(k,list){filters.push(r=>list.includes(r[k]));return q},
+        gte(k,v){filters.push(r=>String(r[k])>=String(v));return q},
         order(){return q},
         limit(){return q},
         maybeSingle:async()=>({data:(data[name]||[]).filter(Boolean).find(r=>filters.every(f=>f(r)))||null,error:null}),
@@ -63,6 +64,14 @@ async function ask(db, who='owner', paymentVerifier=async()=>true, at=now) {
   })
   return res
 }
+async function askMine(db, paymentVerifier=async()=>true, at=now) {
+  const res={statusCode:0,body:null,setHeader(){},status(v){this.statusCode=v;return this},json(v){this.body=v;return this}}
+  await handleFormationRencontres({method:'GET',headers:{authorization:'Bearer student'}},res,'mine',{
+    supabase:db,env:'sandbox',now:at,paymentVerifier,
+  })
+  return res
+}
+
 test('operator verifies a booked 5x attendee only after provider recheck',async()=>{
   const old={VERCEL_ENV:process.env.VERCEL_ENV,SUPABASE_URL:process.env.SUPABASE_URL,CONFERENCE_FIVE_SANDBOX_ENABLED:process.env.CONFERENCE_FIVE_SANDBOX_ENABLED}
   process.env.VERCEL_ENV='preview'
@@ -74,6 +83,15 @@ test('operator verifies a booked 5x attendee only after provider recheck',async(
     assert.equal(allowed.statusCode,200)
     assert.deepEqual(allowed.body,{eligible:true,reason:null,checkedAt:now.toISOString()})
     assert.equal(rechecks,1)
+    const mine=await askMine(fakeDb(),async()=>{rechecks++;return true})
+    assert.equal(mine.statusCode,200)
+    assert.equal(mine.body.rights.eligible,true,'view must refresh an active test subscription')
+    assert.equal(mine.body.rights.provisional,true,'access to visios is provisional only')
+    assert.equal(rechecks,2)
+    const mineWithoutProvider=await askMine(fakeDb(),async()=>{throw Error('provider_unavailable')})
+    assert.equal(mineWithoutProvider.statusCode,200)
+    assert.equal(mineWithoutProvider.body.rights.eligible,false)
+    assert.equal(mineWithoutProvider.body.rights.paymentReview,true)
     const missing=await ask(fakeDb({tx:[]}))
     assert.equal(missing.body.eligible,false)
     const refunded=await ask(fakeDb({tx:[...payments,{...payments[0],provider_id:'REFUND-1',kind:'refund'}]}))

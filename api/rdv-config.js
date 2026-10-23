@@ -16,6 +16,7 @@ import { handleRdvBalanceDailyCron } from '../lib/rdvBalanceCronHandler.js'
 import { handleCustomerReviews } from '../lib/customerReviews.js'
 import { handleGiftCards } from '../lib/giftCards.js'
 import { handleFormationPath } from '../lib/formationPath.js'
+import { handleConferenceFiveSandbox } from '../lib/conferenceFiveSandboxPayPal.js'
 import { handleDefi } from '../lib/defiIntuitionServer.js'
 import { handleCspReport } from '../lib/cspReport.js'
 import { handleEmailQuestions } from '../lib/emailQuestions.js'
@@ -64,6 +65,9 @@ export default async function handler(req, res) {
   if (req.query?.action === 'reseau-apply') {
     return handleReseauApply(req, res)
   }
+
+  const conferenceFiveAction = req.query?.conferenceFiveAction
+  if (conferenceFiveAction) return handleConferenceFiveSandbox(req, res, conferenceFiveAction)
 
   const formationPathAction = req.query?.formationPathAction
   if (formationPathAction) {

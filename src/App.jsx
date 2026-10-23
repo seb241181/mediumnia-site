@@ -25,6 +25,7 @@ import ReviewsPage, { ReviewsHighlight } from './components/ReviewsPage'
 import GiftCardsPage from './components/GiftCardsPage'
 import DefiIntuitionPage from './components/DefiIntuitionPage'
 import FormationParcoursPage from './components/FormationParcoursPage'
+import ConferenceFiveTestPage from './components/ConferenceFiveTestPage'
 import QuestionPage from './components/QuestionPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
@@ -168,6 +169,7 @@ function pathToView(p) {
     : p.startsWith('/rdv/') ? 'rdv-public'
     : p === '/rdv' ? 'rdv-dashboard'
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
+    : p === '/formation/conference-5x-test' ? 'conference-five-test'
     : p === '/formation/parcours' ? 'formation-parcours'
     : p.startsWith('/formation') ? 'formation'
     : p.startsWith('/chronosphere-max') ? 'chronosphere-max'
@@ -250,6 +252,7 @@ export default function App() {
   if (view === 'chronosphere-max') return <><ChronosphereMaxPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cartes-cadeaux') return <><GiftCardsPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation-parcours') return <><FormationParcoursPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'conference-five-test') return <><ConferenceFiveTestPage onBack={backHome} />{guardian}</>
   if (view === 'defi-intuition') return <><DefiIntuitionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'question')      return <><QuestionPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'videos')        return <><VideosPage onBack={backHome} onNavigate={legalNav} />{guardian}</>

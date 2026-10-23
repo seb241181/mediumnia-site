@@ -110,7 +110,7 @@ function SessionCard({ session, busy, onBook, onCancel }) {
   )
 }
 
-function AdminSession({ session, busy, onUpdate, onMark }) {
+function AdminSession({ session, busy, onUpdate, onMark, onVerify, verifications }) {
   const past = new Date(session.startsAt) <= new Date()
   return (
     <li className={`rounded-2xl border border-gold/25 bg-white/85 p-5 ${session.status === 'cancelled' ? 'opacity-50' : ''}`}>
@@ -138,6 +138,16 @@ function AdminSession({ session, busy, onUpdate, onMark }) {
             <li key={p.bookingId} className="flex flex-wrap items-center gap-2 py-2.5">
               <span className="min-w-0 flex-1 truncate font-georgia text-sm text-deep">{p.email || 'Élève'}</span>
               <span className="font-georgia text-xs text-mist">{PARTICIPANT_STATUS[p.status] || p.status}</span>
+              {p.status === 'booked' && (
+                <>
+                  <button type="button" disabled={busy} onClick={() => onVerify(p)} className="rounded-md border border-gold/50 px-2 py-1 font-georgia text-[11px] text-deep">
+                    Vérifier accès visio
+                  </button>
+                  {verifications[p.bookingId] && <span role="status" className={`font-georgia text-[11px] ${verifications[p.bookingId].eligible ? 'text-emerald-800' : 'text-red-800'}`}>
+                    {verifications[p.bookingId].eligible ? 'Droits vérifiés à cet instant' : 'Accès non validé — ne pas transmettre le lien'}
+                  </span>}
+                </>
+              )}
               {['booked', 'attended', 'absent'].includes(p.status) && p.status !== 'attended' && <button type="button" disabled={busy} onClick={() => onMark(p, 'attended')} className="rounded-md border border-deep/20 px-2 py-1 font-georgia text-[11px] text-deep">Présent</button>}
               {['booked', 'attended'].includes(p.status) && <button type="button" disabled={busy} onClick={() => onMark(p, 'absent')} className="rounded-md border border-deep/20 px-2 py-1 font-georgia text-[11px] text-deep">Absent</button>}
               {p.status === 'absent' && <button type="button" disabled={busy} onClick={() => onMark(p, 'released')} className="rounded-md border border-gold/50 px-2 py-1 font-georgia text-[11px] text-deep">Accorder un rattrapage</button>}
@@ -157,6 +167,7 @@ export default function FormationRencontresPage({ onBack, onNavigate }) {
   const [adminData, setAdminData] = useState(null)
   const [message, setMessage] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [verifications, setVerifications] = useState({})
 
   const call = useCallback(async (action, body) => {
     const res = await fetch(`${API}${action}`, {
@@ -193,6 +204,13 @@ export default function FormationRencontresPage({ onBack, onNavigate }) {
   const cancel = (s) => { if (window.confirm(`Annuler votre réservation du ${shortDate(s.startsAt)} ?`)) act('cancel', { bookingId: s.bookingId }, 'Votre réservation est annulée. Votre participation pour ce thème reste disponible.') }
   const update = (s, change) => act('admin-update', { rencontreId: s.id, ...change }, 'Rencontre mise à jour.')
   const mark = (p, status) => act('admin-mark', { bookingId: p.bookingId, status }, 'Inscription mise à jour.')
+  async function verify(p) {
+    setBusy(true)
+    setVerifications({}) // A previous result must never be mistaken for current consent.
+    const result = await call('admin-verify', { bookingId: p.bookingId })
+    setVerifications({ [p.bookingId]: { eligible: result.ok && result.json.eligible === true } })
+    setBusy(false)
+  }
 
   return (
     <div className="cosmic-page bg-cream min-h-screen text-deep">
@@ -226,7 +244,8 @@ export default function FormationRencontresPage({ onBack, onNavigate }) {
             <section aria-labelledby="rencontres-admin" className="rounded-3xl bg-deep/[0.04] p-5 md:p-6">
               <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Administration · visible par vous seul</p>
               <h2 id="rencontres-admin" className="mt-1 font-georgia text-2xl text-deep">Suivi des rencontres</h2>
-              <ol className="mt-4 space-y-3">{adminData.sessions.map((s) => <AdminSession key={s.id} session={s} busy={busy} onUpdate={update} onMark={mark} />)}</ol>
+              <p className="mt-3 font-georgia text-xs text-red-800">Avant d'envoyer un lien Zoom personnel, vérifiez les droits de chaque participant. Un contrôle positif est ponctuel : recommencez juste avant la visio. Aucun lien n'est envoyé automatiquement.</p>
+              <ol className="mt-4 space-y-3">{adminData.sessions.map((s) => <AdminSession key={s.id} session={s} busy={busy} onUpdate={update} onMark={mark} onVerify={verify} verifications={verifications} />)}</ol>
             </section>
           )}
         </div>

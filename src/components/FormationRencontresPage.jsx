@@ -78,15 +78,15 @@ function Chip({ tone = 'neutral', children }) {
   return <span className={`inline-flex rounded-full border px-3 py-1 font-georgia text-[11px] uppercase tracking-[0.12em] ${tones[tone]}`}>{children}</span>
 }
 
-function SessionCard({ session, busy, onBook, onCancel }) {
+function SessionCard({ session, busy, onBook, onCancel, paymentReview = false }) {
   const states = {
     open: <Chip tone="gold">{session.placesLeft} place{session.placesLeft > 1 ? 's' : ''} disponible{session.placesLeft > 1 ? 's' : ''}</Chip>,
-    booked: <Chip tone="ok">Place réservée</Chip>,
+    booked: <Chip tone={paymentReview ? 'neutral' : 'ok'}>{paymentReview ? 'Réservée · accès à revérifier' : 'Place réservée'}</Chip>,
     closed: <Chip>Réservations bientôt ouvertes</Chip>,
     full: <Chip>Complet</Chip>,
     theme_used: <Chip>Thème déjà suivi ou réservé</Chip>,
     outside_rights: <Chip>Hors de votre période de droits</Chip>,
-    not_eligible: <Chip>Formation complète requise</Chip>,
+    not_eligible: <Chip>{paymentReview ? 'Paiement à vérifier' : 'Formation complète requise'}</Chip>,
   }
   return (
     <li className={`rounded-2xl border-2 bg-white/85 p-5 md:p-6 ${session.state === 'booked' ? 'border-emerald-700/30' : 'border-gold/25'}`}>
@@ -100,6 +100,11 @@ function SessionCard({ session, busy, onBook, onCancel }) {
       </div>
       {session.state === 'open' && (
         <button type="button" disabled={busy} onClick={() => onBook(session)} className="mt-4 rounded-xl bg-deep px-5 py-3 font-georgia text-sm font-bold text-gold disabled:opacity-60">Réserver ma place</button>
+      )}
+      {session.state === 'booked' && paymentReview && (
+        <p className="mt-3 rounded-xl border border-amber-400/40 bg-amber-50 px-4 py-2 font-georgia text-sm text-amber-900">
+          Votre réservation est conservée, mais l’accès à la visio reste suspendu tant que les mensualités ne sont pas confirmées.
+        </p>
       )}
       {session.state === 'booked' && (
         session.canCancel
@@ -190,6 +195,26 @@ export default function FormationRencontresPage({ onBack, onNavigate }) {
 
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }) }, [])
   useEffect(() => { refresh() }, [refresh])
+  // Refresh stale tabs after returning from payment/another device. A stored
+  // toast must never continue to claim a booking when the DB was changed.
+  useEffect(() => {
+    let lastRefresh = 0
+    function updateOnReturn() {
+      if (document.visibilityState !== 'visible') return
+      const current = Date.now()
+      if (current - lastRefresh < 1500) return
+      lastRefresh = current
+      setMessage(null)
+      setVerifications({})
+      refresh()
+    }
+    window.addEventListener('focus', updateOnReturn)
+    document.addEventListener('visibilitychange', updateOnReturn)
+    return () => {
+      window.removeEventListener('focus', updateOnReturn)
+      document.removeEventListener('visibilitychange', updateOnReturn)
+    }
+  }, [refresh])
 
   async function act(action, body, success) {
     setBusy(true)
@@ -232,12 +257,16 @@ export default function FormationRencontresPage({ onBack, onNavigate }) {
                         Offre conférence en cinq mensualités · accès aux rencontres <strong>provisoire et sous condition de paiement à jour</strong>. La date indicative de fin de droits est le <strong>{shortDate(data.rights.until)}</strong> ; les paiements sont revérifiés à chaque réservation et avant la communication du lien de visio. Une participation par thème est incluse, annulable jusqu’à {data.cancelHours} heures avant.
                       </p>
                     : <p className="rounded-2xl border border-gold/30 bg-gold/10 px-5 py-4 font-georgia text-sm text-deep">Vos droits aux rencontres courent jusqu’au <strong>{shortDate(data.rights.until)}</strong>. Une participation est incluse pour chacun des cinq thèmes ; vous pouvez annuler jusqu’à {data.cancelHours} heures avant une rencontre.</p>
-                  : <div className="rounded-2xl border border-gold/30 bg-white/85 px-5 py-4 font-georgia text-sm text-deep"><p>Les rencontres sont incluses dans la formation complète (597 €). La Découverte seule n’y donne pas accès. Si vous suivez le parcours progressif, elles s’ouvriront dès que votre parcours sera complet.</p><a href="/formation/parcours" className="mt-2 inline-block font-bold text-gold underline">Voir mon parcours</a></div>}
+                  : data.rights.paymentReview
+                    ? <div className="rounded-2xl border border-amber-500/40 bg-amber-50 px-5 py-4 font-georgia text-sm text-amber-900">
+                        <strong>Pass conférence — vérification des mensualités nécessaire.</strong> Aucun nouveau droit d’accès à la visio n’est confirmé pour le moment. Vérifiez votre situation dans le <a href="/formation/conference-5x-test" className="font-bold underline">suivi des paiements TEST</a>.
+                      </div>
+                    : <div className="rounded-2xl border border-gold/30 bg-white/85 px-5 py-4 font-georgia text-sm text-deep"><p>Les rencontres sont incluses dans la formation complète (597 €). La Découverte seule n’y donne pas accès. Si vous suivez le parcours progressif, elles s’ouvriront dès que votre parcours sera complet.</p><a href="/formation/parcours" className="mt-2 inline-block font-bold text-gold underline">Voir mon parcours</a></div>}
 
                 {message && <p role={message.tone === 'error' ? 'alert' : 'status'} className={`rounded-xl px-4 py-3 font-georgia text-sm ${message.tone === 'error' ? 'border border-red-700/30 bg-red-50 text-red-900' : 'border border-emerald-700/30 bg-emerald-50 text-emerald-900'}`}>{message.text}</p>}
 
                 {data.sessions.length
-                  ? <ol className="space-y-3">{data.sessions.map((s) => <SessionCard key={s.id} session={s} busy={busy} onBook={book} onCancel={cancel} />)}</ol>
+                  ? <ol className="space-y-3">{data.sessions.map((s) => <SessionCard key={s.id} session={s} busy={busy} onBook={book} onCancel={cancel} paymentReview={data.rights.paymentReview === true} />)}</ol>
                   : <p className="font-georgia text-sm text-mist">Aucune rencontre programmée pour le moment.</p>}
 
                 <p className="font-georgia text-xs leading-relaxed text-mist">Le lien privé de la visio est communiqué aux seuls participants inscrits. Il est personnel : merci de ne pas le transmettre.</p>

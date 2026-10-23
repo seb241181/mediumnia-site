@@ -235,8 +235,10 @@ export default function ConferenceCockpitPage() {
 
     let issuedTotal = 0
     let failedTotal = 0
+    let uncertainTotal = 0
     let remaining = 1
     let rounds = 0
+    let withoutConsent = 0
 
     try {
       while (remaining > 0 && rounds < 50) {
@@ -252,21 +254,26 @@ export default function ConferenceCockpitPage() {
         const payload = await response.json().catch(() => ({}))
         if (!response.ok) throw new Error(payload.error || 'Envoi des Pass impossible.')
 
-        issuedTotal += Number(payload.issued) || 0
+        const issued = Number(payload.issued) || 0
+        issuedTotal += issued
         failedTotal += Number(payload.failed) || 0
+        uncertainTotal += Number(payload.uncertain) || 0
         remaining = Number(payload.remaining) || 0
+        withoutConsent = Number(payload.withoutConsent) || 0
         rounds += 1
 
+        // Aucun progrès sur ce lot : on s'arrête au lieu de réessayer en boucle.
+        if (issued === 0) break
         if (remaining > 0) await new Promise((resolve) => window.setTimeout(resolve, 500))
       }
 
-      if (remaining > 0) throw new Error('Envoi incomplet : relance le bouton pour continuer.')
-
-      setPassIssueState(failedTotal > 0 ? 'partial' : 'success')
+      const consentNote = withoutConsent > 0 ? ` ${withoutConsent} inscrit(s) sans accord ne reçoivent rien : ils peuvent demander leur Pass sur la page Pass.` : ''
+      const issues = failedTotal + uncertainTotal
+      setPassIssueState(issues > 0 || remaining > 0 ? 'partial' : 'success')
       setPassIssueMessage(
-        failedTotal > 0
-          ? `${issuedTotal} Pass envoyé(s), ${failedTotal} envoi(s) à relancer.`
-          : `${issuedTotal} Pass envoyé(s). Tous les participants éligibles sont traités.`,
+        issues > 0 || remaining > 0
+          ? `${issuedTotal} Pass envoyé(s), ${failedTotal} échec(s), ${uncertainTotal} envoi(s) incertain(s), ${remaining} restant(s) : relance le bouton plus tard.${consentNote}`
+          : `${issuedTotal} Pass envoyé(s). Tous les inscrits ayant donné leur accord sont traités.${consentNote}`,
       )
     } catch (err) {
       setPassIssueState('error')
@@ -466,12 +473,12 @@ export default function ConferenceCockpitPage() {
             <section className="rounded-3xl border border-gold/35 bg-[#1b1738] p-6">
               <p className="font-georgia text-[10px] uppercase tracking-[.2em] text-gold">🎟️ APRÈS-CONFÉRENCE</p>
               <h2 className="mt-3 font-georgia text-2xl">Envoyer les Pass MediumIA</h2>
-              <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/55">Après la fin du direct, ce bouton génère un Pass personnel par inscription et l’envoie par e-mail. Les doublons sont ignorés.</p>
+              <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/55">Après la fin du direct, ce bouton envoie un Pass personnel uniquement aux inscrits qui ont demandé leur Pass (accord enregistré). Les doublons sont ignorés et les échecs journalisés.</p>
               <button onClick={issueConferencePasses} disabled={passIssueState === 'loading'} className="mt-5 w-full rounded-xl bg-gold px-5 py-4 font-georgia text-sm font-bold text-deep disabled:opacity-50">
-                {passIssueState === 'loading' ? 'Envoi des Pass…' : '🎟️ Envoyer les Pass aux participants'}
+                {passIssueState === 'loading' ? 'Envoi des Pass…' : '🎟️ Envoyer les Pass aux inscrits ayant donné leur accord'}
               </button>
               {passIssueMessage && <p className="mt-4 rounded-xl border border-gold/20 bg-black/10 p-3 font-georgia text-xs leading-relaxed text-cream/70">{passIssueMessage}</p>}
-              <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/40">En Production, l’envoi est refusé avant la fin de la conférence et tant que l’offre Pass n’est pas configurée.</p>
+              <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/40">En Production, l’envoi est refusé avant la fin de la conférence, tant que l’offre Pass n’est pas configurée et tant que le paiement Pass n’est pas activé.</p>
             </section>
           </aside>
         </div>

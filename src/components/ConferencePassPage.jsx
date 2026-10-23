@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import ConferencePassRequest from './ConferencePassRequest'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const API = '/api/rdv-config?conferencePassAction='
@@ -52,6 +53,13 @@ function loadPayPalSdk(clientId) {
   })
 }
 
+const INCLUDED = [
+  '25 modules en 4 niveaux (269 pages) et 84 exercices guidés',
+  'Carnet de pratique intégré à votre espace élève',
+  '365 jours d’accès à votre espace élève, dès le paiement confirmé',
+  'Vos modules PDF téléchargés restent à vous',
+]
+
 function messageForState(state, error) {
   if (state === 'expired') return 'Ce Pass a expiré. Il était valable 1 mois après émission.'
   if (state === 'already_redeemed') return 'Ce Pass a déjà été utilisé pour activer un accès MediumIA.'
@@ -67,8 +75,11 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   const [config, setConfig] = useState(null)
   const [error, setError] = useState('')
   const [tick, setTick] = useState(0)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [immediateAccessAccepted, setImmediateAccessAccepted] = useState(false)
   const paypalRef = useRef(null)
   const renderedRef = useRef(null)
+  const consentsOk = termsAccepted && immediateAccessAccepted
 
   async function captureExistingOrder(orderId) {
     const res = await fetch(`${API}capture`, {
@@ -93,7 +104,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
         setPassToken(token)
 
         if (!token) {
-          setState('invalid')
+          setState('request')
           return
         }
 
@@ -127,7 +138,8 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   }, [])
 
   useEffect(() => {
-    if (state !== 'valid' || !config?.paypal?.clientId || !passToken || !paypalRef.current) return
+    if (!consentsOk) renderedRef.current = null
+    if (state !== 'valid' || !consentsOk || !config?.paypal?.clientId || !passToken || !paypalRef.current) return
     if (renderedRef.current === passToken) return
 
     let cancelled = false
@@ -143,7 +155,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
             const res = await fetch(`${API}create`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ passToken }),
+              body: JSON.stringify({ passToken, termsAccepted: true, immediateAccessAccepted: true }),
             })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || !data.id) throw new Error(data.error || 'paypal_create_order_failed')
@@ -171,7 +183,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
       })
 
     return () => { cancelled = true }
-  }, [state, config, passToken])
+  }, [state, config, passToken, consentsOk])
 
   const expired = useMemo(() => {
     if (!config?.pass?.expiresAt) return false
@@ -206,11 +218,17 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                 <p className="mt-5 font-georgia text-base leading-relaxed text-mist md:text-lg">
                   Ce Pass est personnel, lié à l’adresse e-mail de votre inscription et valable 1 mois. Il vous permet d’accéder à l’offre spéciale conférence si elle est active.
                 </p>
+                <ul className="mt-6 space-y-2 font-georgia text-sm text-deep">
+                  {INCLUDED.map((item) => (
+                    <li key={item} className="flex gap-3"><span className="text-gold" aria-hidden="true">✓</span><span>{item}</span></li>
+                  ))}
+                </ul>
                 {config?.pass?.firstName && (
                   <p className="mt-6 font-georgia text-lg text-deep">Bonjour {config.pass.firstName}, votre Pass est prêt.</p>
                 )}
               </div>
 
+              {config && (
               <aside className="rounded-3xl border border-gold/35 bg-deep p-6 text-cream shadow-[0_18px_44px_rgba(26,21,53,.18)]">
                 <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Offre conférence</p>
                 <p className="mt-4 font-georgia text-sm text-cream/60">Prix normal</p>
@@ -221,10 +239,12 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   Temps restant : <strong className="text-gold">{timeLeftLabel(config?.pass?.expiresAt)}</strong>
                 </p>
               </aside>
+              )}
             </div>
 
             <div className="mt-9 rounded-3xl border border-gold/25 bg-cream/75 p-5 md:p-6">
               {visibleState === 'loading' && <p className="font-georgia text-mist">Vérification de votre Pass…</p>}
+              {visibleState === 'request' && <ConferencePassRequest api={API} />}
               {['invalid', 'expired', 'already_redeemed', 'offer_disabled'].includes(visibleState) && (
                 <p className="font-georgia text-sm leading-relaxed text-mist">{notice}</p>
               )}
@@ -241,8 +261,25 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
                     Ce Pass n’est consommé qu’après paiement PayPal réussi et activation effective de l’accès. Un simple affichage de cette page ne l’utilise pas.
                   </p>
+                  <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
+                    Paiement sécurisé par PayPal, avec votre compte PayPal ou par carte bancaire. Selon votre éligibilité, PayPal peut vous proposer de régler en 4 fois : cette possibilité est accordée par PayPal et n’est pas garantie.
+                  </p>
+                  <label className="consent-row">
+                    <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="consent-check" />
+                    <span className="font-georgia text-sm leading-relaxed text-mist">
+                      J’ai lu et j’accepte les <a href="/cgv-formation.html" target="_blank" rel="noopener noreferrer" className="text-gold underline">conditions générales de vente de l’accompagnement MediumIA</a>.
+                    </span>
+                  </label>
+                  <label className="consent-row mb-4">
+                    <input type="checkbox" checked={immediateAccessAccepted} onChange={(e) => setImmediateAccessAccepted(e.target.checked)} className="consent-check" />
+                    <span className="font-georgia text-sm leading-relaxed text-mist">
+                      Je demande la fourniture immédiate des contenus numériques et reconnais qu’après le début de leur exécution, je perds mon droit de rétractation pour ces contenus numériques.
+                    </span>
+                  </label>
                   {error && <p className="mb-4 font-georgia text-xs text-mist">{notice}</p>}
-                  <div ref={paypalRef} className="min-h-[52px]" />
+                  {consentsOk
+                    ? <div ref={paypalRef} className="min-h-[52px]" />
+                    : <p className="font-georgia text-xs text-mist">Cochez les deux cases ci-dessus pour afficher le paiement PayPal.</p>}
                 </>
               )}
             </div>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
 
-const API = '/api/conference-five-test?action='
+const API = '/api/rdv-config?conferenceFiveAction='
 const money = cents => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100)
 
 export default function ConferenceFiveTestPage({ onBack }) {

@@ -17,6 +17,9 @@ const contract = {
   paypal_subscription_id: sub,
   status: 'active',
   meetings_approved: true,
+  paypal_billing_anchor_at: '2026-10-23T10:00:00Z',
+  paypal_next_billing_at: '2027-01-23T10:00:00Z',
+  paypal_regular_cycles_completed: 3,
   first_paid_at: start,
   provider_last_checked_at: '2027-01-16T08:59:00Z',
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 // Demande de Pass par l'inscrit : son accord explicite est requis avant tout envoi de l'offre.
 function eventSlugFromPath() {
@@ -6,7 +6,22 @@ function eventSlugFromPath() {
   return match ? match[1] : ''
 }
 
+const euros = (cents) => (Number.isInteger(cents) ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100) : '')
+const longDate = (iso) => (iso ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'Europe/Paris' }).format(new Date(iso)) : '')
+
+const PAYPAL_INSTALMENTS_NOTICE = 'Paiement en plusieurs fois possible avec PayPal, sous réserve d’éligibilité et selon les conditions proposées lors du règlement.'
+
 export default function ConferencePassRequest({ api }) {
+  const [offer, setOffer] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${api}offer&slug=${encodeURIComponent(eventSlugFromPath())}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled) setOffer(data) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [api])
+
   const [email, setEmail] = useState('')
   const [consent, setConsent] = useState(false)
   const [website, setWebsite] = useState('')
@@ -40,6 +55,18 @@ export default function ConferencePassRequest({ api }) {
 
   return (
     <form onSubmit={submit} className="font-georgia">
+      {offer && (
+        <div className="mb-6 rounded-2xl bg-deep p-5 text-cream">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-gold">Offre réservée aux inscrits de la conférence</p>
+          <div className="mt-3 flex flex-wrap items-end gap-x-5 gap-y-2">
+            <p><span className="block text-xs text-cream/60">Prix habituel</span><span className="text-xl line-through decoration-gold/60">{euros(offer.normalAmountCents)}</span></p>
+            <p><span className="block text-xs text-cream/60">Offre spéciale conférence</span><span className="text-3xl text-gold">{euros(offer.amountCents)}</span></p>
+            <p className="rounded-full border border-gold/50 px-3 py-1 text-sm text-gold">Économie : {euros(offer.savingsCents)}</p>
+          </div>
+          <p className="mt-3 text-sm text-cream/75">Formation complète : 25 modules et 365 jours d’accès. {PAYPAL_INSTALMENTS_NOTICE}</p>
+          {offer.requestDeadline && <p className="mt-2 text-xs text-cream/60">Demandes ouvertes jusqu’au {longDate(offer.requestDeadline)}. Chaque Pass est valable {offer.passValidityDays} jours à compter de son envoi.</p>}
+        </div>
+      )}
       <h2 className="text-xl text-deep">Recevoir mon Pass personnel</h2>
       <p className="mt-2 text-sm leading-relaxed text-mist">Indiquez l’adresse e-mail utilisée lors de votre inscription à la conférence. Si vous avez déjà reçu un Pass, un nouveau lien remplace l’ancien.</p>
       <label htmlFor="pass-email" className="sr-only">Adresse e-mail d’inscription</label>

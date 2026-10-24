@@ -33,8 +33,19 @@ alter table public.conference_pass_events
     'pass_requested',
     'pass_resent',
     'pass_email_failed',
-    'terms_accepted'
+    'terms_accepted',
+    'confirmation_sent',
+    'confirmation_failed'
   ));
+
+-- Date limite des demandes de Pass (au-delà, l'offre participants est close).
+alter table public.conference_events
+  add column if not exists pass_request_deadline timestamptz;
+
+update public.conference_events
+   set pass_request_deadline = '2026-11-21T23:59:59+01:00'
+ where slug = 'premiere-conference-mediumia'
+   and pass_request_deadline is null;
 
 create index if not exists conference_registrations_offer_consent_idx
   on public.conference_registrations(event_id, offer_consent_at)

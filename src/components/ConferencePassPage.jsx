@@ -45,7 +45,7 @@ function loadPayPalSdk(clientId) {
     }
     const script = document.createElement('script')
     script.id = PAYPAL_SCRIPT_ID
-    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons&enable-funding=paylater`
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons,messages&enable-funding=paylater`
     script.async = true
     script.onload = resolve
     script.onerror = () => reject(new Error('paypal_sdk_load_failed'))
@@ -54,11 +54,18 @@ function loadPayPalSdk(clientId) {
 }
 
 const INCLUDED = [
-  '25 modules en 4 niveaux (269 pages) et 84 exercices guidés',
+  'La formation complète : 25 modules en 4 niveaux et 84 exercices guidés',
   'Carnet de pratique intégré à votre espace élève',
   '365 jours d’accès à votre espace élève, dès le paiement confirmé',
-  'Vos modules PDF téléchargés restent à vous',
 ]
+
+// Formulation validée : jamais de durée, de frais ou d'accord garantis.
+const PAYPAL_INSTALMENTS_NOTICE = 'Paiement en plusieurs fois possible avec PayPal, sous réserve d’éligibilité et selon les conditions proposées lors du règlement.'
+
+function formatLongDate(value) {
+  if (!value) return ''
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(value))
+}
 
 function messageForState(state, error) {
   if (state === 'expired') return 'Ce Pass a expiré. Il était valable 1 mois après émission.'
@@ -79,6 +86,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   const [immediateAccessAccepted, setImmediateAccessAccepted] = useState(false)
   const paypalRef = useRef(null)
   const renderedRef = useRef(null)
+  const messageRef = useRef(null)
   const consentsOk = termsAccepted && immediateAccessAccepted
 
   async function captureExistingOrder(orderId) {
@@ -136,6 +144,25 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
       window.clearInterval(timer)
     }
   }, [])
+
+  // Message officiel PayPal : il n'affiche que les facilités réellement proposées au client
+  // (4X, et 6, 12 ou 24X avec leurs mentions légales), selon son éligibilité.
+  useEffect(() => {
+    if (state !== 'valid' || !config?.paypal?.clientId || !messageRef.current) return
+    let cancelled = false
+    loadPayPalSdk(config.paypal.clientId)
+      .then(() => {
+        if (cancelled || !window.paypal?.Messages || !messageRef.current) return
+        messageRef.current.innerHTML = ''
+        return window.paypal.Messages({
+          amount: (config.offer?.displayAmountCents || 0) / 100,
+          placement: 'payment',
+          style: { layout: 'text', logo: { type: 'inline' }, text: { color: 'black', size: 13 } },
+        }).render(messageRef.current)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [state, config])
 
   useEffect(() => {
     if (!consentsOk) renderedRef.current = null
@@ -235,8 +262,14 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                 <p className="font-georgia text-2xl line-through decoration-gold/60">{formatPrice(config?.offer?.normalAmountCents || 59700, currency)}</p>
                 <p className="mt-5 font-georgia text-sm text-cream/60">Offre spéciale conférence</p>
                 <p className="font-georgia text-4xl font-medium text-gold">{formatPrice(config?.offer?.displayAmountCents, currency)}</p>
+                {Number.isInteger(config?.offer?.displayAmountCents) && (
+                  <p className="mt-3 inline-flex rounded-full border border-gold/50 px-3 py-1 font-georgia text-sm text-gold">
+                    Économie : {formatPrice((config.offer.normalAmountCents || 59700) - config.offer.displayAmountCents, currency)}
+                  </p>
+                )}
                 <p className="mt-5 rounded-2xl border border-gold/25 bg-white/5 px-4 py-3 font-georgia text-sm text-cream/75">
                   Temps restant : <strong className="text-gold">{timeLeftLabel(config?.pass?.expiresAt)}</strong>
+                  <span className="mt-1 block text-xs text-cream/60">Lien valable jusqu’au {formatLongDate(config?.pass?.expiresAt)}</span>
                 </p>
               </aside>
               )}
@@ -261,9 +294,12 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
                     Ce Pass n’est consommé qu’après paiement PayPal réussi et activation effective de l’accès. Un simple affichage de cette page ne l’utilise pas.
                   </p>
-                  <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
-                    Paiement sécurisé par PayPal, avec votre compte PayPal ou par carte bancaire. Selon votre éligibilité, PayPal peut vous proposer de régler en 4 fois : cette possibilité est accordée par PayPal et n’est pas garantie.
-                  </p>
+                  <div className="mb-5 rounded-2xl border border-gold/40 border-l-4 border-l-gold bg-white/85 px-4 py-4">
+                    <p className="font-georgia text-sm font-bold text-deep">Facilités de paiement</p>
+                    <p className="mt-1 font-georgia text-sm leading-relaxed text-deep/85">{PAYPAL_INSTALMENTS_NOTICE}</p>
+                    <div ref={messageRef} className="mt-2 min-h-[20px]" />
+                    <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Les options auxquelles vous avez droit, et leur coût éventuel, vous sont présentées par PayPal avant que vous validiez. Paiement sécurisé, avec votre compte PayPal ou par carte bancaire.</p>
+                  </div>
                   <label className="consent-row">
                     <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="consent-check" />
                     <span className="font-georgia text-sm leading-relaxed text-mist">
@@ -273,7 +309,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   <label className="consent-row mb-4">
                     <input type="checkbox" checked={immediateAccessAccepted} onChange={(e) => setImmediateAccessAccepted(e.target.checked)} className="consent-check" />
                     <span className="font-georgia text-sm leading-relaxed text-mist">
-                      Je demande la fourniture immédiate des contenus numériques et reconnais qu’après le début de leur exécution, je perds mon droit de rétractation pour ces contenus numériques.
+                      Je demande expressément la fourniture immédiate des contenus numériques de la formation dès la confirmation du paiement, et je renonce expressément à mon droit de rétractation pour ces contenus, dont je reconnais la perte dès le début de leur fourniture.
                     </span>
                   </label>
                   {error && <p className="mb-4 font-georgia text-xs text-mist">{notice}</p>}

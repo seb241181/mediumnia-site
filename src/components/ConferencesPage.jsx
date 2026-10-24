@@ -65,7 +65,9 @@ export default function ConferencesPage({ onBack, onNavigate }) {
     }
   }
 
-  const registrationOpen = event?.registrationOpen === true
+  // Une conférence passée ne doit plus accepter d'inscriptions, même si son statut historique n'a pas encore été clôturé.
+  const conferenceEnded = Boolean(event?.endsAt && new Date(event.endsAt).getTime() <= Date.now())
+  const registrationOpen = event?.registrationOpen === true && !conferenceEnded
   const title = event?.title || 'Et si la médiumnité devenait accessible ?'
   const eventDate = event?.startsAt
     ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: event.timezone || 'Europe/Paris' }).format(new Date(event.startsAt))
@@ -111,6 +113,17 @@ export default function ConferencesPage({ onBack, onNavigate }) {
           </div>
         </section>
 
+        {conferenceEnded && (
+          <section className="mx-auto max-w-6xl px-6 pt-12">
+            <div className="rounded-3xl border border-gold/35 bg-deep px-7 py-8 text-center text-cream md:px-10">
+              <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Conférence du 22 octobre terminée</p>
+              <h2 className="mt-3 font-georgia text-2xl font-medium md:text-3xl">Vous étiez inscrit(e) ? Votre Pass participant est disponible.</h2>
+              <p className="mx-auto mt-3 max-w-2xl font-georgia text-sm leading-relaxed text-cream/80">Retrouvez la formation MediumIA complète à 499 € au lieu de 597 €. Demandez votre lien personnel avant le 21 novembre 2026, avec l’adresse utilisée lors de votre inscription.</p>
+              <a href="/pass/mediumia/premiere-conference-mediumia" className="mt-5 inline-flex rounded-xl bg-gold px-6 py-3 font-georgia text-sm font-bold text-deep">Demander mon Pass participant →</a>
+            </div>
+          </section>
+        )}
+
         <section id="inscription" className="mx-auto max-w-6xl px-6 py-16 md:py-20">
           <div className="overflow-hidden rounded-[2rem] border border-gold/35 bg-[#fffefa]/90 shadow-[0_24px_70px_rgba(16,25,56,.13)] backdrop-blur-xl">
             <div className="grid md:grid-cols-[1.45fr_.75fr]">
@@ -136,7 +149,11 @@ export default function ConferencesPage({ onBack, onNavigate }) {
                 }}
               >
                 <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">INSCRIPTIONS</p>
-                {registrationOpen ? <>
+                {conferenceEnded ? <>
+                  <p className="mt-3 font-georgia text-2xl font-medium">Conférence terminée</p>
+                  <p className="mt-3 font-georgia text-sm leading-relaxed text-cream/75">Les inscriptions pour le 22 octobre sont closes. Si vous étiez inscrit(e), vous pouvez demander votre Pass personnel à 499 €.</p>
+                  <a href="/pass/mediumia/premiere-conference-mediumia" className="mt-5 inline-flex rounded-xl bg-gold px-5 py-3 font-georgia text-sm font-bold text-deep">Demander mon Pass →</a>
+                </> : registrationOpen ? <>
                   <p className="mt-3 font-georgia text-2xl font-medium">Réserver ma place</p>
                   <form onSubmit={submitRegistration} className="mt-5 space-y-3">
                     <input required maxLength={80} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} placeholder="Votre prénom" className="w-full rounded-xl border border-gold/25 bg-cream/95 px-4 py-3 font-georgia text-sm text-deep outline-none placeholder:text-mist/70" />

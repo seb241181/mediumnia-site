@@ -360,7 +360,7 @@ test('offre publique : prix, économie, date limite du 21 novembre et Pass de 30
   const db = fakeDb(s)
   const res = response()
   await handleConferencePassPayPal({ method: 'GET', query: { slug: 'premiere-conference-mediumia' }, headers: {} }, res, 'offer', { supabase: db })
-  assert.deepEqual(res.body, { eventTitle: 'Et si la médiumnité devenait accessible ?', amountCents: 49900, normalAmountCents: 59700, savingsCents: 9800, currency: 'EUR', requestDeadline: '2026-11-21T22:59:59.000Z', open: true, passValidityDays: 30 })
+  assert.deepEqual(res.body, { eventTitle: 'Et si la médiumnité devenait accessible ?', amountCents: 49900, normalAmountCents: 59700, savingsCents: 9800, currency: 'EUR', requestDeadline: '2026-11-21T22:59:59.000Z', open: true, passValidityDays: 30, pdfHost: 'espace.mediumia.fr' })
   s.conference_events[0].pass_request_deadline = '2026-10-24T00:00:00.000Z'
   const late = await call(fakeDb(s), 'request', { body: { slug: 'premiere-conference-mediumia', email: 'ada@example.org', consent: true } })
   assert.deepEqual([late.statusCode, late.body.error], [410, 'offer_closed'])

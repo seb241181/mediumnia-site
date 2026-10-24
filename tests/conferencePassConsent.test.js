@@ -175,6 +175,15 @@ test.beforeEach(() => {
 })
 test.after(() => { globalThis.fetch = realFetch })
 
+test('demande de Pass : la confirmation reçue est amenée dans la zone visible sans prétendre à un envoi', async () => {
+  const form = await readFile(new URL('../src/components/ConferencePassRequest.jsx', import.meta.url), 'utf8')
+  assert.match(form, /if \(status !== 'sent'\) return/)
+  assert.match(form, /result\.scrollIntoView\(\{ behavior: 'auto', block: 'start' \}\)/)
+  assert.match(form, /result\.focus\(\{ preventScroll: true \}\)/)
+  assert.match(form, /scroll-mt-32/)
+  assert.match(form, /Si cette adresse correspond à une inscription/)
+})
+
 test('demande : accord explicite et e-mail valide obligatoires', async () => {
   const db = fakeDb(seed())
   assert.deepEqual([(await call(db, 'request', { body: { slug: 'premiere-conference-mediumia', email: 'ada@example.org' } })).body.error], ['consent_required'])

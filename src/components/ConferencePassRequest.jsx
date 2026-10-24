@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Demande de Pass par l'inscrit : son accord explicite est requis avant tout envoi de l'offre.
 function eventSlugFromPath() {
@@ -26,6 +26,17 @@ export default function ConferencePassRequest({ api }) {
   const [consent, setConsent] = useState(false)
   const [website, setWebsite] = useState('')
   const [status, setStatus] = useState('idle')
+  const resultRef = useRef(null)
+
+  // After the form is replaced by its receipt, bring the message into view,
+  // below the sticky navigation instead of leaving it off-screen.
+  useEffect(() => {
+    if (status !== 'sent') return
+    const result = resultRef.current
+    if (!result) return
+    result.scrollIntoView({ behavior: 'auto', block: 'start' })
+    result.focus({ preventScroll: true })
+  }, [status])
 
   async function submit(event) {
     event.preventDefault()
@@ -47,7 +58,7 @@ export default function ConferencePassRequest({ api }) {
 
   if (status === 'sent') {
     return (
-      <p role="status" className="font-georgia text-sm leading-relaxed text-deep">
+      <p ref={resultRef} role="status" tabIndex={-1} className="scroll-mt-32 rounded-xl border border-gold/30 bg-white/90 p-5 font-georgia text-sm leading-relaxed text-deep">
         Merci. Si cette adresse correspond à une inscription à la conférence, votre Pass personnel vous est envoyé dans quelques minutes. Pensez à vérifier vos courriers indésirables. Sinon, réessayez avec l’adresse utilisée pour votre inscription.
       </p>
     )

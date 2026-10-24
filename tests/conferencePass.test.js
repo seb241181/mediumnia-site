@@ -251,8 +251,8 @@ test('conference pass handler awaits async branches so errors stay inside its ca
   const { handler } = await sources()
 
   assert.match(handler, /return await configResponse\(req, res, pass\)/)
-  assert.match(handler, /return await createCheckout\(req, res, cfg, tokenHash\)/)
-  assert.match(handler, /return await captureCheckout\(req, res, normalizeOrderId\(req\.body\?\.orderId\)\)/)
+  assert.match(handler, /return await createCheckout\(req, res, cfg, tokenHash, supabase\)/)
+  assert.match(handler, /return await captureCheckout\(req, res, normalizeOrderId\(req\.body\?\.orderId\), supabase\)/)
 })
 
 test('frontend keeps raw pass token in fragment flow and never hardcodes a promo amount', async () => {
@@ -318,6 +318,6 @@ test('admin batch issuance creates hashed personal Passes and sends the dedicate
   assert.match(handler, /pass_issue_too_early/)
   assert.match(handler, /process\.env\.VERCEL_ENV === 'production'/)
   assert.match(handler, /\.from\('conference_passes'\)[\s\S]*\.insert\(/)
-  assert.match(handler, /event_name: 'pass_issued'/)
+  assert.match(handler, /event_name: created \? 'pass_issued' : 'pass_resent'/)
   assert.match(handler, /delivery\.status !== 'sent'[\s\S]*conference_passes'\)\.delete\(\)/)
 })

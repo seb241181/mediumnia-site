@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import ConferencePassRequest from './ConferencePassRequest'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const API = '/api/rdv-config?conferencePassAction='
 const PAYPAL_SCRIPT_ID = 'mediumia-paypal-sdk'
 const IS_PREVIEW = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
 const STUDENT_SPACE_URL = IS_PREVIEW
-  ? 'https://mediumnia-app-git-test-confere-90e299-seguins-projects-a1d4673f.vercel.app'
+  ? 'https://mediumnia-app-test.vercel.app'
   : 'https://espace.mediumia.fr'
 
 function formatPrice(cents, currency = 'EUR') {
@@ -44,12 +45,27 @@ function loadPayPalSdk(clientId) {
     }
     const script = document.createElement('script')
     script.id = PAYPAL_SCRIPT_ID
-    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons&enable-funding=paylater`
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons,messages&enable-funding=paylater`
     script.async = true
     script.onload = resolve
     script.onerror = () => reject(new Error('paypal_sdk_load_failed'))
     document.head.appendChild(script)
   })
+}
+
+const INCLUDED = [
+  'La formation complète : 25 modules en 4 niveaux et 84 exercices guidés',
+  'Votre PDF complet personnel, envoyé après le paiement',
+  'Carnet de pratique intégré à votre espace élève',
+  '365 jours d’accès à votre espace élève, dès le paiement confirmé',
+]
+
+// Formulation validée : jamais de durée, de frais ou d'accord garantis.
+const PAYPAL_INSTALMENTS_NOTICE = 'Paiement en plusieurs fois possible avec PayPal, sous réserve d’éligibilité et selon les conditions proposées lors du règlement.'
+
+function formatLongDate(value) {
+  if (!value) return ''
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(new Date(value))
 }
 
 function messageForState(state, error) {
@@ -67,8 +83,12 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   const [config, setConfig] = useState(null)
   const [error, setError] = useState('')
   const [tick, setTick] = useState(0)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [immediateAccessAccepted, setImmediateAccessAccepted] = useState(false)
   const paypalRef = useRef(null)
   const renderedRef = useRef(null)
+  const messageRef = useRef(null)
+  const consentsOk = termsAccepted && immediateAccessAccepted
 
   async function captureExistingOrder(orderId) {
     const res = await fetch(`${API}capture`, {
@@ -93,7 +113,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
         setPassToken(token)
 
         if (!token) {
-          setState('invalid')
+          setState('request')
           return
         }
 
@@ -126,8 +146,28 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
     }
   }, [])
 
+  // Message officiel PayPal : il n'affiche que les facilités réellement proposées au client
+  // (par exemple le 4X, ou un autre financement avec ses mentions légales), selon son éligibilité.
   useEffect(() => {
-    if (state !== 'valid' || !config?.paypal?.clientId || !passToken || !paypalRef.current) return
+    if (state !== 'valid' || !config?.paypal?.clientId || !messageRef.current) return
+    let cancelled = false
+    loadPayPalSdk(config.paypal.clientId)
+      .then(() => {
+        if (cancelled || !window.paypal?.Messages || !messageRef.current) return
+        messageRef.current.innerHTML = ''
+        return window.paypal.Messages({
+          amount: (config.offer?.displayAmountCents || 0) / 100,
+          placement: 'payment',
+          style: { layout: 'text', logo: { type: 'inline' }, text: { color: 'black', size: 13 } },
+        }).render(messageRef.current)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [state, config])
+
+  useEffect(() => {
+    if (!consentsOk) renderedRef.current = null
+    if (state !== 'valid' || !consentsOk || !config?.paypal?.clientId || !passToken || !paypalRef.current) return
     if (renderedRef.current === passToken) return
 
     let cancelled = false
@@ -143,7 +183,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
             const res = await fetch(`${API}create`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ passToken }),
+              body: JSON.stringify({ passToken, termsAccepted: true, immediateAccessAccepted: true }),
             })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || !data.id) throw new Error(data.error || 'paypal_create_order_failed')
@@ -171,7 +211,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
       })
 
     return () => { cancelled = true }
-  }, [state, config, passToken])
+  }, [state, config, passToken, consentsOk])
 
   const expired = useMemo(() => {
     if (!config?.pass?.expiresAt) return false
@@ -206,25 +246,40 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                 <p className="mt-5 font-georgia text-base leading-relaxed text-mist md:text-lg">
                   Ce Pass est personnel, lié à l’adresse e-mail de votre inscription et valable 1 mois. Il vous permet d’accéder à l’offre spéciale conférence si elle est active.
                 </p>
+                <ul className="mt-6 space-y-2 font-georgia text-sm text-deep">
+                  {INCLUDED.map((item) => (
+                    <li key={item} className="flex gap-3"><span className="text-gold" aria-hidden="true">✓</span><span>{item}</span></li>
+                  ))}
+                </ul>
+                <p className="mt-3 font-georgia text-xs text-mist">Tarif conférence non cumulable avec la Découverte à 29 € ni avec le parcours au mois.</p>
                 {config?.pass?.firstName && (
                   <p className="mt-6 font-georgia text-lg text-deep">Bonjour {config.pass.firstName}, votre Pass est prêt.</p>
                 )}
               </div>
 
+              {config && (
               <aside className="rounded-3xl border border-gold/35 bg-deep p-6 text-cream shadow-[0_18px_44px_rgba(26,21,53,.18)]">
                 <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Offre conférence</p>
                 <p className="mt-4 font-georgia text-sm text-cream/60">Prix normal</p>
                 <p className="font-georgia text-2xl line-through decoration-gold/60">{formatPrice(config?.offer?.normalAmountCents || 59700, currency)}</p>
                 <p className="mt-5 font-georgia text-sm text-cream/60">Offre spéciale conférence</p>
                 <p className="font-georgia text-4xl font-medium text-gold">{formatPrice(config?.offer?.displayAmountCents, currency)}</p>
+                {Number.isInteger(config?.offer?.displayAmountCents) && (
+                  <p className="mt-3 inline-flex rounded-full border border-gold/50 px-3 py-1 font-georgia text-sm text-gold">
+                    Économie : {formatPrice((config.offer.normalAmountCents || 59700) - config.offer.displayAmountCents, currency)}
+                  </p>
+                )}
                 <p className="mt-5 rounded-2xl border border-gold/25 bg-white/5 px-4 py-3 font-georgia text-sm text-cream/75">
                   Temps restant : <strong className="text-gold">{timeLeftLabel(config?.pass?.expiresAt)}</strong>
+                  <span className="mt-1 block text-xs text-cream/60">Lien valable jusqu’au {formatLongDate(config?.pass?.expiresAt)}</span>
                 </p>
               </aside>
+              )}
             </div>
 
             <div className="mt-9 rounded-3xl border border-gold/25 bg-cream/75 p-5 md:p-6">
               {visibleState === 'loading' && <p className="font-georgia text-mist">Vérification de votre Pass…</p>}
+              {visibleState === 'request' && <ConferencePassRequest api={API} />}
               {['invalid', 'expired', 'already_redeemed', 'offer_disabled'].includes(visibleState) && (
                 <p className="font-georgia text-sm leading-relaxed text-mist">{notice}</p>
               )}
@@ -241,8 +296,28 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
                     Ce Pass n’est consommé qu’après paiement PayPal réussi et activation effective de l’accès. Un simple affichage de cette page ne l’utilise pas.
                   </p>
+                  <div className="mb-5 rounded-2xl border border-gold/40 border-l-4 border-l-gold bg-white/85 px-4 py-4">
+                    <p className="font-georgia text-sm font-bold text-deep">Facilités de paiement</p>
+                    <p className="mt-1 font-georgia text-sm leading-relaxed text-deep/85">{PAYPAL_INSTALMENTS_NOTICE}</p>
+                    <div ref={messageRef} className="mt-2 min-h-[20px]" />
+                    <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Les options auxquelles vous avez droit, et leur coût éventuel, vous sont présentées par PayPal avant que vous validiez. Paiement sécurisé, avec votre compte PayPal ou par carte bancaire.</p>
+                  </div>
+                  <label className="consent-row">
+                    <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="consent-check" />
+                    <span className="font-georgia text-sm leading-relaxed text-mist">
+                      J’ai lu et j’accepte les <a href="/cgv-formation.html" target="_blank" rel="noopener noreferrer" className="text-gold underline">conditions générales de vente de l’accompagnement MediumIA</a>.
+                    </span>
+                  </label>
+                  <label className="consent-row mb-4">
+                    <input type="checkbox" checked={immediateAccessAccepted} onChange={(e) => setImmediateAccessAccepted(e.target.checked)} className="consent-check" />
+                    <span className="font-georgia text-sm leading-relaxed text-mist">
+                      Je demande expressément la fourniture immédiate des contenus numériques de la formation dès la confirmation du paiement, et je renonce expressément à mon droit de rétractation pour ces contenus, dont je reconnais la perte dès le début de leur fourniture.
+                    </span>
+                  </label>
                   {error && <p className="mb-4 font-georgia text-xs text-mist">{notice}</p>}
-                  <div ref={paypalRef} className="min-h-[52px]" />
+                  {consentsOk
+                    ? <div ref={paypalRef} className="min-h-[52px]" />
+                    : <p className="font-georgia text-xs text-mist">Cochez les deux cases ci-dessus pour afficher le paiement PayPal.</p>}
                 </>
               )}
             </div>

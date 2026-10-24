@@ -108,6 +108,8 @@ export default function ConferenceCockpitPage() {
   const [aiPlan, setAiPlan] = useState(null)
   const [passIssueState, setPassIssueState] = useState('idle')
   const [passIssueMessage, setPassIssueMessage] = useState('')
+  const [pdfRepairState, setPdfRepairState] = useState('idle')
+  const [pdfRepairMessage, setPdfRepairMessage] = useState('')
 
   const call = useCallback(async (method = 'GET', body) => {
     const token = session?.access_token
@@ -277,6 +279,34 @@ export default function ConferenceCockpitPage() {
       )
     } catch (err) {
       setPassIssueState('error')
+      setError(err.message)
+    }
+  }
+
+  // Remet le PDF aux acheteurs du Pass qui ne l'ont pas reçu : aucun paiement, aucun nouveau droit.
+  const repairMissingPdfs = async () => {
+    setPdfRepairState('loading')
+    setPdfRepairMessage('')
+    setError('')
+    try {
+      const response = await fetch('/api/rdv-config?conferencePassAction=repair-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({ slug }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(payload.error || 'Envoi des PDF impossible.')
+      const sent = Number(payload.sent) || 0
+      const failed = Number(payload.failed) || 0
+      const pending = Number(payload.pending) || 0
+      const delivered = Number(payload.alreadyDelivered) || 0
+      setPdfRepairState(failed > 0 || pending > 0 ? 'partial' : 'success')
+      setPdfRepairMessage(`${sent} PDF envoyé(s), ${delivered} déjà reçu(s), ${failed} échec(s), ${pending} à reprendre dans quelques minutes.`)
+    } catch (err) {
+      setPdfRepairState('error')
       setError(err.message)
     }
   }
@@ -479,6 +509,11 @@ export default function ConferenceCockpitPage() {
               </button>
               {passIssueMessage && <p className="mt-4 rounded-xl border border-gold/20 bg-black/10 p-3 font-georgia text-xs leading-relaxed text-cream/70">{passIssueMessage}</p>}
               <p className="mt-3 font-georgia text-[11px] leading-relaxed text-cream/40">En Production, l’envoi est refusé avant la fin de la conférence, tant que l’offre Pass n’est pas configurée et tant que le paiement Pass n’est pas activé.</p>
+              <button onClick={repairMissingPdfs} disabled={pdfRepairState === 'loading'} className="mt-5 w-full rounded-xl border border-gold/40 px-5 py-3 font-georgia text-sm font-bold text-gold disabled:opacity-50">
+                {pdfRepairState === 'loading' ? 'Envoi des PDF…' : '📄 Envoyer les PDF manquants'}
+              </button>
+              {pdfRepairMessage && <p className="mt-3 rounded-xl border border-gold/20 bg-black/10 p-3 font-georgia text-xs leading-relaxed text-cream/70">{pdfRepairMessage}</p>}
+              <p className="mt-2 font-georgia text-[11px] leading-relaxed text-cream/40">Renvoie un nouveau lien PDF aux acheteurs du Pass qui ne l’ont pas reçu. Aucun paiement, aucun achat ni droit supplémentaire.</p>
             </section>
           </aside>
         </div>

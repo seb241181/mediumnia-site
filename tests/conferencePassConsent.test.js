@@ -15,6 +15,7 @@ const ENDS_AT = '2026-10-22T18:00:00.000Z'
 function fakeDb(seed) {
   const tables = structuredClone(seed)
   const calls = { rpc: [] }
+  const failInserts = new Set()
   let seq = 0
   function builder(table) {
     const filters = []
@@ -24,6 +25,7 @@ function fakeDb(seed) {
     const run = () => {
       const rows = tables[table] || (tables[table] = [])
       if (op === 'insert') {
+        if (failInserts.has(table)) return { data: null, error: { code: 'XX000' } }
         const row = { id: `${table}-${++seq}`, created_at: new Date().toISOString(), ...payload }
         if (table === 'conference_passes' && rows.some((r) => r.event_id === row.event_id && r.registration_id === row.registration_id)) {
           return { data: null, error: { code: '23505' } }
@@ -65,6 +67,7 @@ function fakeDb(seed) {
   return {
     tables,
     calls,
+    failInserts,
     from: builder,
     rpc: async (fn, args) => {
       calls.rpc.push({ fn, args })
@@ -87,7 +90,7 @@ function fakeDb(seed) {
       if (fn === 'redeem_conference_pass_after_payment') {
         const pass = tables.conference_passes.find((p) => p.paypal_order_id === args.p_paypal_order_id)
         const already = !!pass.redeemed_at
-        Object.assign(pass, { redeemed_at: pass.redeemed_at || new Date().toISOString(), paypal_capture_id: args.p_paypal_capture_id, status: 'redeemed', entitlement_id: args.p_entitlement_id })
+        Object.assign(pass, { redeemed_at: pass.redeemed_at || new Date().toISOString(), paypal_capture_id: args.p_paypal_capture_id, status: 'redeemed', user_id: args.p_user_id, entitlement_id: args.p_entitlement_id })
         return { data: { ok: true, alreadyRedeemed: already }, error: null }
       }
       return { data: null, error: null }
@@ -429,4 +432,99 @@ test('CGV et page Conférences : offre à 499 € encadrée, renonciation jamais
   const conferences = await readFile(new URL('../src/components/ConferencesPage.jsx', import.meta.url), 'utf8')
   assert.match(conferences, /href="\/pass\/mediumia\/premiere-conference-mediumia"/)
   assert.ok(conferences.includes(PAYPAL_INSTALMENTS_NOTICE))
+})
+
+// ── Reprise du PDF d'un paiement déjà confirmé ──────────────────────────────────
+async function paidPass(db) {
+  db.tables.conference_passes.push({ id: 'p-1', event_id: EVENT_ID, registration_id: 'r-ada', token_hash: sha('T'.repeat(43)), status: 'reserved', expires_at: '2026-11-22T00:00:00.000Z', redeemed_at: null, paypal_order_id: 'ORDER123', paypal_env: 'sandbox', amount_cents: 100, currency: 'EUR', reference_id: 'MEDIUMIA_CONFERENCE_PASS_SANDBOX', terms_version: __conferencePassPayPalTest.TERMS_VERSION, terms_accepted_at: '2026-10-24T09:58:00Z', immediate_access_accepted_at: '2026-10-24T09:58:00Z' })
+  const captured = await call(db, 'capture', { body: { orderId: 'ORDER123' } })
+  assert.equal(captured.statusCode, 200)
+  return db.tables.conference_passes[0]
+}
+const pdfMails = () => mails.filter((m) => m.idempotencyKey?.startsWith('conference-pass-pdf-'))
+const pdfTokenOf = (mail) => decodeURIComponent(mail.body.text.match(/\/api\/purchase-pdf\?token=([^\s]+)/)[1])
+const admin = { authorization: 'Bearer admin' }
+
+test('reprise PDF : achat non enregistré à la capture, PDF remis plus tard sans PayPal, sans second achat ni nouveaux droits', async () => {
+  const db = fakeDb(seed())
+  db.failInserts.add('mediumia_paypal_purchases')
+  const pass = await paidPass(db)
+  db.failInserts.clear()
+  const confirmation = mails.find((m) => m.idempotencyKey === 'conference-pass-confirmation-CAP-1')
+  assert.doesNotMatch(confirmation.body.text, /purchase-pdf/)
+  assert.match(confirmation.body.text, /prochain e-mail/)
+  assert.equal(db.tables.mediumia_paypal_purchases.length, 0)
+  const paypalAfterCapture = paypalCalls.length
+  const grantsAfterCapture = db.calls.rpc.filter((c) => c.fn === 'mediumia_grant_purchase_atomic').length
+
+  // Juste après la capture, la reprise attend que la capture d'origine ait fini.
+  await call(db, 'capture', { body: { orderId: 'ORDER123' } })
+  assert.equal(pdfMails().length, 0)
+
+  pass.redeemed_at = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  const replay = await call(db, 'capture', { body: { orderId: 'ORDER123' } })
+  assert.deepEqual([replay.statusCode, replay.body.alreadyProvisioned], [200, true])
+  assert.equal(db.tables.mediumia_paypal_purchases.length, 1)
+  const [purchase] = db.tables.mediumia_paypal_purchases
+  assert.deepEqual(
+    [purchase.paypal_order_id, purchase.paypal_capture_id, purchase.product_code, purchase.max_module, purchase.amount_cents, purchase.user_id, purchase.entitlement_id, purchase.status],
+    ['ORDER123', 'CAP-1', 'full', 25, 100, 'u-buyer', 'ent-1', 'provisioned'],
+  )
+  const [pdfMail] = pdfMails()
+  assert.equal(pdfMail.body.to, 'ada@example.org')
+  assert.equal(pdfMail.idempotencyKey, 'conference-pass-pdf-CAP-1-1')
+  assert.equal(purchase.pdf_download_token_hash, sha(pdfTokenOf(pdfMail)))
+  assert.match(pdfMail.body.text, /numéro de licence MID-2026-000042/)
+  assert.equal(paypalCalls.length, paypalAfterCapture, 'aucun appel PayPal pendant la reprise')
+  assert.equal(db.calls.rpc.filter((c) => c.fn === 'mediumia_grant_purchase_atomic').length, grantsAfterCapture, 'aucune nouvelle attribution')
+  assert.equal(db.tables.mediumia_entitlements.length, 1)
+  assert.equal(db.tables.conference_pass_events.at(-1).event_name, 'pdf_sent')
+
+  // PDF déjà remis : ni nouvel envoi par la capture rejouée, ni par le cockpit.
+  await call(db, 'capture', { body: { orderId: 'ORDER123' } })
+  const batch = await call(db, 'repair-pdf', { body: { slug: 'premiere-conference-mediumia' }, headers: admin })
+  assert.deepEqual([batch.body.sent, batch.body.alreadyDelivered], [0, 1])
+  assert.equal(pdfMails().length, 1)
+  assert.equal(db.tables.mediumia_paypal_purchases.length, 1)
+})
+
+test('reprise PDF (cockpit) : confirmation non partie, nouveau lien sur l’achat existant, aucun doublon', async () => {
+  const db = fakeDb(seed())
+  resendStatus = 500
+  const pass = await paidPass(db)
+  resendStatus = 200
+  assert.ok(db.tables.conference_pass_events.some((e) => e.event_name === 'confirmation_failed' && e.metadata.pdfLink === true))
+  const [purchase] = db.tables.mediumia_paypal_purchases
+  const firstHash = purchase.pdf_download_token_hash
+
+  assert.equal((await call(db, 'repair-pdf', { body: {} })).statusCode, 401)
+  const early = await call(db, 'repair-pdf', { body: { slug: 'premiere-conference-mediumia' }, headers: admin })
+  assert.deepEqual([early.body.sent, early.body.pending], [0, 1])
+
+  pass.redeemed_at = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  const paypalBefore = paypalCalls.length
+  const res = await call(db, 'repair-pdf', { body: { slug: 'premiere-conference-mediumia' }, headers: admin })
+  assert.deepEqual([res.statusCode, res.body.sent, res.body.failed], [200, 1, 0])
+  assert.equal(db.tables.mediumia_paypal_purchases.length, 1)
+  assert.notEqual(purchase.pdf_download_token_hash, firstHash)
+  assert.equal(db.tables.mediumia_paypal_purchases[0].pdf_download_token_hash, sha(pdfTokenOf(pdfMails()[0])))
+  assert.equal(paypalCalls.length, paypalBefore)
+  assert.equal(db.tables.mediumia_entitlements.length, 1)
+
+  const again = await call(db, 'repair-pdf', { body: { slug: 'premiere-conference-mediumia' }, headers: admin })
+  assert.deepEqual([again.body.sent, again.body.alreadyDelivered], [0, 1])
+  assert.equal(pdfMails().length, 1)
+})
+
+test('reprise PDF : refusée si l’achat existant ne correspond pas à la capture du Pass', async () => {
+  const db = fakeDb(seed())
+  const pass = await paidPass(db)
+  db.tables.conference_pass_events = db.tables.conference_pass_events.filter((e) => e.event_name !== 'confirmation_sent')
+  db.tables.mediumia_paypal_purchases[0].paypal_capture_id = 'CAP-AUTRE'
+  pass.redeemed_at = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  const hash = db.tables.mediumia_paypal_purchases[0].pdf_download_token_hash
+  const res = await call(db, 'repair-pdf', { body: { slug: 'premiere-conference-mediumia' }, headers: admin })
+  assert.equal(res.body.failed, 1)
+  assert.equal(db.tables.mediumia_paypal_purchases[0].pdf_download_token_hash, hash)
+  assert.equal(pdfMails().length, 0)
 })

@@ -35,7 +35,9 @@ alter table public.conference_pass_events
     'pass_email_failed',
     'terms_accepted',
     'confirmation_sent',
-    'confirmation_failed'
+    'confirmation_failed',
+    'pdf_sent',
+    'pdf_failed'
   ));
 
 -- Date limite des demandes de Pass (au-delà, l'offre participants est close).

@@ -85,6 +85,8 @@ function fakeDb(seed) {
         // Valeurs par défaut de la table en Production : accès complet, module 25.
         const row = { id: `ent-${tables.mediumia_entitlements.length + 1}`, user_id: args.p_user_id, type: 'purchase', origin_ref: args.p_origin_ref, status: 'active', access_level: 'full', max_module: 25, access_started_at: start.toISOString(), access_expires_at: new Date(start.getTime() + args.p_duration_days * 86400000).toISOString() }
         tables.mediumia_entitlements.push(row)
+        // Comme en TEST : la fiche élève est créée par l'attribution, sans nom.
+        if (!tables.mediumia_students.some((st) => st.user_id === args.p_user_id)) tables.mediumia_students.push({ user_id: args.p_user_id, license_number: 'MID-2026-900003', display_name: null })
         return { data: { status: 'granted', entitlement_id: row.id, access_expires_at: row.access_expires_at }, error: null }
       }
       if (fn === 'redeem_conference_pass_after_payment') {
@@ -134,7 +136,7 @@ function installFetch() {
       if (u.endsWith('/v2/checkout/orders/ORDER123')) return { ok: true, status: 200, json: async () => ({ id: 'ORDER123', status: 'APPROVED' }) }
       if (u.endsWith('/v2/checkout/orders/ORDER123/capture')) {
         return { ok: true, status: 201, json: async () => ({
-          id: 'ORDER123', status: 'COMPLETED', payer: { email_address: 'autre-compte-paypal@example.org', name: { given_name: 'Ada' } },
+          id: 'ORDER123', status: 'COMPLETED', payer: { email_address: 'autre-compte-paypal@example.org', name: { given_name: 'John', surname: 'Doe Sandbox' } },
           purchase_units: [{ reference_id: 'MEDIUMIA_CONFERENCE_PASS_SANDBOX', custom_id: __conferencePassPayPalTest.TERMS_CUSTOM_ID, payments: { captures: [{ id: 'CAP-1', status: 'COMPLETED', amount: { currency_code: 'EUR', value: '1.00' }, create_time: '2026-10-24T10:00:00Z' }] } }],
         }) }
       }
@@ -532,4 +534,26 @@ test('reprise PDF : refusée si l’achat existant ne correspond pas à la captu
   assert.equal(res.body.failed, 1)
   assert.equal(db.tables.mediumia_paypal_purchases[0].pdf_download_token_hash, hash)
   assert.equal(pdfMails().length, 0)
+})
+
+test('PDF nominatif : nom de l’inscrite, jamais celui du compte PayPal, même si la fiche élève naît à l’attribution', async () => {
+  const s = seed()
+  s.mediumia_students = []
+  const db = fakeDb(s)
+  await paidPass(db)
+  const [student] = db.tables.mediumia_students
+  assert.deepEqual([student.user_id, student.display_name, student.license_number], ['u-buyer', 'Ada', 'MID-2026-900003'])
+  const [purchase] = db.tables.mediumia_paypal_purchases
+  assert.equal(purchase.payer_name, 'Ada')
+  const confirmation = mails.find((m) => m.idempotencyKey === 'conference-pass-confirmation-CAP-1')
+  assert.match(confirmation.body.text, /numéro de licence MID-2026-900003/)
+  assert.doesNotMatch(JSON.stringify(db.tables.mediumia_students) + JSON.stringify(db.tables.mediumia_paypal_purchases) + confirmation.body.text, /John|Doe Sandbox/)
+})
+
+test('PDF nominatif : un nom déjà choisi par l’élève est conservé', async () => {
+  const s = seed()
+  s.mediumia_students[0].display_name = 'Ada Lovelace'
+  const db = fakeDb(s)
+  await paidPass(db)
+  assert.equal(db.tables.mediumia_students[0].display_name, 'Ada Lovelace')
 })

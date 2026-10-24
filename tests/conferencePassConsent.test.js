@@ -168,6 +168,7 @@ test.beforeEach(() => {
   process.env.PAYPAL_CLIENT_SECRET = 'secret'
   delete process.env.VERCEL_ENV
   delete process.env.PAYPAL_CONFERENCE_PASS_ENABLED
+  delete process.env.MEDIUMIA_STUDENT_APP_URL
   installFetch()
 })
 test.after(() => { globalThis.fetch = realFetch })
@@ -375,6 +376,7 @@ test('parcours Sandbox à 1 € : capture, accès complet 25 modules pendant 365
   assert.equal(created.statusCode, 201)
   Object.assign(db.tables.conference_passes[0], { paypal_order_id: 'ORDER123', paypal_env: 'sandbox', amount_cents: 100, currency: 'EUR', reference_id: 'MEDIUMIA_CONFERENCE_PASS_SANDBOX', status: 'reserved' })
 
+  process.env.MEDIUMIA_STUDENT_APP_URL = 'https://mediumnia-app-test.vercel.app/'
   const captured = await call(db, 'capture', { body: { orderId: 'ORDER123' } })
   assert.equal(captured.statusCode, 200)
   assert.equal(captured.body.access.status, 'provisioned')
@@ -392,6 +394,9 @@ test('parcours Sandbox à 1 € : capture, accès complet 25 modules pendant 365
     [purchase.product_code, purchase.access_level, purchase.max_module, purchase.amount_cents, purchase.paypal_env, purchase.status, purchase.user_id, purchase.paypal_capture_id],
     ['full', 'full', 25, 100, 'sandbox', 'provisioned', 'u-buyer', 'CAP-1'],
   )
+  // En TEST, le lien PDF mène à l'espace élève TEST, jamais à celui de Production.
+  assert.match(confirmation.body.text, /https:\/\/mediumnia-app-test\.vercel\.app\/api\/purchase-pdf\?token=/)
+  assert.doesNotMatch(confirmation.body.text + confirmation.body.html, /espace\.mediumia\.fr/)
   const pdfToken = decodeURIComponent(confirmation.body.text.match(/\/api\/purchase-pdf\?token=([^\s]+)/)[1])
   assert.equal(purchase.pdf_download_token_hash, sha(pdfToken))
   assert.equal(Math.round((new Date(purchase.pdf_download_expires_at) - Date.now()) / 86400000), 30)

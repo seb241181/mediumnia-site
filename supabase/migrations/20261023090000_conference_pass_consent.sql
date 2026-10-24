@@ -50,3 +50,21 @@ update public.conference_events
 create index if not exists conference_registrations_offer_consent_idx
   on public.conference_registrations(event_id, offer_consent_at)
   where offer_consent_at is not null and offer_consent_withdrawn_at is null;
+
+-- PDF personnel : un achat avec Pass (499 € en Live) est enregistré comme une
+-- Formation complète pour réutiliser le circuit existant de téléchargement du PDF.
+-- Les montants déjà autorisés (597 €, 568 €, 29 €, 1 € en Sandbox) sont inchangés.
+do $$
+begin
+  if to_regclass('public.mediumia_paypal_purchases') is not null then
+    alter table public.mediumia_paypal_purchases
+      drop constraint if exists mediumia_paypal_purchases_product_amount_check;
+    alter table public.mediumia_paypal_purchases
+      add constraint mediumia_paypal_purchases_product_amount_check
+      check (
+        (paypal_env = 'sandbox' and amount_cents = 100)
+        or (paypal_env = 'live' and product_code = 'full' and amount_cents in (59700, 56800, 49900))
+        or (paypal_env = 'live' and product_code = 'discovery' and amount_cents = 2900)
+      );
+  end if;
+end $$;

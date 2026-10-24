@@ -55,6 +55,7 @@ function loadPayPalSdk(clientId) {
 
 const INCLUDED = [
   'La formation complète : 25 modules en 4 niveaux et 84 exercices guidés',
+  'Votre PDF complet personnel, envoyé après le paiement',
   'Carnet de pratique intégré à votre espace élève',
   '365 jours d’accès à votre espace élève, dès le paiement confirmé',
 ]
@@ -146,7 +147,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   }, [])
 
   // Message officiel PayPal : il n'affiche que les facilités réellement proposées au client
-  // (4X, et 6, 12 ou 24X avec leurs mentions légales), selon son éligibilité.
+  // (par exemple le 4X, ou un autre financement avec ses mentions légales), selon son éligibilité.
   useEffect(() => {
     if (state !== 'valid' || !config?.paypal?.clientId || !messageRef.current) return
     let cancelled = false
@@ -250,6 +251,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                     <li key={item} className="flex gap-3"><span className="text-gold" aria-hidden="true">✓</span><span>{item}</span></li>
                   ))}
                 </ul>
+                <p className="mt-3 font-georgia text-xs text-mist">Tarif conférence non cumulable avec la Découverte à 29 € ni avec le parcours au mois.</p>
                 {config?.pass?.firstName && (
                   <p className="mt-6 font-georgia text-lg text-deep">Bonjour {config.pass.firstName}, votre Pass est prêt.</p>
                 )}

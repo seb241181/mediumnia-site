@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 
 import { handleConferencePassPayPal, __conferencePassPayPalTest } from '../lib/conferencePassPayPal.js'
-import { buildConferencePassEmail, buildConferencePassConfirmationEmail, PAYPAL_INSTALMENTS_NOTICE } from '../lib/conferencePassEmail.js'
+import { buildConferencePassEmail, buildConferencePassConfirmationEmail, PAYPAL_INSTALMENTS_NOTICE, NON_CUMULATIVE_NOTICE } from '../lib/conferencePassEmail.js'
 
 const sha = (value) => createHash('sha256').update(value).digest('hex')
 const EVENT_ID = 'ev-1'
@@ -26,6 +26,9 @@ function fakeDb(seed) {
       if (op === 'insert') {
         const row = { id: `${table}-${++seq}`, created_at: new Date().toISOString(), ...payload }
         if (table === 'conference_passes' && rows.some((r) => r.event_id === row.event_id && r.registration_id === row.registration_id)) {
+          return { data: null, error: { code: '23505' } }
+        }
+        if (table === 'mediumia_paypal_purchases' && rows.some((r) => r.paypal_order_id === row.paypal_order_id || r.paypal_capture_id === row.paypal_capture_id)) {
           return { data: null, error: { code: '23505' } }
         }
         rows.push(row)
@@ -103,6 +106,8 @@ const seed = () => ({
   conference_passes: [],
   conference_pass_events: [],
   conference_admins: [{ user_id: 'u-admin' }],
+  mediumia_students: [{ user_id: 'u-buyer', license_number: 'MID-2026-000042', display_name: 'Ada' }],
+  mediumia_paypal_purchases: [],
 })
 
 // ── Faux réseau : Resend et PayPal ─────────────────────────────────────────────
@@ -147,6 +152,7 @@ async function call(db, action, { body = {}, method = 'POST', headers = {} } = {
   await handleConferencePassPayPal({ method, body, query: {}, headers }, res, action, { supabase: db })
   return res
 }
+const conferencesText = (source) => source.replace(/<[^>]+>/g, '')
 const passLink = (mail) => decodeURIComponent(mail.body.text.match(/#pass=([^\s]+)/)[1])
 
 test.beforeEach(() => {
@@ -308,7 +314,9 @@ test('e-mail : 499 € au lieu de 597 €, 4 fois sans garantie, lien en fragmen
     assert.match(part, /Paiement en 4X PayPal : 4 échéances de 124,75\s€, sous réserve d’acceptation par PayPal/)
     assert.match(part, /leur coût éventuel, vous sont présentées par PayPal avant que vous validiez/)
     assert.match(part, /Lien personnel valable jusqu’au/)
-    assert.doesNotMatch(part.replace(/<[^>]+>/g, ' '), /sans frais|0\s?%|garanti(?!e\b)|PDF|6, 12|24 (fois|mois)/i)
+    assert.doesNotMatch(part.replace(/<[^>]+>/g, ' '), /sans frais|0\s?%|garanti(?!e\b)|6, 12|24 (fois|mois)/i)
+    assert.match(part, /Votre PDF complet personnel, envoyé après le paiement/)
+    assert.ok(part.includes(NON_CUMULATIVE_NOTICE))
     assert.match(part, /#pass=TOKEN/)
     assert.match(part, /Sébastien Seguin — MediumIA/)
     assert.match(part, /répondez simplement « STOP »/)
@@ -336,7 +344,9 @@ test('page Pass : formulaire de demande sans lien, accords avant les boutons Pay
   assert.ok(page.includes(PAYPAL_INSTALMENTS_NOTICE))
   assert.ok(form.includes(PAYPAL_INSTALMENTS_NOTICE))
   assert.match(form, /fetch\(`\$\{api\}offer&slug=/)
-  assert.doesNotMatch(page + form, /sans frais|PDF/i)
+  assert.doesNotMatch(page + form, /sans frais|6, 12|24X/i)
+  assert.ok(page.includes(NON_CUMULATIVE_NOTICE) && form.includes(NON_CUMULATIVE_NOTICE))
+  assert.match(page, /Votre PDF complet personnel, envoyé après le paiement/)
   assert.match(page, /consentsOk\s*\n\s*\? <div ref=\{paypalRef\}/)
   assert.match(page, /body: JSON\.stringify\(\{ passToken, termsAccepted: true, immediateAccessAccepted: true \}\)/)
 })
@@ -372,11 +382,23 @@ test('parcours Sandbox à 1 € : capture, accès complet 25 modules pendant 365
   assert.equal(confirmation.body.to, 'ada@example.org', 'accès et confirmation sur l’adresse d’inscription, pas celle du compte PayPal')
   assert.match(confirmation.body.text, /Montant payé : 1\s€ TTC/)
   assert.match(confirmation.body.text, /renoncé expressément à votre droit de rétractation pour ces contenus/)
-  assert.ok(db.tables.conference_pass_events.some((e) => e.event_name === 'confirmation_sent'))
+  assert.ok(db.tables.conference_pass_events.some((e) => e.event_name === 'confirmation_sent' && e.metadata.pdfLink === true))
+  // PDF personnel : même circuit qu'un achat à 597 €, enregistré comme Formation complète.
+  const [purchase] = db.tables.mediumia_paypal_purchases
+  assert.deepEqual(
+    [purchase.product_code, purchase.access_level, purchase.max_module, purchase.amount_cents, purchase.paypal_env, purchase.status, purchase.user_id, purchase.paypal_capture_id],
+    ['full', 'full', 25, 100, 'sandbox', 'provisioned', 'u-buyer', 'CAP-1'],
+  )
+  const pdfToken = decodeURIComponent(confirmation.body.text.match(/\/api\/purchase-pdf\?token=([^\s]+)/)[1])
+  assert.equal(purchase.pdf_download_token_hash, sha(pdfToken))
+  assert.equal(Math.round((new Date(purchase.pdf_download_expires_at) - Date.now()) / 86400000), 30)
+  assert.match(confirmation.body.text, /numéro de licence MID-2026-000042/)
+  assert.ok(purchase.terms_accepted_at && purchase.immediate_access_accepted_at)
 
   const replay = await call(db, 'capture', { body: { orderId: 'ORDER123' } })
   assert.deepEqual([replay.statusCode, replay.body.alreadyProvisioned], [200, true])
   assert.equal(db.tables.mediumia_entitlements.length, 1)
+  assert.equal(db.tables.mediumia_paypal_purchases.length, 1)
   assert.equal(mails.filter((m) => m.idempotencyKey?.startsWith('conference-pass-confirmation')).length, 1)
 })
 
@@ -402,6 +424,8 @@ test('CGV et page Conférences : offre à 499 € encadrée, renonciation jamais
   assert.match(cgv, /ne se cumule ni avec la déduction de la Découverte MediumIA ni avec le parcours au mois/)
   assert.match(cgv, /Cette renonciation n’est jamais automatique : elle est recueillie au moyen d’une case distincte de celle d’acceptation des CGV, non cochée par défaut/)
   assert.match(cgv, /l’accès est activé sur l’adresse e-mail d’inscription à la conférence/)
+  assert.doesNotMatch(cgv, /6, 12 ou 24/)
+  assert.match(conferencesText(await readFile(new URL('../src/components/ConferencesPage.jsx', import.meta.url), 'utf8')), /n’est pas cumulable avec la Découverte à 29 € ni avec le parcours au mois/)
   const conferences = await readFile(new URL('../src/components/ConferencesPage.jsx', import.meta.url), 'utf8')
   assert.match(conferences, /href="\/pass\/mediumia\/premiere-conference-mediumia"/)
   assert.ok(conferences.includes(PAYPAL_INSTALMENTS_NOTICE))

@@ -63,7 +63,8 @@ export default function ConferencePassRequest({ api }) {
             <p><span className="block text-xs text-cream/60">Offre spéciale conférence</span><span className="text-3xl text-gold">{euros(offer.amountCents)}</span></p>
             <p className="rounded-full border border-gold/50 px-3 py-1 text-sm text-gold">Économie : {euros(offer.savingsCents)}</p>
           </div>
-          <p className="mt-3 text-sm text-cream/75">Formation complète : 25 modules et 365 jours d’accès. {PAYPAL_INSTALMENTS_NOTICE}</p>
+          <p className="mt-3 text-sm text-cream/75">Formation complète : 25 modules, PDF complet personnel et 365 jours d’accès. {PAYPAL_INSTALMENTS_NOTICE}</p>
+          <p className="mt-2 text-xs text-cream/60">Tarif conférence non cumulable avec la Découverte à 29 € ni avec le parcours au mois.</p>
           {offer.requestDeadline && <p className="mt-2 text-xs text-cream/60">Demandes ouvertes jusqu’au {longDate(offer.requestDeadline)}. Chaque Pass est valable {offer.passValidityDays} jours à compter de son envoi.</p>}
         </div>
       )}

@@ -7,7 +7,7 @@ const API = '/api/rdv-config?conferencePassAction='
 const PAYPAL_SCRIPT_ID = 'mediumia-paypal-sdk'
 const IS_PREVIEW = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')
 const STUDENT_SPACE_URL = IS_PREVIEW
-  ? 'https://mediumnia-app-git-test-confere-90e299-seguins-projects-a1d4673f.vercel.app'
+  ? 'https://mediumnia-app-test.vercel.app'
   : 'https://espace.mediumia.fr'
 
 function formatPrice(cents, currency = 'EUR') {

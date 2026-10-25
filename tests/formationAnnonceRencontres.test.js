@@ -55,12 +55,6 @@ test('annonce : l’assistant connaît les cinq dates sans ouvrir de réservatio
   assert.doesNotMatch(MEDIUMIA_PUBLIC_CATALOG, /zoom\.us|meet\.google|teams\.microsoft|\/formation\/rencontres/i)
 })
 
-test('annonce : aucune table, fonction ni route de réservation dans cette livraison', () => {
-  assert.equal(fs.existsSync(new URL('../lib/formationRencontresApi.js', import.meta.url)), false)
-  assert.doesNotMatch(read('api/rdv-config.js'), /rencontresAction/)
-  assert.doesNotMatch(read('src/App.jsx'), /formation-rencontres|FormationRencontresPage/)
-})
-
 test('annonce : en page publiée, les rencontres précèdent immédiatement les trois exercices offerts', () => {
   const source = page()
   const main = source.slice(source.indexOf('export default function FormationPage'))

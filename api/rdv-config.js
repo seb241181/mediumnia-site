@@ -16,6 +16,7 @@ import { handleRdvBalanceDailyCron } from '../lib/rdvBalanceCronHandler.js'
 import { handleCustomerReviews } from '../lib/customerReviews.js'
 import { handleGiftCards } from '../lib/giftCards.js'
 import { handleFormationPath } from '../lib/formationPath.js'
+import { handleFormationRencontres } from '../lib/formationRencontresApi.js'
 import { handleDefi } from '../lib/defiIntuitionServer.js'
 import { handleCspReport } from '../lib/cspReport.js'
 import { handleEmailQuestions } from '../lib/emailQuestions.js'
@@ -68,6 +69,11 @@ export default async function handler(req, res) {
   const formationPathAction = req.query?.formationPathAction
   if (formationPathAction) {
     return handleFormationPath(req, res, formationPathAction)
+  }
+
+  const rencontresAction = req.query?.rencontresAction
+  if (rencontresAction) {
+    return handleFormationRencontres(req, res, rencontresAction)
   }
 
   const defiAction = req.query?.defiAction

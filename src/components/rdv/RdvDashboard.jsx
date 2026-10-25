@@ -1268,6 +1268,22 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function WorkAccordion({ title, detail, open, onToggle, children }) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-gold/25 bg-white/70">
+      <button type="button" aria-expanded={open} onClick={onToggle}
+        className="flex min-h-16 w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-gold/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold sm:px-6">
+        <span className="min-w-0">
+          <span className="block font-georgia text-base font-semibold text-deep">{title}</span>
+          <span className="mt-1 block font-georgia text-xs text-mist">{detail}</span>
+        </span>
+        <span aria-hidden="true" className={`shrink-0 text-lg text-gold transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+      </button>
+      {open && <div className="border-t border-gold/15 px-3 pb-4 pt-2 sm:px-5">{children}</div>}
+    </section>
+  )
+}
+
 export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   const { session, loading: authLoading, signIn, signOut } = useAuth()
 
@@ -1290,6 +1306,21 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   const [editingSettings, setEditingSettings] = useState(false)
   // Les Coulisses : montrer le travail quotidien avant les reglages techniques.
   const [activePanel, setActivePanel] = useState('rdv')
+  const [rdvSections, setRdvSections] = useState(() => ({
+    agenda: false, day: true, requests: false, upcoming: false,
+    accounting: typeof window !== 'undefined' && ['#encaisser', '#proposer'].includes(window.location.hash),
+  }))
+  const toggleRdvSection = section => setRdvSections(previous => ({ ...previous, [section]: !previous[section] }))
+  useEffect(() => {
+    const openAccountingShortcut = () => {
+      if (['#encaisser', '#proposer'].includes(window.location.hash)) {
+        setActivePanel('rdv')
+        setRdvSections(previous => ({ ...previous, accounting: true }))
+      }
+    }
+    window.addEventListener('hashchange', openAccountingShortcut)
+    return () => window.removeEventListener('hashchange', openAccountingShortcut)
+  }, [])
 
   // OAuth URL notice from redirect
   useEffect(() => {
@@ -1836,17 +1867,30 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
 
                     {activePanel === 'rdv' && (
                       <>
+                  <div className="rounded-xl border border-gold/15 bg-cream/60 px-4 py-3">
+                    <p className="font-georgia text-xs text-mist">Un écran plus léger : ouvrez seulement ce dont vous avez besoin.</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => setRdvSections({ agenda: false, day: false, requests: false, upcoming: false, accounting: false })}
+                        className="rounded-lg border border-gold/30 bg-white px-3 py-2 font-georgia text-xs text-deep hover:bg-gold/10">Tout replier</button>
+                      <button type="button" onClick={() => setRdvSections({ agenda: true, day: true, requests: true, upcoming: true, accounting: true })}
+                        className="rounded-lg border border-gold/30 bg-white px-3 py-2 font-georgia text-xs text-deep hover:bg-gold/10">Tout afficher</button>
+                    </div>
+                  </div>
                   {/* Agenda quotidien complet, y compris les horaires déjà passés aujourd'hui. */}
-                  <UnifiedAgenda key={activePractitioner.id} practitionerId={activePractitioner.id} session={session} onOpenLumia={onOpenLumia} />
-                  <DailyPayments
-                    practitionerId={activePractitioner.id}
-                    session={session}
-                  />
+                  <WorkAccordion title="Agenda complet" detail="Calendrier, déplacements et synchronisation Google" open={rdvSections.agenda} onToggle={() => toggleRdvSection('agenda')}>
+                    <UnifiedAgenda key={activePractitioner.id} practitionerId={activePractitioner.id} session={session} onOpenLumia={onOpenLumia} />
+                  </WorkAccordion>
+                  <WorkAccordion title="Rendez-vous et encaissements du jour" detail="À encaisser et paiements du jour ; les règlements complets sont repliés" open={rdvSections.day} onToggle={() => toggleRdvSection('day')}>
+                    <DailyPayments practitionerId={activePractitioner.id} session={session} />
+                  </WorkAccordion>
 
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
                   {(activePractitioner.pending_requests?.length > 0 ||
                     activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
-                    <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                    <WorkAccordion title="Demandes de rendez-vous"
+                      detail={`${(activePractitioner.pending_requests || []).filter(r => r.status === 'pending').length} en attente · ${(activePractitioner.pending_requests || []).filter(r => r.status === 'contacted').length} contactées`}
+                      open={rdvSections.requests} onToggle={() => toggleRdvSection('requests')}>
+                    <section className="px-2 py-3 sm:px-1">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Demandes</p>
@@ -1866,10 +1910,13 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                         onChanged={() => loadMe(session)}
                       />
                     </section>
+                    </WorkAccordion>
                   )}
 
                   {/* Upcoming bookings */}
-                  <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                  <WorkAccordion title="Rendez-vous des prochains jours" detail={`${futureBookings.length} rendez-vous à venir`}
+                    open={rdvSections.upcoming} onToggle={() => toggleRdvSection('upcoming')}>
+                  <section className="px-2 py-3 sm:px-1">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Agenda</p>
@@ -1915,15 +1962,19 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                       </div>
                     )}
                   </section>
+                  </WorkAccordion>
 
                   {/* Caisse accessible dans Rendez-vous (y compris /rdv#encaisser). */}
-                  <AccountingSection
-                    practitionerId={activePractitioner.id}
-                    session={session}
-                    services={activePractitioner.services || []}
-                    upcomingBookings={activePractitioner.upcoming_bookings || []}
-                    showDailyPayments={false}
-                  />
+                  <WorkAccordion title="Caisse et comptabilité mensuelle" detail="Totaux TTC / HT / TVA, rapprochements et exports"
+                    open={rdvSections.accounting} onToggle={() => toggleRdvSection('accounting')}>
+                    <AccountingSection
+                      practitionerId={activePractitioner.id}
+                      session={session}
+                      services={activePractitioner.services || []}
+                      upcomingBookings={activePractitioner.upcoming_bookings || []}
+                      showDailyPayments={false}
+                    />
+                  </WorkAccordion>
 
                       </>
                     )}

@@ -28,6 +28,11 @@ const localInput = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-
 const money = (cents) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(cents || 0) / 100)
 const time = (iso) => new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).format(new Date(iso))
 const shortDate = (iso) => new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Paris' }).format(new Date(iso))
+// A paid deposit alone is not full settlement. Unknown/zero values, refunds,
+// cancellations, partial payments, and overpayments stay in the working list.
+const isFullySettled = (booking) => booking.status === 'confirmed'
+  && Number.isFinite(booking.total_cents) && booking.total_cents > 0
+  && booking.remaining_cents === 0
 
 function shiftDay(value, delta) {
   const [y, m, d] = value.split('-').map(Number)
@@ -41,7 +46,7 @@ function BookingRow({ booking, practitionerId, session, onSaved }) {
   const [paidAt, setPaidAt] = useState(() => localInput(defaultPaymentDate(booking)))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
-  const settled = booking.status === 'confirmed' && booking.total_cents > 0 && booking.remaining_cents === 0
+  const settled = isFullySettled(booking)
   const canCollect = booking.status === 'confirmed' && booking.remaining_cents > 0
     && new Date(booking.starts_at).getTime() <= Date.now() + 24 * 3600_000
 
@@ -185,6 +190,17 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
   const dayLabel = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${day}T12:00:00`))
   const collected = data?.collected
   const methodRows = collected ? Object.entries(collected.by_method).filter(([, v]) => v.count > 0) : []
+  const settledBookings = (data?.bookings || []).filter(isFullySettled)
+  const outstandingBookings = (data?.bookings || []).filter(booking => !isFullySettled(booking))
+  const renderBookingRows = (bookings) => (
+    <ul className="mt-4 space-y-3">
+      {bookings.map(booking => (
+        <BookingRow key={`${booking.id}-${booking.remaining_cents}`} booking={booking}
+          practitionerId={practitionerId} session={session}
+          onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />
+      ))}
+    </ul>
+  )
 
   return (
     <div className="mt-6 rounded-2xl border border-gold/25 bg-gold/[.04] p-4 sm:p-5">
@@ -209,11 +225,22 @@ export default function DailyPayments({ practitionerId, session, onSaved }) {
           {data.bookings.length === 0
             ? <p className="mt-4 rounded-xl border border-dashed border-gold/25 px-4 py-6 text-center font-georgia text-sm text-mist">Aucun rendez-vous ce jour-là.</p>
             : (
-              <ul className="mt-4 space-y-3">
-                {data.bookings.map(b => (
-                  <BookingRow key={`${b.id}-${b.remaining_cents}`} booking={b} practitionerId={practitionerId} session={session} onSaved={() => { window.dispatchEvent(new CustomEvent('mediumia:finance-saved')); onSaved?.() }} />
-                ))}
-              </ul>
+              <>
+                {outstandingBookings.length > 0
+                  ? renderBookingRows(outstandingBookings)
+                  : <p className="mt-4 rounded-xl border border-gold/15 bg-white/50 px-4 py-3 font-georgia text-sm text-mist">Aucun règlement à compléter pour ces rendez-vous.</p>}
+                {settledBookings.length > 0 && (
+                  <details key={`${practitionerId}-${day}`} className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/30 px-4 py-3">
+                    <summary className="min-h-10 cursor-pointer py-2 font-georgia text-sm font-semibold text-emerald-800">
+                      Rendez-vous intégralement réglés ({settledBookings.length})
+                    </summary>
+                    <p className="mt-2 font-georgia text-xs text-mist">
+                      Masqués de la liste principale, conservés dans l’historique et les totaux de caisse.
+                    </p>
+                    {renderBookingRows(settledBookings)}
+                  </details>
+                )}
+              </>
             )}
 
           <div className="mt-5 rounded-xl border border-gold/20 bg-white/70 p-4">

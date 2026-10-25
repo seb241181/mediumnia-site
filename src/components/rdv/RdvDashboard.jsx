@@ -779,6 +779,8 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
   const [error, setError] = useState(null)
   const [contact, setContact] = useState({ service_id: '', customer_first_name: '', customer_last_name: '', customer_email: '', customer_phone: '', video_channel: '' })
   const [savingContact, setSavingContact] = useState(false)
+  const [selectedRequestIds, setSelectedRequestIds] = useState([])
+  const [bulkArchiving, setBulkArchiving] = useState(false)
 
   async function saveContact(req) {
     setSavingContact(true)
@@ -826,7 +828,11 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
         headers: { 'Content-Type': 'application/json', ...authHeader(session) },
         body: JSON.stringify({ id: req.id, practitioner_id: practitionerId, status: newStatus }),
       })
-      if (res.ok) { onChanged(); setExpandedId(null) }
+      if (res.ok) {
+        setSelectedRequestIds(ids => ids.filter(id => id !== req.id))
+        onChanged()
+        setExpandedId(null)
+      }
       else { const d = await res.json(); setError(d.error || 'Erreur') }
     } catch { setError('Erreur réseau') }
     finally { setUpdating(null) }
@@ -896,8 +902,44 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
     finally { setSyncingId(null) }
   }
 
-  const archivedRequests = (requests || []).filter((request) => request.status === 'handled')
-  const visibleRequests = (requests || []).filter((request) => request.status !== 'handled')
+  // Terminal statuses no longer belong in the daily work queue.
+  // Do not change their stored status or lose the audit trail.
+  const CLOSED_REQUEST_STATUSES = ['handled', 'rejected', 'cancelled']
+  const archivedRequests = (requests || []).filter(request => CLOSED_REQUEST_STATUSES.includes(request.status))
+  const visibleRequests = (requests || []).filter(request => !CLOSED_REQUEST_STATUSES.includes(request.status))
+  const archivableRequests = visibleRequests.filter(request =>
+    ['pending', 'contacted'].includes(request.status) && !request.confirmed_booking_id
+  )
+  const selectedArchivableRequests = archivableRequests.filter(request => selectedRequestIds.includes(request.id))
+
+  async function archiveSelectedRequests() {
+    if (!selectedArchivableRequests.length || bulkArchiving) return
+    if (!window.confirm(`Archiver ${selectedArchivableRequests.length} demande(s) déjà traitée(s) ? Les demandes resteront consultables et pourront être remises à traiter.`)) return
+    setBulkArchiving(true)
+    setError(null)
+    let succeeded = 0
+    const failedIds = []
+    try {
+      for (const request of selectedArchivableRequests) {
+        try {
+          const response = await fetch('/api/rdv-admin?action=requests', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', ...authHeader(session) },
+            body: JSON.stringify({ id: request.id, practitioner_id: practitionerId, status: 'handled' }),
+          })
+          if (!response.ok) failedIds.push(request.id)
+          else succeeded += 1
+        } catch {
+          failedIds.push(request.id)
+        }
+      }
+      setSelectedRequestIds(failedIds)
+      if (succeeded) onChanged()
+      if (failedIds.length) setError(`${failedIds.length} demande(s) n’ont pas pu être archivées. Elles restent sélectionnées pour réessayer.`)
+    } finally {
+      setBulkArchiving(false)
+    }
+  }
 
   const inp = "border border-gold/20 rounded-xl px-3 py-2 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60 w-full"
 
@@ -918,6 +960,17 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
         <p className="rounded-xl border border-gold/15 bg-white/50 px-4 py-5 font-georgia text-sm text-mist">
           Aucune demande à traiter actuellement.
         </p>
+      )}
+      {archivableRequests.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/15 bg-cream/40 px-4 py-3">
+          <p className="font-georgia text-xs text-mist">Coche les demandes auxquelles tu as déjà donné suite, puis archive-les ensemble.</p>
+          {selectedArchivableRequests.length > 0 && (
+            <button type="button" disabled={bulkArchiving || updating !== null} onClick={archiveSelectedRequests}
+              className="rounded-lg border border-gold/30 bg-white px-3 py-2 font-georgia text-xs font-semibold text-deep hover:bg-gold/10 disabled:opacity-50">
+              {bulkArchiving ? 'Archivage…' : `Archiver la sélection (${selectedArchivableRequests.length})`}
+            </button>
+          )}
+        </div>
       )}
       {visibleRequests.map(req => {
         const svc = services.find(s => s.id === req.service_id)
@@ -962,6 +1015,16 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                   </span>
                 )}
                 {statusBadge(req.status)}
+                {['pending', 'contacted'].includes(req.status) && !req.confirmed_booking_id && (
+                  <label onClick={event => event.stopPropagation()} className="flex items-center gap-1.5 font-georgia text-[11px] text-mist">
+                    <input type="checkbox" disabled={bulkArchiving || updating !== null}
+                      checked={selectedRequestIds.includes(req.id)}
+                      onChange={event => setSelectedRequestIds(ids => event.target.checked ? [...ids, req.id] : ids.filter(id => id !== req.id))}
+                      aria-label={`Sélectionner la demande de ${requestDisplayName(req)} pour archivage`}
+                    />
+                    Sélectionner
+                  </label>
+                )}
                 {['pending', 'contacted'].includes(req.status) && !req.confirmed_booking_id && (
                   <button type="button"
                     disabled={updating === req.id}
@@ -1171,10 +1234,10 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
       {archivedRequests.length > 0 && (
         <details className="rounded-xl border border-gold/20 bg-white/40 px-4 py-3">
           <summary className="cursor-pointer font-georgia text-sm text-mist">
-            Archives · Déjà traitées ({archivedRequests.length})
+            Archives · Demandes clôturées ({archivedRequests.length})
           </summary>
           <p className="mt-2 font-georgia text-xs text-mist">
-            Conservées pour mémoire. Aucune réservation ni conversation n’a été supprimée.
+            Déjà traitées, refusées ou annulées : elles sont conservées pour mémoire. Aucune réservation ni conversation n’a été supprimée.
           </p>
           <div className="mt-3 space-y-2">
             {archivedRequests.map((req) => (
@@ -1186,12 +1249,14 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                     {' · '}{new Date(req.created_at).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
-                <button type="button"
-                  disabled={updating === req.id}
-                  onClick={() => updateStatus(req, 'pending')}
-                  className="rounded-lg border border-gold/30 px-3 py-2 font-georgia text-xs text-deep hover:bg-white disabled:opacity-50">
-                  Remettre à traiter
-                </button>
+                {req.status === 'handled' && (
+                  <button type="button"
+                    disabled={updating === req.id}
+                    onClick={() => updateStatus(req, 'pending')}
+                    className="rounded-lg border border-gold/30 px-3 py-2 font-georgia text-xs text-deep hover:bg-white disabled:opacity-50">
+                    Remettre à traiter
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -1202,6 +1267,22 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+
+function WorkAccordion({ title, detail, open, onToggle, children }) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-gold/25 bg-white/70">
+      <button type="button" aria-expanded={open} onClick={onToggle}
+        className="flex min-h-16 w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-gold/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold sm:px-6">
+        <span className="min-w-0">
+          <span className="block font-georgia text-base font-semibold text-deep">{title}</span>
+          <span className="mt-1 block font-georgia text-xs text-mist">{detail}</span>
+        </span>
+        <span aria-hidden="true" className={`shrink-0 text-lg text-gold transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+      </button>
+      {open && <div className="border-t border-gold/15 px-3 pb-4 pt-2 sm:px-5">{children}</div>}
+    </section>
+  )
+}
 
 export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   const { session, loading: authLoading, signIn, signOut } = useAuth()
@@ -1225,6 +1306,21 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   const [editingSettings, setEditingSettings] = useState(false)
   // Les Coulisses : montrer le travail quotidien avant les reglages techniques.
   const [activePanel, setActivePanel] = useState('rdv')
+  const [rdvSections, setRdvSections] = useState(() => ({
+    agenda: false, day: true, requests: false, upcoming: false,
+    accounting: typeof window !== 'undefined' && ['#encaisser', '#proposer'].includes(window.location.hash),
+  }))
+  const toggleRdvSection = section => setRdvSections(previous => ({ ...previous, [section]: !previous[section] }))
+  useEffect(() => {
+    const openAccountingShortcut = () => {
+      if (['#encaisser', '#proposer'].includes(window.location.hash)) {
+        setActivePanel('rdv')
+        setRdvSections(previous => ({ ...previous, accounting: true }))
+      }
+    }
+    window.addEventListener('hashchange', openAccountingShortcut)
+    return () => window.removeEventListener('hashchange', openAccountingShortcut)
+  }, [])
 
   // OAuth URL notice from redirect
   useEffect(() => {
@@ -1771,17 +1867,30 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
 
                     {activePanel === 'rdv' && (
                       <>
+                  <div className="rounded-xl border border-gold/15 bg-cream/60 px-4 py-3">
+                    <p className="font-georgia text-xs text-mist">Un écran plus léger : ouvrez seulement ce dont vous avez besoin.</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => setRdvSections({ agenda: false, day: false, requests: false, upcoming: false, accounting: false })}
+                        className="rounded-lg border border-gold/30 bg-white px-3 py-2 font-georgia text-xs text-deep hover:bg-gold/10">Tout replier</button>
+                      <button type="button" onClick={() => setRdvSections({ agenda: true, day: true, requests: true, upcoming: true, accounting: true })}
+                        className="rounded-lg border border-gold/30 bg-white px-3 py-2 font-georgia text-xs text-deep hover:bg-gold/10">Tout afficher</button>
+                    </div>
+                  </div>
                   {/* Agenda quotidien complet, y compris les horaires déjà passés aujourd'hui. */}
-                  <UnifiedAgenda key={activePractitioner.id} practitionerId={activePractitioner.id} session={session} onOpenLumia={onOpenLumia} />
-                  <DailyPayments
-                    practitionerId={activePractitioner.id}
-                    session={session}
-                  />
+                  <WorkAccordion title="Agenda complet" detail="Calendrier, déplacements et synchronisation Google" open={rdvSections.agenda} onToggle={() => toggleRdvSection('agenda')}>
+                    <UnifiedAgenda key={activePractitioner.id} practitionerId={activePractitioner.id} session={session} onOpenLumia={onOpenLumia} />
+                  </WorkAccordion>
+                  <WorkAccordion title="Rendez-vous et encaissements du jour" detail="À encaisser et paiements du jour ; les règlements complets sont repliés" open={rdvSections.day} onToggle={() => toggleRdvSection('day')}>
+                    <DailyPayments practitionerId={activePractitioner.id} session={session} />
+                  </WorkAccordion>
 
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
                   {(activePractitioner.pending_requests?.length > 0 ||
                     activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
-                    <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                    <WorkAccordion title="Demandes de rendez-vous"
+                      detail={`${(activePractitioner.pending_requests || []).filter(r => r.status === 'pending').length} en attente · ${(activePractitioner.pending_requests || []).filter(r => r.status === 'contacted').length} contactées`}
+                      open={rdvSections.requests} onToggle={() => toggleRdvSection('requests')}>
+                    <section className="px-2 py-3 sm:px-1">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Demandes</p>
@@ -1801,10 +1910,13 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                         onChanged={() => loadMe(session)}
                       />
                     </section>
+                    </WorkAccordion>
                   )}
 
                   {/* Upcoming bookings */}
-                  <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
+                  <WorkAccordion title="Rendez-vous des prochains jours" detail={`${futureBookings.length} rendez-vous à venir`}
+                    open={rdvSections.upcoming} onToggle={() => toggleRdvSection('upcoming')}>
+                  <section className="px-2 py-3 sm:px-1">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Agenda</p>
@@ -1850,15 +1962,19 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                       </div>
                     )}
                   </section>
+                  </WorkAccordion>
 
                   {/* Caisse accessible dans Rendez-vous (y compris /rdv#encaisser). */}
-                  <AccountingSection
-                    practitionerId={activePractitioner.id}
-                    session={session}
-                    services={activePractitioner.services || []}
-                    upcomingBookings={activePractitioner.upcoming_bookings || []}
-                    showDailyPayments={false}
-                  />
+                  <WorkAccordion title="Caisse et comptabilité mensuelle" detail="Totaux TTC / HT / TVA, rapprochements et exports"
+                    open={rdvSections.accounting} onToggle={() => toggleRdvSection('accounting')}>
+                    <AccountingSection
+                      practitionerId={activePractitioner.id}
+                      session={session}
+                      services={activePractitioner.services || []}
+                      upcomingBookings={activePractitioner.upcoming_bookings || []}
+                      showDailyPayments={false}
+                    />
+                  </WorkAccordion>
 
                       </>
                     )}

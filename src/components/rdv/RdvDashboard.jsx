@@ -989,23 +989,23 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-georgia min-w-0">
                   {req.customer_email && <div><span className="text-mist">Email : </span><a href={`mailto:${req.customer_email}`} className="text-deep underline">{req.customer_email}</a></div>}
-                  {req.customer_phone && <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {req.customer_phone && <div className="sm:col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span><span className="text-mist">Tél : </span>{messageHref
                       ? <a href={messageHref} title="Ouvrir Messages pour répondre" className="font-semibold text-deep underline underline-offset-2 hover:text-gold">{req.customer_phone}</a>
                       : <span className="text-deep">{req.customer_phone}</span>}</span>
                     {callHref && <a href={callHref} className="font-georgia text-[11px] text-mist underline underline-offset-2 hover:text-deep">Appeler</a>}
                   </div>}
                   {req.address_line1 && (
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <span className="text-mist">Adresse : </span>
                       <span className="text-deep">{req.address_line1}{req.address_line2 ? `, ${req.address_line2}` : ''}, {req.postal_code} {req.city}</span>
                     </div>
                   )}
                   {req.preferred_period && !req.intake_agent && (
-                    <div className="col-span-2"><span className="text-mist">Préférence : </span><span className="text-deep italic">{req.preferred_period}</span></div>
+                    <div className="sm:col-span-2"><span className="text-mist">Préférence : </span><span className="text-deep italic">{req.preferred_period}</span></div>
                   )}
                   {req.customer_message && (
-                    <div className="col-span-2"><span className="text-mist">Message : </span><span className="text-deep italic">{req.customer_message}</span></div>
+                    <div className="sm:col-span-2"><span className="text-mist">Message : </span><span className="text-deep italic">{req.customer_message}</span></div>
                   )}
                 </div>
 

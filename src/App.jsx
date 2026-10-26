@@ -5,6 +5,7 @@ import AgentsPlatform from './components/AgentsPlatform'
 import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'
 import FormationPage from './components/FormationPage'
+import CoachDiscoveryPage from './components/CoachDiscoveryPage'
 import LegalFooter from './components/LegalFooter'
 import { MentionsLegales, PolitiqueConfidentialite, CgvOracle, CgvChronosphere, Retractation } from './components/LegalPages'
 import OraclePage from './components/OraclePage'
@@ -63,13 +64,21 @@ function FeaturedAccompagnement({ onOpen }) {
           <p className="font-georgia text-gold tracking-[0.18em] text-[10px] uppercase mb-3">Découvrez la méthode avant de choisir votre formule</p>
           <p className="font-georgia text-cream/80 text-sm leading-relaxed">25 modules, 84 exercices guidés et des rencontres pédagogiques en visio. Les possibilités de paiement, dont le parcours progressif lorsqu'il est ouvert, sont expliquées à la fin de la présentation.</p>
         </div>
-        <a
-          href="/formation"
-          onClick={(event) => { event.preventDefault(); onOpen() }}
-          className="inline-block font-georgia px-8 py-4 rounded-lg bg-gold text-deep font-bold text-base hover:bg-gold/90 transition-colors"
-        >
-          Voir les formules de la formation →
-        </a>
+        <div className="flex flex-wrap items-center gap-3">
+          <a
+            href="/formation"
+            onClick={(event) => { event.preventDefault(); onOpen() }}
+            className="inline-block font-georgia px-6 py-4 rounded-lg bg-gold text-deep font-bold text-sm hover:bg-gold/90 transition-colors"
+          >
+            Voir les formules de la formation →
+          </a>
+          <a
+            href="/coach"
+            className="inline-block font-georgia px-6 py-4 rounded-lg border border-gold/60 bg-white/10 text-cream font-semibold text-sm hover:bg-white/20 transition-colors"
+          >
+            Discuter gratuitement avec MediumIA ✦
+          </a>
+        </div>
       </div>
       <div className="shrink-0 md:w-72">
         <div className="mb-3 overflow-hidden rounded-2xl border border-gold/30 bg-cream p-3 shadow-[0_18px_34px_rgba(0,0,0,.2)]">
@@ -170,6 +179,7 @@ function pathToView(p) {
     : p === '/pro' || p.startsWith('/agents') ? 'pro'
     : p === '/formation/parcours' ? 'formation-parcours'
     : p.startsWith('/formation') ? 'formation'
+    : p === '/coach' ? 'coach'
     : p.startsWith('/chronosphere-max') ? 'chronosphere-max'
     : p.startsWith('/chronosphere/exemple') ? 'chronosphere-example'
     : p.startsWith('/chronosphere') ? 'chronosphere'
@@ -232,7 +242,7 @@ export default function App() {
   }
 
   // Sur la réservation, les bulles flottantes masquaient titres et récapitulatif.
-  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere'
+  const showGuardian = view !== 'rdv-dashboard' && view !== 'rdv-public' && view !== 'chronosphere' && view !== 'coach'
 
   const guardian = showGuardian ? <SiteGuardian /> : null
 
@@ -243,6 +253,7 @@ export default function App() {
   if (view === 'retractation')   return <><Retractation onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'pro')           return <><ProWaitlistPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'formation')    return <><FormationPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'coach')        return <CoachDiscoveryPage onBack={backHome} onOpenFormation={openFormation} onNavigate={legalNav} />
   if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'conference-pass') return <><ConferencePassPage onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>

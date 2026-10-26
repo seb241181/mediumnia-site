@@ -33,6 +33,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/coach",
+      "destination": "/index.html"
+    },
+    {
       "source": "/formation",
       "destination": "/index.html"
     },

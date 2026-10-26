@@ -9,6 +9,8 @@ import './UnifiedAgenda.css'
 
 const money = value => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100)
 const statusLabel = { confirmed: 'Confirmé', cancelled: 'Annulé', completed: 'Terminé', pending: 'En attente', no_show: 'Absent' }
+const modalityLabel = { video: 'En visio', 'in-person': 'En présence', phone: 'Par téléphone' }
+const modalityShort = { video: 'Visio', 'in-person': 'Cabinet', phone: 'Téléphone' }
 function paymentCategory(payment) {
   if (!payment) return 'unknown'
   if (payment.paid_cents > payment.total_cents || payment.paid_cents < 0) return 'review'
@@ -202,6 +204,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
             editable={false} selectable={false} events={events} datesSet={handleDatesSet} dayMaxEvents={3}
             eventContent={info => <button className="agenda-event" title={info.event.title} onClick={() => selectAgendaEvent(info.event.extendedProps.record)} aria-label={`${info.timeText} ${info.event.title}`}>
               <span>{info.timeText}</span><strong>{info.event.title}</strong>
+              {modalityShort[info.event.extendedProps.record.modality] && <small className="agenda-event-mode">{modalityShort[info.event.extendedProps.record.modality]}</small>}
             </button>} />
         </div>
         <p className="agenda-legend"><span>MediumIA</span><span>Google uniquement</span><span>{events.length} événement{events.length > 1 ? 's' : ''}</span></p>
@@ -212,6 +215,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
         <h3>{selected.title}</h3>
         <p>{selected.allDay ? 'Journée entière' : new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'full', timeStyle: 'short' }).format(new Date(selected.start))}</p>
         <p>{statusLabel[selected.status] || selected.status}</p>
+        <p className="agenda-modality"><strong>Modalité :</strong> {modalityLabel[selected.modality] || 'Non précisée'}{selected.modality_source === 'service' && <small> (selon la prestation)</small>}</p>
         {selected.google_sync && <p className="agenda-sync-status" role="status" data-sync={selected.google_sync.status}>
           Synchronisation Google : {selected.google_sync.status === 'pending' ? 'en attente' : selected.google_sync.status === 'running' ? 'en cours' : selected.google_sync.status === 'retry' ? `nouvelle tentative requise (${selected.google_sync.attempts || 0} essai${(selected.google_sync.attempts || 0) > 1 ? 's' : ''})` : selected.google_sync.status === 'review' ? 'vérification manuelle requise' : selected.google_sync.status}
           {selected.google_sync.error && <> — {selected.google_sync.error}</>}

@@ -388,7 +388,7 @@ export default async function handler(req, res) {
     return handleProWaitlist(req, res)
   }
 
-  const { history, mode } = req.body || {}
+  const { history } = req.body || {}
   const isCoachDiscovery = mode === 'coach-discovery'
   if (mode != null && mode !== 'coach-discovery') {
     return res.status(400).json({ error: 'Invalid mode' })

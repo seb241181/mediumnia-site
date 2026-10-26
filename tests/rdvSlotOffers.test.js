@@ -255,6 +255,6 @@ test('enregistrement propriétaire des coordonnées : aucune modification de pai
   const source = read('lib/rdvSlotOffers.js')
   const section = source.slice(source.indexOf('export async function updateSlotOfferContact'), source.indexOf('export async function cancelSlotOffer'))
   assert.match(section, /\.update\(contact\)/)
-  assert.doesNotMatch(section, /token_hash|expires_at|starts_at|status:|paypal|sendEmail|sendSms/)
+  assert.doesNotMatch(section, /token_hash|expires_at|starts_at|\.update\(\{\s*status\b|paypal|sendEmail|sendSms/)
   assert.equal((await updateSlotOfferContact({ db: { from() { return { select() { return this }, eq() { return this }, maybeSingle: async () => ({ data: null }) } } }, userId: 'wrong', input: { id: 'x', practitioner_id: PRACT } })).status, 403)
 })

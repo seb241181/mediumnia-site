@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { agendaRange, mergeAgendaEvents, getUnifiedAgenda } from '../lib/rdvUnifiedAgenda.js'
+import { agendaRange, mergeAgendaEvents, getUnifiedAgenda, resolveAgendaModality } from '../lib/rdvUnifiedAgenda.js'
 
 const practitioner = '00000000-0000-4000-8000-000000000001'
 const query = { practitioner_id: practitioner, from: '2026-10-01T00:00:00Z', to: '2026-11-01T00:00:00Z' }
@@ -82,4 +82,22 @@ test('sync job read failure returns 503, never hides sync status', async () => {
   const result = await getUnifiedAgenda({ supabase: broken, userId: 'owner', query, loadGoogle: google, loadBalances: balances })
   assert.equal(result.status, 503)
   assert.equal(result.body.error, 'sync_jobs_unavailable')
+})
+
+test('agenda modality prefers the actual client choice, never guesses from multiple options', () => {
+  assert.deepEqual(resolveAgendaModality({ requests: ['video'], serviceModalities: ['in-person', 'video'] }), { modality: 'video', source: 'selected' })
+  assert.deepEqual(resolveAgendaModality({ holds: ['in-person'], serviceModalities: ['video'] }), { modality: 'in-person', source: 'selected' })
+  assert.deepEqual(resolveAgendaModality({ holds: ['video'], requests: ['in-person'], serviceModalities: ['video'] }), { modality: null, source: 'conflict' })
+  assert.deepEqual(resolveAgendaModality({ serviceModalities: ['video', 'in-person'] }), { modality: null, source: 'unknown' })
+  assert.deepEqual(resolveAgendaModality({ serviceModalities: ['in-person'] }), { modality: 'in-person', source: 'service' })
+  assert.deepEqual(resolveAgendaModality(), { modality: null, source: 'unknown' })
+})
+test('merged events expose only resolved MediumIA modalities, never assume Google-only type', () => {
+  const result = mergeAgendaEvents({
+    bookings: [booking], chosenModalities: { [booking.id]: { modality: 'video', source: 'selected' } },
+    googleEvents: [event('external')], linkedIds: new Set(), calendarId: 'test',
+  })
+  assert.equal(result.find(e => e.source === 'mediumia').modality, 'video')
+  assert.equal(result.find(e => e.source === 'mediumia').modality_source, 'selected')
+  assert.equal(result.find(e => e.source === 'google').modality, null)
 })

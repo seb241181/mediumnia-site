@@ -896,35 +896,19 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
     finally { setSyncingId(null) }
   }
 
-  const archivedRequests = (requests || []).filter((request) => request.status === 'handled')
-  const visibleRequests = (requests || []).filter((request) => request.status !== 'handled')
+  // Nouveaux dossiers en premier, suivis et dossiers planifiés dans des listes repliées.
+  const visibleRequests = (requests || []).filter((request) => request.status === 'pending')
+  const followUpRequests = (requests || []).filter((request) => request.status === 'contacted')
+  const archivedRequests = (requests || []).filter((request) => ['handled', 'scheduled'].includes(request.status))
 
   const inp = "border border-gold/20 rounded-xl px-3 py-2 font-georgia text-sm bg-white/80 focus:outline-none focus:border-gold/60 w-full"
 
-  if (!requests || requests.length === 0) {
-    return (
-      <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-8 text-center">
-        <p className="font-georgia text-sm text-mist">Aucune demande en cours.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-3">
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">{error}</div>
-      )}
-      {visibleRequests.length === 0 && (
-        <p className="rounded-xl border border-gold/15 bg-white/50 px-4 py-5 font-georgia text-sm text-mist">
-          Aucune demande à traiter actuellement.
-        </p>
-      )}
-      {visibleRequests.map(req => {
+  const renderRequestCard = (req) => {
         const svc = services.find(s => s.id === req.service_id)
         const isExpanded = expandedId === req.id
         const canConfirm = req.status === 'pending' || req.status === 'contacted'
 
-        return (
+    return (
           <div key={req.id} className="rounded-xl border border-gold/20 bg-white/40 overflow-hidden">
             <div
               className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/60 transition-colors"
@@ -1166,15 +1150,44 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
               </div>
             )}
           </div>
-        )
-      })}
+    )
+  }
+
+  if (!requests || requests.length === 0) {
+    return (
+      <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-8 text-center">
+        <p className="font-georgia text-sm text-mist">Aucune demande en cours.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">{error}</div>
+      )}
+      {visibleRequests.length === 0 && (
+        <p className="rounded-xl border border-gold/15 bg-white/50 px-4 py-5 font-georgia text-sm text-mist">
+          Aucune nouvelle demande à traiter. Les personnes contactées sont dans « À suivre » et les dossiers planifiés dans « Archives ».
+        </p>
+      )}
+      {visibleRequests.map(renderRequestCard)}
+      {followUpRequests.length > 0 && (
+        <details className="rounded-xl border border-blue-200 bg-blue-50/30 px-4 py-3">
+          <summary className="cursor-pointer font-georgia text-sm font-medium text-blue-800">
+            À suivre · Déjà contactées ({followUpRequests.length})
+          </summary>
+          <p className="mt-2 font-georgia text-xs text-mist">Ces personnes ont été contactées. Vous pouvez rouvrir leur fiche pour les relancer ou fixer leur rendez-vous.</p>
+          <div className="mt-3 space-y-3">{followUpRequests.map(renderRequestCard)}</div>
+        </details>
+      )}
       {archivedRequests.length > 0 && (
         <details className="rounded-xl border border-gold/20 bg-white/40 px-4 py-3">
           <summary className="cursor-pointer font-georgia text-sm text-mist">
-            Archives · Déjà traitées ({archivedRequests.length})
+            Archives · Dossiers traités ({archivedRequests.length})
           </summary>
           <p className="mt-2 font-georgia text-xs text-mist">
-            Conservées pour mémoire. Aucune réservation ni conversation n’a été supprimée.
+            Les demandes classées ou planifiées sont conservées. Aucun message ni rendez-vous n’a été supprimé.
           </p>
           <div className="mt-3 space-y-2">
             {archivedRequests.map((req) => (
@@ -1184,14 +1197,25 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                   <p className="font-georgia text-xs text-mist">
                     {INTAKE_CHANNEL_LABELS[req.source_channel] || req.source_channel || 'Formulaire'}
                     {' · '}{new Date(req.created_at).toLocaleDateString('fr-FR')}
+                    {' · '}{STATUS_CONFIG[req.status]?.label || req.status}
                   </p>
                 </div>
-                <button type="button"
-                  disabled={updating === req.id}
-                  onClick={() => updateStatus(req, 'pending')}
-                  className="rounded-lg border border-gold/30 px-3 py-2 font-georgia text-xs text-deep hover:bg-white disabled:opacity-50">
-                  Remettre à traiter
-                </button>
+                {req.status === 'handled' && (
+                  <button type="button"
+                    disabled={updating === req.id}
+                    onClick={() => updateStatus(req, 'pending')}
+                    className="rounded-lg border border-gold/30 px-3 py-2 font-georgia text-xs text-deep hover:bg-white disabled:opacity-50">
+                    Remettre à traiter
+                  </button>
+                )}
+                {req.status === 'scheduled' && !req.google_event_id && (
+                  <button type="button"
+                    disabled={syncingId === req.id}
+                    onClick={() => handleSyncGoogle(req)}
+                    className="rounded-lg border border-amber-300 px-3 py-2 font-georgia text-xs text-amber-700 hover:bg-amber-50 disabled:opacity-50">
+                    {syncingId === req.id ? 'Synchronisation…' : 'Synchroniser avec Google'}
+                  </button>
+                )}
               </div>
             ))}
           </div>

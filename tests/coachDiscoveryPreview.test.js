@@ -10,7 +10,7 @@ test('Le coach découverte a une route publique et un CTA depuis l’accueil', (
   assert.equal(routes.find(route => route.source === '/coach')?.destination, '/index.html')
   assert.match(app, /p === '\/coach' \? 'coach'/)
   assert.match(app, /<CoachDiscoveryPage /)
-  assert.match(app, /onOpenCoach=\{openCoach\}/)
+  assert.match(app, /href="\/coach"/)
   assert.match(app, /Discuter gratuitement avec MediumIA/)
 })
 

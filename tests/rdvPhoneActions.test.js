@@ -5,7 +5,7 @@ import { phoneActionHref } from '../src/lib/rdvPhoneActions.js'
 
 test('un numéro de client ouvre Messages sans envoyer automatiquement', () => {
   assert.equal(phoneActionHref('06 12 34 56 78'), 'sms:0612345678')
-  assert.equal(phoneActionHref('+33 (0) 6-12-34-56-78'), 'sms:+330612345678')
+  assert.equal(phoneActionHref('+33 (0) 6-12-34-56-78'), 'sms:+33612345678')
   assert.equal(phoneActionHref('+33 6 12 34 56 78'), 'sms:+33612345678')
   assert.equal(phoneActionHref('06 12 34 56 78', 'tel'), 'tel:0612345678')
 })

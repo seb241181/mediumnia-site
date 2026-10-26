@@ -102,7 +102,7 @@ trial = replaceRequired(
 trial = replaceRequired(
   trial,
   `    if (!text || loading || exhausted) return\n\n    const userMessage`,
-  `    if (!text || loading || exhausted) return\n\n    if (userCount === 0) trackMediumiaMetric('formation_assistant_started', 'formation')\n\n    const userMessage`,
+  `    if (!text || loading || exhausted) return\n\n    if (!isCoach && userCount === 0) trackMediumiaMetric('formation_assistant_started', 'formation')\n\n    const userMessage`,
   'Formation assistant started',
 )
 await writeFile(trialPath, trial)

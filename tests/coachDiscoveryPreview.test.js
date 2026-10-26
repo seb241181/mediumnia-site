@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -42,4 +44,15 @@ test('Le backend protège toujours les essais et sépare les consignes', () => {
   assert.match(handler, /mediumia_trial/)
   assert.match(handler, /Ne prétends pas capter des énergies/)
   assert.match(handler, /Tu es MediumIA, un assistant dédié/)
+})
+
+test('API Node : le module se compile sans conflit de variables', () => {
+  const api = fileURLToPath(new URL('../api/mediumia-trial.js', import.meta.url))
+  assert.doesNotThrow(() => execFileSync(process.execPath, ['--check', api], { stdio: 'pipe' }))
+})
+
+test('La mise en page mobile ne cache pas le contenu sous le menu fixe', () => {
+  const page = read('src/components/CoachDiscoveryPage.jsx')
+  assert.match(page, /id="top" className="min-h-screen/)
+  assert.match(page, /pt-28 sm:px-6 sm:pt-36/)
 })

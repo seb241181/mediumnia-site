@@ -195,7 +195,7 @@ export function ArcheSection() {
               onClick={() => trackMediumiaMetric('home_door_click', 'home:codex')}
               className="mt-6 inline-flex min-h-[48px] w-fit items-center rounded-full bg-gold px-7 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90"
             >
-              Lire le Codex <span className="ml-1" aria-hidden="true">↗</span>
+              Acheter le livre sur Amazon <span className="ml-1" aria-hidden="true">↗</span>
             </a>
           </div>
         </article>

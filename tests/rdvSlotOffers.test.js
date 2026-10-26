@@ -6,6 +6,8 @@ import {
   blockingEvents,
   cancelSlotOffer,
   createSlotOffer,
+  slotOfferContact,
+  updateSlotOfferContact,
   hashOfferToken,
   loadOpenOffer,
   offerBlocksCapture,
@@ -211,4 +213,48 @@ test('a token refresh does not remount the RDV dashboard (the urgency window sta
   assert.match(dashboard, /useEffect\(\(\) => \{ loadMe\(session\) \}, \[session\?\.user\?\.id\]\)/)
   assert.match(dashboard, /\{meLoading && !meData && \(/)
   assert.match(dashboard, /\{\(!meLoading \|\| meData\) && practitioners\.length > 0 && \(/)
+})
+
+test('contact de lien : téléphone et e-mail validés sans reconstruire le lien secret', () => {
+  assert.deepEqual(slotOfferContact({ customer_phone: '+33 (0) 6 12 34 56 78', customer_email: ' Client@Example.fr ' }),
+    { customer_phone: '+33612345678', customer_email: 'client@example.fr' })
+  assert.deepEqual(slotOfferContact({}), { customer_phone: null, customer_email: null })
+  assert.equal(slotOfferContact({ customer_phone: 'sms:+33612345678?body=hack' }).error, 'invalid_contact_phone')
+  assert.equal(slotOfferContact({ customer_email: 'bad-address' }).error, 'invalid_contact_email')
+})
+
+test('les coordonnées de relance ne sont visibles que côté propriétaire et jamais sur le lien public', () => {
+  const backend = read('lib/rdvSlotOffers.js')
+  const api = read('api/rdv-admin.js')
+  const ui = read('src/components/rdv/SlotOfferModal.jsx')
+  const privateList = backend.slice(backend.indexOf('export async function listSlotOffers'), backend.indexOf('export async function updateSlotOfferContact'))
+  const publicOffer = backend.slice(backend.indexOf('export async function loadOpenOffer'), backend.indexOf('export async function googleAccessToken'))
+  assert.match(privateList, /customer_phone, customer_email/)
+  assert.doesNotMatch(publicOffer, /customer_phone|customer_email/)
+  assert.match(backend, /if \(!offerId \|\| !\(await ownsPractitioner\(db, userId, practitionerId\)\)\)/)
+  assert.match(backend, /\.eq\('id', offerId\)\s*\.eq\('practitioner_id', practitionerId\)/)
+  assert.match(api, /op === 'contact'/)
+  assert.match(ui, /Coordonnées \/ Relancer/)
+  assert.match(ui, /Aucun numéro enregistré/)
+  assert.match(ui, /href=\{phoneActionHref\(o.customer_phone, 'sms'\)/)
+  assert.match(ui, /Aucun SMS ni e-mail n’est envoyé automatiquement/)
+})
+
+test('enregistrement propriétaire des coordonnées : aucune modification de paiement, de créneau ou de jeton', async () => {
+  const updated = []
+  const db = {
+    from(table) {
+      assert.equal(table, 'booking_practitioners')
+      return {
+        select() { return this }, eq() { return this },
+        maybeSingle: async () => ({ data: { id: PRACT }, error: null }),
+      }
+    },
+  }
+  // Security contract on the real owner-scoped update, without actual writes.
+  const source = read('lib/rdvSlotOffers.js')
+  const section = source.slice(source.indexOf('export async function updateSlotOfferContact'), source.indexOf('export async function cancelSlotOffer'))
+  assert.match(section, /\.update\(contact\)/)
+  assert.doesNotMatch(section, /token_hash|expires_at|starts_at|status:|paypal|sendEmail|sendSms/)
+  assert.equal((await updateSlotOfferContact({ db: { from() { return { select() { return this }, eq() { return this }, maybeSingle: async () => ({ data: null }) } } }, userId: 'wrong', input: { id: 'x', practitioner_id: PRACT } })).status, 403)
 })

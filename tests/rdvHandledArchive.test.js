@@ -42,3 +42,15 @@ test('les nouvelles demandes restent visibles et celles déjà traitées sont re
   assert.match(ui, /const canConfirm = req.status === 'pending' \|\| req.status === 'contacted'/)
   assert.match(ui, /req.status === 'scheduled' && !req.google_event_id/)
 })
+
+test('cartes de demandes : affichage mobile vertical, actions non chevauchées et bureau conservé', () => {
+  const ui = read('src/components/rdv/RdvDashboard.jsx')
+  assert.match(ui, /flex flex-col items-stretch gap-3 px-4 py-4 cursor-pointer[^"]*xl:flex-row/)
+  assert.match(ui, /w-full min-w-0 flex-wrap items-center gap-2 xl:w-auto/)
+  assert.match(ui, /min-h-10 shrink-0 whitespace-nowrap[^"]*Déjà traité|className="min-h-10 shrink-0 whitespace-nowrap/)
+  assert.match(ui, /leading-snug text-deep \[overflow-wrap:anywhere\]/)
+  assert.match(ui, /grid grid-cols-1 sm:grid-cols-2 gap-x-4/)
+  assert.match(ui, /flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between mb-4/)
+  assert.match(ui, /updateStatus\(req, 'handled'\)/)
+  assert.match(ui, /onClick=\{\(event\) => \{\s*event.stopPropagation\(\)/)
+})

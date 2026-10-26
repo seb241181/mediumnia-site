@@ -1888,7 +1888,7 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                     practitionerId={activePractitioner.id}
                     session={session}
                     services={activePractitioner.services || []}
-                    upcomingBookings={activePractitioner.upcoming_bookings || []}
+                    upcomingBookings={[...(activePractitioner.recent_bookings || []), ...(activePractitioner.upcoming_bookings || [])]}
                     showDailyPayments={false}
                   />
 

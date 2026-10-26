@@ -812,7 +812,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
   function statusBadge(status) {
     const s = STATUS_CONFIG[status] || { label: status, cls: 'bg-deep/5 text-mist border-gold/20' }
     return (
-      <span className={`font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-0.5 border ${s.cls}`}>
+      <span className={`shrink-0 whitespace-nowrap font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-1 border ${s.cls}`}>
         {s.label}
       </span>
     )
@@ -914,7 +914,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
     return (
           <div key={req.id} className="rounded-xl border border-gold/20 bg-white/40 overflow-hidden">
             <div
-              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/60 transition-colors"
+              className="flex flex-col items-stretch gap-3 px-4 py-4 cursor-pointer hover:bg-white/60 transition-colors xl:flex-row xl:items-center"
               onClick={() => {
                 const next = isExpanded ? null : req.id
                 setExpandedId(next)
@@ -933,18 +933,18 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                 }
               }}
             >
-              <div className="flex-1 min-w-0">
-                <p className="font-georgia text-sm font-semibold text-deep">{requestDisplayName(req)}</p>
-                <p className="font-georgia text-xs text-mist">
+              <div className="w-full min-w-0 flex-1">
+                <p className="font-georgia text-sm font-semibold leading-snug text-deep [overflow-wrap:anywhere]">{requestDisplayName(req)}</p>
+                <p className="mt-1 font-georgia text-xs leading-relaxed text-mist [overflow-wrap:anywhere]">
                   {svc?.title || (req.intake_agent ? 'Prestation à vérifier' : '—')}
                   {req.city ? ` · ${req.city} (${req.postal_code})` : ''}
                   {req.intake_agent ? ` · ${INTAKE_CHANNEL_LABELS[req.source_channel] || req.source_channel}` : ''}
                   {' · '}{new Date(req.created_at).toLocaleDateString('fr-FR')}
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex w-full min-w-0 flex-wrap items-center gap-2 xl:w-auto xl:shrink-0 xl:justify-end">
                 {req.intake_agent && (
-                  <span className="font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-0.5 border border-gold/40 bg-gold/10 text-deep">
+                  <span className="shrink-0 whitespace-nowrap font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-1 border border-gold/40 bg-gold/10 text-deep">
                     {agentLabel(req.intake_agent)}
                   </span>
                 )}
@@ -956,18 +956,18 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                       event.stopPropagation()
                       updateStatus(req, 'handled')
                     }}
-                    className="font-georgia text-[11px] rounded-lg border border-gold/35 bg-white px-2.5 py-2 text-deep hover:bg-cream disabled:opacity-40"
+                    className="min-h-10 shrink-0 whitespace-nowrap font-georgia text-[11px] rounded-lg border border-gold/35 bg-white px-3 py-2 text-deep hover:bg-cream disabled:opacity-40"
                     title="Déplacer dans les archives, sans annuler de rendez-vous ni envoyer de message"
                   >
                     Déjà traité
                   </button>
                 )}
-                <span className="text-mist text-xs select-none">{isExpanded ? '▲' : '▼'}</span>
+                <span className="ml-auto shrink-0 text-mist text-xs select-none xl:ml-0" aria-hidden="true">{isExpanded ? '▲' : '▼'}</span>
               </div>
             </div>
 
             {isExpanded && (
-              <div className="border-t border-gold/15 px-4 py-4 space-y-4">
+              <div className="border-t border-gold/15 px-4 py-4 space-y-4 min-w-0 [overflow-wrap:anywhere]">
                 {req.intake_agent && (
                   <div className="rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 space-y-1 font-georgia text-xs">
                     <p className="font-semibold text-deep">Demande détectée par {agentLabel(req.intake_agent)}</p>
@@ -987,25 +987,25 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
                     )}
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-georgia">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-georgia min-w-0">
                   {req.customer_email && <div><span className="text-mist">Email : </span><a href={`mailto:${req.customer_email}`} className="text-deep underline">{req.customer_email}</a></div>}
-                  {req.customer_phone && <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {req.customer_phone && <div className="sm:col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span><span className="text-mist">Tél : </span>{messageHref
                       ? <a href={messageHref} title="Ouvrir Messages pour répondre" className="font-semibold text-deep underline underline-offset-2 hover:text-gold">{req.customer_phone}</a>
                       : <span className="text-deep">{req.customer_phone}</span>}</span>
                     {callHref && <a href={callHref} className="font-georgia text-[11px] text-mist underline underline-offset-2 hover:text-deep">Appeler</a>}
                   </div>}
                   {req.address_line1 && (
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <span className="text-mist">Adresse : </span>
                       <span className="text-deep">{req.address_line1}{req.address_line2 ? `, ${req.address_line2}` : ''}, {req.postal_code} {req.city}</span>
                     </div>
                   )}
                   {req.preferred_period && !req.intake_agent && (
-                    <div className="col-span-2"><span className="text-mist">Préférence : </span><span className="text-deep italic">{req.preferred_period}</span></div>
+                    <div className="sm:col-span-2"><span className="text-mist">Préférence : </span><span className="text-deep italic">{req.preferred_period}</span></div>
                   )}
                   {req.customer_message && (
-                    <div className="col-span-2"><span className="text-mist">Message : </span><span className="text-deep italic">{req.customer_message}</span></div>
+                    <div className="sm:col-span-2"><span className="text-mist">Message : </span><span className="text-deep italic">{req.customer_message}</span></div>
                   )}
                 </div>
 
@@ -1813,14 +1813,14 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                   {/* Demandes de déplacement et demandes reçues par message (Lumia) */}
                   {(activePractitioner.pending_requests?.length > 0 ||
                     activePractitioner.services?.some(s => s.booking_mode === 'request')) && (
-                    <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
+                    <section className="rounded-2xl border border-gold/25 bg-white/60 p-4 sm:p-6">
+                      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                        <div className="min-w-0">
                           <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Demandes</p>
                           <h2 className="font-georgia text-lg font-medium">Demandes de rendez-vous</h2>
                         </div>
                         {activePractitioner.pending_requests?.filter(r => r.status === 'pending').length > 0 && (
-                          <span className="font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                          <span className="shrink-0 whitespace-nowrap font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
                             {activePractitioner.pending_requests.filter(r => r.status === 'pending').length} en attente
                           </span>
                         )}

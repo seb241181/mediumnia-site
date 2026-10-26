@@ -38,7 +38,7 @@ function Nav({ onOpenPro, onOpenFormation, onOpenReseauDir, onOpenConferences })
   return <SiteNav current="home" onOpenFormation={onOpenFormation} onOpenConferences={onOpenConferences} onOpenReseauDir={onOpenReseauDir} />
 }
 
-function FeaturedAccompagnement({ onOpen, onOpenCoach }) {
+function FeaturedAccompagnement({ onOpen }) {
   const features = [
     { icon: '◇', label: '25 modules PDF', sub: '4 niveaux · 269 pages' },
     { icon: '◌', label: '84 exercices guidés', sub: 'Progressifs et pratiques' },
@@ -74,7 +74,6 @@ function FeaturedAccompagnement({ onOpen, onOpenCoach }) {
           </a>
           <a
             href="/coach"
-            onClick={(event) => { event.preventDefault(); onOpenCoach() }}
             className="inline-block font-georgia px-6 py-4 rounded-lg border border-gold/60 bg-white/10 text-cream font-semibold text-sm hover:bg-white/20 transition-colors"
           >
             Discuter gratuitement avec MediumIA ✦
@@ -117,7 +116,7 @@ const HOME_RAIL = [
   { id: 'praticiens', label: 'Praticiens' },
 ]
 
-function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenCoach, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onOpenVideos, onNavigate }) {
+function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenChronosphere, onOpenChronosphereExample, onOpenReseauDir, onOpenReseauForm, onOpenRdv, onOpenQuestion, onOpenVideos, onNavigate }) {
   return (
     <div id="top" className="cosmic-home bg-cream min-h-screen text-deep">
       <Nav onOpenPro={onOpenPro} onOpenFormation={onOpenFormation} onOpenReseauDir={onOpenReseauDir} />
@@ -136,7 +135,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenCoach, onOpenOra
 
         {/* ── Formation MediumIA : l'offre principale, dès le premier défilement ── */}
         <section id="formation" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16">
-          <FeaturedAccompagnement onOpen={onOpenFormation} onOpenCoach={onOpenCoach} />
+          <FeaturedAccompagnement onOpen={onOpenFormation} />
         </section>
 
         {/* ── Consulter ── */}
@@ -223,7 +222,6 @@ export default function App() {
   }
   const openPro        = () => nav('/pro',              'pro')
   const openFormation  = () => nav('/formation',        'formation')
-  const openCoach      = () => nav('/coach',            'coach')
   const openOracle     = () => nav('/oracle',           'oracle')
   const openChronosphere = () => nav('/chronosphere',  'chronosphere')
   const openChronosphereExample = () => nav('/chronosphere/exemple', 'chronosphere-example')
@@ -273,5 +271,5 @@ export default function App() {
   if (view === 'rdv-lumia') return <LumiaAssistantPage onBack={openRdvDashboard} initialMessage={lumiaDraft} />
   if (view === 'rdv-cancellation') return <><RdvCancellation onBack={backHome} />{guardian}</>
   if (view === 'rdv-public')   return <><RdvPublic onBack={backHome} onNavigate={legalNav} />{guardian}</>
-  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenCoach={openCoach} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onNavigate={legalNav} />{guardian}</>
+  return <><PublicPlatformHome onOpenPro={openPro} onOpenFormation={openFormation} onOpenOracle={openOracle} onOpenChronosphere={openChronosphere} onOpenChronosphereExample={openChronosphereExample} onOpenReseauDir={openReseauDir} onOpenReseauForm={openReseauForm} onOpenRdv={openRdvPublic} onOpenQuestion={openQuestion} onOpenVideos={openVideos} onNavigate={legalNav} />{guardian}</>
 }

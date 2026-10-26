@@ -51,9 +51,9 @@ export default function TrialChat({ variant = 'formation' }) {
     e.preventDefault()
     const text = input.trim()
     if (!text || loading || exhausted) return
-    setRequestError('')
 
     const userMessage = { role: 'user', content: text }
+    setRequestError('')
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')

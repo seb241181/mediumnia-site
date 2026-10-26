@@ -10,10 +10,10 @@ const EXAMPLES = [
 
 export default function CoachDiscoveryPage({ onBack, onOpenFormation, onNavigate }) {
   return (
-    <div className="min-h-screen bg-cream text-deep">
+    <div id="top" className="min-h-screen min-w-0 overflow-x-hidden bg-cream text-deep">
       <SiteNav current="coach" onOpenFormation={onOpenFormation} />
 
-      <main id="top" className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 sm:pt-16">
+      <main className="mx-auto max-w-6xl min-w-0 px-4 pb-20 pt-28 sm:px-6 sm:pt-36">
         <button type="button" onClick={onBack}
           className="mb-8 font-georgia text-sm text-mist underline decoration-gold/50 underline-offset-4 hover:text-deep">
           ← Retour à l’accueil
@@ -36,7 +36,7 @@ export default function CoachDiscoveryPage({ onBack, onOpenFormation, onNavigate
           </div>
         </header>
 
-        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
+        <div className="grid min-w-0 grid-cols-1 items-start gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
           <aside className="space-y-5">
             <div className="rounded-2xl border border-gold/25 bg-white/70 p-6">
               <h2 className="font-georgia text-xl text-deep">Comment MediumIA peut vous aider</h2>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { groupPaymentBookings } from './manualPaymentBookingOptions.js'
 
 function authHeader(session) {
   return session ? { Authorization: `Bearer ${session.access_token}` } : {}
@@ -55,6 +56,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
   const [error, setError] = useState(null)
 
   const selectedService = useMemo(() => services.find(service => service.id === serviceId) || null, [services, serviceId])
+  const bookingGroups = useMemo(() => groupPaymentBookings(upcomingBookings), [upcomingBookings])
 
   useEffect(() => {
     if (mode !== 'booking' || !bookingId || !practitionerId || !session) {
@@ -206,12 +208,26 @@ export default function ManualPaymentModal({ practitionerId, session, services =
               <label className="mb-1.5 block font-georgia text-xs text-mist">Rendez-vous</label>
               <select value={bookingId} onChange={e => setBookingId(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm text-deep focus:outline-none focus:border-gold/60">
                 <option value="">Choisir un rendez-vous…</option>
-                {upcomingBookings.map(booking => (
-                  <option key={booking.id} value={booking.id}>
-                    {booking.customer_first_name} {booking.customer_last_name} — {new Date(booking.starts_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                  </option>
-                ))}
+                {bookingGroups.recent.length > 0 && (
+                  <optgroup label="Rendez-vous déjà passés · plus récents en premier">
+                    {bookingGroups.recent.map(booking => (
+                      <option key={booking.id} value={booking.id}>
+                        {booking.customer_first_name} {booking.customer_last_name} — {new Date(booking.starts_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {bookingGroups.upcoming.length > 0 && (
+                  <optgroup label="Rendez-vous à venir">
+                    {bookingGroups.upcoming.map(booking => (
+                      <option key={booking.id} value={booking.id}>
+                        {booking.customer_first_name} {booking.customer_last_name} — {new Date(booking.starts_at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', hour: '2-digit' })}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
+              <p className="mt-2 font-georgia text-xs text-mist">Choisis la séance concernée avant de valider. Le montant restant est vérifié automatiquement.</p>
               {loadingContext && <p className="mt-2 font-georgia text-xs text-mist">Calcul du solde restant…</p>}
               {context && (
                 <div className="mt-3 rounded-xl border border-gold/20 bg-gold/[.06] px-4 py-3">

@@ -110,3 +110,17 @@ test('RDV dashboard columns can shrink to the phone width (wide caisse table scr
   const day = fs.readFileSync('src/components/rdv/DailyPayments.jsx', 'utf8')
   assert.match(day, /aria-label="Montant encaissé en euros" className="[^"]*text-base[^"]*sm:text-sm/)
 })
+
+test('the owner caisse includes the recent completed-time bookings without changing upcoming bookings', () => {
+  const api = fs.readFileSync('api/rdv-admin.js', 'utf8')
+  const dashboard = fs.readFileSync('src/components/rdv/RdvDashboard.jsx', 'utf8')
+  assert.match(api, /const recentStart = new Date\(Date\.now\(\) - 14 \* 24 \* 60 \* 60 \* 1000\)/)
+  assert.match(api, /\.gte\('starts_at', recentStart\)\.lt\('starts_at', now\)/)
+  assert.match(api, /recent_bookings:.*recentBookings/)
+  assert.match(dashboard, /upcomingBookings=\{\[\.\.\.\(activePractitioner\.recent_bookings \|\| \[\]\), \.\.\.\(activePractitioner\.upcoming_bookings \|\| \[\]\)\]\}/)
+  assert.match(modal, /bookingGroups\.recent\.map/)
+  assert.match(modal, /bookingGroups\.upcoming\.map/)
+  assert.match(modal, /Rendez-vous déjà passés/)
+  assert.match(modal, /Rendez-vous à venir/)
+  assert.match(modal, /Choisis la séance concernée avant de valider/)
+})

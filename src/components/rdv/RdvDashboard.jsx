@@ -812,7 +812,7 @@ function RequestsSection({ requests, services, practitionerId, session, onChange
   function statusBadge(status) {
     const s = STATUS_CONFIG[status] || { label: status, cls: 'bg-deep/5 text-mist border-gold/20' }
     return (
-      <span className={`font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-0.5 border ${s.cls}`}>
+      <span className={`shrink-0 whitespace-nowrap font-georgia text-[10px] uppercase tracking-wide rounded-full px-2.5 py-1 border ${s.cls}`}>
         {s.label}
       </span>
     )
@@ -1820,7 +1820,7 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                           <h2 className="font-georgia text-lg font-medium">Demandes de rendez-vous</h2>
                         </div>
                         {activePractitioner.pending_requests?.filter(r => r.status === 'pending').length > 0 && (
-                          <span className="font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                          <span className="shrink-0 whitespace-nowrap font-georgia text-[10px] uppercase tracking-wide text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
                             {activePractitioner.pending_requests.filter(r => r.status === 'pending').length} en attente
                           </span>
                         )}

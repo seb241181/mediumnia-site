@@ -2,7 +2,7 @@ import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
 import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
 import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
-import { cancelSlotOffer, createSlotOffer, listSlotOffers } from '../lib/rdvSlotOffers.js'
+import { cancelSlotOffer, createSlotOffer, listSlotOffers, updateSlotOfferContact } from '../lib/rdvSlotOffers.js'
 import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, transferBookingDeposit } from '../lib/rdvDepositSettlements.js'
 import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
 import { handleLumiaInboxApi } from '../lib/lumiaMessageInbox.js'
@@ -910,6 +910,7 @@ export default async function handler(req, res) {
       if (req.method === 'GET') result = await listSlotOffers({ db: supabase, userId, practitionerId: String(req.query.practitioner_id || '') })
       else if (req.method === 'POST' && req.body?.op === 'create') result = await createSlotOffer({ db: supabase, userId, input: req.body })
       else if (req.method === 'POST' && req.body?.op === 'cancel') result = await cancelSlotOffer({ db: supabase, userId, input: req.body })
+      else if (req.method === 'POST' && req.body?.op === 'contact') result = await updateSlotOfferContact({ db: supabase, userId, input: req.body })
       else result = { status: 400, body: { error: 'invalid_request' } }
       return res.status(result.status).json(result.body)
     }

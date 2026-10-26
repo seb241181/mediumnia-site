@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { phoneActionHref } from '../../lib/rdvPhoneActions.js'
 
 // Rendez-vous d'urgence : le praticien propose un créneau précis à une
 // personne. Le lien personnel mène directement à ce créneau, avec paiement de
@@ -21,6 +22,9 @@ const ERRORS = {
   slot_busy: 'Ce créneau est déjà occupé dans votre Google Agenda (un événement dont le titre ne commence pas par « Urgence »).',
   slot_booked: 'Un rendez-vous est déjà pris sur ce créneau.',
   google_calendar_unavailable: 'Google Agenda ne répond pas : impossible de vérifier le créneau. Réessayez dans un instant.',
+  invalid_contact_phone: 'Ce numéro de téléphone ne semble pas valide.',
+  invalid_contact_email: 'Cette adresse e-mail ne semble pas valide.',
+  offer_contact_update_failed: 'Impossible d’enregistrer les coordonnées. Réessayez.',
 }
 
 const STATUS = { open: 'En attente', used: 'Réservé ✓', cancelled: 'Annulé', expired: 'Expiré' }
@@ -55,6 +59,13 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
   const [date, setDate] = useState(todayParis())
   const [time, setTime] = useState('')
   const [firstName, setFirstName] = useState('')
+  const [newPhone, setNewPhone] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [expandedOfferId, setExpandedOfferId] = useState(null)
+  const [contactDraft, setContactDraft] = useState({ customer_phone: '', customer_email: '' })
+  const [contactError, setContactError] = useState('')
+  const [savingContact, setSavingContact] = useState(false)
+  const [contactSaved, setContactSaved] = useState(false)
   const [validity, setValidity] = useState(24)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -91,7 +102,7 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
       const res = await fetch('/api/rdv-admin?action=slot-offers', {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ op: 'create', practitioner_id: practitionerId, service_id: serviceId, date, time, customer_first_name: firstName.trim(), validity_hours: validity }),
+        body: JSON.stringify({ op: 'create', practitioner_id: practitionerId, service_id: serviceId, date, time, customer_first_name: firstName.trim(), customer_phone: newPhone.trim(), customer_email: newEmail.trim(), validity_hours: validity }),
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body.error || 'offer_create_failed')
@@ -117,6 +128,38 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
     loadOffers().catch(() => {})
   }
 
+  function toggleOffer(offer) {
+    setExpandedOfferId(current => current === offer.id ? null : offer.id)
+    setContactDraft({ customer_phone: offer.customer_phone || '', customer_email: offer.customer_email || '' })
+    setContactError('')
+    setContactSaved(false)
+  }
+
+  async function saveOfferContact(offer) {
+    if (savingContact) return
+    setSavingContact(true)
+    setContactError('')
+    setContactSaved(false)
+    try {
+      const res = await fetch('/api/rdv-admin?action=slot-offers', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          op: 'contact', practitioner_id: practitionerId, id: offer.id,
+          customer_phone: contactDraft.customer_phone, customer_email: contactDraft.customer_email,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'offer_contact_update_failed')
+      setOffers(current => current.map(o => o.id === offer.id ? { ...o, ...body.offer } : o))
+      setContactSaved(true)
+    } catch (e) {
+      setContactError(ERRORS[e.message] || 'Impossible de sauvegarder les coordonnées.')
+    } finally {
+      setSavingContact(false)
+    }
+  }
+
   const message = created ? offerMessage({
     firstName: created.offer.customer_first_name,
     serviceTitle: created.offer.service_title,
@@ -134,6 +177,8 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
   }
 
   const titleOf = (id) => services.find(s => s.id === id)?.title || 'Prestation'
+  const createdSms = created?.offer?.customer_phone ? phoneActionHref(created.offer.customer_phone, 'sms') : null
+  const createdEmail = created?.offer?.customer_email || ''
   const field = 'w-full min-w-0 rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base text-deep focus:border-gold/60 focus:outline-none sm:text-sm'
   const action = 'flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 font-georgia text-sm font-semibold'
 
@@ -157,12 +202,12 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
             </div>
             <p className="whitespace-pre-line break-words rounded-xl border border-gold/20 bg-white/80 px-4 py-3 font-georgia text-sm text-deep">{message}</p>
             <div className="grid grid-cols-2 gap-2">
-              <a href={`sms:?&body=${encodeURIComponent(message)}`} className={`${action} bg-deep text-gold`}>SMS</a>
+              <a href={`${createdSms || 'sms:'}?&body=${encodeURIComponent(message)}`} className={`${action} bg-deep text-gold`}>SMS</a>
               <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer" className={`${action} bg-deep text-gold`}>WhatsApp</a>
-              <a href={`mailto:?subject=${encodeURIComponent('Votre rendez-vous avec Sébastien')}&body=${encodeURIComponent(message)}`} className={`${action} border border-gold/35 text-deep`}>E-mail</a>
+              <a href={`mailto:${createdEmail}?subject=${encodeURIComponent('Votre rendez-vous avec Sébastien')}&body=${encodeURIComponent(message)}`} className={`${action} border border-gold/35 text-deep`}>E-mail</a>
               <button type="button" onClick={copy} className={`${action} border border-gold/35 text-deep`}>{copied ? 'Copié ✓' : 'Copier le message'}</button>
             </div>
-            <button type="button" onClick={() => { setCreated(null); setTime(''); setFirstName('') }} className="w-full pt-1 font-georgia text-xs text-mist underline decoration-gold/40 underline-offset-4">Proposer un autre créneau</button>
+            <button type="button" onClick={() => { setCreated(null); setTime(''); setFirstName(''); setNewPhone(''); setNewEmail('') }} className="w-full pt-1 font-georgia text-xs text-mist underline decoration-gold/40 underline-offset-4">Proposer un autre créneau</button>
           </div>
         ) : (
           <form onSubmit={submit} className="mt-5 space-y-4">
@@ -195,6 +240,19 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
                 </select>
               </div>
             </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="min-w-0">
+                <label htmlFor="offer-phone" className="mb-1.5 block font-georgia text-xs text-mist">Téléphone <span className="opacity-60">optionnel</span></label>
+                <input id="offer-phone" type="tel" autoComplete="tel" value={newPhone} onChange={e => setNewPhone(e.target.value)}
+                  placeholder="06 00 00 00 00" maxLength={32} className={field} />
+              </div>
+              <div className="min-w-0">
+                <label htmlFor="offer-email" className="mb-1.5 block font-georgia text-xs text-mist">E-mail <span className="opacity-60">optionnel</span></label>
+                <input id="offer-email" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                  placeholder="client@exemple.fr" maxLength={254} className={field} />
+              </div>
+            </div>
+            <p className="font-georgia text-xs text-mist">Ces coordonnées servent à retrouver et relancer la personne depuis ce lien. Aucun SMS ni e-mail n’est envoyé automatiquement.</p>
             {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-georgia text-xs text-red-800">{error}</p>}
             <button type="submit" disabled={busy} className="w-full rounded-xl bg-deep px-4 py-3 font-georgia text-sm font-bold text-gold disabled:opacity-50">
               {busy ? 'Création du lien…' : 'Créer le lien personnel'}
@@ -207,13 +265,49 @@ export default function SlotOfferModal({ practitionerId, session, onClose }) {
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-mist">Liens récents</p>
             <ul className="mt-2 divide-y divide-gold/10">
               {offers.map(o => (
-                <li key={o.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-georgia text-sm text-deep">{when(o.starts_at)}{o.customer_first_name ? ` · ${o.customer_first_name}` : ''}</p>
-                    <p className="font-georgia text-[11px] text-mist">{titleOf(o.service_id)} · {STATUS[o.status] || o.status}</p>
+                <li key={o.id} className="py-3">
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <button type="button" onClick={() => toggleOffer(o)} aria-expanded={expandedOfferId === o.id}
+                      className="min-w-0 flex-1 text-left" aria-label={`Voir les coordonnées de ${o.customer_first_name || 'ce lien'}`}>
+                      <p className="font-georgia text-sm text-deep [overflow-wrap:anywhere]">{when(o.starts_at)}{o.customer_first_name ? ` · ${o.customer_first_name}` : ''}</p>
+                      <p className="font-georgia text-[11px] text-mist">{titleOf(o.service_id)} · {STATUS[o.status] || o.status}</p>
+                      <p className="mt-1 font-georgia text-[11px] font-semibold text-deep underline underline-offset-2">{expandedOfferId === o.id ? 'Masquer les détails ▲' : 'Coordonnées / Relancer ▼'}</p>
+                    </button>
+                    {o.status === 'open' && (
+                      <button type="button" onClick={() => cancel(o)} className="shrink-0 rounded-lg border border-gold/30 px-3 py-1.5 font-georgia text-xs text-deep">Annuler</button>
+                    )}
                   </div>
-                  {o.status === 'open' && (
-                    <button type="button" onClick={() => cancel(o)} className="shrink-0 rounded-lg border border-gold/30 px-3 py-1.5 font-georgia text-xs text-deep">Annuler</button>
+                  {expandedOfferId === o.id && (
+                    <div className="mt-3 space-y-3 rounded-xl border border-gold/20 bg-white/60 px-3 py-3">
+                      <p className="font-georgia text-xs text-mist">Lien créé le {when(o.created_at)} · valable jusqu’au {when(o.expires_at)}.</p>
+                      {o.customer_phone
+                        ? <div className="flex flex-wrap items-center gap-3 font-georgia text-sm">
+                            <span className="text-deep">Téléphone : {o.customer_phone}</span>
+                            <a className="font-semibold text-deep underline underline-offset-2" href={phoneActionHref(o.customer_phone, 'sms') || undefined}>Messages</a>
+                            <a className="text-deep underline underline-offset-2" href={phoneActionHref(o.customer_phone, 'tel') || undefined}>Appeler</a>
+                          </div>
+                        : <p className="font-georgia text-xs text-amber-800">Aucun numéro enregistré pour ce lien. Les anciens liens ne conservaient que le prénom.</p>}
+                      {o.customer_email && <p className="font-georgia text-xs text-deep">E-mail : <a href={`mailto:${o.customer_email}`} className="underline underline-offset-2">{o.customer_email}</a></p>}
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="font-georgia text-xs text-mist">Téléphone
+                          <input type="tel" value={contactDraft.customer_phone} maxLength={32}
+                            onChange={e => { setContactDraft(d => ({ ...d, customer_phone: e.target.value })); setContactSaved(false) }}
+                            placeholder="Numéro à renseigner" className={`${field} mt-1`} />
+                        </label>
+                        <label className="font-georgia text-xs text-mist">E-mail
+                          <input type="email" value={contactDraft.customer_email} maxLength={254}
+                            onChange={e => { setContactDraft(d => ({ ...d, customer_email: e.target.value })); setContactSaved(false) }}
+                            placeholder="Adresse facultative" className={`${field} mt-1`} />
+                        </label>
+                      </div>
+                      <button type="button" onClick={() => saveOfferContact(o)} disabled={savingContact}
+                        className="min-h-11 rounded-xl border border-gold/35 bg-deep px-4 py-2 font-georgia text-xs font-semibold text-gold disabled:opacity-40">
+                        {savingContact ? 'Enregistrement…' : 'Enregistrer les coordonnées'}
+                      </button>
+                      {contactSaved && <p role="status" className="font-georgia text-xs text-emerald-800">Coordonnées enregistrées.</p>}
+                      {contactError && <p role="alert" className="font-georgia text-xs text-red-800">{contactError}</p>}
+                      {o.status === 'open' && <p className="font-georgia text-xs text-mist">Pour renvoyer le lien de réservation, reprends le message original : le lien personnel complet n’est pas conservé dans l’historique pour des raisons de sécurité.</p>}
+                    </div>
                   )}
                 </li>
               ))}

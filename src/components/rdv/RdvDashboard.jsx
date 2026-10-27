@@ -4,6 +4,7 @@ import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
 import UnifiedAgenda from './UnifiedAgenda.jsx'
+import UpcomingVisioToCollect from './UpcomingVisioToCollect.jsx'
 import { phoneActionHref } from '../../lib/rdvPhoneActions.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -1835,53 +1836,16 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                     </section>
                   )}
 
-                  {/* Upcoming bookings */}
-                  <section className="rounded-2xl border border-gold/25 bg-white/60 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="font-georgia text-[11px] tracking-[0.18em] uppercase text-gold mb-1">Agenda</p>
-                        <h2 className="font-georgia text-lg font-medium">Rendez-vous des prochains jours</h2>
-                      </div>
-                      {futureBookings.length > 0 && (
-                        <StatusBadge status="ok" />
-                      )}
-                    </div>
-
-                    {futureBookings.length === 0 ? (
-                      <div className="rounded-xl border border-gold/15 bg-deep/3 px-6 py-10 text-center">
-                        <p className="text-gold text-3xl mb-3">◈</p>
-                        <p className="font-georgia text-sm text-mist leading-relaxed max-w-xs mx-auto">
-                          Aucun autre rendez-vous prévu après aujourd’hui.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {futureBookings.map(b => {
-                          const svc = activePractitioner.services.find(s => s.id === b.service_id)
-                          const date = new Date(b.starts_at)
-                          // Visio = WhatsApp / FaceTime (demande Lumia), sinon « canal à confirmer » ; jamais Meet.
-                          const visio = videoLabel((activePractitioner.pending_requests || []).find(r => r.confirmed_booking_id === b.id))
-                            || (Array.isArray(svc?.modality) && svc.modality.length > 0 && svc.modality.every(m => m === 'video') ? 'Visio — canal à confirmer' : null)
-                          return (
-                            <div key={b.id} className="rounded-xl border border-gold/15 bg-white/40 px-4 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                              <div className="min-w-0">
-                                <p className="font-georgia text-sm font-semibold text-deep">{b.customer_first_name} {b.customer_last_name}</p>
-                                <p className="font-georgia text-xs text-mist">{svc?.title || '—'} · {date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}{visio ? ` · ${visio}` : ''}</p>
-                              </div>
-                              <button
-                                onClick={() => handleResendConfirmation(b)}
-                                disabled={resendingBookingId === b.id}
-                                className="font-georgia text-xs text-gold border border-gold/30 px-3 py-1.5 rounded-lg hover:bg-gold/10 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                              >
-                                {resendingBookingId === b.id && <Spinner />}
-                                Renvoyer la confirmation
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </section>
+                  {/* Visios à suivre : paiements vérifiés, dossiers réglés masqués de ce panneau uniquement. */}
+                  <UpcomingVisioToCollect
+                    practitionerId={activePractitioner.id}
+                    session={session}
+                    bookings={futureBookings}
+                    services={activePractitioner.services || []}
+                    requests={activePractitioner.pending_requests || []}
+                    resendingBookingId={resendingBookingId}
+                    onResend={handleResendConfirmation}
+                  />
 
                   {/* Caisse accessible dans Rendez-vous (y compris /rdv#encaisser). */}
                   <AccountingSection

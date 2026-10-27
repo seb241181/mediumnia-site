@@ -20,7 +20,7 @@ function patchDashboard() {
   if (source.includes(oldButton)) {
     source = source.replace(oldButton, statusBlock)
     changed = true
-  } else if (!source.includes('<BookingPaymentStatus')) {
+  } else if (!source.includes('<BookingPaymentStatus') && !source.includes('<UpcomingVisioToCollect')) {
     const marker = `                              <button\n                                onClick={() => handleResendConfirmation(b)}`
     if (!source.includes(marker)) throw new Error('rdv_manual_payment_booking_button_marker_missing')
     source = source.replace(marker, `${statusBlock}${marker}`)
@@ -28,7 +28,7 @@ function patchDashboard() {
   }
 
   const statusImport = "import BookingPaymentStatus from './BookingPaymentStatus.jsx'\n"
-  if (!source.includes(statusImport)) {
+  if (source.includes('<BookingPaymentStatus') && !source.includes(statusImport)) {
     const marker = "import AccountingSection from './AccountingSection.jsx'\n"
     if (!source.includes(marker)) throw new Error('rdv_manual_payment_status_import_marker_missing')
     source = source.replace(marker, `${marker}${statusImport}`)

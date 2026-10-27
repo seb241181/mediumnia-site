@@ -39,7 +39,7 @@ import { requireAuth, getSupabaseAdmin } from '../lib/supabaseAdmin.js'
 import { decrypt, encrypt, refreshGoogleToken } from '../lib/googleOAuth.js'
 import { sendEmail, escapeHtml } from '../lib/transactionalEmail.js'
 import { syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
-import { getUnifiedAgenda } from '../lib/rdvUnifiedAgenda.js'
+import { getUnifiedAgenda, resolveAgendaModality } from '../lib/rdvUnifiedAgenda.js'
 import { getAgendaBookingHistory, getOwnedAgendaBooking, processRdvCalendarSyncJob, rescheduleAgendaBooking } from '../lib/rdvAgendaOperations.js'
 import { bookingCancellationUrl, createCancellationToken } from '../lib/bookingCancellation.js'
 
@@ -142,12 +142,41 @@ async function handleMe(req, res, supabase, userId) {
     googleEventMap = Object.fromEntries((syncedBookings || []).map(b => [b.id, b.google_event_id || null]))
   }
 
+  // Owner-only dashboard: resolve each future booking's actual chosen mode.
+  // Multi-mode services never imply a particular modality without a saved choice.
+  const upcomingIds = (bookings || []).map(booking => booking.id)
+  const requestModes = new Map()
+  const holdModes = new Map()
+  for (let offset = 0; offset < upcomingIds.length; offset += 100) {
+    const batch = upcomingIds.slice(offset, offset + 100)
+    const [chosenRequests, chosenHolds] = await Promise.all([
+      supabase.from('booking_requests').select('confirmed_booking_id, requested_modality').in('confirmed_booking_id', batch),
+      supabase.from('rdv_booking_holds').select('converted_booking_id, selected_modality').in('converted_booking_id', batch),
+    ])
+    if (chosenRequests.error || chosenHolds.error) return res.status(503).json({ error: 'upcoming_modality_unavailable' })
+    for (const item of chosenRequests.data || []) {
+      requestModes.set(item.confirmed_booking_id, [...(requestModes.get(item.confirmed_booking_id) || []), item.requested_modality])
+    }
+    for (const item of chosenHolds.data || []) {
+      holdModes.set(item.converted_booking_id, [...(holdModes.get(item.converted_booking_id) || []), item.selected_modality])
+    }
+  }
+  const serviceModes = new Map((services || []).map(s => [s.id, s.modality || []]))
+  const upcomingWithModality = (bookings || []).map(booking => ({
+    ...booking,
+    ...resolveAgendaModality({
+      requests: requestModes.get(booking.id) || [],
+      holds: holdModes.get(booking.id) || [],
+      serviceModalities: serviceModes.get(booking.service_id) || [],
+    }),
+  }))
+
   const result = practitioners.map(p => ({
     ...p,
     services:          (services    || []).filter(s => s.practitioner_id === p.id),
     availability_rules:(rules       || []).filter(r => r.practitioner_id === p.id),
     calendar:          (connections || []).find(c  => c.practitioner_id  === p.id) || null,
-    upcoming_bookings: (bookings    || []).filter(b => b.practitioner_id === p.id),
+    upcoming_bookings: upcomingWithModality.filter(b => b.practitioner_id === p.id),
     recent_bookings:   (recentBookings || []).filter(b => b.practitioner_id === p.id),
     exceptions:        (exceptions  || []).filter(e => e.practitioner_id === p.id),
     pending_requests:  (requests    || []).filter(r => r.practitioner_id === p.id).map(r => ({

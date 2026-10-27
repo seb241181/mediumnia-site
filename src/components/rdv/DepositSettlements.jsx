@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { parseAmount } from './dailyPaymentsHelpers.js'
+import { groupDepositSettlements } from './depositSettlementGroups.js'
 
 // Arrhes des rendez-vous annulés : chaque paiement PayPal d'un RDV annulé
 // reste « à traiter » tant qu'une décision n'est pas prise (rembourser,
@@ -284,29 +285,53 @@ export default function DepositSettlements({ practitionerId, session, onChanged 
 
   const items = data?.items || []
   if (!items.length) return null
-  const todo = items.filter((i) => ['open', 'refund_pending', 'partially_refunded'].includes(i.settlement_status)).length
+  const { active, archived } = groupDepositSettlements(items)
+  const todo = active.length
+
+  const renderSettlementCard = (item) => (
+    <SettlementCard
+      key={item.booking_id}
+      item={item}
+      practitionerId={practitionerId}
+      session={session}
+      refundsEnabled={data.refunds_enabled}
+      onChanged={changed}
+    />
+  )
 
   return (
-    <div className="mt-6 rounded-2xl border border-gold/25 bg-white/55 p-5">
+    <div className="mt-6 rounded-2xl border border-gold/25 bg-white/55 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-georgia text-base font-medium text-deep">Arrhes des rendez-vous annulés</h3>
-        <p className="font-georgia text-xs text-mist">{todo ? `${todo} à traiter` : 'Tout est traité'}</p>
+        <p className="font-georgia text-xs text-mist">{todo ? `${todo} à traiter` : 'Tout est traité ✓'}</p>
       </div>
       <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
-        Annuler un rendez-vous ne rembourse jamais automatiquement. Choisissez ici : rembourser, transférer vers un autre rendez-vous du même client, ou conserver.
+        Annuler un rendez-vous ne rembourse jamais automatiquement. Pour les dossiers à traiter, choisissez : rembourser, transférer vers un autre rendez-vous du même client, ou conserver.
       </p>
-      <ul className="mt-4 space-y-3">
-        {items.map((item) => (
-          <SettlementCard
-            key={item.booking_id}
-            item={item}
-            practitionerId={practitionerId}
-            session={session}
-            refundsEnabled={data.refunds_enabled}
-            onChanged={changed}
-          />
-        ))}
-      </ul>
+
+      {active.length ? (
+        <ul className="mt-4 space-y-3">
+          {active.map(renderSettlementCard)}
+        </ul>
+      ) : (
+        <p className="mt-4 rounded-xl border border-gold/15 bg-cream/40 px-4 py-4 text-center font-georgia text-sm text-mist">
+          Aucune arrhe en attente de décision ou de vérification.
+        </p>
+      )}
+
+      {archived.length > 0 && (
+        <details className="mt-4 rounded-xl border border-gold/20 bg-white/50 px-3 py-3 sm:px-4">
+          <summary className="cursor-pointer font-georgia text-sm font-medium text-deep">
+            Archives · Arrhes déjà réglées ({archived.length})
+          </summary>
+          <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">
+            Remboursements terminés, arrhes transférées ou conservées. Les opérations et leurs justificatifs restent consultables, sans aucune suppression.
+          </p>
+          <ul className="mt-3 space-y-3">
+            {archived.map(renderSettlementCard)}
+          </ul>
+        </details>
+      )}
     </div>
   )
 }

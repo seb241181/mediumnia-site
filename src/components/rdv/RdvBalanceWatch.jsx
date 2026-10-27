@@ -72,8 +72,9 @@ function Badge({ tone, children }) {
   return <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{children}</span>
 }
 
-function confirmedState(item, now) {
+function confirmedState(item, now, ownerReview = false) {
   if (item.owner_decision === 'cancel') return ['Annulation approuvée par vous', 'bad']
+  if (ownerReview) return ['Solde à vérifier : décision du propriétaire nécessaire', 'warn']
   if (item.cancel_blocker && CANCEL_STATE[item.cancel_blocker]) return CANCEL_STATE[item.cancel_blocker]
   const deadline = new Date(item.cancel_deadline_at).getTime()
   if (now >= deadline) return ['Annulation automatique au prochain passage (vers 9 h)', 'bad']
@@ -162,7 +163,7 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
       {items.length === 0 ? <p className="mt-3 text-sm text-[#4A3F6B]">Aucune visio à surveiller.</p> : <ul className="mt-3 space-y-3">
         {items.map(item => {
           const cancelled = item.status === 'cancelled'
-          const [label, tone] = cancelled ? ['Annulé pour solde le ' + dayTime(item.auto_cancelled_at), 'bad'] : confirmedState(item, now)
+          const [label, tone] = cancelled ? ['Annulé pour solde le ' + dayTime(item.auto_cancelled_at), 'bad'] : confirmedState(item, now, data?.settings?.auto_cancel_mode === 'owner_review')
           const restorePending = item.restoration?.status === 'google_pending'
           return <li key={item.booking_id} className="rounded-xl border border-gold/20 bg-cream/60 p-3 text-sm text-deep">
             <div className="flex flex-wrap items-center justify-between gap-2">

@@ -66,7 +66,8 @@ test('public balance page keeps its token in the URL fragment and posts it to th
   assert.match(page, /rdvBalanceAction=/)
   assert.match(page, /method:'POST'/)
   assert.match(page, /Régler mon solde/)
-  assert.match(page, /automatiquement annulé/)
+  assert.match(page, /ne payez pas une deuxième fois/)
+  assert.doesNotMatch(page, /le rendez-vous sera automatiquement annulé/)
   assert.ok(rewrites.some(item => item.source === '/rdv/solde' && item.destination === '/rdv-solde.html'))
 })
 
@@ -77,7 +78,7 @@ test('video deposits inside 48 hours are forced to full payment and confirmation
   assert.match(patch, /48 \* 3_600_000/)
   assert.match(patch, /fullPaymentRequired/)
   assert.match(email, /enverra un rappel avec un lien de paiement sécurisé environ 72 heures/)
-  assert.match(email, /au plus tard 48 heures avant la séance/)
+  assert.match(email, /expire normalement 48 heures avant la séance/)
 })
 
 test('Hobby plan uses one secure Vercel balance sweep per day without adding a function', () => {
@@ -100,4 +101,14 @@ test('Hobby plan uses one secure Vercel balance sweep per day without adding a f
   assert.match(cronHandler, /claim_rdv_balance_reminder/)
   assert.match(cronHandler, /claim_rdv_balance_auto_cancel/)
   assert.match(cronHandler, /deleteBookingFromGoogleCalendar/)
+})
+
+test('virement reçu hors MediumIA : le rappel n’accuse pas à tort et évite le double règlement', () => {
+  const email = read('lib/rdvBalanceEmail.js')
+  const reminder = email.slice(email.indexOf('export function buildRdvBalanceReminder'), email.indexOf('export function buildRdvBalancePaidConfirmation'))
+  assert.match(reminder, /Ne payez pas une deuxième fois/)
+  assert.match(reminder, /Solde à vérifier/)
+  assert.doesNotMatch(reminder, /le rendez-vous sera automatiquement annulé/)
+  assert.match(read('lib/rdvDepositConfirmationEmail.js'), /ne payez pas une deuxième fois/)
+  assert.match(read('src/components/rdv/RdvBalanceWatch.jsx'), /if \(ownerReview\)/)
 })

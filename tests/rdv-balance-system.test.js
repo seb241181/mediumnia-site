@@ -78,7 +78,7 @@ test('video deposits inside 48 hours are forced to full payment and confirmation
   assert.match(patch, /48 \* 3_600_000/)
   assert.match(patch, /fullPaymentRequired/)
   assert.match(email, /enverra un rappel avec un lien de paiement sécurisé environ 72 heures/)
-  assert.match(email, /au plus tard 48 heures avant la séance/)
+  assert.match(email, /expire normalement 48 heures avant la séance/)
 })
 
 test('Hobby plan uses one secure Vercel balance sweep per day without adding a function', () => {

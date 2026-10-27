@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { pendingVisioBookings } from '../../lib/rdvUnpaidVisio.js'
+import { pendingVisioBookings } from '../../../lib/rdvUnpaidVisio.js'
 
 const money = cents => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(cents || 0) / 100)
 

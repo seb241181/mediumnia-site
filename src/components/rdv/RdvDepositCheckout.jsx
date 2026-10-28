@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import GiftCardRedeem from './GiftCardRedeem.jsx'
+import PayPalGuestNotice from '../PayPalGuestNotice.jsx'
 
 // PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
 const PAY_LATER_MIN_CENTS = 3000
@@ -286,10 +287,10 @@ export default function RdvDepositCheckout({
 
       <div className="rounded-2xl border border-gold/30 bg-white/70 p-5">
         <p className="font-georgia text-sm text-mist leading-relaxed mb-4">Votre créneau est bloqué pendant 15 minutes à partir de la création du paiement.</p>
+        <PayPalGuestNotice className="mb-4" />
         <div className="mb-4 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 font-georgia text-xs leading-relaxed text-deep">
           <p className="font-semibold">Comment payer ?</p>
           <ul className="mt-1.5 space-y-1 text-mist">
-            <li>• <strong className="text-deep">Pas de compte PayPal ?</strong> Payez directement par carte bancaire avec le bouton « Carte de débit ou de crédit » : aucun compte n’est nécessaire (paiement en 1 fois).</li>
             <li>• <strong className="text-deep">PayPal</strong> : en 1 fois{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou en 4 fois sans frais avec le bouton « Payer en 4X » (compte PayPal requis, il peut être créé pendant le paiement)' : ''}.</li>
           </ul>
           {paymentCents < PAY_LATER_MIN_CENTS && priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
@@ -302,7 +303,7 @@ export default function RdvDepositCheckout({
         {holdUntil && <p className="font-georgia text-xs text-mist mb-3">Créneau protégé jusqu’à {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(holdUntil))}.</p>}
         {notice && <p className="font-georgia text-sm text-red-800 bg-red-50 rounded-xl px-3 py-2 mb-3">{notice}</p>}
         {!consentsReady ? (
-          <p className="font-georgia text-sm text-mist text-center py-3">Cochez les deux cases ci-dessus pour afficher les boutons de paiement : <strong className="text-deep">carte bancaire</strong> (sans compte PayPal) ou <strong className="text-deep">PayPal</strong>{paymentCents >= PAY_LATER_MIN_CENTS ? ', en une fois ou en 4 fois' : ''}.</p>
+          <p className="font-georgia text-sm text-mist text-center py-3">Cochez les deux cases ci-dessus pour afficher le paiement PayPal et, si proposée, l’option <strong className="text-deep">carte bancaire sans compte</strong>{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou le paiement en plusieurs fois selon éligibilité' : ''}.</p>
         ) : (
           <div ref={containerRef}>{!config && !notice && <p className="font-georgia text-sm text-mist">Chargement du paiement sécurisé…</p>}</div>
         )}

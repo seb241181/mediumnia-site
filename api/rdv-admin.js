@@ -188,6 +188,43 @@ async function handleMe(req, res, supabase, userId) {
   return res.status(200).json({ practitioners: result })
 }
 
+// ── action=attention : petits compteurs propriétaire (lecture seule) ──────────
+// Les chiffres suivent les statuts réels, pas les e-mails Gmail et pas les
+// événements analytiques. Aucune information personnelle n'est retournée.
+async function handleAttention(req, res, supabase, userId) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+
+  const { data: practitioners, error: ownerError } = await supabase
+    .from('booking_practitioners')
+    .select('id, slug')
+    .eq('owner_id', userId)
+  if (ownerError) return res.status(503).json({ error: 'attention_owner_unavailable' })
+  if (!practitioners?.length) return res.status(200).json({ rdv_pending: {}, email_pending: null })
+
+  const hasEmailAccess = practitioners.some(p => p.slug === 'sebastien-seguin')
+  const emailQuery = hasEmailAccess
+    ? supabase.from('mediumia_email_questions')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['paid', 'in_progress', 'manual_review', 'refund_pending'])
+    : Promise.resolve({ count: null, error: null })
+
+  const [emailResult, ...rdvResults] = await Promise.all([
+    emailQuery,
+    ...practitioners.map(p => supabase.from('booking_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('practitioner_id', p.id)
+      .eq('status', 'pending')),
+  ])
+  if (emailResult.error || rdvResults.some(r => r.error)) {
+    return res.status(503).json({ error: 'attention_counts_unavailable' })
+  }
+
+  return res.status(200).json({
+    email_pending: hasEmailAccess ? Number(emailResult.count || 0) : null,
+    rdv_pending: Object.fromEntries(practitioners.map((p, i) => [p.id, Number(rdvResults[i].count || 0)])),
+  })
+}
+
 // ── action=services ───────────────────────────────────────────────────────────
 
 async function handleServices(req, res, supabase, userId) {
@@ -904,6 +941,7 @@ export default async function handler(req, res) {
       return res.status(result.status).json(result.body)
     }
     case 'me':           return handleMe(req, res, supabase, userId)
+    case 'attention':    return handleAttention(req, res, supabase, userId)
     case 'services':     return handleServices(req, res, supabase, userId)
     case 'availability': return handleAvailability(req, res, supabase, userId)
     case 'settings':     return handleSettings(req, res, supabase, userId)

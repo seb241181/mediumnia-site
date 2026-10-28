@@ -1,5 +1,6 @@
 import LegalFooter from './LegalFooter'
 import OracleTest from './OracleTest'
+import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import PublicPageNav from './PublicPageNav'
 
 export default function OraclePage({ onBack, onNavigate }) {
@@ -45,6 +46,7 @@ export default function OraclePage({ onBack, onNavigate }) {
                 Commander et payer — 34,69 € TTC
               </a>
               <p className="font-georgia text-[11px] text-mist mt-2">Livraison comprise en France métropolitaine · Paiement sécurisé via PayPal</p>
+              <PayPalGuestNotice className="mt-3" />
               <div className="mt-4 space-y-1">
                 <p className="font-georgia text-[11px] text-mist leading-relaxed">
                   Droit de rétractation de 14 jours · <a href="/cgv-oracle" onClick={(e) => { e.preventDefault(); onNavigate('/cgv-oracle') }} className="text-gold hover:underline">CGV</a> · <a href="/confidentialite" onClick={(e) => { e.preventDefault(); onNavigate('/confidentialite') }} className="text-gold hover:underline">Confidentialité</a> · <a href="/retractation" onClick={(e) => { e.preventDefault(); onNavigate('/retractation') }} className="text-gold hover:underline">Rétractation</a>
@@ -159,6 +161,7 @@ export default function OraclePage({ onBack, onNavigate }) {
             Commander et payer — 34,69 € TTC
           </a>
           <p className="font-georgia text-xs text-mist mt-2">Livraison comprise en France métropolitaine · Paiement sécurisé via PayPal</p>
+          <div className="mx-auto mt-3 max-w-xl text-left"><PayPalGuestNotice /></div>
           <div className="mt-6">
             <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
               ← Retour à MediumIA

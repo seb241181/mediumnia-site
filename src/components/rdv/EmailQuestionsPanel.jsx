@@ -22,7 +22,7 @@ function statusLabel(status) {
   })[status] || status
 }
 
-export default function EmailQuestionsPanel({ session }) {
+export default function EmailQuestionsPanel({ session, onChanged }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState(null)
@@ -72,6 +72,7 @@ export default function EmailQuestionsPanel({ session }) {
     try {
       await api('POST', { id, op, ...extra })
       await load()
+      onChanged?.()
       if (op === 'answer') setAnswers((prev) => ({ ...prev, [id]: '' }))
       setNotice(op === 'answer' ? 'Réponse envoyée.' : op === 'refund' ? 'Remboursement traité.' : 'Demande mise en cours.')
     } catch (error) {

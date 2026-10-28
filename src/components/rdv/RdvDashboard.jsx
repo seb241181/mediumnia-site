@@ -1243,6 +1243,8 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   const [meData, setMeData] = useState(null)
   const [meLoading, setMeLoading] = useState(false)
   const [activeSlug, setActiveSlug] = useState(null)
+  const [attention, setAttention] = useState({ email_pending: null, rdv_pending: {} })
+  const [attentionError, setAttentionError] = useState(false)
 
   // Calendar section
   const [calStatus, setCalStatus] = useState(null)
@@ -1298,6 +1300,28 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
     }
   }, [activeSlug])
 
+  // Lecture propriétaire légère et indépendante des statistiques de trafic.
+  // Le compteur n'est jamais diminué au clic : seul le vrai statut le fait.
+  const loadAttention = useCallback(async (sess, signal) => {
+    if (!sess?.access_token) {
+      setAttention({ email_pending: null, rdv_pending: {} })
+      setAttentionError(false)
+      return
+    }
+    try {
+      const res = await fetch('/api/rdv-admin?action=attention', {
+        headers: authHeader(sess), cache: 'no-store', ...(signal ? { signal } : {}),
+      })
+      if (!res.ok) throw new Error('attention_unavailable')
+      const data = await res.json()
+      setAttention({ email_pending: data.email_pending, rdv_pending: data.rdv_pending || {} })
+      setAttentionError(false)
+    } catch (error) {
+      if (error?.name === 'AbortError') return
+      setAttentionError(true)
+    }
+  }, [])
+
   async function handleResendConfirmation(booking) {
     if (!window.confirm('Régénérer le lien d’annulation et renvoyer la confirmation à cette personne ?')) return
     setResendingBookingId(booking.id)
@@ -1328,6 +1352,27 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
   // Rechargé quand le compte change, pas à chaque rafraîchissement du jeton
   // (sinon la page se re-montait et fermait la fenêtre ouverte, ex. urgence).
   useEffect(() => { loadMe(session) }, [session?.user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mise à jour automatique en page de garde (visible uniquement), y compris
+  // après retour à l'onglet, sans recharger tout l'agenda.
+  useEffect(() => {
+    if (!session?.access_token) {
+      loadAttention(null)
+      return
+    }
+    const controller = new AbortController()
+    const refresh = () => {
+      if (document.visibilityState === 'visible') loadAttention(session, controller.signal)
+    }
+    refresh()
+    const timer = setInterval(refresh, 60_000)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      controller.abort()
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [session?.user?.id, session?.access_token, loadAttention])
 
   // Load calendar status when active practitioner changes
   useEffect(() => {
@@ -1576,21 +1621,26 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                       <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold">Les Coulisses · Rendez-vous</p>
                       <h2 className="mt-1 font-georgia text-xl font-medium text-deep">Votre espace de travail</h2>
                     </div>
-                    <span className="font-georgia text-xs text-mist">
-                      {calLoading ? 'Agenda : vérification…' : calStatus?.connected ? 'Google Agenda connecté' : 'Google Agenda à vérifier'}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {attentionError && <span role="status" className="font-georgia text-[11px] text-amber-700">Compteurs à vérifier</span>}
+                      <span className="font-georgia text-xs text-mist">
+                        {calLoading ? 'Agenda : vérification…' : calStatus?.connected ? 'Google Agenda connecté' : 'Google Agenda à vérifier'}
+                      </span>
+                    </div>
                   </div>
                   <nav aria-label="Rubriques de votre espace professionnel" className="grid gap-2 sm:grid-cols-3">
                     {[
                       {
                         id: 'rdv',
                         title: 'Rendez-vous',
-                        detail: `Aujourd’hui · ${(activePractitioner.pending_requests || []).filter(req => req.status === 'pending').length} demande(s) à traiter`,
+                        detail: 'Demandes de rendez-vous à traiter',
+                        badgeCount: attention.rdv_pending?.[activePractitioner.id],
                       },
                       {
                         id: 'email',
                         title: 'Guidances e-mail',
                         detail: 'Demandes et réponses écrites',
+                        badgeCount: attention.email_pending,
                       },
                       {
                         id: 'config',
@@ -1609,7 +1659,15 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                             : 'border-gold/25 bg-white text-deep hover:border-gold/60 hover:bg-gold/5'
                         }`}
                       >
-                        <span className={`block text-sm font-semibold ${activePanel === item.id ? 'text-gold' : 'text-deep'}`}>{item.title}</span>
+                        <span className="flex items-center justify-between gap-2">
+                          <span className={`text-sm font-semibold ${activePanel === item.id ? 'text-gold' : 'text-deep'}`}>{item.title}</span>
+                          {Number(item.badgeCount) > 0 && item.badgeCount != null && (
+                            <span aria-label={`${item.badgeCount} demande${item.badgeCount > 1 ? 's' : ''} à traiter`}
+                              className="inline-flex min-w-6 h-6 shrink-0 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold leading-none text-white">
+                              {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                            </span>
+                          )}
+                        </span>
                         <span className={`mt-1 block text-xs ${activePanel === item.id ? 'text-cream/75' : 'text-mist'}`}>{item.detail}</span>
                       </button>
                     ))}
@@ -1620,7 +1678,7 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                   {/* Contenu de la rubrique choisie */}
                   <div className="md:col-span-2 space-y-5 min-w-0" style={activePanel === 'config' ? undefined : { gridColumn: '1 / -1' }}>
                     {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (
-                      <EmailQuestionsPanel session={session} />
+                      <EmailQuestionsPanel session={session} onChanged={() => loadAttention(session)} />
                     )}
 
                     {activePanel === 'config' && (
@@ -1831,7 +1889,7 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                         services={activePractitioner.services || []}
                         practitionerId={activePractitioner.id}
                         session={session}
-                        onChanged={() => loadMe(session)}
+                        onChanged={() => { loadMe(session); loadAttention(session) }}
                       />
                     </section>
                   )}

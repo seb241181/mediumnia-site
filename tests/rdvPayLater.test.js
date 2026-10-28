@@ -50,7 +50,10 @@ test('service list and summary announce card or PayPal and 4X', () => {
 
 test('checkouts say plainly that a card works without a PayPal account', () => {
   const rdv = read('src/components/rdv/RdvDepositCheckout.jsx')
-  assert.match(rdv, /Pas de compte PayPal \?/)
+  assert.match(rdv, /<PayPalGuestNotice/)
+  const guestNote = read('src/components/PayPalGuestNotice.jsx')
+  assert.match(guestNote, /Pas de compte PayPal \\?/)
+  assert.match(guestNote, /peut ne pas être proposée/)
   assert.match(rdv, /en une fois ou en 4 fois sans frais avec PayPal/)
   assert.match(rdv, /Pourquoi cette case \?/)
   // Formation : pas de promesse « carte sans compte » tant qu'elle n'est pas vérifiée en Live.

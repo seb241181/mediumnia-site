@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import '../styles/formation-page.css'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
@@ -264,6 +265,7 @@ export default function FormationParcoursPage({ onBack, onNavigate }) {
                       ? `Les ${modulesLabel(state.nextModules)} s’ouvrent tout de suite et votre parcours est complet.`
                       : `Les modules ${state.maxModule + 1} à 25 s’ouvrent tout de suite. Vous avez déjà investi ${money(state.paidCents)} : il reste ${money(state.remainingCents)} pour atteindre ${money(state.capCents)}${hasLiveSub ? ', et votre abonnement en cours s’arrête' : ''}.`}
                   </p>
+                  <PayPalGuestNotice className="mt-4" />
                   <Consent id="consent-unlock" checked={consentUnlock} onChange={setConsentUnlock} />
                   {consentUnlock ? <div ref={unlockRef} className="mt-4 min-h-[50px]" /> : <p className="mt-3 font-georgia text-xs text-mist">Cochez la case pour afficher le paiement.</p>}
                 </section>

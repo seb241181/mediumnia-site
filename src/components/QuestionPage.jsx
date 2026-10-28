@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
+import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import SiteNav from './SiteNav'
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 
@@ -248,6 +249,7 @@ function QuestionCheckout({ config }) {
           </label>
         </div>
 
+        <PayPalGuestNotice />
         {formValid ? (
           <div ref={containerRef} className="min-h-[52px]" />
         ) : (

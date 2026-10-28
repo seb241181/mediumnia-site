@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LegalFooter from './LegalFooter'
 import ConferencePassRequest from './ConferencePassRequest'
+import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
 const API = '/api/rdv-config?conferencePassAction='
@@ -296,11 +297,12 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
                     Ce Pass n’est consommé qu’après paiement PayPal réussi et activation effective de l’accès. Un simple affichage de cette page ne l’utilise pas.
                   </p>
+                  <PayPalGuestNotice className="mb-4" />
                   <div className="mb-5 rounded-2xl border border-gold/40 border-l-4 border-l-gold bg-white/85 px-4 py-4">
                     <p className="font-georgia text-sm font-bold text-deep">Facilités de paiement</p>
                     <p className="mt-1 font-georgia text-sm leading-relaxed text-deep/85">{PAYPAL_INSTALMENTS_NOTICE}</p>
                     <div ref={messageRef} className="mt-2 min-h-[20px]" />
-                    <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Les options auxquelles vous avez droit, et leur coût éventuel, vous sont présentées par PayPal avant que vous validiez. Paiement sécurisé, avec votre compte PayPal ou par carte bancaire.</p>
+                    <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Les options auxquelles vous avez droit, et leur coût éventuel, vous sont présentées par PayPal avant que vous validiez. Paiement sécurisé avec PayPal et, si l’option est disponible, par carte bancaire sans compte PayPal.</p>
                   </div>
                   <label className="consent-row">
                     <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="consent-check" />

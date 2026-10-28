@@ -10,6 +10,7 @@ import {
 import { getChronosphereReading } from '../../lib/chronosphereReading.js'
 import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 import PublicPageNav from './PublicPageNav'
+import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import { ReviewCard, useApprovedReviews } from './ReviewsPage'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 
@@ -1307,6 +1308,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                     Pack : tirages à utiliser dans les 6 mois. <a href="/cgv-chronosphere" target="_blank" rel="noopener noreferrer" className="text-gold underline">Conditions générales de vente</a>
                   </p>
 
+                  <PayPalGuestNotice className="mb-4" />
                   {consentAccepted && (
                     <div ref={paypalContainerRef} className="min-h-[50px]" />
                   )}

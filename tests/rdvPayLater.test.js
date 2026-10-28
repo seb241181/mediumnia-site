@@ -33,7 +33,8 @@ test('checkout offers PayPal 4X with the mandatory credit notice, and keeps the 
   assert.match(checkout, /components=buttons&enable-funding=paylater/)
   assert.match(checkout, /const PAY_LATER_MIN_CENTS = 3000/)
   assert.match(checkout, /Un crédit vous engage et doit être remboursé\. Vérifiez vos capacités de remboursement avant de vous engager\./)
-  assert.match(checkout, /sans compte PayPal/)
+  assert.match(checkout, /<PayPalGuestNotice/)
+  assert.ok(read('src/components/PayPalGuestNotice.jsx').includes('sans créer de compte PayPal'))
   assert.match(checkout, /sur place, par carte bancaire, espèces ou chèque/)
   assert.match(checkout, /const canPayInFull = selectedModality === 'video'/)
   assert.match(read('scripts/apply-rdv-balance-system.mjs'), /const fullPaymentRequired = canPayInFull/)
@@ -50,7 +51,10 @@ test('service list and summary announce card or PayPal and 4X', () => {
 
 test('checkouts say plainly that a card works without a PayPal account', () => {
   const rdv = read('src/components/rdv/RdvDepositCheckout.jsx')
-  assert.match(rdv, /Pas de compte PayPal \?/)
+  assert.match(rdv, /<PayPalGuestNotice/)
+  const guestNote = read('src/components/PayPalGuestNotice.jsx')
+  assert.ok(guestNote.includes('Pas de compte PayPal ?'))
+  assert.match(guestNote, /peut ne pas être proposée/)
   assert.match(rdv, /en une fois ou en 4 fois sans frais avec PayPal/)
   assert.match(rdv, /Pourquoi cette case \?/)
   // Formation : pas de promesse « carte sans compte » tant qu'elle n'est pas vérifiée en Live.

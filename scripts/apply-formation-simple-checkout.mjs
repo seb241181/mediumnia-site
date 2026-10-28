@@ -99,7 +99,7 @@ const DISCOVERY_ITEMS = ['Introduction complète', 'Module 1 — L’Intention c
   page = replaceOnce(page, '<input type="checkbox" checked={immediateAccessAccepted}', '<input ref={immediateRef} type="checkbox" checked={immediateAccessAccepted}', 'immediate ref')
   page = replaceOnce(page, `          <div ref={containerRef} className={termsAccepted && immediateAccessAccepted ? 'min-h-[48px]' : 'hidden'} />
           {(!termsAccepted || !immediateAccessAccepted) && (
-            <p className="font-georgia text-xs text-mist text-center italic">Cochez les deux cases ci-dessus pour afficher les boutons de paiement : carte bancaire (sans compte PayPal) ou PayPal, en une ou plusieurs fois.</p>
+            <p className="font-georgia text-xs text-mist text-center italic">Cochez les deux cases ci-dessus pour afficher PayPal et, si disponible, le paiement par carte bancaire sans compte.</p>
           )}`, `          {!showButtons && (
             <button type="button" onClick={continueToPayment} className="w-full font-georgia px-7 py-4 rounded-lg bg-deep text-gold font-bold text-base">
               {isDiscovery ? 'Commencer ma découverte — 29 €' : 'Continuer vers le paiement'}

@@ -27,6 +27,15 @@ const LABELS = {
   question_purchase_completed: 'Guidances e-mail commandées',
   rdv_view: 'Visites prise de rendez-vous',
   rdv_booking_started: 'Prestations RDV choisies',
+  rdv_funnel_service: 'RDV payants · prestations sélectionnées',
+  rdv_funnel_slot: 'RDV payants · créneaux choisis',
+  rdv_funnel_contact: 'RDV payants · coordonnées validées',
+  rdv_funnel_paypal_buttons: 'RDV payants · boutons PayPal affichés',
+  rdv_funnel_arrhes_order: 'RDV · commandes arrhes PayPal',
+  rdv_funnel_full_order: 'RDV · commandes paiement intégral',
+  rdv_funnel_paypal_cancel: 'RDV · annulations dans PayPal',
+  rdv_funnel_paypal_error: 'RDV · erreurs PayPal',
+  rdv_funnel_confirmed: 'RDV payants · réservations confirmées',
   rdv_booking_completed: 'Rendez-vous réservés',
   rdv_request_sent: 'Demandes RDV envoyées',
 }
@@ -50,6 +59,15 @@ function makePreviewData(days) {
     question_purchase_completed: round(3),
     rdv_view: round(96),
     rdv_booking_started: round(42),
+    rdv_funnel_service: round(35),
+    rdv_funnel_slot: round(29),
+    rdv_funnel_contact: round(22),
+    rdv_funnel_paypal_buttons: round(18),
+    rdv_funnel_arrhes_order: round(14),
+    rdv_funnel_full_order: round(2),
+    rdv_funnel_paypal_cancel: round(3),
+    rdv_funnel_paypal_error: round(1),
+    rdv_funnel_confirmed: round(12),
     rdv_booking_completed: round(24),
     rdv_request_sent: round(4),
   }
@@ -208,6 +226,17 @@ export default function PilotageDashboard({ session, demoMode = false }) {
   const rdvStarted = Number(totals.rdv_booking_started || 0)
   const rdvCompleted = Number(totals.rdv_booking_completed || 0)
   const rdvRequests = Number(totals.rdv_request_sent || 0)
+  const funnelService = Number(totals.rdv_funnel_service || 0)
+  const funnelSlot = Number(totals.rdv_funnel_slot || 0)
+  const funnelContact = Number(totals.rdv_funnel_contact || 0)
+  const funnelButtons = Number(totals.rdv_funnel_paypal_buttons || 0)
+  const funnelArrhesOrders = Number(totals.rdv_funnel_arrhes_order || 0)
+  const funnelFullOrders = Number(totals.rdv_funnel_full_order || 0)
+  const funnelConfirmed = Number(totals.rdv_funnel_confirmed || 0)
+  const hasDetailedRdvFunnel = [
+    funnelService, funnelSlot, funnelContact, funnelButtons,
+    funnelArrhesOrders, funnelFullOrders, funnelConfirmed,
+  ].some(Boolean)
 
   const keyRows = useMemo(() => (
     Object.entries(totals)
@@ -305,6 +334,41 @@ export default function PilotageDashboard({ session, demoMode = false }) {
             <FunnelRow label="Visites de la page RDV" value={rdvViews} reference={rdvViews} />
             <FunnelRow label="Prestation choisie" value={rdvStarted} reference={rdvViews} detail={pct(rdvStarted, rdvViews)} />
             <FunnelRow label="Réservation confirmée" value={rdvCompleted} reference={rdvViews} detail={pct(rdvCompleted, rdvViews)} />
+          </div>
+          <div className="mt-7 border-t border-gold/15 pt-6" data-rdv-funnel="paid-booking-v1">
+            <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">DIAGNOSTIC ARRHES &amp; PAYPAL</p>
+            <h4 className="mt-1 font-georgia text-lg font-medium text-deep">Où s’arrêtent les prises de rendez-vous ?</h4>
+            <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">
+              Nouveau suivi des réservations avec paiement, depuis son activation. Compteurs anonymes, limités à une fois
+              par étape et par ouverture de page. Les réservations antérieures ne sont pas reconstituées.
+            </p>
+            {hasDetailedRdvFunnel ? (
+              <>
+                <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  <FunnelRow label="Prestation payante choisie" value={funnelService} reference={funnelService} />
+                  <FunnelRow label="Créneau sélectionné" value={funnelSlot} reference={funnelService} detail={pct(funnelSlot, funnelService)} />
+                  <FunnelRow label="Coordonnées validées" value={funnelContact} reference={funnelService} detail={pct(funnelContact, funnelSlot)} />
+                  <FunnelRow label="Boutons PayPal affichés" value={funnelButtons} reference={funnelService} detail={pct(funnelButtons, funnelContact)} />
+                  <FunnelRow label="Commande PayPal créée" value={funnelArrhesOrders + funnelFullOrders} reference={funnelService} detail={pct(funnelArrhesOrders + funnelFullOrders, funnelButtons)} />
+                  <FunnelRow label="Réservation confirmée" value={funnelConfirmed} reference={funnelService} detail={pct(funnelConfirmed, funnelArrhesOrders + funnelFullOrders)} />
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <MetricCard eyebrow="Arrhes · commandes" value={funnelArrhesOrders} note="Commandes PayPal pour les arrhes" />
+                  <MetricCard eyebrow="Intégral · commandes" value={funnelFullOrders} note="Commandes pour le prix total" />
+                  <MetricCard eyebrow="Annulations PayPal" value={totals.rdv_funnel_paypal_cancel} note="Clic Annuler (les autres départs ne sont pas tous détectés)" />
+                  <MetricCard eyebrow="Erreurs PayPal" value={totals.rdv_funnel_paypal_error} note="Erreurs signalées sur le navigateur" />
+                </div>
+                <p className="mt-4 font-georgia text-[11px] leading-relaxed text-mist">
+                  Ce sont des tendances et non un suivi individuel : une personne peut revenir, changer de mode de
+                  paiement ou terminer une autre journée. Une commande PayPal créée n’est pas un encaissement.
+                  Les cartes cadeaux peuvent aussi confirmer une réservation.
+                </p>
+              </>
+            ) : (
+              <p className="mt-4 rounded-xl border border-gold/20 bg-cream/55 px-4 py-3 font-georgia text-sm text-mist">
+                Le nouveau suivi commence à collecter les étapes des prochaines réservations. Les données historiques ne sont pas comparables à ce parcours détaillé.
+              </p>
+            )}
           </div>
           {Object.keys(rdvSources).length > 0 && (
             <div className="mt-7 border-t border-gold/15 pt-6">

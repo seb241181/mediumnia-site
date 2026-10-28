@@ -41,6 +41,7 @@ export default function RdvDepositCheckout({
   selectedModality,
   customer,
   checkoutId,
+  onMetric,
   onComplete,
   onUnavailable,
   offerToken = null,
@@ -52,6 +53,13 @@ export default function RdvDepositCheckout({
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [earlyPerformance, setEarlyPerformance] = useState(false)
   const [paymentChoice, setPaymentChoice] = useState('arrhes')
+  // Only event names are sent; repeated SDK callbacks do not inflate a page visit.
+  const checkoutFunnelSent = useRef(new Set())
+  const emitOnce = (event) => {
+    if (checkoutFunnelSent.current.has(event)) return
+    checkoutFunnelSent.current.add(event)
+    onMetric?.(event)
+  }
   const [effectiveCheckoutId, setEffectiveCheckoutId] = useState(checkoutId)
 
   const depositCents = Number(service?.reservationPaymentCents || service?.reservation_payment_cents || 0)
@@ -136,6 +144,7 @@ export default function RdvDepositCheckout({
         throw new Error('already_converted')
       }
       if (result.expiresAt) setHoldUntil(result.expiresAt)
+      if (result.id) emitOnce(paymentChoice === 'full_payment' ? 'rdv_funnel_full_order' : 'rdv_funnel_arrhes_order')
       return result.id
     }
 
@@ -183,17 +192,25 @@ export default function RdvDepositCheckout({
             }
             setNotice(paymentMessage(result.error || 'paypal_capture_failed'))
           },
-          onCancel: () => setNotice(paymentChoice === 'full_payment'
-            ? 'Paiement annulé. Votre rendez-vous n’est pas confirmé tant que le règlement intégral n’est pas effectué.'
-            : 'Paiement annulé. Votre rendez-vous n’est pas confirmé tant que les arrhes ne sont pas réglées.'),
+          onCancel: () => {
+            emitOnce('rdv_funnel_paypal_cancel')
+            setNotice(paymentChoice === 'full_payment'
+              ? 'Paiement annulé. Votre rendez-vous n’est pas confirmé tant que le règlement intégral n’est pas effectué.'
+              : 'Paiement annulé. Votre rendez-vous n’est pas confirmé tant que les arrhes ne sont pas réglées.')
+          },
           onError: error => {
             if (error?.message === 'already_converted') return
+            emitOnce('rdv_funnel_paypal_error')
             setNotice(paymentMessage(error?.message || 'paypal_capture_failed'))
           },
         })
         await buttons.render(container)
+        if (!disposed && consentsReady) emitOnce('rdv_funnel_paypal_buttons')
       } catch (error) {
-        if (!disposed && error?.message !== 'already_converted') setNotice(paymentMessage(error?.message))
+        if (!disposed && error?.message !== 'already_converted') {
+          emitOnce('rdv_funnel_paypal_error')
+          setNotice(paymentMessage(error?.message))
+        }
       }
     }
 
@@ -211,7 +228,7 @@ export default function RdvDepositCheckout({
       document.head.appendChild(script)
     }
     const onLoad = () => { void mountButtons() }
-    const onError = () => { if (!disposed) setNotice('Le paiement sécurisé est indisponible pour le moment.') }
+    const onError = () => { if (!disposed) { emitOnce('rdv_funnel_paypal_error'); setNotice('Le paiement sécurisé est indisponible pour le moment.') } }
     script.addEventListener('load', onLoad, { once: true })
     script.addEventListener('error', onError, { once: true })
 
@@ -221,7 +238,7 @@ export default function RdvDepositCheckout({
       script.removeEventListener('error', onError)
       if (container) container.innerHTML = ''
     }
-  }, [config, consentsReady, payload, effectiveCheckoutId, paymentChoice, paymentCents, priceCents, balanceCents, onComplete, onUnavailable])
+  }, [config, consentsReady, payload, effectiveCheckoutId, paymentChoice, paymentCents, priceCents, balanceCents, onComplete, onUnavailable, onMetric])
 
   return (
     <div className="space-y-5">

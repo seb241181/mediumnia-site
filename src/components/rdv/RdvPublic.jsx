@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import LegalFooter from '../LegalFooter'
 import RdvDepositCheckout from './RdvDepositCheckout'
 import { GoogleReviewCard, Stars, useGoogleReviews } from '../ReviewsPage'
@@ -883,6 +883,13 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const metricSource = readRdvMetricSource()
   const startedMetricSent = useRef(false)
   const completedMetricSent = useRef(false)
+  // At most one anonymous stage count per page opening; no cookies or identity.
+  const funnelSent = useRef(new Set())
+  const trackFunnel = useCallback((event) => {
+    if (funnelSent.current.has(event)) return
+    funnelSent.current.add(event)
+    trackMediumiaMetric(event, metricSource)
+  }, [metricSource])
 
   const [dayAvail, setDayAvail] = useState({})
   // Lien personnel (créneau d'urgence) : mediumia.fr/rdv/<slug>#offre=<jeton>
@@ -930,8 +937,13 @@ export default function RdvPublic({ onBack, onNavigate }) {
     setService(formatService(raw))
     setDate(new Date(`${offer.date}T12:00:00`))
     setTime(offer.time)
+    // A personal offer skips the service and slot selection screens.
+    if (raw.booking_mode === 'instant' && Number(raw.reservation_payment_cents) > 0) {
+      trackFunnel('rdv_funnel_service')
+      trackFunnel('rdv_funnel_slot')
+    }
     setStep(2)
-  }, [offer, configData])
+  }, [offer, configData, trackFunnel])
 
   // ── Chargement ──────────────────────────────────────────────────────────────
 
@@ -977,6 +989,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
       startedMetricSent.current = true
       trackMediumiaMetric('rdv_booking_started', metricSource)
     }
+    if (svc.bookingMode === 'instant' && svc.reservationPaymentKind === 'arrhes' && svc.reservationPaymentCents > 0) {
+      trackFunnel('rdv_funnel_service')
+    }
     if (svc.bookingMode === 'request') {
       setStep('request-form')
     } else {
@@ -985,7 +1000,10 @@ export default function RdvPublic({ onBack, onNavigate }) {
   }
 
   function selectDate(d)  { setDate(d); setTime(null); setBookingError(null) }
-  function selectTime(t)  { setTime(t); setBookingError(null) }
+  function selectTime(t) {
+    if (requiresDeposit && t) trackFunnel('rdv_funnel_slot')
+    setTime(t); setBookingError(null)
+  }
   const nextAvailableKey = Object.keys(dayAvail).filter(key => dayAvail[key] === true).sort()[0]
   const nextAvailableDate = nextAvailableKey ? new Date(`${nextAvailableKey}T12:00:00`) : null
 
@@ -1029,6 +1047,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
 
   async function handleConfirm(contactForm) {
     if (requiresDeposit) {
+      // This callback is reached after ContactForm validates the required fields.
+      trackFunnel('rdv_funnel_contact')
       const persisted = checkoutStorageKey ? sessionStorage.getItem(checkoutStorageKey) : null
       const id = persisted || crypto.randomUUID()
       if (!persisted && checkoutStorageKey) sessionStorage.setItem(checkoutStorageKey, id)
@@ -1083,6 +1103,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
   }
 
   function handlePaidComplete(result) {
+    // Includes gift-card confirmations; PayPal orders are separately counted.
+    trackFunnel('rdv_funnel_confirmed')
     if (checkoutStorageKey) sessionStorage.removeItem(checkoutStorageKey)
     if (!completedMetricSent.current) {
       completedMetricSent.current = true
@@ -1377,6 +1399,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   customer={paymentCustomer}
                   checkoutId={checkoutId}
                   offerToken={offer?.token || null}
+                  onMetric={trackFunnel}
                   onComplete={handlePaidComplete}
                   onUnavailable={() => { setBookingError('Ce créneau n’est plus disponible.'); if (offer) return; setTime(null); setStep(1) }}
                 />

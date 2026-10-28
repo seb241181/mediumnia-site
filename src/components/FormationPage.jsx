@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import LegalFooter from './LegalFooter'
 import FormationCreditNotice from './FormationCreditNotice'
+import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import ParcoursOffer from './ParcoursOffer'
 import { money, parcoursFaqAnswer, useParcoursOffer } from '../lib/parcoursOffer.js'
 import { formationCheckoutHeaders } from '../lib/formationCredit.js'
@@ -283,6 +284,7 @@ function FormationCheckout() {
         </div>
       )}
 
+      {!success && <PayPalGuestNotice className="mb-5 text-left" />}
       {!success && (
         <div className="space-y-4 text-left mb-5">
           <label className="consent-row">
@@ -311,7 +313,7 @@ function FormationCheckout() {
         <>
           <div ref={containerRef} className={termsAccepted && immediateAccessAccepted ? 'min-h-[48px]' : 'hidden'} />
           {(!termsAccepted || !immediateAccessAccepted) && (
-            <p className="font-georgia text-xs text-mist text-center italic">Cochez les deux cases ci-dessus pour afficher les boutons de paiement : carte bancaire (sans compte PayPal) ou PayPal, en une ou plusieurs fois.</p>
+            <p className="font-georgia text-xs text-mist text-center italic">Cochez les deux cases ci-dessus pour afficher PayPal et, si disponible, le paiement par carte bancaire sans compte.</p>
           )}
           {status && <p className="font-georgia text-xs text-mist text-center mt-3">{status}</p>}
         </>
@@ -427,7 +429,7 @@ export default function FormationPage({ onBack, onNavigate }) {
                     <li key={i} className="flex gap-3 items-start"><span className="text-gold shrink-0 mt-0.5">✓</span><span>{item}</span></li>
                   ))}
                 </ul>
-                <p className="font-georgia text-mist text-xs text-center mb-5">Paiement sécurisé par carte bancaire ou PayPal — pas besoin de compte PayPal pour payer par carte. Le paiement fractionné proposé directement par PayPal dépend de son éligibilité.</p>
+                <p className="font-georgia text-mist text-xs text-center mb-5">Paiement sécurisé via PayPal. Le paiement par carte sans compte peut être proposé selon la transaction ; le paiement fractionné dépend de l’éligibilité PayPal.</p>
                 <FormationCreditNotice />
                 <FormationCheckout />
               </div>

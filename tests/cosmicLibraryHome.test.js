@@ -30,7 +30,7 @@ test('cosmic homepage preserves the supplied official logo and uses its transpar
   assert.doesNotMatch(component, /filter:|brightness-|saturate-|hue-rotate/)
 })
 
-test('cosmic hero uses responsive monumental scenes with the simplified promise (formation + consultations)', async () => {
+test('cosmic hero keeps monumental scenes but introduces the human approach first', async () => {
   const [component, desktopScene, mobileScene] = await Promise.all([
     readFile(componentPath, 'utf8'),
     readFile(desktopScenePath),
@@ -39,26 +39,30 @@ test('cosmic hero uses responsive monumental scenes with the simplified promise 
 
   assert.match(component, /mediumia-cosmic-library-hero\.webp/)
   assert.match(component, /mediumia-cosmic-library-hero-mobile\.webp/)
-  assert.match(component, /Se former à la médiumnité\./)
-  assert.match(component, /Consulter un médium\./)
-  assert.match(component, /J’ai créé MediumIA/)
-  assert.match(component, /mes consultations/)
-  assert.match(component, /primaryAction: 'Découvrir la Formation',/)
+  assert.match(component, /Sébastien Seguin, médium depuis plus de 10 ans/)
+  assert.match(component, /Consultations et formation à la médiumnité/)
+  assert.match(component, /primaryAction: 'Prendre rendez-vous'/)
+  assert.match(component, /secondaryAction: 'Découvrir ma formation'/)
   assert.doesNotMatch(component, /Là où la conscience rencontre l’intelligence artificielle/)
+  assert.doesNotMatch(component, /J’ai créé MediumIA pour réunir/)
   assert.ok(desktopScene.byteLength < 400_000)
   assert.ok(mobileScene.byteLength < 400_000)
 })
 
-test('simplified hero: no tiles, two clear actions (formation and booking)', async () => {
+test('homepage makes booking primary, preserves formation and displays Sébastien', async () => {
   const [app, component] = await Promise.all([
     readFile(appPath, 'utf8'),
     readFile(componentPath, 'utf8'),
   ])
 
   assert.match(app, /<CosmicLibraryHero[\s\S]*onOpenFormation=\{onOpenFormation\}/)
-  assert.match(component, /href="\/formation"/)
   assert.match(component, /href="\/rdv\/sebastien-seguin\?src=home-hero"/)
-  assert.match(component, /Voir mes disponibilités/)
+  assert.match(component, /href="\/formation"/)
+  assert.match(component, /\{COSMIC_HOME_CONFIG\.primaryAction\}/)
+  assert.ok(component.indexOf('href="/rdv/sebastien-seguin?src=home-hero"') < component.indexOf('href="/formation"'))
+  assert.match(app, /src="\/sebastien\.jpg"/)
+  assert.match(app, /Depuis plus de 10 ans, j’accompagne/)
+  assert.ok(app.indexOf('<ConsultationSection id="consulter"') < app.indexOf('<section id="formation"'))
   assert.doesNotMatch(component, /CosmicDock|cosmic-dock__item|href: '\/agents'/)
 })
 

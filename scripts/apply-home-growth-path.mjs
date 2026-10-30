@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
-// Accueil : quiz des canaux de perception et approche de la médiumnité.
+// Accueil simplifié : quiz des canaux et découverte de l'Arche.
 // Dernier patch du prebuild : les ancres visent le code APRÈS les patchs
 // historiques (imports en lazy(), routes dans <DeferredRoute>, ROUTE_META,
 // liste d'événements de mesure complétée). Ne jamais modifier src/App.jsx
@@ -27,7 +27,7 @@ let app = await readFile(appPath, 'utf8')
 app = insertAfter(
   app,
   "import PractitionersBand from './components/PractitionersBand'",
-  "\nimport { ManifestoBand, QuizInvite, ArcheSection } from './components/HomeGrowthPath'",
+  "\nimport { QuizInvite, ArcheSection } from './components/HomeGrowthPath'",
   'home sections import',
 )
 
@@ -54,7 +54,6 @@ app = replaceRequired(
   { id: 'formation', label: 'Formation' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'quiz', label: 'Quiz' },
-  { id: 'approche', label: 'Approche' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
   { id: 'arche', label: 'L’Arche' },
@@ -79,7 +78,7 @@ app = replaceRequired(
 )
 
 // Les consultations viennent d'abord, puis la Formation et ChronoSphère.
-// Le quiz et l'approche suivent ces deux offres sans les séparer.
+// Le quiz gratuit suit ces deux offres sans les séparer.
 app = replaceRequired(
   app,
   '        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />\n',
@@ -87,9 +86,6 @@ app = replaceRequired(
 
         {/* ── Quiz des canaux : porte d'entrée gratuite ── */}
         <QuizInvite onOpenQuiz={onOpenQuiz} />
-
-        {/* ── La médiumnité consciente : ce que défend MediumIA ── */}
-        <ManifestoBand />
 `,
   'home growth sections',
 )

@@ -69,9 +69,11 @@ test('the quiz never claims to measure a gift or predict anything and reuses the
   assert.match(page, /disabled=\{!consent \|\| loading \|\| done\}/)
 })
 
-test('the home page keeps the Formation first, then the quiz, the approach, the path and the Arche', () => {
+test('the home page keeps the Formation then ChronoSphère followed by quiz, approach, path and Arche', () => {
+  const app = read('src/App.jsx')
   const patch = read('scripts/apply-home-growth-path.mjs')
-  const order = ['<FeaturedAccompagnement', '<QuizInvite', '<ManifestoBand', '<PathLadder'].map((tag) => patch.indexOf(tag))
+  assert.ok(app.indexOf('<section id="formation"') < app.indexOf('<DiscoverSection id="decouvrir"'))
+  const order = ['<DiscoverSection id="decouvrir"', '<QuizInvite', '<ManifestoBand', '<PathLadder'].map((tag) => patch.indexOf(tag))
   assert.ok(order.every((index, i) => index > 0 && (i === 0 || index > order[i - 1])))
   assert.match(patch, /<ArcheSection \/>/)
   const sections = read('src/components/HomeGrowthPath.jsx')

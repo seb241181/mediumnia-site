@@ -100,8 +100,8 @@ const HOME_RAIL = [
   { id: 'consulter', label: 'Consulter' },
   { id: 'formation', label: 'Formation' },
   { id: 'decouvrir', label: 'Tirages' },
-  { id: 'avis', label: 'Avis' },
   { id: 'boutique', label: 'Boutique' },
+  { id: 'avis', label: 'Avis' },
   { id: 'praticiens', label: 'Praticiens' },
 ]
 
@@ -133,9 +133,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         {/* ── ChronoSphère : directement sous la formation ── */}
         <DiscoverSection id="decouvrir" onOpenChronosphere={onOpenChronosphere} />
 
-        {/* ── Avis clients (uniquement ceux validés) ── */}
-        <ReviewsHighlight />
-
         {/* ── Boutique ── */}
         <section id="boutique" className="border-t border-gold/15">
           <div className="max-w-6xl mx-auto px-6 pt-12 pb-2">
@@ -146,6 +143,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           </div>
           <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} onOpenFormation={onOpenFormation} />
         </section>
+
+        {/* ── Avis clients (uniquement ceux validés), juste avant le réseau ── */}
+        <ReviewsHighlight />
 
         {/* ── Praticiens : réseau et Espace Pro ── */}
         <PractitionersBand onOpenReseauDir={onOpenReseauDir} onOpenReseauForm={onOpenReseauForm} onOpenPro={onOpenPro} />

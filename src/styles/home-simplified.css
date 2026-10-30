@@ -83,8 +83,23 @@
 
 /* La présentation de Sébastien et la réservation doivent apparaître plus tôt,
    surtout sur mobile. On conserve le décor et le logo officiels. */
+/* Le slogan historique est imprimé dans le PNG officiel. On masque
+   uniquement la bande basse sur l'accueil, sans altérer le fichier source
+   ni supprimer l'œil animé. Le logo visible garde l'œil et MEDIUMIA. */
 .cosmic-library--simple .cosmic-library__brand {
   width: clamp(300px, 31vw, 420px);
+  aspect-ratio: 1015 / 585;
+}
+.cosmic-library--simple .cosmic-library__brand img {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: auto;
+  clip-path: inset(0 0 16% 0);
+}
+.cosmic-library--simple .cosmic-library__eye-blink {
+  top: 62.8%;
+  height: 17.6%;
 }
 .cosmic-library--simple .cosmic-library__message h1 {
   max-width: 650px;

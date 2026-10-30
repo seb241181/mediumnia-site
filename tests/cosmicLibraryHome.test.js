@@ -49,7 +49,7 @@ test('cosmic hero keeps monumental scenes but introduces the human approach firs
   assert.ok(mobileScene.byteLength < 400_000)
 })
 
-test('homepage makes booking primary, preserves formation and displays Sébastien', async () => {
+test('homepage makes booking primary and preserves formation without duplicate presentation', async () => {
   const [app, component] = await Promise.all([
     readFile(appPath, 'utf8'),
     readFile(componentPath, 'utf8'),
@@ -60,8 +60,8 @@ test('homepage makes booking primary, preserves formation and displays Sébastie
   assert.match(component, /href="\/formation"/)
   assert.match(component, /\{COSMIC_HOME_CONFIG\.primaryAction\}/)
   assert.ok(component.indexOf('href="/rdv/sebastien-seguin?src=home-hero"') < component.indexOf('href="/formation"'))
-  assert.match(app, /src="\/sebastien\.jpg"/)
-  assert.match(app, /J’accompagne les personnes dans leurs questionnements/)
+  assert.doesNotMatch(app, /<section id="sebastien"/)
+  assert.match(component, /Sébastien Seguin, médium et formateur/)
   assert.ok(app.indexOf('<ConsultationSection id="consulter"') < app.indexOf('<section id="formation"'))
   assert.doesNotMatch(component, /CosmicDock|cosmic-dock__item|href: '\/agents'/)
 })

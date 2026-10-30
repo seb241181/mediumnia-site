@@ -133,7 +133,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
         </section>
 
         {/* ── ChronoSphère : directement sous la formation ── */}
-        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
+        <DiscoverSection id="decouvrir" onOpenChronosphere={onOpenChronosphere} />
 
         {/* ── Avis clients (uniquement ceux validés) ── */}
         <ReviewsHighlight />

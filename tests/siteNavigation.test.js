@@ -44,10 +44,10 @@ test('long pages get a discreet « Sur cette page » rail on wide screens only',
   assert.match(app, /<PageRail items=\{HOME_RAIL\} \/>/)
 })
 
-test('home order: hero, Sébastien, consultations, Formation, avis, Découvrir, boutique, praticiens', async () => {
+test('home order: hero, consultations, Formation, avis, Découvrir, boutique, praticiens', async () => {
   const app = await read('src/App.jsx')
   const home = app.slice(app.indexOf('function PublicPlatformHome('))
-  const order = ['<CosmicLibraryHero', '<section id="sebastien"', '<ConsultationSection id="consulter" compact', '<section id="formation"', '<ReviewsHighlight />', '<DiscoverSection id="decouvrir"', '<section id="boutique"', '<PractitionersBand']
+  const order = ['<CosmicLibraryHero', '<ConsultationSection id="consulter" compact', '<section id="formation"', '<ReviewsHighlight />', '<DiscoverSection id="decouvrir"', '<section id="boutique"', '<PractitionersBand']
   const positions = order.map((marker) => home.indexOf(marker))
   assert.ok(positions.every((p) => p > 0), JSON.stringify(positions))
   assert.deepEqual([...positions].sort((a, b) => a - b), positions)

@@ -27,7 +27,7 @@ let app = await readFile(appPath, 'utf8')
 app = insertAfter(
   app,
   "import PractitionersBand from './components/PractitionersBand'",
-  "\nimport { QuizInvite, ArcheSection } from './components/HomeGrowthPath'",
+  "\nimport { QuizInvite } from './components/HomeGrowthPath'",
   'home sections import',
 )
 
@@ -56,7 +56,6 @@ app = replaceRequired(
   { id: 'quiz', label: 'Quiz' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
-  { id: 'arche', label: 'L’Arche' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
 ]`,
@@ -88,17 +87,6 @@ app = replaceRequired(
         <QuizInvite onOpenQuiz={onOpenQuiz} />
 `,
   'home growth sections',
-)
-
-app = replaceRequired(
-  app,
-  "        <VideoInterview id=\"videos\" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />\n",
-  `        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
-
-        {/* ── L'Arche : le Codex et la Kénose ── */}
-        <ArcheSection />
-`,
-  'arche section',
 )
 
 app = replaceRequired(

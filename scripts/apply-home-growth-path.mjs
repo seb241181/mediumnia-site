@@ -43,22 +43,22 @@ app = replaceRequired(
   `const HOME_RAIL = [
   { id: 'consulter', label: 'Consulter' },
   { id: 'formation', label: 'Formation' },
+  { id: 'decouvrir', label: 'Tirages' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
-  { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
 ]`,
   `const HOME_RAIL = [
   { id: 'consulter', label: 'Consulter' },
   { id: 'formation', label: 'Formation' },
+  { id: 'decouvrir', label: 'Tirages' },
   { id: 'quiz', label: 'Quiz' },
   { id: 'approche', label: 'Approche' },
   { id: 'chemin', label: 'Chemin' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
   { id: 'arche', label: 'L’Arche' },
-  { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
 ]`,
@@ -79,13 +79,12 @@ app = replaceRequired(
   'hero quiz door',
 )
 
-// Les consultations restent prioritaires à l'accueil. Après la Formation,
-// le quiz, l'approche et le chemin enrichissent le parcours de découverte.
+// Les consultations viennent d'abord, puis la Formation et ChronoSphère.
+// Le quiz, l'approche et le chemin suivent ces deux offres sans les séparer.
 app = replaceRequired(
   app,
-  '          <FeaturedAccompagnement onOpen={onOpenFormation} />\n        </section>\n',
-  `          <FeaturedAccompagnement onOpen={onOpenFormation} />
-        </section>
+  '        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />\n',
+  `        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
 
         {/* ── Quiz des canaux : porte d'entrée gratuite ── */}
         <QuizInvite onOpenQuiz={onOpenQuiz} />

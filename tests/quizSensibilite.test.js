@@ -69,7 +69,7 @@ test('the quiz never claims to measure a gift or predict anything and reuses the
   assert.match(page, /disabled=\{!consent \|\| loading \|\| done\}/)
 })
 
-test('the home page keeps Formation, ChronoSphère, quiz and Arche without extra editorial sections', () => {
+test('the home page keeps Formation, ChronoSphère and quiz without duplicate editorial sections', () => {
   const app = read('src/App.jsx')
   const patch = read('scripts/apply-home-growth-path.mjs')
   assert.ok(app.indexOf('<section id="formation"') < app.indexOf('<DiscoverSection id="decouvrir"'))
@@ -77,11 +77,12 @@ test('the home page keeps Formation, ChronoSphère, quiz and Arche without extra
   assert.ok(order.every((index, i) => index > 0 && (i === 0 || index > order[i - 1])))
   assert.doesNotMatch(patch, /<PathLadder|id: 'chemin'|label: 'Chemin'/)
   assert.doesNotMatch(patch, /<ManifestoBand|id: 'approche'|label: 'Approche'/)
-  assert.match(patch, /<ArcheSection \/>/)
+  assert.doesNotMatch(patch, /<ArcheSection|id: 'arche'|label: 'L’Arche'/)
   const sections = read('src/components/HomeGrowthPath.jsx')
   assert.doesNotMatch(sections, /Une pratique juste, claire, sans mise en scène|export function ManifestoBand/)
-  assert.match(sections, /https:\/\/www\.amazon\.fr\/dp\/B0HJY4CFFD/)
-  assert.match(sections, /Troisième mouvement · en cours/)
+  assert.doesNotMatch(sections, /export function ArcheSection|<section id="arche"/)
+  assert.match(read('src/data/boutiqueProducts.js'), /https:\/\/www\.amazon\.fr\/dp\/B0HJY4CFFD/)
+
   assert.match(read('src/components/CosmicLibraryHero.jsx'), /href="\/quiz-sensibilite"/)
 })
 

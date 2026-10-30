@@ -135,25 +135,32 @@ export function PathLadder({ onOpenQuiz, onOpenFormation, onOpenReseauForm }) {
         <h2 id="chemin-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">Avancez simplement, à votre rythme.</h2>
       </div>
       <ol className="mt-10 grid gap-4 md:grid-cols-5">
-        {steps.map((step, index) => (
-          <li key={step.label} className="flex flex-col rounded-3xl border border-gold/30 bg-white/80 p-6 shadow-[0_10px_28px_rgba(26,21,53,.05)]">
+        {steps.map((step, index) => {
+          const paid = step.label === 'Commencer' || step.label === 'Se former'
+          return (
+          <li
+            key={step.label}
+            className={`flex flex-col rounded-3xl border border-gold/30 p-6 shadow-[0_10px_28px_rgba(26,21,53,.09)] ${paid ? 'on-dark' : 'bg-white/80'}`}
+            style={paid ? { background: 'linear-gradient(145deg,#1A1535,#243762)' } : undefined}
+          >
             <div className="flex items-baseline justify-between gap-2">
               <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold">{index + 1} · {step.label}</p>
             </div>
-            <p className="mt-1 font-georgia text-xs text-mist">{step.price}</p>
-            <h3 className="mt-3 font-georgia text-lg font-medium leading-snug text-deep">{step.title}</h3>
-            <p className="mt-2 flex-1 font-georgia text-sm leading-relaxed text-mist">{step.text}</p>
+            <p className={`mt-1 font-georgia text-xs ${paid ? 'text-cream/75' : 'text-mist'}`}>{step.price}</p>
+            <h3 className={`mt-3 font-georgia text-lg font-medium leading-snug ${paid ? 'text-cream' : 'text-deep'}`}>{step.title}</h3>
+            <p className={`mt-2 flex-1 font-georgia text-sm leading-relaxed ${paid ? 'text-cream/80' : 'text-mist'}`}>{step.text}</p>
             <ul className="mt-4 space-y-1.5">
               {step.links.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} onClick={openWith(link.onOpen, link.metric)} className="font-georgia text-sm font-bold text-deep transition-colors hover:text-gold">
+                  <a href={link.href} onClick={openWith(link.onOpen, link.metric)} className={`font-georgia text-sm font-bold transition-colors ${paid ? 'text-gold hover:text-cream' : 'text-deep hover:text-gold'}`}>
                     {link.label} →
                   </a>
                 </li>
               ))}
             </ul>
           </li>
-        ))}
+          )
+        })}
       </ol>
     </section>
   )
@@ -172,7 +179,7 @@ export function ArcheSection() {
         </p>
       </div>
       <div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <article className="flex flex-col gap-6 rounded-3xl border border-gold/40 bg-white/85 p-7 shadow-[0_18px_45px_rgba(26,21,53,.08)] sm:flex-row md:p-9">
+        <article className="on-dark flex flex-col gap-6 rounded-3xl border border-gold/40 p-7 shadow-[0_18px_45px_rgba(26,21,53,.16)] sm:flex-row md:p-9" style={{ background: 'linear-gradient(135deg,#1A1535,#243762)' }}> 
           <img
             src="/images/boutique/codex-cover.jpg"
             alt="Couverture du livre CODEX — Le Livre de l’Arche, de Sébastien Seguin"
@@ -182,12 +189,12 @@ export function ArcheSection() {
           />
           <div className="flex flex-col">
             <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Disponible · broché et Kindle</p>
-            <h3 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep">CODEX — Le Livre de l’Arche</h3>
-            <p className="mt-1 font-georgia text-sm italic text-mist">L’Octave entière, de l’Un au Neuf</p>
-            <p className="mt-4 flex-1 font-georgia leading-relaxed text-mist">
+            <h3 className="mt-2 font-georgia text-2xl font-medium leading-tight text-cream">CODEX — Le Livre de l’Arche</h3>
+            <p className="mt-1 font-georgia text-sm italic text-cream/75">L’Octave entière, de l’Un au Neuf</p>
+            <p className="mt-4 flex-1 font-georgia leading-relaxed text-cream/80">
               Une approche philosophique de ce qui concerne l’humain : de l’Un qui s’ignore au Souverain qui se sait. Un livre de lecture, de réflexion et d’exploration symbolique.
             </p>
-            <p className="mt-4 font-georgia text-base italic text-deep/85">« Je suis dans la matière, mais je ne suis pas seulement matière. »</p>
+            <p className="mt-4 font-georgia text-base italic text-cream/85">« Je suis dans la matière, mais je ne suis pas seulement matière. »</p>
             <a
               href={CODEX_AMAZON_URL}
               target="_blank"

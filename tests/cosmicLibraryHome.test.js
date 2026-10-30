@@ -39,7 +39,7 @@ test('cosmic hero keeps monumental scenes but introduces the human approach firs
 
   assert.match(component, /mediumia-cosmic-library-hero\.webp/)
   assert.match(component, /mediumia-cosmic-library-hero-mobile\.webp/)
-  assert.match(component, /Sébastien Seguin, médium depuis plus de 10 ans/)
+  assert.match(component, /Sébastien Seguin, médium et formateur/)
   assert.match(component, /Consultations et formation à la médiumnité/)
   assert.match(component, /primaryAction: 'Prendre rendez-vous'/)
   assert.match(component, /secondaryAction: 'Découvrir ma formation'/)
@@ -61,7 +61,7 @@ test('homepage makes booking primary, preserves formation and displays Sébastie
   assert.match(component, /\{COSMIC_HOME_CONFIG\.primaryAction\}/)
   assert.ok(component.indexOf('href="/rdv/sebastien-seguin?src=home-hero"') < component.indexOf('href="/formation"'))
   assert.match(app, /src="\/sebastien\.jpg"/)
-  assert.match(app, /Depuis plus de 10 ans, j’accompagne/)
+  assert.match(app, /J’accompagne les personnes dans leurs questionnements/)
   assert.ok(app.indexOf('<ConsultationSection id="consulter"') < app.indexOf('<section id="formation"'))
   assert.doesNotMatch(component, /CosmicDock|cosmic-dock__item|href: '\/agents'/)
 })

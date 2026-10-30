@@ -52,7 +52,7 @@ test('home order: hero, consultations, Formation, ChronoSphère, boutique, avis,
   assert.ok(positions.every((p) => p > 0), JSON.stringify(positions))
   assert.deepEqual([...positions].sort((a, b) => a - b), positions)
   assert.match(home, /<\/section>\s*\{\/\* ── Avis clients \(uniquement ceux validés\), juste avant le réseau ── \*\/\}\s*<ReviewsHighlight \/>\s*\{\/\* ── Praticiens/)
-  const rail = home.slice(home.indexOf('const HOME_RAIL'), home.indexOf('function PublicPlatformHome('))
+  const rail = app.slice(app.indexOf('const HOME_RAIL'), app.indexOf('function PublicPlatformHome('))
   assert.ok(rail.indexOf("id: 'boutique'") < rail.indexOf("id: 'avis'"))
   // Rien ne doit s'intercaler entre Formation et ChronoSphère, même au prebuild.
   assert.match(home, /<FeaturedAccompagnement onOpen=\{onOpenFormation\} \/>[\s\S]*?<\/section>[\s\S]*?<DiscoverSection id="decouvrir"/)

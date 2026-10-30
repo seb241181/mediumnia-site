@@ -54,10 +54,12 @@ test('the game is routed, previewed when shared, and honest about chance', () =>
   assert.match(page, /setTarget\(secureIndex\(CARDS\)\)/)
   assert.doesNotMatch(page, /\/chronosphere'|\/formation'|\/rdv\//, 'no sales links after the game')
   assert.match(page, /Instagram, TikTok, Facebook/)
-  // Home entry: a « Découvrir » card presented as an exercise, not a game banner.
+  // Home entry: un exercice dans la même carte bleue que le quiz et l'Oracle.
   assert.doesNotMatch(read('src/App.jsx'), /DefiHomeBanner/)
-  const discover = read('src/components/DiscoverSection.jsx')
-  assert.match(discover, /title="Exercice d’intuition du jour" action="Faire l’exercice" href="\/defi-intuition"/)
+  const homeFree = read('src/components/HomeGrowthPath.jsx')
+  assert.match(homeFree, /Exercice d’intuition du jour/)
+  assert.match(homeFree, /href="\/defi-intuition"/)
+  assert.doesNotMatch(read('src/components/DiscoverSection.jsx'), /<DiscoverCard/)
   const defiPage = read('src/components/DefiIntuitionPage.jsx')
   assert.match(defiPage, /Exercice d’intuition du jour<\/h1>/)
   assert.doesNotMatch(defiPage, /Récréation|Jeu gratuit|Jouer/)

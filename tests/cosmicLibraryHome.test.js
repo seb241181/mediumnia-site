@@ -125,5 +125,5 @@ test('homepage distinguishes paid offers in blue from free experiences', async (
   assert.match(boutique, /isForSale \? 'on-dark' : 'bg-white'/)
   assert.match(boutique, /on-dark mb-6 grid overflow-hidden/)
   assert.match(growth, /const paid = step\.label === 'Commencer' \|\| step\.label === 'Se former'/)
-  assert.match(growth, /on-dark flex flex-col gap-6/)
+  assert.doesNotMatch(growth, /export function ArcheSection|<section id="arche"/)
 })

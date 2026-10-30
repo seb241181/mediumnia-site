@@ -45,9 +45,10 @@ test('the homepage hero says what MediumIA is and where to click', async () => {
   const component = await source('src/components/CosmicLibraryHero.jsx')
 
   for (const wording of [
-    'Se former à la médiumnité.',
-    'Consulter un médium.',
-    'Découvrir la Formation',
+    'Sébastien Seguin, médium depuis plus de 10 ans.',
+    'Consultations et formation à la médiumnité.',
+    'Prendre rendez-vous',
+    'Découvrir ma formation',
   ]) {
     assert.match(component, new RegExp(wording.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }

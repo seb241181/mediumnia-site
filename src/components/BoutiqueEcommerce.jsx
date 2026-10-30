@@ -13,6 +13,7 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   const isOracle = product.id === 'oracle-au-dela-ame'
   const isFormation = product.id === 'formation-mediumia'
   const isEcho = product.category === 'echo-des-fees'
+  const isForSale = product.availability === 'available'
   // Products sold elsewhere (CODEX on Amazon) open the seller directly with a
   // real link: phones never block it, unlike a scripted window.open.
   const external = product.externalPurchase && product.purchaseUrl
@@ -45,8 +46,10 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
   return (
     <Card
       {...cardProps}
-      className="block bg-white border rounded-xl overflow-hidden cursor-pointer group transition-all hover:shadow-md hover:-translate-y-0.5"
-      style={{ borderColor: isEcho ? 'rgba(201,168,76,.35)' : 'rgba(53,40,79,.12)' }}
+      className={`block border rounded-xl overflow-hidden cursor-pointer group transition-all hover:shadow-md hover:-translate-y-0.5 ${isForSale ? 'on-dark' : 'bg-white'}`}
+      style={isForSale
+        ? { borderColor: 'rgba(201,168,76,.4)', background: 'linear-gradient(150deg,#1A1535,#243762)' }
+        : { borderColor: isEcho ? 'rgba(201,168,76,.35)' : 'rgba(53,40,79,.12)' }}
     >
       {/* Image / artwork */}
       <div className="relative overflow-hidden bg-stone-100" style={{ height: 220 }}>
@@ -73,15 +76,15 @@ function ProductCard({ product, onOpen, onOpenOracle, onOpenFormation }) {
 
       {/* Info */}
       <div className="px-4 py-4">
-        <p className="font-georgia text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: TEXT_GOLD }}>
+        <p className="font-georgia text-[10px] tracking-[0.18em] uppercase mb-1.5" style={{ color: isForSale ? '#E3C37C' : TEXT_GOLD }}>
           {product.categoryLabel}
         </p>
-        <h3 className="font-georgia text-sm font-medium text-deep leading-snug mb-3" style={{ minHeight: 38 }}>
+        <h3 className={`font-georgia text-sm font-medium leading-snug mb-3 ${isForSale ? 'text-cream' : 'text-deep'}`} style={{ minHeight: 38 }}>
           {product.name}
         </h3>
         <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'rgba(201,168,76,.18)' }}>
-          <span className="font-georgia text-sm font-semibold text-deep">{product.priceLabel}</span>
-          <span className="font-georgia text-xs group-hover:translate-x-1 transition-transform inline-block" style={{ color: TEXT_GOLD }}>
+          <span className={`font-georgia text-sm font-semibold ${isForSale ? 'text-cream' : 'text-deep'}`}>{product.priceLabel}</span>
+          <span className="font-georgia text-xs group-hover:translate-x-1 transition-transform inline-block" style={{ color: isForSale ? '#E3C37C' : TEXT_GOLD }}>
             {external ? '→' : 'Voir →'}
           </span>
         </div>
@@ -99,33 +102,34 @@ function SpotlightCard({ product, onOpenFormation }) {
     onOpenFormation()
   }
   return (
-    <article className="mb-6 grid overflow-hidden rounded-2xl border border-gold/40 bg-white shadow-[0_14px_40px_rgba(26,21,53,.08)] md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+    <article className="on-dark mb-6 grid overflow-hidden rounded-2xl border border-gold/40 shadow-[0_14px_40px_rgba(26,21,53,.16)] md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]"
+      style={{ background: 'linear-gradient(135deg,#1A1535,#243762)' }}>
       <a href={product.href} onClick={open} className="block bg-deep" aria-label={`${product.name} — découvrir la formation`}>
         <img src={product.coverImage} alt="Couverture de la Formation MediumIA : 25 modules, 4 niveaux, Sébastien Seguin" loading="lazy" decoding="async" className="h-full max-h-[340px] w-full object-cover md:max-h-none" />
       </a>
       <div className="flex flex-col p-7 md:p-9">
-        <p className="font-georgia text-[10px] uppercase tracking-[0.2em]" style={{ color: TEXT_GOLD }}>{product.eyebrow}</p>
-        <h3 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">{product.name}</h3>
-        <p className="mt-3 font-georgia leading-relaxed text-mist">{product.summary}</p>
-        <ul className="mt-4 grid grid-cols-1 gap-1.5 font-georgia text-sm text-deep sm:grid-cols-2">
+        <p className="font-georgia text-[10px] uppercase tracking-[0.2em]" style={{ color: '#E3C37C' }}>{product.eyebrow}</p>
+        <h3 className="mt-2 font-georgia text-2xl font-medium leading-tight text-cream md:text-3xl">{product.name}</h3>
+        <p className="mt-3 font-georgia leading-relaxed text-cream/80">{product.summary}</p>
+        <ul className="mt-4 grid grid-cols-1 gap-1.5 font-georgia text-sm text-cream/85 sm:grid-cols-2">
           {product.highlights.map((item) => (
             <li key={item} className="flex gap-2"><span className="text-gold" aria-hidden="true">✓</span>{item}</li>
           ))}
         </ul>
         {offer ? (
           <>
-            <p className="mt-6 font-georgia text-deep"><span className="text-3xl font-medium">{money(offer.stepCents)}</span> <span className="text-base text-mist">/ mois</span></p>
-            <p className="mt-1 font-georgia text-sm text-mist">après une Découverte à {money(offer.discoveryCents)} pour commencer</p>
-            <p className="mt-1 font-georgia text-xs text-mist">Total maximum {money(offer.capCents)} · arrêt et reprise possibles · ou en une fois</p>
+            <p className="mt-6 font-georgia text-cream"><span className="text-3xl font-medium">{money(offer.stepCents)}</span> <span className="text-base text-cream/75">/ mois</span></p>
+            <p className="mt-1 font-georgia text-sm text-cream/75">après une Découverte à {money(offer.discoveryCents)} pour commencer</p>
+            <p className="mt-1 font-georgia text-xs text-cream/75">Total maximum {money(offer.capCents)} · arrêt et reprise possibles · ou en une fois</p>
           </>
         ) : (
           <>
-            <p className="mt-6 font-georgia text-3xl font-medium text-deep">{product.priceLabel}</p>
-            {product.paymentNote && <p className="mt-1 font-georgia text-xs text-mist">{product.paymentNote}</p>}
+            <p className="mt-6 font-georgia text-3xl font-medium text-cream">{product.priceLabel}</p>
+            {product.paymentNote && <p className="mt-1 font-georgia text-xs text-cream/75">{product.paymentNote}</p>}
           </>
         )}
         <div className="mt-6">
-          <a href={product.href} onClick={open} className="inline-block rounded-lg bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90">
+          <a href={product.href} onClick={open} className="inline-block rounded-lg bg-gold px-6 py-3 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/90">
             Découvrir la formation →
           </a>
         </div>

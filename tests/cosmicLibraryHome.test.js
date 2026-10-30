@@ -104,3 +104,26 @@ test('logo treatment has no rectangular panel and the navigation uses the cosmic
   assert.match(designSystem, /--cosmic-surface:/)
   assert.match(designSystem, /--cosmic-shadow-float:/)
 })
+
+test('homepage distinguishes paid offers in blue from free experiences', async () => {
+  const [discover, consultations, boutique, growth] = await Promise.all([
+    readFile(new URL('../src/components/DiscoverSection.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/ConsultationSection.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/BoutiqueEcommerce.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/HomeGrowthPath.jsx', import.meta.url), 'utf8'),
+  ])
+
+  const chronosphere = discover.slice(discover.indexOf('function ChronosphereFeature('))
+  const freeCard = discover.slice(discover.indexOf('function DiscoverCard('), discover.indexOf('const CHRONO_STEPS'))
+  assert.match(chronosphere, /Où en êtes-vous dans votre cycle/)
+  assert.match(chronosphere, /on-dark relative overflow-hidden/)
+  assert.match(chronosphere, /linear-gradient\(135deg, #1A1535 0%, #243762 100%\)/)
+  assert.match(freeCard, /bg-white\/80/)
+  assert.match(consultations, /on-dark grid overflow-hidden/)
+  assert.match(consultations, /bg-gold px-6 py-3/)
+  assert.match(boutique, /isForSale = product\.availability === 'available'/)
+  assert.match(boutique, /isForSale \? 'on-dark' : 'bg-white'/)
+  assert.match(boutique, /on-dark mb-6 grid overflow-hidden/)
+  assert.match(growth, /const paid = step\.label === 'Commencer' \|\| step\.label === 'Se former'/)
+  assert.match(growth, /on-dark flex flex-col gap-6/)
+})

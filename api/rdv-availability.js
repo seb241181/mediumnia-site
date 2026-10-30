@@ -30,7 +30,7 @@
  */
 import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
-import { addDays, effectiveRules, generateSlots, parisTimeToUTC } from '../lib/rdvAvailability.js'
+import { activeHolds, addDays, effectiveRules, generateSlots, loadAvailabilityData, openOffers, parisTimeToUTC } from '../lib/rdvAvailability.js'
 
 const SLUG_RE         = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 const DATE_RE         = /^\d{4}-\d{2}-\d{2}$/
@@ -103,23 +103,20 @@ async function handleRange(req, res, slug) {
   const rangeStartUTC = new Date(from + 'T00:00:00Z').getTime() + parisUTCOffsetMs(from)
   const rangeEndUTC   = new Date(to + 'T00:00:00Z').getTime() + parisUTCOffsetMs(to) + 86_400_000
 
-  const [{ data: exceptions }, { data: allRules }, { data: bookings }] = await Promise.all([
-    supabase.from('booking_exceptions')
-      .select('exception_date, exception_type, slots')
-      .eq('practitioner_id', practitioner.id)
-      .gte('exception_date', from)
-      .lte('exception_date', to),
-    supabase.from('booking_availability_rules')
-      .select('day_of_week, start_time, end_time')
-      .eq('practitioner_id', practitioner.id)
-      .order('start_time'),
-    supabase.from('bookings')
-      .select('starts_at, ends_at')
-      .eq('practitioner_id', practitioner.id)
-      .eq('status', 'confirmed')
-      .gte('starts_at', new Date(rangeStartUTC).toISOString())
-      .lt('starts_at',  new Date(rangeEndUTC).toISOString()),
-  ])
+  // Même source des disponibilités que Lumia : réservation confirmée,
+  // hold PayPal en cours, ou lien personnel non expiré.
+  let availability
+  try {
+    availability = await loadAvailabilityData({
+      db: supabase, practitionerId: practitioner.id, fromDate: from, toDate: to,
+    })
+  } catch {
+    return res.status(503).json({ mode: 'error', slots: [], notice: 'Impossible de vérifier les disponibilités pour le moment.' })
+  }
+  const { exceptions, rules: allRules, bookings, holds, offers } = availability
+  const snapshotNow = new Date()
+  const heldSlots = activeHolds(holds, snapshotNow)
+  const offeredSlots = openOffers(offers, snapshotNow)
 
   const exceptionByDate = new Map((exceptions || []).map(e => [e.exception_date, e]))
 
@@ -181,16 +178,20 @@ async function handleRange(req, res, slug) {
     const offsetMs = parisUTCOffsetMs(date)
     const dayStart = new Date(date + 'T00:00:00Z').getTime() + offsetMs
     const dayEnd = dayStart + 86_400_000
-    // Comme la vue jour : seules les réservations qui commencent ce jour-là (heure de Paris).
-    const dayBookings = (bookings || []).filter(b => {
-      const s = new Date(b.starts_at).getTime()
-      return s >= dayStart && s < dayEnd
-    })
-    if (practitioner.max_per_day != null && dayBookings.length >= practitioner.max_per_day) continue
-    const existingBusy = dayBookings.map(b => ({
+    const startsThisDay = b => {
+      const start = new Date(b.starts_at).getTime()
+      return start >= dayStart && start < dayEnd
+    }
+    const dayBookings = bookings.filter(startsThisDay)
+    const dayHolds = heldSlots.filter(startsThisDay)
+    const dayOffers = offeredSlots.filter(startsThisDay)
+    // Les offres personnelles bloquent un créneau sans consommer le quota de RDV.
+    if (practitioner.max_per_day != null && dayBookings.length + dayHolds.length >= practitioner.max_per_day) continue
+    const existingBusy = [...dayBookings, ...dayHolds, ...dayOffers].map(b => ({
       start: new Date(b.starts_at).getTime() - bufBeforeMs,
-      end:   new Date(b.ends_at).getTime() + bufAfterMs,
+      end: new Date(b.ends_at).getTime() + bufAfterMs,
     }))
+
     result[date] = generateSlots(date, rules, googleBusy, existingBusy, offsetMs, svc.duration_min, bufBeforeMs, bufAfterMs)
       .some(slot => slot.available && parisTimeToUTC(date, slot.time, offsetMs).getTime() >= earliestBookableAt)
   }
@@ -303,29 +304,33 @@ export default async function handler(req, res) {
     rules = dbRules
   }
 
-  // ── max_per_day : vérification avant de calculer les créneaux ─────────────
-  // Compte les RDV confirmés dans la journée Paris (minuit Paris → minuit+1j Paris en UTC).
-
+  // ── Réservations et paiements en cours : même source que Lumia ────────────
   const parisMidnightUTC    = new Date(date + 'T00:00:00Z').getTime() + offsetMs
   const parisMidnightEndUTC = parisMidnightUTC + 86_400_000
+  let availability
+  try {
+    availability = await loadAvailabilityData({
+      db: supabase, practitionerId: practitioner.id, fromDate: date, toDate: date,
+    })
+  } catch {
+    return res.status(503).json({ mode: 'error', slots: [], notice: 'Impossible de vérifier les disponibilités pour le moment.' })
+  }
 
-  if (practitioner.max_per_day != null) {
-    const { data: todayBookings } = await supabase
-      .from('bookings')
-      .select('id')
-      .eq('practitioner_id', practitioner.id)
-      .eq('status', 'confirmed')
-      .gte('starts_at', new Date(parisMidnightUTC).toISOString())
-      .lt('starts_at',  new Date(parisMidnightEndUTC).toISOString())
+  const startsThisDay = b => {
+    const start = new Date(b.starts_at).getTime()
+    return start >= parisMidnightUTC && start < parisMidnightEndUTC
+  }
+  const dayBookings = availability.bookings.filter(startsThisDay)
+  const dayHolds = activeHolds(availability.holds, new Date()).filter(startsThisDay)
+  const dayOffers = openOffers(availability.offers, new Date()).filter(startsThisDay)
 
-    if ((todayBookings?.length ?? 0) >= practitioner.max_per_day) {
-      return res.status(200).json({
-        mode: 'live',
-        slots: [],
-        notice: `Nombre maximum de rendez-vous atteint pour ce jour (${practitioner.max_per_day}).`,
-        full: true,
-      })
-    }
+  // Le quota est consommé par les RDV et holds actifs, comme dans le RPC.
+  if (practitioner.max_per_day != null && dayBookings.length + dayHolds.length >= practitioner.max_per_day) {
+    return res.status(200).json({
+      mode: 'live', slots: [],
+      notice: `Nombre maximum de rendez-vous atteint pour ce jour (${practitioner.max_per_day}).`,
+      full: true,
+    })
   }
 
   // ── Rafraîchissement du token ─────────────────────────────────────────────
@@ -379,27 +384,13 @@ export default async function handler(req, res) {
     return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
   }
 
-  // ── Réservations MediumIA existantes ─────────────────────────────────────
-  // Stockées pré-étendues [b.starts_at - buf_before, b.ends_at + buf_after]
-  // pour être homogènes avec la vérification unifiée dans generateSlots.
-
-  const existingBusy = []
-  const { data: existingBookings } = await supabase
-    .from('bookings')
-    .select('starts_at, ends_at')
-    .eq('practitioner_id', practitioner.id)
-    .eq('status', 'confirmed')
-    .gte('starts_at', new Date(parisMidnightUTC).toISOString())
-    .lt('starts_at',  new Date(parisMidnightEndUTC).toISOString())
-
-  if (existingBookings) {
-    for (const b of existingBookings) {
-      existingBusy.push({
-        start: new Date(new Date(b.starts_at).getTime() - bufBeforeMs).getTime(),
-        end:   new Date(new Date(b.ends_at).getTime()   + bufAfterMs).getTime(),
-      })
-    }
-  }
+  // Le RPC de paiement bloque aussi les holds payment_capturing/payment_captured,
+  // même après expiration : un paiement PayPal peut avoir abouti sans retour serveur.
+  // Les holds payment_pending expirés, eux, ne bloquent plus.
+  const existingBusy = [...dayBookings, ...dayHolds, ...dayOffers].map(b => ({
+    start: new Date(b.starts_at).getTime() - bufBeforeMs,
+    end: new Date(b.ends_at).getTime() + bufAfterMs,
+  }))
 
   // ── Calcul des créneaux ───────────────────────────────────────────────────
 

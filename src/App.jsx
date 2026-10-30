@@ -41,7 +41,7 @@ function FeaturedAccompagnement({ onOpen }) {
   const features = [
     { icon: '◇', label: '25 modules PDF', sub: '4 niveaux · 269 pages' },
     { icon: '◌', label: '84 exercices guidés', sub: 'Progressifs et pratiques' },
-    { icon: '✦', label: 'Assistant MediumIA', sub: 'Formé sur le parcours' },
+    { icon: '✦', label: 'Progression accompagnée', sub: 'Outils pédagogiques en option' },
     { icon: '◈', label: '12 mois d\'accès', sub: 'Modules PDF à vie' },
   ]
   return (
@@ -50,14 +50,14 @@ function FeaturedAccompagnement({ onOpen }) {
       style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
     >
       <div className="flex-1 min-w-0">
-        <p className="font-georgia text-gold tracking-[0.28em] text-[11px] uppercase mb-2">L’offre principale</p>
+        <p className="font-georgia text-gold tracking-[0.28em] text-[11px] uppercase mb-2">Apprendre à son rythme</p>
         <p className="font-georgia text-gold/60 tracking-[0.14em] text-sm mb-6">Accompagnement à la médiumnité consciente</p>
         <h2 className="font-georgia text-cream text-3xl md:text-5xl font-medium leading-tight mb-5">
           Formation MediumIA
         </h2>
         <p className="font-georgia text-cream/65 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
-          J’ai construit cette formation en 25 modules et 4 niveaux à partir de ma pratique.
-          L’assistant MediumIA est facultatif : il complète ma méthode, il ne la remplace pas.
+          J’ai construit cette formation à partir de plus de 10 ans de pratique.
+          En 25 modules et 4 niveaux, je vous transmets mon approche pour découvrir, expérimenter et développer votre discernement.
         </p>
         <div className="mb-7 rounded-2xl border border-gold/30 bg-white/[0.06] p-5 max-w-xl">
           <p className="font-georgia text-gold tracking-[0.18em] text-[10px] uppercase mb-3">Découvrez la méthode avant de choisir votre formule</p>
@@ -98,8 +98,8 @@ function FeaturedAccompagnement({ onOpen }) {
 }
 
 const HOME_RAIL = [
-  { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
+  { id: 'formation', label: 'Formation' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
   { id: 'decouvrir', label: 'Tirages' },
@@ -124,13 +124,39 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenRdv={onOpenRdv}
         />
 
-        {/* ── Formation MediumIA : l'offre principale, dès le premier défilement ── */}
+        {/* ── Sébastien : une rencontre humaine derrière MediumIA ── */}
+        <section id="sebastien" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-12 md:pt-16" aria-labelledby="sebastien-title">
+          <div className="grid items-center gap-7 rounded-3xl border border-gold/30 bg-white/85 p-6 shadow-[0_10px_28px_rgba(26,21,53,.06)] sm:grid-cols-[180px_1fr] md:gap-10 md:p-10">
+            <img
+              src="/sebastien.jpg"
+              alt="Portrait de Sébastien Seguin, médium et formateur"
+              width="180"
+              height="180"
+              loading="lazy"
+              decoding="async"
+              className="mx-auto aspect-square w-36 rounded-full border-2 border-gold/40 object-cover shadow-md sm:w-44"
+            />
+            <div>
+              <p className="font-georgia text-xs uppercase tracking-[0.2em] text-gold">Faisons connaissance</p>
+              <h2 id="sebastien-title" className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">Je suis Sébastien Seguin, médium et formateur.</h2>
+              <p className="mt-3 font-georgia leading-relaxed text-mist">
+                Depuis plus de 10 ans, j’accompagne les personnes dans leurs questionnements.
+                Ma manière d’aborder la médiumnité repose sur l’écoute, le discernement et le respect du libre arbitre.
+              </p>
+              <p className="mt-2 font-georgia leading-relaxed text-mist">
+                Vous pouvez me rencontrer en consultation ou découvrir mon approche à travers la formation MediumIA.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Consulter : priorité à la prise de rendez-vous ── */}
+        <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} onOpenQuestion={onOpenQuestion} />
+
+        {/* ── Se former à la médiumnité ── */}
         <section id="formation" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16">
           <FeaturedAccompagnement onOpen={onOpenFormation} />
         </section>
-
-        {/* ── Consulter ── */}
-        <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} onOpenQuestion={onOpenQuestion} />
 
         {/* ── Avis clients (uniquement ceux validés) ── */}
         <ReviewsHighlight />

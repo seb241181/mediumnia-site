@@ -40,6 +40,14 @@ test('the automatic search respects the configured booking horizon and year boun
   assert.equal(nextCalendarMonth(new Date(2027, 0, 1), farHorizon, false), null)
 })
 
+test('an API outage is not silently interpreted as a fully booked calendar', () => {
+  const page = readPage()
+  assert.doesNotMatch(page, /if \(!res\.ok\) return \{ dateStr, has: false \}/)
+  assert.match(page, /if \(!res\.ok\) return \{ dateStr, blocking:/)
+  assert.match(page, /if \(data\?\.mode !== 'live' \|\| !Array\.isArray\(data\?\.slots\)\)/)
+  assert.match(page, /if \(blocking\) \{\s*setFetchError\(blocking\.blocking\)/)
+})
+
 test('availability loading state is visually prominent', () => {
   const page = readPage()
   assert.match(page, /Recherche des prochaines disponibilités…/)

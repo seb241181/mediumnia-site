@@ -83,6 +83,12 @@ test('the home page keeps Formation, ChronoSphère and quiz without duplicate ed
   assert.doesNotMatch(sections, /export function ArcheSection|<section id="arche"/)
   assert.match(read('src/data/boutiqueProducts.js'), /https:\/\/www\.amazon\.fr\/dp\/B0HJY4CFFD/)
 
+  const freeExperiences = sections.slice(sections.indexOf('export function QuizInvite('), sections.indexOf('export function PathLadder('))
+  assert.match(freeExperiences, /Quel est votre canal de perception/)
+  assert.match(freeExperiences, /Tirage test offert/)
+  assert.match(freeExperiences, /Exercice d’intuition du jour/)
+  assert.match(freeExperiences, /onOpenOracle/)
+  assert.match(patch, /<QuizInvite onOpenQuiz=\{onOpenQuiz\} onOpenOracle=\{onOpenOracle\} \/>/)
   assert.match(read('src/components/CosmicLibraryHero.jsx'), /href="\/quiz-sensibilite"/)
 })
 

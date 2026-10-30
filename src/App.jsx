@@ -124,32 +124,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenRdv={onOpenRdv}
         />
 
-        {/* ── Sébastien : une rencontre humaine derrière MediumIA ── */}
-        <section id="sebastien" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-12 md:pt-16" aria-labelledby="sebastien-title">
-          <div className="grid items-center gap-7 rounded-3xl border border-gold/30 bg-white/85 p-6 shadow-[0_10px_28px_rgba(26,21,53,.06)] sm:grid-cols-[180px_1fr] md:gap-10 md:p-10">
-            <img
-              src="/sebastien.jpg"
-              alt="Portrait de Sébastien Seguin, médium et formateur"
-              width="180"
-              height="180"
-              loading="lazy"
-              decoding="async"
-              className="mx-auto aspect-square w-36 rounded-full border-2 border-gold/40 object-cover shadow-md sm:w-44"
-            />
-            <div>
-              <p className="font-georgia text-xs uppercase tracking-[0.2em] text-gold">Faisons connaissance</p>
-              <h2 id="sebastien-title" className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">Je suis Sébastien Seguin, médium et formateur.</h2>
-              <p className="mt-3 font-georgia leading-relaxed text-mist">
-                J’accompagne les personnes dans leurs questionnements.
-                Ma manière d’aborder la médiumnité repose sur l’écoute, le discernement et le respect du libre arbitre.
-              </p>
-              <p className="mt-2 font-georgia leading-relaxed text-mist">
-                Vous pouvez me rencontrer en consultation ou découvrir mon approche à travers la formation MediumIA.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* ── Consulter : priorité à la prise de rendez-vous ── */}
         <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} onOpenQuestion={onOpenQuestion} />
 

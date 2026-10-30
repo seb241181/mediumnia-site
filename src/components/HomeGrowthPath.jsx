@@ -1,7 +1,5 @@
-// Sections de l'accueil qui donnent un fil au visiteur : ce que défend MediumIA
-// (la médiumnité consciente), une porte d'entrée gratuite (le quiz des canaux),
-// le chemin pas à pas jusqu'à la Formation, puis l'œuvre (l'Arche : Codex et
-// Kénose). Prix et offres : uniquement ceux de lib/mediumiaPublicCatalog.js.
+// Blocs complémentaires de l'accueil : quiz gratuit et découverte de l'Arche.
+// Les anciennes sections éditoriales restent exclues de la page d'accueil.
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 
 function openWith(onOpen, metric) {
@@ -11,41 +9,6 @@ function openWith(onOpen, metric) {
     event.preventDefault()
     onOpen()
   }
-}
-
-const PILLARS = [
-  { mark: 'I', title: 'L’intention d’abord', text: 'Savoir pourquoi l’on ouvre la porte.' },
-  { mark: 'II', title: 'Percevoir avant d’interpréter', text: 'Recevoir avant de chercher à comprendre.' },
-  { mark: 'III', title: 'Douter juste', text: 'Accueillir, vérifier, discerner.' },
-]
-
-export function ManifestoBand() {
-  return (
-    <section id="approche" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16" aria-labelledby="approche-title">
-      <div className="max-w-3xl">
-        <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">La médiumnité consciente</p>
-        <h2 id="approche-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">
-          Une pratique juste, claire, sans mise en scène.
-        </h2>
-        <p className="mt-4 font-georgia text-lg leading-relaxed text-mist">
-          La médiumnité ne s’apprend pas comme une technique. Elle se découvre, se pratique et s’affine.
-        </p>
-      </div>
-      <ol className="mt-10 grid gap-5 md:grid-cols-3">
-        {PILLARS.map((pillar) => (
-          <li key={pillar.mark} className="rounded-3xl border border-gold/30 bg-white/80 p-7 shadow-[0_10px_28px_rgba(26,21,53,.05)]">
-            <p className="font-georgia text-2xl text-gold" aria-hidden="true">{pillar.mark}</p>
-            <h3 className="mt-3 font-georgia text-xl font-medium leading-tight text-deep">{pillar.title}</h3>
-            <p className="mt-2 font-georgia leading-relaxed text-mist">{pillar.text}</p>
-          </li>
-        ))}
-      </ol>
-      <blockquote className="mt-10 max-w-3xl border-l-2 border-gold pl-5 font-georgia text-lg italic leading-relaxed text-deep/85">
-        « Ce que je transmets est un condensé d’années de pratique et de ce qui fonctionne vraiment, au-delà des mises en scène et des formules toutes faites. »
-        <footer className="mt-2 text-sm not-italic text-mist">— Sébastien Seguin</footer>
-      </blockquote>
-    </section>
-  )
 }
 
 const CHANNEL_TEASERS = [

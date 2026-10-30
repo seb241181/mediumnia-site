@@ -77,14 +77,14 @@ app = replaceRequired(
 )
 
 // Les consultations viennent d'abord, puis la Formation et ChronoSphère.
-// Le quiz gratuit suit ces deux offres sans les séparer.
+// Les trois expériences gratuites sont regroupées dans QuizInvite après ChronoSphère.
 app = replaceRequired(
   app,
-  '        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />\n',
-  `        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
+  '        <DiscoverSection id="decouvrir" onOpenChronosphere={onOpenChronosphere} />\n',
+  `        <DiscoverSection id="decouvrir" onOpenChronosphere={onOpenChronosphere} />
 
         {/* ── Quiz des canaux : porte d'entrée gratuite ── */}
-        <QuizInvite onOpenQuiz={onOpenQuiz} />
+        <QuizInvite onOpenQuiz={onOpenQuiz} onOpenOracle={onOpenOracle} />
 `,
   'home growth sections',
 )

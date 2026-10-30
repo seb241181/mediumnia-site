@@ -11,47 +11,60 @@ function openWith(onOpen, metric) {
   }
 }
 
-const CHANNEL_TEASERS = [
-  ['ClairSensation', 'Je sens avant de savoir'],
-  ['Clairvision', 'Je vois en dedans'],
-  ['Clairaudience', 'Je reçois une intention formulée'],
-  ['Clairconnaissance', 'L’évidence apparaît sans raisonnement'],
-]
-
-export function QuizInvite({ onOpenQuiz }) {
+// Une seule porte d'entrée gratuite : trois expériences distinctes dans un même
+// encadré bleu, plutôt que des rubriques concurrentes sur la page d'accueil.
+export function QuizInvite({ onOpenQuiz, onOpenOracle }) {
   return (
     <section id="quiz" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16" aria-labelledby="quiz-invite-title">
       <article
-        className="on-dark relative overflow-hidden rounded-3xl border border-gold/25 p-8 shadow-lg md:p-12"
-        style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
+        className="on-dark relative overflow-hidden rounded-3xl border border-gold/25 p-7 shadow-lg md:p-10 lg:p-12"
+        style={{ background: 'linear-gradient(135deg, #1A1535 0%, #243762 100%)' }}
       >
         <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-gold/10 blur-3xl" aria-hidden="true" />
-        <div className="relative grid gap-8 md:grid-cols-[1.2fr_1fr] md:items-center">
-          <div>
-            <p className="font-georgia text-[11px] uppercase tracking-[0.28em] text-gold">Quiz gratuit · 2 minutes</p>
-            <h2 id="quiz-invite-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-4xl">
-              Quel est votre canal de perception&nbsp;?
-            </h2>
-            <p className="mt-4 max-w-xl font-georgia text-base leading-relaxed text-cream/70 md:text-lg">
-              Vous sentez, vous voyez, vous entendez ou vous savez&nbsp;? Huit questions pour découvrir le canal qui s’ouvre le plus naturellement chez vous, et un premier exercice pour l’entraîner.
-            </p>
-            <a
-              href="/quiz-sensibilite"
-              onClick={openWith(onOpenQuiz, 'quiz')}
-              className="mt-7 inline-flex min-h-[52px] items-center rounded-full bg-gold px-8 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90"
-            >
-              Découvrir mon canal →
-            </a>
-            <p className="mt-3 font-georgia text-xs text-cream/50">Sans inscription · résultat immédiat</p>
+        <div className="relative">
+          <p className="font-georgia text-[11px] uppercase tracking-[0.25em] text-gold">Trois expériences gratuites · à votre rythme</p>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
+            <div className="flex flex-col items-start justify-center">
+              <p className="font-georgia text-xs uppercase tracking-[0.2em] text-gold">Quiz · 2 minutes</p>
+              <h2 id="quiz-invite-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-4xl">
+                Quel est votre canal de perception&nbsp;?
+              </h2>
+              <p className="mt-4 max-w-xl font-georgia text-base leading-relaxed text-cream/80 md:text-lg">
+                Vous sentez, vous voyez, vous entendez ou vous savez&nbsp;? Huit questions pour découvrir votre manière naturelle de percevoir.
+              </p>
+              <a
+                href="/quiz-sensibilite"
+                onClick={openWith(onOpenQuiz, 'quiz')}
+                className="mt-6 inline-flex min-h-[48px] items-center rounded-full bg-gold px-7 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/90"
+              >
+                Découvrir mon canal →
+              </a>
+              <p className="mt-3 font-georgia text-xs text-cream/70">Sans inscription · résultat immédiat</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="flex flex-col rounded-2xl border border-gold/25 p-5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">Oracle Au-delà de l’Âme</p>
+                <h3 className="mt-2 font-georgia text-xl font-medium text-cream">Tirage test offert</h3>
+                <p className="mt-2 flex-1 font-georgia text-sm leading-relaxed text-cream/80">
+                  Tirez une carte et découvrez une première lecture guidée gratuitement.
+                </p>
+                <a href="/oracle" onClick={openWith(onOpenOracle, 'oracle')} className="mt-4 inline-flex min-h-[44px] items-center self-start font-georgia text-sm font-bold text-gold underline decoration-gold/40 underline-offset-4 hover:text-cream">
+                  Faire un tirage offert →
+                </a>
+              </div>
+              <div className="flex flex-col rounded-2xl border border-gold/25 p-5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">Défi Intuition · 2 minutes</p>
+                <h3 className="mt-2 font-georgia text-xl font-medium text-cream">Exercice d’intuition du jour</h3>
+                <p className="mt-2 flex-1 font-georgia text-sm leading-relaxed text-cream/80">
+                  Cinq cartes, une étoile à retrouver. Écoutez votre premier ressenti.
+                </p>
+                <a href="/defi-intuition" className="mt-4 inline-flex min-h-[44px] items-center self-start font-georgia text-sm font-bold text-gold underline decoration-gold/40 underline-offset-4 hover:text-cream">
+                  Faire l’exercice →
+                </a>
+              </div>
+            </div>
           </div>
-          <ul className="grid grid-cols-2 gap-3">
-            {CHANNEL_TEASERS.map(([name, motto]) => (
-              <li key={name} className="rounded-2xl border border-gold/20 p-4" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                <p className="font-georgia text-sm font-medium text-cream">{name}</p>
-                <p className="mt-1 font-georgia text-xs italic leading-snug" style={{ color: 'rgba(250,250,247,0.55)' }}>« {motto} »</p>
-              </li>
-            ))}
-          </ul>
         </div>
       </article>
     </section>

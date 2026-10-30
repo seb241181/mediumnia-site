@@ -363,14 +363,14 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
               service_slug: serviceSlug,
             })
             const res = await fetch(`/api/rdv-availability?${params}`)
-            if (!res.ok) return { dateStr, has: false }
+            if (!res.ok) return { dateStr, blocking: 'Impossible de consulter le calendrier pour le moment. Réessayez.' }
             const data = await res.json()
-            if (data?.mode === 'error' || data?.mode === 'configuration_required') {
-              return { dateStr, has: false, blocking: data.notice || 'Impossible de charger les disponibilités.' }
+            if (data?.mode !== 'live' || !Array.isArray(data?.slots)) {
+              return { dateStr, blocking: data?.notice || 'Impossible de charger les disponibilités.' }
             }
-            return { dateStr, has: Array.isArray(data?.slots) && data.slots.some(s => s.available) }
+            return { dateStr, has: data.slots.some(s => s.available) }
           } catch {
-            return { dateStr, has: false }
+            return { dateStr, blocking: 'Connexion au calendrier momentanément indisponible. Réessayez.' }
           }
         }))
         if (cancelled) return

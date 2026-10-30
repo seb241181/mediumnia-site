@@ -4,9 +4,9 @@ import '../styles/home-simplified.css'
 
 // Hero simplifié : ce qu'est MediumIA et où cliquer, sans tuiles (le menu suffit).
 export const COSMIC_HOME_CONFIG = Object.freeze({
-  title: 'Sébastien Seguin, médium depuis plus de 10 ans.',
+  title: 'Sébastien Seguin, médium et formateur.',
   emphasis: 'Consultations et formation à la médiumnité.',
-  description: 'Je vous accompagne dans vos questionnements et partage mon expérience avec celles et ceux qui souhaitent découvrir leur sensibilité, dans l’écoute et le respect de leur liberté.',
+  description: 'Je vous accompagne dans vos questionnements et partage ma manière d’aborder la médiumnité avec celles et ceux qui souhaitent découvrir leur sensibilité.',
   primaryAction: 'Prendre rendez-vous',
   secondaryAction: 'Découvrir ma formation',
   quizAction: 'Pas encore sûr ? Découvrez votre canal de perception en 2 minutes',

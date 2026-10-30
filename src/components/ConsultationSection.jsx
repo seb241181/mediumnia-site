@@ -1,4 +1,5 @@
 import PractitionerCard from './PractitionerCard'
+import { InterviewMiniature } from './VideoInterview'
 import { consultationPractitioners } from '../data/consultationServices'
 import '../styles/consultation.css'
 
@@ -40,7 +41,10 @@ export default function ConsultationSection({
                 <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">{practitioner.eyebrow}</p>
                 <h3 className="mt-2 font-georgia text-2xl font-medium text-cream md:text-3xl">{practitioner.name}</h3>
                 <p className="mt-1 font-georgia text-sm text-gold">{practitioner.role}</p>
-                <p className="mt-4 max-w-2xl font-georgia leading-relaxed text-cream/80">{practitioner.introduction}</p>
+                <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
+                  <p className="max-w-2xl flex-1 font-georgia leading-relaxed text-cream/80">{practitioner.introduction}</p>
+                  {practitioner.rdvSlug === 'sebastien-seguin' && <InterviewMiniature />}
+                </div>
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <button
                     type="button"

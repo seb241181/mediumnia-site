@@ -37,7 +37,9 @@ test('home hero has no dock anymore and offers booking directly', () => {
   assert.deepEqual([...hero.matchAll(/\{ label: '([^']+)'/g)].map((m) => m[1]), [])
   assert.match(hero, /className="cosmic-library__secondary"/)
   assert.match(hero, /href="\/rdv\/sebastien-seguin\?src=home-hero"/)
-  assert.match(hero, /Voir mes disponibilités/)
+  assert.match(hero, /primaryAction: 'Prendre rendez-vous'/)
+  assert.match(hero, /secondaryAction: 'Découvrir ma formation'/)
+  assert.ok(hero.indexOf('href="/rdv/sebastien-seguin?src=home-hero"') < hero.indexOf('href="/formation"'))
 })
 
 test('floating account button stays compact on phones', () => {

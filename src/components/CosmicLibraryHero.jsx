@@ -4,10 +4,11 @@ import '../styles/home-simplified.css'
 
 // Hero simplifié : ce qu'est MediumIA et où cliquer, sans tuiles (le menu suffit).
 export const COSMIC_HOME_CONFIG = Object.freeze({
-  title: 'Se former à la médiumnité.',
-  emphasis: 'Consulter un médium.',
-  description: 'J’ai créé MediumIA pour réunir ma formation à la médiumnité et mes consultations : un chemin clair pour comprendre et développer votre sensibilité.',
-  primaryAction: 'Découvrir la Formation',
+  title: 'Sébastien Seguin, médium depuis plus de 10 ans.',
+  emphasis: 'Consultations et formation à la médiumnité.',
+  description: 'Je vous accompagne dans vos questionnements et partage mon expérience avec celles et ceux qui souhaitent découvrir leur sensibilité, dans l’écoute et le respect de leur liberté.',
+  primaryAction: 'Prendre rendez-vous',
+  secondaryAction: 'Découvrir ma formation',
   quizAction: 'Pas encore sûr ? Découvrez votre canal de perception en 2 minutes',
 })
 
@@ -107,7 +108,7 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
             <span className="cosmic-library__brand-aura" aria-hidden="true" />
             <img
               src="/images/brand/MEDIUMIA_logo_officiel_transparent_2026-09-12.png"
-              alt="MediumIA, le monde spirituel, relié autrement"
+              alt="MediumIA, consultations et formation à la médiumnité"
               width="1015"
               height="696"
               fetchPriority="high"
@@ -133,13 +134,6 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
           <div className="cosmic-library__actions cosmic-reveal cosmic-reveal--actions">
             <a
               className="cosmic-library__primary"
-              href="/formation"
-              onClick={(event) => { event.preventDefault(); onOpenFormation() }}
-            >
-              {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
-            </a>
-            <a
-              className="cosmic-library__secondary"
               href="/rdv/sebastien-seguin?src=home-hero"
               onClick={(event) => {
                 if (!onOpenRdv || event.metaKey || event.ctrlKey || event.shiftKey) return
@@ -147,7 +141,18 @@ export default function CosmicLibraryHero({ onOpenPro, onOpenFormation, onOpenOr
                 onOpenRdv('sebastien-seguin', 'home-hero')
               }}
             >
-              Voir mes disponibilités<span aria-hidden="true">→</span>
+              {COSMIC_HOME_CONFIG.primaryAction}<span aria-hidden="true">→</span>
+            </a>
+            <a
+              className="cosmic-library__secondary"
+              href="/formation"
+              onClick={(event) => {
+                if (!onOpenFormation || event.metaKey || event.ctrlKey || event.shiftKey) return
+                event.preventDefault()
+                onOpenFormation()
+              }}
+            >
+              {COSMIC_HOME_CONFIG.secondaryAction}<span aria-hidden="true">→</span>
             </a>
           </div>
 

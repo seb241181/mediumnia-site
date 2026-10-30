@@ -37,6 +37,56 @@ export function SocialIcon({ id, className }) {
   return null
 }
 
+// Sur l'accueil : une vignette discrète dans la présentation de Sébastien.
+// Le lecteur YouTube n'est créé qu'au clic (aucune lecture automatique).
+export function InterviewMiniature() {
+  const video = FEATURED_INTERVIEW
+  const [playing, setPlaying] = useState(false)
+
+  return (
+    <div className="w-full max-w-[232px] shrink-0" aria-label="Présentation vidéo de Sébastien">
+      <div className="relative aspect-video overflow-hidden rounded-xl border border-gold/35 bg-deep shadow-[0_8px_22px_rgba(0,0,0,.18)]">
+        {playing ? (
+          <iframe
+            src={youtubeEmbedUrl(video.youtubeId)}
+            title={`${video.title} — ${video.channel}`}
+            className="absolute inset-0 h-full w-full"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        ) : (
+          <button
+            type="button"
+            className="group absolute inset-0 h-full w-full"
+            onClick={() => setPlaying(true)}
+            aria-label="Voir ma présentation en vidéo"
+          >
+            <img
+              src={`https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover opacity-85 transition-opacity group-hover:opacity-100"
+            />
+            <span className="absolute inset-0 bg-deep/15" aria-hidden="true" />
+            <span
+              className="absolute left-1/2 top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-gold text-deep shadow-md transition-transform group-hover:scale-105"
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 24 24" className="ml-0.5 h-5 w-5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+          </button>
+        )}
+      </div>
+      <p className="mt-2 font-georgia text-xs text-cream/80">
+        {playing ? 'Mon interview' : 'Me découvrir en vidéo'}
+        <span className="text-cream/55"> · {video.duration}</span>
+      </p>
+    </div>
+  )
+}
+
 export default function VideoInterview({ id = 'interview', onOpenRdv, onOpenVideos, compact = false }) {
   const video = FEATURED_INTERVIEW
   const [start, setStart] = useState(null)

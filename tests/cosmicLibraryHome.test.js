@@ -30,7 +30,7 @@ test('cosmic homepage preserves the supplied official logo and uses its transpar
   assert.doesNotMatch(component, /filter:|brightness-|saturate-|hue-rotate/)
 })
 
-test('cosmic hero uses responsive monumental scenes with the simplified promise (formation + consultations)', async () => {
+test('cosmic hero keeps monumental scenes but introduces the human approach first', async () => {
   const [component, desktopScene, mobileScene] = await Promise.all([
     readFile(componentPath, 'utf8'),
     readFile(desktopScenePath),
@@ -39,26 +39,30 @@ test('cosmic hero uses responsive monumental scenes with the simplified promise 
 
   assert.match(component, /mediumia-cosmic-library-hero\.webp/)
   assert.match(component, /mediumia-cosmic-library-hero-mobile\.webp/)
-  assert.match(component, /Se former à la médiumnité\./)
-  assert.match(component, /Consulter un médium\./)
-  assert.match(component, /J’ai créé MediumIA/)
-  assert.match(component, /mes consultations/)
-  assert.match(component, /primaryAction: 'Découvrir la Formation',/)
+  assert.match(component, /Sébastien Seguin, médium et formateur/)
+  assert.match(component, /Consultations et formation à la médiumnité/)
+  assert.match(component, /primaryAction: 'Prendre rendez-vous'/)
+  assert.match(component, /secondaryAction: 'Découvrir ma formation'/)
   assert.doesNotMatch(component, /Là où la conscience rencontre l’intelligence artificielle/)
+  assert.doesNotMatch(component, /J’ai créé MediumIA pour réunir/)
   assert.ok(desktopScene.byteLength < 400_000)
   assert.ok(mobileScene.byteLength < 400_000)
 })
 
-test('simplified hero: no tiles, two clear actions (formation and booking)', async () => {
+test('homepage makes booking primary and preserves formation without duplicate presentation', async () => {
   const [app, component] = await Promise.all([
     readFile(appPath, 'utf8'),
     readFile(componentPath, 'utf8'),
   ])
 
   assert.match(app, /<CosmicLibraryHero[\s\S]*onOpenFormation=\{onOpenFormation\}/)
-  assert.match(component, /href="\/formation"/)
   assert.match(component, /href="\/rdv\/sebastien-seguin\?src=home-hero"/)
-  assert.match(component, /Voir mes disponibilités/)
+  assert.match(component, /href="\/formation"/)
+  assert.match(component, /\{COSMIC_HOME_CONFIG\.primaryAction\}/)
+  assert.ok(component.indexOf('href="/rdv/sebastien-seguin?src=home-hero"') < component.indexOf('href="/formation"'))
+  assert.doesNotMatch(app, /<section id="sebastien"/)
+  assert.match(component, /Sébastien Seguin, médium et formateur/)
+  assert.ok(app.indexOf('<ConsultationSection id="consulter"') < app.indexOf('<section id="formation"'))
   assert.doesNotMatch(component, /CosmicDock|cosmic-dock__item|href: '\/agents'/)
 })
 
@@ -99,4 +103,31 @@ test('logo treatment has no rectangular panel and the navigation uses the cosmic
   assert.match(styles, /\.cosmic-nav > div \{[\s\S]*border-radius: 999px;[\s\S]*backdrop-filter: blur\(22px\)/)
   assert.match(designSystem, /--cosmic-surface:/)
   assert.match(designSystem, /--cosmic-shadow-float:/)
+})
+
+test('homepage distinguishes paid offers in blue from free experiences', async () => {
+  const [discover, consultations, boutique, growth] = await Promise.all([
+    readFile(new URL('../src/components/DiscoverSection.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/ConsultationSection.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/BoutiqueEcommerce.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/HomeGrowthPath.jsx', import.meta.url), 'utf8'),
+  ])
+
+  const chronosphere = discover.slice(discover.indexOf('function ChronosphereFeature('))
+  const freeSection = discover.slice(discover.indexOf('export default function DiscoverSection('))
+  assert.match(chronosphere, /Où en êtes-vous dans votre cycle/)
+  assert.match(chronosphere, /on-dark relative overflow-hidden/)
+  assert.match(chronosphere, /linear-gradient\(135deg, #1A1535 0%, #243762 100%\)/)
+  assert.doesNotMatch(freeSection, /DiscoverCard|Tirage test offert|Défi Intuition/)
+  assert.match(growth, /Tirage test offert/)
+  assert.match(growth, /Exercice d’intuition du jour/)
+  assert.match(growth, /href="\/oracle"/)
+  assert.match(growth, /href="\/defi-intuition"/)
+  assert.match(consultations, /on-dark grid overflow-hidden/)
+  assert.match(consultations, /bg-gold px-6 py-3/)
+  assert.match(boutique, /isForSale = product\.availability === 'available'/)
+  assert.match(boutique, /isForSale \? 'on-dark' : 'bg-white'/)
+  assert.match(boutique, /on-dark mb-6 grid overflow-hidden/)
+  assert.match(growth, /const paid = step\.label === 'Commencer' \|\| step\.label === 'Se former'/)
+  assert.doesNotMatch(growth, /export function ArcheSection|<section id="arche"/)
 })

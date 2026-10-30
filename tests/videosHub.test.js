@@ -18,8 +18,10 @@ test('public videos hub is routed and discoverable', () => {
   assert.match(interview, /Accéder à la rubrique Vidéos/)
   assert.doesNotMatch(interview, /Vos questions · mes réponses/)
   assert.doesNotMatch(interview, /La prochaine vidéo partira de vos questions/)
-  assert.match(app, /id="videos"/)
-  assert.match(app, /label: 'Vidéos'/)
+  // Le lien vers le catalogue reste dans le pied de page ; l'accueil ne
+  // répète plus la rubrique vidéo ni son rail latéral.
+  assert.doesNotMatch(app, /<VideoInterview id="videos"|id: 'videos', label: 'Vidéos'/)
+  assert.match(read('src/components/ConsultationSection.jsx'), /<InterviewMiniature \/>/)
   assert.match(footer, /href="\/videos"/)
 })
 

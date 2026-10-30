@@ -16,7 +16,7 @@ test('public commercial copy uses Sebastian first-person voice', () => {
   const consultations = read('src/data/consultationServices.js')
   const shop = read('src/data/boutiqueProducts.js')
 
-  assert.match(hero, /J’ai créé MediumIA/)
+  assert.match(hero, /Je vous accompagne dans vos questionnements/)
   assert.match(guidance, /Je prends personnellement connaissance de votre demande/)
   assert.match(guidance, /Réponse que j’écris personnellement/)
   assert.match(conference, /Je vous propose une heure en direct/)
@@ -26,7 +26,7 @@ test('public commercial copy uses Sebastian first-person voice', () => {
   assert.match(booking, /Je vous recontacterai/)
   assert.match(booking, /Je vous ai proposé ce créneau/)
   assert.match(oracle, /Ma création originale/)
-  assert.match(home, /J’ai écrit L’Arche/)
+  assert.doesNotMatch(home, /export function ArcheSection|<section id="arche"/)
   assert.match(consultations, /explorer les différentes lignes de temps/)
   assert.match(consultations, /désenvoûtement et de dégagement énergétique de lieux/)
   assert.doesNotMatch(consultations, /défunts|depuis plus de douze ans|pratique de plus de douze ans/)

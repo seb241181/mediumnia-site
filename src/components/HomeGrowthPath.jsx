@@ -1,7 +1,5 @@
-// Sections de l'accueil qui donnent un fil au visiteur : ce que défend MediumIA
-// (la médiumnité consciente), une porte d'entrée gratuite (le quiz des canaux),
-// le chemin pas à pas jusqu'à la Formation, puis l'œuvre (l'Arche : Codex et
-// Kénose). Prix et offres : uniquement ceux de lib/mediumiaPublicCatalog.js.
+// Blocs complémentaires de l'accueil : quiz gratuit et découverte de l'Arche.
+// Les anciennes sections éditoriales restent exclues de la page d'accueil.
 import { trackMediumiaMetric } from '../lib/mediumiaMetrics.js'
 
 function openWith(onOpen, metric) {
@@ -13,82 +11,60 @@ function openWith(onOpen, metric) {
   }
 }
 
-const PILLARS = [
-  { mark: 'I', title: 'L’intention d’abord', text: 'Savoir pourquoi l’on ouvre la porte.' },
-  { mark: 'II', title: 'Percevoir avant d’interpréter', text: 'Recevoir avant de chercher à comprendre.' },
-  { mark: 'III', title: 'Douter juste', text: 'Accueillir, vérifier, discerner.' },
-]
-
-export function ManifestoBand() {
-  return (
-    <section id="approche" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16" aria-labelledby="approche-title">
-      <div className="max-w-3xl">
-        <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">La médiumnité consciente</p>
-        <h2 id="approche-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">
-          Une pratique juste, claire, sans mise en scène.
-        </h2>
-        <p className="mt-4 font-georgia text-lg leading-relaxed text-mist">
-          La médiumnité ne s’apprend pas comme une technique. Elle se découvre, se pratique et s’affine.
-        </p>
-      </div>
-      <ol className="mt-10 grid gap-5 md:grid-cols-3">
-        {PILLARS.map((pillar) => (
-          <li key={pillar.mark} className="rounded-3xl border border-gold/30 bg-white/80 p-7 shadow-[0_10px_28px_rgba(26,21,53,.05)]">
-            <p className="font-georgia text-2xl text-gold" aria-hidden="true">{pillar.mark}</p>
-            <h3 className="mt-3 font-georgia text-xl font-medium leading-tight text-deep">{pillar.title}</h3>
-            <p className="mt-2 font-georgia leading-relaxed text-mist">{pillar.text}</p>
-          </li>
-        ))}
-      </ol>
-      <blockquote className="mt-10 max-w-3xl border-l-2 border-gold pl-5 font-georgia text-lg italic leading-relaxed text-deep/85">
-        « Ce que je transmets est un condensé d’années de pratique et de ce qui fonctionne vraiment, au-delà des mises en scène et des formules toutes faites. »
-        <footer className="mt-2 text-sm not-italic text-mist">— Sébastien Seguin</footer>
-      </blockquote>
-    </section>
-  )
-}
-
-const CHANNEL_TEASERS = [
-  ['ClairSensation', 'Je sens avant de savoir'],
-  ['Clairvision', 'Je vois en dedans'],
-  ['Clairaudience', 'Je reçois une intention formulée'],
-  ['Clairconnaissance', 'L’évidence apparaît sans raisonnement'],
-]
-
-export function QuizInvite({ onOpenQuiz }) {
+// Une seule porte d'entrée gratuite : trois expériences distinctes dans un même
+// encadré bleu, plutôt que des rubriques concurrentes sur la page d'accueil.
+export function QuizInvite({ onOpenQuiz, onOpenOracle }) {
   return (
     <section id="quiz" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16" aria-labelledby="quiz-invite-title">
       <article
-        className="on-dark relative overflow-hidden rounded-3xl border border-gold/25 p-8 shadow-lg md:p-12"
-        style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
+        className="on-dark relative overflow-hidden rounded-3xl border border-gold/25 p-7 shadow-lg md:p-10 lg:p-12"
+        style={{ background: 'linear-gradient(135deg, #1A1535 0%, #243762 100%)' }}
       >
         <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-gold/10 blur-3xl" aria-hidden="true" />
-        <div className="relative grid gap-8 md:grid-cols-[1.2fr_1fr] md:items-center">
-          <div>
-            <p className="font-georgia text-[11px] uppercase tracking-[0.28em] text-gold">Quiz gratuit · 2 minutes</p>
-            <h2 id="quiz-invite-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-4xl">
-              Quel est votre canal de perception&nbsp;?
-            </h2>
-            <p className="mt-4 max-w-xl font-georgia text-base leading-relaxed text-cream/70 md:text-lg">
-              Vous sentez, vous voyez, vous entendez ou vous savez&nbsp;? Huit questions pour découvrir le canal qui s’ouvre le plus naturellement chez vous, et un premier exercice pour l’entraîner.
-            </p>
-            <a
-              href="/quiz-sensibilite"
-              onClick={openWith(onOpenQuiz, 'quiz')}
-              className="mt-7 inline-flex min-h-[52px] items-center rounded-full bg-gold px-8 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90"
-            >
-              Découvrir mon canal →
-            </a>
-            <p className="mt-3 font-georgia text-xs text-cream/50">Sans inscription · résultat immédiat</p>
+        <div className="relative">
+          <p className="font-georgia text-[11px] uppercase tracking-[0.25em] text-gold">Trois expériences gratuites · à votre rythme</p>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
+            <div className="flex flex-col items-start justify-center">
+              <p className="font-georgia text-xs uppercase tracking-[0.2em] text-gold">Quiz · 2 minutes</p>
+              <h2 id="quiz-invite-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-cream md:text-4xl">
+                Quel est votre canal de perception&nbsp;?
+              </h2>
+              <p className="mt-4 max-w-xl font-georgia text-base leading-relaxed text-cream/80 md:text-lg">
+                Vous sentez, vous voyez, vous entendez ou vous savez&nbsp;? Huit questions pour découvrir votre manière naturelle de percevoir.
+              </p>
+              <a
+                href="/quiz-sensibilite"
+                onClick={openWith(onOpenQuiz, 'quiz')}
+                className="mt-6 inline-flex min-h-[48px] items-center rounded-full bg-gold px-7 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/90"
+              >
+                Découvrir mon canal →
+              </a>
+              <p className="mt-3 font-georgia text-xs text-cream/70">Sans inscription · résultat immédiat</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="flex flex-col rounded-2xl border border-gold/25 p-5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">Oracle Au-delà de l’Âme</p>
+                <h3 className="mt-2 font-georgia text-xl font-medium text-cream">Tirage test offert</h3>
+                <p className="mt-2 flex-1 font-georgia text-sm leading-relaxed text-cream/80">
+                  Tirez une carte et découvrez une première lecture guidée gratuitement.
+                </p>
+                <a href="/oracle" onClick={openWith(onOpenOracle, 'oracle')} className="mt-4 inline-flex min-h-[44px] items-center self-start font-georgia text-sm font-bold text-gold underline decoration-gold/40 underline-offset-4 hover:text-cream">
+                  Faire un tirage offert →
+                </a>
+              </div>
+              <div className="flex flex-col rounded-2xl border border-gold/25 p-5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">Défi Intuition · 2 minutes</p>
+                <h3 className="mt-2 font-georgia text-xl font-medium text-cream">Exercice d’intuition du jour</h3>
+                <p className="mt-2 flex-1 font-georgia text-sm leading-relaxed text-cream/80">
+                  Cinq cartes, une étoile à retrouver. Écoutez votre premier ressenti.
+                </p>
+                <a href="/defi-intuition" className="mt-4 inline-flex min-h-[44px] items-center self-start font-georgia text-sm font-bold text-gold underline decoration-gold/40 underline-offset-4 hover:text-cream">
+                  Faire l’exercice →
+                </a>
+              </div>
+            </div>
           </div>
-          <ul className="grid grid-cols-2 gap-3">
-            {CHANNEL_TEASERS.map(([name, motto]) => (
-              <li key={name} className="rounded-2xl border border-gold/20 p-4" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                <p className="font-georgia text-sm font-medium text-cream">{name}</p>
-                <p className="mt-1 font-georgia text-xs italic leading-snug" style={{ color: 'rgba(250,250,247,0.55)' }}>« {motto} »</p>
-              </li>
-            ))}
-          </ul>
         </div>
       </article>
     </section>
@@ -135,83 +111,33 @@ export function PathLadder({ onOpenQuiz, onOpenFormation, onOpenReseauForm }) {
         <h2 id="chemin-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">Avancez simplement, à votre rythme.</h2>
       </div>
       <ol className="mt-10 grid gap-4 md:grid-cols-5">
-        {steps.map((step, index) => (
-          <li key={step.label} className="flex flex-col rounded-3xl border border-gold/30 bg-white/80 p-6 shadow-[0_10px_28px_rgba(26,21,53,.05)]">
+        {steps.map((step, index) => {
+          const paid = step.label === 'Commencer' || step.label === 'Se former'
+          return (
+          <li
+            key={step.label}
+            className={`flex flex-col rounded-3xl border border-gold/30 p-6 shadow-[0_10px_28px_rgba(26,21,53,.09)] ${paid ? 'on-dark' : 'bg-white/80'}`}
+            style={paid ? { background: 'linear-gradient(145deg,#1A1535,#243762)' } : undefined}
+          >
             <div className="flex items-baseline justify-between gap-2">
               <p className="font-georgia text-[11px] uppercase tracking-[0.18em] text-gold">{index + 1} · {step.label}</p>
             </div>
-            <p className="mt-1 font-georgia text-xs text-mist">{step.price}</p>
-            <h3 className="mt-3 font-georgia text-lg font-medium leading-snug text-deep">{step.title}</h3>
-            <p className="mt-2 flex-1 font-georgia text-sm leading-relaxed text-mist">{step.text}</p>
+            <p className={`mt-1 font-georgia text-xs ${paid ? 'text-cream/75' : 'text-mist'}`}>{step.price}</p>
+            <h3 className={`mt-3 font-georgia text-lg font-medium leading-snug ${paid ? 'text-cream' : 'text-deep'}`}>{step.title}</h3>
+            <p className={`mt-2 flex-1 font-georgia text-sm leading-relaxed ${paid ? 'text-cream/80' : 'text-mist'}`}>{step.text}</p>
             <ul className="mt-4 space-y-1.5">
               {step.links.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} onClick={openWith(link.onOpen, link.metric)} className="font-georgia text-sm font-bold text-deep transition-colors hover:text-gold">
+                  <a href={link.href} onClick={openWith(link.onOpen, link.metric)} className={`font-georgia text-sm font-bold transition-colors ${paid ? 'text-gold hover:text-cream' : 'text-deep hover:text-gold'}`}>
                     {link.label} →
                   </a>
                 </li>
               ))}
             </ul>
           </li>
-        ))}
+          )
+        })}
       </ol>
-    </section>
-  )
-}
-
-export const CODEX_AMAZON_URL = 'https://www.amazon.fr/dp/B0HJY4CFFD'
-
-export function ArcheSection() {
-  return (
-    <section id="arche" className="mx-auto max-w-6xl scroll-mt-28 px-6 py-16" aria-labelledby="arche-title">
-      <div className="max-w-2xl">
-        <p className="font-georgia text-xs uppercase tracking-[0.24em] text-gold">L’œuvre · L’Octave de l’Âme</p>
-        <h2 id="arche-title" className="mt-3 font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">L’Arche</h2>
-        <p className="mt-3 font-georgia text-lg leading-relaxed text-mist">
-          Au-delà de la pratique, une lecture de ce que nous sommes. J’ai écrit L’Arche comme une œuvre en mouvements.
-        </p>
-      </div>
-      <div className="mt-10 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <article className="flex flex-col gap-6 rounded-3xl border border-gold/40 bg-white/85 p-7 shadow-[0_18px_45px_rgba(26,21,53,.08)] sm:flex-row md:p-9">
-          <img
-            src="/images/boutique/codex-cover.jpg"
-            alt="Couverture du livre CODEX — Le Livre de l’Arche, de Sébastien Seguin"
-            loading="lazy"
-            decoding="async"
-            className="mx-auto w-40 shrink-0 self-start rounded-lg shadow-[0_14px_30px_rgba(26,21,53,.25)] sm:mx-0"
-          />
-          <div className="flex flex-col">
-            <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Disponible · broché et Kindle</p>
-            <h3 className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep">CODEX — Le Livre de l’Arche</h3>
-            <p className="mt-1 font-georgia text-sm italic text-mist">L’Octave entière, de l’Un au Neuf</p>
-            <p className="mt-4 flex-1 font-georgia leading-relaxed text-mist">
-              Une approche philosophique de ce qui concerne l’humain : de l’Un qui s’ignore au Souverain qui se sait. Un livre de lecture, de réflexion et d’exploration symbolique.
-            </p>
-            <p className="mt-4 font-georgia text-base italic text-deep/85">« Je suis dans la matière, mais je ne suis pas seulement matière. »</p>
-            <a
-              href={CODEX_AMAZON_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackMediumiaMetric('home_door_click', 'home:codex')}
-              className="mt-6 inline-flex min-h-[48px] w-fit items-center rounded-full bg-gold px-7 font-georgia text-base font-bold text-deep transition-colors hover:bg-gold/90"
-            >
-              Acheter le livre sur Amazon <span className="ml-1" aria-hidden="true">↗</span>
-            </a>
-          </div>
-        </article>
-        <article
-          className="on-dark flex flex-col rounded-3xl border border-gold/25 p-7 shadow-lg md:p-9"
-          style={{ background: 'linear-gradient(160deg, #1A1535 0%, #2A2152 100%)' }}
-        >
-          <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Troisième mouvement · en cours</p>
-          <h3 className="mt-2 font-georgia text-3xl font-medium leading-tight text-cream">La Kénose</h3>
-          <p className="mt-1 font-georgia text-sm italic text-gold/85">le réveil qui sort du sommeil dans l’oubli</p>
-          <p className="mt-4 flex-1 font-georgia leading-relaxed text-cream/70">
-            Le Codex s’achève sur ces mots&nbsp;: « L’expérience humaine est l’expérience de l’oubli. Ne l’oublie pas. » La Kénose commence exactement là. Le mouvement est en train de s’écrire.
-          </p>
-          <p className="mt-6 font-georgia text-xs text-cream/50">Pour être prêt à le recevoir, commencez par le Codex.</p>
-        </article>
-      </div>
     </section>
   )
 }

@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 
-// Accueil « chemin » et quiz des canaux de perception.
+// Accueil simplifié : quiz des canaux et découverte de l'Arche.
 // Dernier patch du prebuild : les ancres visent le code APRÈS les patchs
 // historiques (imports en lazy(), routes dans <DeferredRoute>, ROUTE_META,
 // liste d'événements de mesure complétée). Ne jamais modifier src/App.jsx
@@ -27,7 +27,7 @@ let app = await readFile(appPath, 'utf8')
 app = insertAfter(
   app,
   "import PractitionersBand from './components/PractitionersBand'",
-  "\nimport { ManifestoBand, QuizInvite, PathLadder, ArcheSection } from './components/HomeGrowthPath'",
+  "\nimport { QuizInvite } from './components/HomeGrowthPath'",
   'home sections import',
 )
 
@@ -41,25 +41,20 @@ app = insertAfter(
 app = replaceRequired(
   app,
   `const HOME_RAIL = [
-  { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
-  { id: 'avis', label: 'Avis' },
-  { id: 'videos', label: 'Vidéos' },
+  { id: 'formation', label: 'Formation' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
+  { id: 'avis', label: 'Avis' },
   { id: 'praticiens', label: 'Praticiens' },
 ]`,
   `const HOME_RAIL = [
-  { id: 'formation', label: 'Formation' },
-  { id: 'quiz', label: 'Quiz' },
-  { id: 'approche', label: 'Approche' },
-  { id: 'chemin', label: 'Chemin' },
   { id: 'consulter', label: 'Consulter' },
-  { id: 'avis', label: 'Avis' },
-  { id: 'videos', label: 'Vidéos' },
-  { id: 'arche', label: 'L’Arche' },
+  { id: 'formation', label: 'Formation' },
   { id: 'decouvrir', label: 'Tirages' },
+  { id: 'quiz', label: 'Quiz' },
   { id: 'boutique', label: 'Boutique' },
+  { id: 'avis', label: 'Avis' },
   { id: 'praticiens', label: 'Praticiens' },
 ]`,
   'home rail',
@@ -79,35 +74,17 @@ app = replaceRequired(
   'hero quiz door',
 )
 
-// La Formation reste visible dès le premier défilement ; le quiz, l'approche
-// et le chemin suivent, avant les consultations.
+// Les consultations viennent d'abord, puis la Formation et ChronoSphère.
+// Les trois expériences gratuites sont regroupées dans QuizInvite après ChronoSphère.
 app = replaceRequired(
   app,
-  '          <FeaturedAccompagnement onOpen={onOpenFormation} />\n        </section>\n',
-  `          <FeaturedAccompagnement onOpen={onOpenFormation} />
-        </section>
+  '        <DiscoverSection id="decouvrir" onOpenChronosphere={onOpenChronosphere} />\n',
+  `        <DiscoverSection id="decouvrir" onOpenChronosphere={onOpenChronosphere} />
 
         {/* ── Quiz des canaux : porte d'entrée gratuite ── */}
-        <QuizInvite onOpenQuiz={onOpenQuiz} />
-
-        {/* ── La médiumnité consciente : ce que défend MediumIA ── */}
-        <ManifestoBand />
-
-        {/* ── Le chemin, du gratuit à la Formation ── */}
-        <PathLadder onOpenQuiz={onOpenQuiz} onOpenFormation={onOpenFormation} onOpenReseauForm={onOpenReseauForm} />
+        <QuizInvite onOpenQuiz={onOpenQuiz} onOpenOracle={onOpenOracle} />
 `,
   'home growth sections',
-)
-
-app = replaceRequired(
-  app,
-  "        <VideoInterview id=\"videos\" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />\n",
-  `        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
-
-        {/* ── L'Arche : le Codex et la Kénose ── */}
-        <ArcheSection />
-`,
-  'arche section',
 )
 
 app = replaceRequired(

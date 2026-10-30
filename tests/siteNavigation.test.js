@@ -44,13 +44,20 @@ test('long pages get a discreet « Sur cette page » rail on wide screens only',
   assert.match(app, /<PageRail items=\{HOME_RAIL\} \/>/)
 })
 
-test('home order: hero, Formation with progressive payment, Consulter, avis, Découvrir, boutique, praticiens', async () => {
+test('home order: hero, consultations, Formation, ChronoSphère, boutique, avis, praticiens', async () => {
   const app = await read('src/App.jsx')
   const home = app.slice(app.indexOf('function PublicPlatformHome('))
-  const order = ['<CosmicLibraryHero', '<section id="formation"', '<ConsultationSection id="consulter" compact', '<ReviewsHighlight />', '<DiscoverSection id="decouvrir"', '<section id="boutique"', '<PractitionersBand']
+  const order = ['<CosmicLibraryHero', '<ConsultationSection id="consulter" compact', '<section id="formation"', '<DiscoverSection id="decouvrir"', '<section id="boutique"', '<ReviewsHighlight />', '<PractitionersBand']
   const positions = order.map((marker) => home.indexOf(marker))
   assert.ok(positions.every((p) => p > 0), JSON.stringify(positions))
   assert.deepEqual([...positions].sort((a, b) => a - b), positions)
+  assert.match(home, /<\/section>\s*\{\/\* ── Avis clients \(uniquement ceux validés\), juste avant le réseau ── \*\/\}\s*<ReviewsHighlight \/>\s*\{\/\* ── Praticiens/)
+  const rail = app.slice(app.indexOf('const HOME_RAIL'), app.indexOf('function PublicPlatformHome('))
+  assert.ok(rail.indexOf("id: 'boutique'") < rail.indexOf("id: 'avis'"))
+  // Rien ne doit s'intercaler entre Formation et ChronoSphère, même au prebuild.
+  assert.match(home, /<FeaturedAccompagnement onOpen=\{onOpenFormation\} \/>[\s\S]*?<\/section>[\s\S]*?<DiscoverSection id="decouvrir"/)
+  const growthPatch = await read('scripts/apply-home-growth-path.mjs')
+  assert.match(growthPatch, /<DiscoverSection id="decouvrir"[\s\S]*?Quiz des canaux/)
   assert.doesNotMatch(app, /function FeaturedChronosphere|function OracleChronosphereBridge|Pour éviter toute confusion|Le socle arrive/)
   assert.match(app, /Découvrez la méthode avant de choisir votre formule/)
   assert.match(app, /25 modules, 84 exercices guidés et des rencontres pédagogiques en visio/)

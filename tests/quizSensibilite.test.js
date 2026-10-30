@@ -69,14 +69,26 @@ test('the quiz never claims to measure a gift or predict anything and reuses the
   assert.match(page, /disabled=\{!consent \|\| loading \|\| done\}/)
 })
 
-test('the home page keeps the Formation first, then the quiz, the approach, the path and the Arche', () => {
+test('the home page keeps Formation, ChronoSphère and quiz without duplicate editorial sections', () => {
+  const app = read('src/App.jsx')
   const patch = read('scripts/apply-home-growth-path.mjs')
-  const order = ['<FeaturedAccompagnement', '<QuizInvite', '<ManifestoBand', '<PathLadder'].map((tag) => patch.indexOf(tag))
+  assert.ok(app.indexOf('<section id="formation"') < app.indexOf('<DiscoverSection id="decouvrir"'))
+  const order = ['<DiscoverSection id="decouvrir"', '<QuizInvite'].map((tag) => patch.indexOf(tag))
   assert.ok(order.every((index, i) => index > 0 && (i === 0 || index > order[i - 1])))
-  assert.match(patch, /<ArcheSection \/>/)
+  assert.doesNotMatch(patch, /<PathLadder|id: 'chemin'|label: 'Chemin'/)
+  assert.doesNotMatch(patch, /<ManifestoBand|id: 'approche'|label: 'Approche'/)
+  assert.doesNotMatch(patch, /<ArcheSection|id: 'arche'|label: 'L’Arche'/)
   const sections = read('src/components/HomeGrowthPath.jsx')
-  assert.match(sections, /https:\/\/www\.amazon\.fr\/dp\/B0HJY4CFFD/)
-  assert.match(sections, /Troisième mouvement · en cours/)
+  assert.doesNotMatch(sections, /Une pratique juste, claire, sans mise en scène|export function ManifestoBand/)
+  assert.doesNotMatch(sections, /export function ArcheSection|<section id="arche"/)
+  assert.match(read('src/data/boutiqueProducts.js'), /https:\/\/www\.amazon\.fr\/dp\/B0HJY4CFFD/)
+
+  const freeExperiences = sections.slice(sections.indexOf('export function QuizInvite('), sections.indexOf('export function PathLadder('))
+  assert.match(freeExperiences, /Quel est votre canal de perception/)
+  assert.match(freeExperiences, /Tirage test offert/)
+  assert.match(freeExperiences, /Exercice d’intuition du jour/)
+  assert.match(freeExperiences, /onOpenOracle/)
+  assert.match(patch, /<QuizInvite onOpenQuiz=\{onOpenQuiz\} onOpenOracle=\{onOpenOracle\} \/>/)
   assert.match(read('src/components/CosmicLibraryHero.jsx'), /href="\/quiz-sensibilite"/)
 })
 

@@ -30,11 +30,22 @@ test('social shortcuts: Facebook, Instagram and TikTok, in the footer of every p
   assert.match(footer, /target="_blank" rel="noopener noreferrer"/)
 })
 
-test('the interview sits after the reviews on the home page and on Sébastien’s booking page', () => {
+test('home displays only a small interview inside the consultation presentation; booking page retains the full interview', () => {
   const app = read('src/App.jsx')
-  assert.ok(app.indexOf('<ReviewsHighlight />') < app.indexOf('<VideoInterview id="videos"'))
-  assert.ok(app.indexOf('<VideoInterview id="videos"') < app.indexOf('<DiscoverSection id="decouvrir"'))
-  assert.match(app, /onOpenRdv\('sebastien-seguin', 'home-interview'\)/)
-  assert.match(app, /showResponsesPreview/)
+  const consultations = read('src/components/ConsultationSection.jsx')
+  const interview = read('src/components/VideoInterview.jsx')
+  const patch = read('scripts/apply-home-growth-path.mjs')
+
+  assert.doesNotMatch(app, /<VideoInterview id="videos"/)
+  assert.doesNotMatch(app, /id: 'videos', label: 'Vidéos'/)
+  assert.doesNotMatch(patch, /id: 'videos', label: 'Vidéos'/)
+  assert.match(consultations, /import \{ InterviewMiniature \} from '\.\/VideoInterview'/)
+  assert.match(consultations, /practitioner\.rdvSlug === 'sebastien-seguin' && <InterviewMiniature \/>/)
+  assert.match(interview, /export function InterviewMiniature\(\)/)
+  assert.match(interview, /aria-label="Voir ma présentation en vidéo"/)
+  assert.match(interview, /playing \? \(\s*<iframe/)
+  // Aucune nouvelle action de réservation n'est introduite dans la miniature.
+  const mini = interview.slice(interview.indexOf('export function InterviewMiniature('), interview.indexOf('export default function VideoInterview('))
+  assert.doesNotMatch(mini, /Prendre rendez-vous|onOpenRdv|SOCIAL_LINKS|chapters\.map/)
   assert.match(read('src/components/rdv/RdvPublic.jsx'), /slug === 'sebastien-seguin' && <div className="-mx-6"><VideoInterview id="interview-rdv" compact \/>/)
 })

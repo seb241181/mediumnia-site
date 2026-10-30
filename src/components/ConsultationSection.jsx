@@ -1,4 +1,5 @@
 import PractitionerCard from './PractitionerCard'
+import { InterviewMiniature } from './VideoInterview'
 import { consultationPractitioners } from '../data/consultationServices'
 import '../styles/consultation.css'
 
@@ -32,21 +33,24 @@ export default function ConsultationSection({
         </div>
         <div className="grid gap-5">
           {visiblePractitioners.map((practitioner) => (
-            <article key={practitioner.id} className="grid overflow-hidden rounded-3xl border border-gold/30 bg-white/80 shadow-[0_10px_28px_rgba(26,21,53,.05)] md:grid-cols-[240px_1fr]">
+            <article key={practitioner.id} className="on-dark grid overflow-hidden rounded-3xl border border-gold/30 shadow-[0_14px_38px_rgba(26,21,53,.16)] md:grid-cols-[240px_1fr]" style={{ background: 'linear-gradient(135deg, #1A1535 0%, #243762 100%)' }}>
               {practitioner.portrait ? (
                 <img src={practitioner.portrait} alt={practitioner.portraitAlt} loading="lazy" decoding="async" className="h-64 w-full object-cover object-top md:h-full" />
               ) : null}
               <div className="flex flex-col p-7 md:p-9">
                 <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">{practitioner.eyebrow}</p>
-                <h3 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{practitioner.name}</h3>
+                <h3 className="mt-2 font-georgia text-2xl font-medium text-cream md:text-3xl">{practitioner.name}</h3>
                 <p className="mt-1 font-georgia text-sm text-gold">{practitioner.role}</p>
-                <p className="mt-4 max-w-2xl font-georgia leading-relaxed text-mist">{practitioner.introduction}</p>
+                <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
+                  <p className="max-w-2xl flex-1 font-georgia leading-relaxed text-cream/80">{practitioner.introduction}</p>
+                  {practitioner.rdvSlug === 'sebastien-seguin' && <InterviewMiniature />}
+                </div>
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     disabled={!practitioner.rdvSlug || !onOpenRdv}
                     onClick={() => practitioner.rdvSlug && onOpenRdv?.(practitioner.rdvSlug, 'home-consultations')}
-                    className="rounded-lg bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold transition-colors hover:bg-deep/90 disabled:opacity-50"
+                    className="rounded-lg bg-gold px-6 py-3 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/90 disabled:opacity-50"
                   >
                     Voir mes disponibilités →
                   </button>
@@ -54,13 +58,13 @@ export default function ConsultationSection({
                     <button
                       type="button"
                       onClick={onOpenQuestion}
-                      className="rounded-lg border border-gold/40 bg-white px-6 py-3 font-georgia text-sm font-bold text-deep transition-colors hover:bg-gold/10"
+                      className="rounded-lg border border-gold/50 bg-white/10 px-6 py-3 font-georgia text-sm font-bold text-cream transition-colors hover:bg-white/20"
                     >
                       <span className="mr-2 inline-flex rounded-md bg-gold/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-gold">Nouveau</span>
                       Guidance par e-mail →
                     </button>
                   )}
-                  <p className="w-full font-georgia text-xs text-mist">Rendez-vous en direct ou guidance personnelle par e-mail, selon votre besoin.</p>
+                  <p className="w-full font-georgia text-xs text-cream/75">Rendez-vous en direct ou guidance personnelle par e-mail, selon votre besoin.</p>
                 </div>
               </div>
             </article>

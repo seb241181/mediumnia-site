@@ -29,7 +29,6 @@ import QuestionPage from './components/QuestionPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
 import DiscoverSection from './components/DiscoverSection'
-import VideoInterview from './components/VideoInterview'
 import VideosPage from './components/VideosPage'
 import PractitionersBand from './components/PractitionersBand'
 
@@ -41,7 +40,7 @@ function FeaturedAccompagnement({ onOpen }) {
   const features = [
     { icon: '◇', label: '25 modules PDF', sub: '4 niveaux · 269 pages' },
     { icon: '◌', label: '84 exercices guidés', sub: 'Progressifs et pratiques' },
-    { icon: '✦', label: 'Assistant MediumIA', sub: 'Formé sur le parcours' },
+    { icon: '✦', label: 'Progression accompagnée', sub: 'Outils pédagogiques en option' },
     { icon: '◈', label: '12 mois d\'accès', sub: 'Modules PDF à vie' },
   ]
   return (
@@ -50,14 +49,14 @@ function FeaturedAccompagnement({ onOpen }) {
       style={{ background: 'linear-gradient(135deg, #1A1535 0%, #221C45 100%)' }}
     >
       <div className="flex-1 min-w-0">
-        <p className="font-georgia text-gold tracking-[0.28em] text-[11px] uppercase mb-2">L’offre principale</p>
+        <p className="font-georgia text-gold tracking-[0.28em] text-[11px] uppercase mb-2">Apprendre à son rythme</p>
         <p className="font-georgia text-gold/60 tracking-[0.14em] text-sm mb-6">Accompagnement à la médiumnité consciente</p>
         <h2 className="font-georgia text-cream text-3xl md:text-5xl font-medium leading-tight mb-5">
           Formation MediumIA
         </h2>
         <p className="font-georgia text-cream/65 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
-          J’ai construit cette formation en 25 modules et 4 niveaux à partir de ma pratique.
-          L’assistant MediumIA est facultatif : il complète ma méthode, il ne la remplace pas.
+          J’ai construit cette formation à partir de ma pratique et de mon expérience.
+          En 25 modules et 4 niveaux, je vous transmets mon approche pour découvrir, expérimenter et développer votre discernement.
         </p>
         <div className="mb-7 rounded-2xl border border-gold/30 bg-white/[0.06] p-5 max-w-xl">
           <p className="font-georgia text-gold tracking-[0.18em] text-[10px] uppercase mb-3">Découvrez la méthode avant de choisir votre formule</p>
@@ -98,12 +97,11 @@ function FeaturedAccompagnement({ onOpen }) {
 }
 
 const HOME_RAIL = [
-  { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
-  { id: 'avis', label: 'Avis' },
-  { id: 'videos', label: 'Vidéos' },
+  { id: 'formation', label: 'Formation' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
+  { id: 'avis', label: 'Avis' },
   { id: 'praticiens', label: 'Praticiens' },
 ]
 
@@ -124,22 +122,16 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           onOpenRdv={onOpenRdv}
         />
 
-        {/* ── Formation MediumIA : l'offre principale, dès le premier défilement ── */}
+        {/* ── Consulter : priorité à la prise de rendez-vous ── */}
+        <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} onOpenQuestion={onOpenQuestion} />
+
+        {/* ── Se former à la médiumnité ── */}
         <section id="formation" className="mx-auto max-w-6xl scroll-mt-28 px-6 pt-16">
           <FeaturedAccompagnement onOpen={onOpenFormation} />
         </section>
 
-        {/* ── Consulter ── */}
-        <ConsultationSection id="consulter" compact onOpenRdv={onOpenRdv} onOpenQuestion={onOpenQuestion} />
-
-        {/* ── Avis clients (uniquement ceux validés) ── */}
-        <ReviewsHighlight />
-
-        {/* ── Sébastien en interview (vidéo chargée au clic) ── */}
-        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
-
-        {/* ── Découvrir et expérimenter ── */}
-        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
+        {/* ── ChronoSphère : directement sous la formation ── */}
+        <DiscoverSection id="decouvrir" onOpenChronosphere={onOpenChronosphere} />
 
         {/* ── Boutique ── */}
         <section id="boutique" className="border-t border-gold/15">
@@ -151,6 +143,9 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           </div>
           <BoutiqueEcommerce id="boutique-grid" onOpenOracle={onOpenOracle} onOpenFormation={onOpenFormation} />
         </section>
+
+        {/* ── Avis clients (uniquement ceux validés), juste avant le réseau ── */}
+        <ReviewsHighlight />
 
         {/* ── Praticiens : réseau et Espace Pro ── */}
         <PractitionersBand onOpenReseauDir={onOpenReseauDir} onOpenReseauForm={onOpenReseauForm} onOpenPro={onOpenPro} />

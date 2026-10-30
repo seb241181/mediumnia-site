@@ -26,7 +26,7 @@ test('public commercial copy uses Sebastian first-person voice', () => {
   assert.match(booking, /Je vous recontacterai/)
   assert.match(booking, /Je vous ai proposé ce créneau/)
   assert.match(oracle, /Ma création originale/)
-  assert.match(home, /J’ai écrit L’Arche/)
+  assert.doesNotMatch(home, /export function ArcheSection|<section id="arche"/)
   assert.match(consultations, /explorer les différentes lignes de temps/)
   assert.match(consultations, /désenvoûtement et de dégagement énergétique de lieux/)
   assert.doesNotMatch(consultations, /défunts|depuis plus de douze ans|pratique de plus de douze ans/)

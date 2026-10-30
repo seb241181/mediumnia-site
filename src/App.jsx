@@ -56,7 +56,7 @@ function FeaturedAccompagnement({ onOpen }) {
           Formation MediumIA
         </h2>
         <p className="font-georgia text-cream/65 text-base md:text-lg leading-relaxed mb-8 max-w-xl">
-          J’ai construit cette formation à partir de plus de 10 ans de pratique.
+          J’ai construit cette formation à partir de ma pratique et de mon expérience.
           En 25 modules et 4 niveaux, je vous transmets mon approche pour découvrir, expérimenter et développer votre discernement.
         </p>
         <div className="mb-7 rounded-2xl border border-gold/30 bg-white/[0.06] p-5 max-w-xl">
@@ -140,7 +140,7 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
               <p className="font-georgia text-xs uppercase tracking-[0.2em] text-gold">Faisons connaissance</p>
               <h2 id="sebastien-title" className="mt-2 font-georgia text-2xl font-medium leading-tight text-deep md:text-3xl">Je suis Sébastien Seguin, médium et formateur.</h2>
               <p className="mt-3 font-georgia leading-relaxed text-mist">
-                Depuis plus de 10 ans, j’accompagne les personnes dans leurs questionnements.
+                J’accompagne les personnes dans leurs questionnements.
                 Ma manière d’aborder la médiumnité repose sur l’écoute, le discernement et le respect du libre arbitre.
               </p>
               <p className="mt-2 font-georgia leading-relaxed text-mist">

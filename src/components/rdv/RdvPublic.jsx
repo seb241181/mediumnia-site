@@ -4,6 +4,7 @@ import RdvDepositCheckout from './RdvDepositCheckout'
 import { GoogleReviewCard, Stars, useGoogleReviews } from '../ReviewsPage'
 import { commonDepositCents, descriptionParagraphs, groupServices } from '../../lib/rdvServiceGroups.js'
 import VideoInterview from '../VideoInterview'
+import { nextCalendarMonth } from '../../lib/rdvCalendarAutoAdvance.js'
 import { trackMediumiaMetric } from '../../lib/mediumiaMetrics.js'
 import { getRdvEmailConfirmation } from '../../../lib/rdvEmailConfirmation.js'
 
@@ -323,9 +324,24 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
       if (weekdayOpen) candidates.push(dt)
     }
 
-    if (candidates.length === 0) return
+    // Un mois sans aucun jour encore réservable (p. ex. le vendredi 30 octobre
+    // après le délai de réservation, puis week-end fermé) doit passer au suivant.
+    // Même chose si tous ses jours ont déjà été contrôlés et sont complets.
+    function finishMonth(hasAvailability) {
+      if (!autoAdvanceRef.current) return
+      const next = nextCalendarMonth(viewDate, maxDate, hasAvailability)
+      if (next) setViewDate(next)
+      else autoAdvanceRef.current = false
+    }
+    if (candidates.length === 0) {
+      finishMonth(false)
+      return
+    }
     const allKnown = candidates.every(d => dayAvailRef.current[toDateStr(d)] !== undefined)
-    if (allKnown) return
+    if (allKnown) {
+      finishMonth(candidates.some(d => dayAvailRef.current[toDateStr(d)] === true))
+      return
+    }
 
     let cancelled = false
     setFetchError(null)
@@ -378,18 +394,7 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
 
       if (!cancelled) {
         setLoadingMonths(prev => ({ ...prev, [monthKey]: false }))
-        if (autoAdvanceRef.current) {
-          if (monthHasAvailability) {
-            autoAdvanceRef.current = false
-          } else {
-            const nextMonth = new Date(year, month + 1, 1)
-            if (nextMonth <= maxDate) {
-              setViewDate(nextMonth)
-            } else {
-              autoAdvanceRef.current = false
-            }
-          }
-        }
+        finishMonth(monthHasAvailability)
       }
     }
 
@@ -423,7 +428,7 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
 
     loadMonthAtOnce().then(() => { if (!cancelled) run() })
     return () => { cancelled = true }
-  }, [monthKey, serviceSlug, practitionerSlug]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [monthKey, serviceSlug, practitionerSlug, config]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (config === null) {
     return (
@@ -459,12 +464,13 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
   }
 
   const canPrev = new Date(year, month - 1, 1) >= new Date(today.getFullYear(), today.getMonth(), 1)
+  const canNext = new Date(year, month + 1, 1) <= maxDate
 
   return (
     <div className="rounded-2xl border border-gold/25 bg-white/60 p-4 sm:p-5 select-none">
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => setViewDate(new Date(year, month - 1, 1))}
+          onClick={() => { autoAdvanceRef.current = false; setViewDate(new Date(year, month - 1, 1)) }}
           disabled={!canPrev}
           className="w-10 h-10 flex items-center justify-center rounded-xl bg-gold text-mist disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           aria-label="Mois précédent"
@@ -473,8 +479,9 @@ function CalendarGrid({ practitionerSlug, serviceSlug, selected, onSelect, confi
         </button>
         <p className="font-georgia text-base font-semibold capitalize text-deep">{monthLabel}</p>
         <button
-          onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gold text-mist transition-colors"
+          onClick={() => { autoAdvanceRef.current = false; setViewDate(new Date(year, month + 1, 1)) }}
+          disabled={!canNext}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gold text-mist disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
           aria-label="Mois suivant"
         >
           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>

@@ -80,3 +80,45 @@
     line-height: 1.4;
   }
 }
+
+/* La présentation de Sébastien et la réservation doivent apparaître plus tôt,
+   surtout sur mobile. On conserve le décor et le logo officiels. */
+.cosmic-library--simple .cosmic-library__brand {
+  width: clamp(300px, 31vw, 420px);
+}
+.cosmic-library--simple .cosmic-library__message h1 {
+  max-width: 650px;
+  margin-inline: auto;
+  font-size: clamp(1.15rem, 1.6vw, 1.5rem);
+  line-height: 1.28;
+}
+.cosmic-library--simple .cosmic-library__message p {
+  margin-top: 0.55rem;
+  padding-block: 0.55rem;
+}
+@media (max-width: 760px) {
+  .cosmic-library--simple .cosmic-library__content {
+    padding-top: 5.15rem;
+    padding-bottom: 1.5rem;
+  }
+  .cosmic-library--simple .cosmic-library__centerpiece {
+    margin-top: 0;
+  }
+  .cosmic-library--simple .cosmic-library__brand {
+    width: min(70vw, 292px);
+  }
+  .cosmic-library--simple .cosmic-library__message h1 {
+    max-width: 342px;
+    font-size: clamp(1rem, 4.15vw, 1.18rem);
+    line-height: 1.25;
+  }
+  .cosmic-library--simple .cosmic-library__message p {
+    max-width: 350px;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.89rem;
+    line-height: 1.45;
+  }
+  .cosmic-library--simple .cosmic-library__actions {
+    margin-top: 0.55rem;
+  }
+}

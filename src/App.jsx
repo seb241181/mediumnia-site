@@ -29,7 +29,6 @@ import QuestionPage from './components/QuestionPage'
 import SiteNav from './components/SiteNav'
 import PageRail from './components/PageRail'
 import DiscoverSection from './components/DiscoverSection'
-import VideoInterview from './components/VideoInterview'
 import VideosPage from './components/VideosPage'
 import PractitionersBand from './components/PractitionersBand'
 
@@ -102,7 +101,6 @@ const HOME_RAIL = [
   { id: 'formation', label: 'Formation' },
   { id: 'decouvrir', label: 'Tirages' },
   { id: 'avis', label: 'Avis' },
-  { id: 'videos', label: 'Vidéos' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
 ]
@@ -137,9 +135,6 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
 
         {/* ── Avis clients (uniquement ceux validés) ── */}
         <ReviewsHighlight />
-
-        {/* ── Sébastien en interview (vidéo chargée au clic) ── */}
-        <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
 
         {/* ── Boutique ── */}
         <section id="boutique" className="border-t border-gold/15">

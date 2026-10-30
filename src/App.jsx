@@ -100,9 +100,9 @@ function FeaturedAccompagnement({ onOpen }) {
 const HOME_RAIL = [
   { id: 'consulter', label: 'Consulter' },
   { id: 'formation', label: 'Formation' },
+  { id: 'decouvrir', label: 'Tirages' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
-  { id: 'decouvrir', label: 'Tirages' },
   { id: 'boutique', label: 'Boutique' },
   { id: 'praticiens', label: 'Praticiens' },
 ]
@@ -132,14 +132,14 @@ function PublicPlatformHome({ onOpenPro, onOpenFormation, onOpenOracle, onOpenCh
           <FeaturedAccompagnement onOpen={onOpenFormation} />
         </section>
 
+        {/* ── ChronoSphère : directement sous la formation ── */}
+        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
+
         {/* ── Avis clients (uniquement ceux validés) ── */}
         <ReviewsHighlight />
 
         {/* ── Sébastien en interview (vidéo chargée au clic) ── */}
         <VideoInterview id="videos" onOpenRdv={onOpenRdv ? () => onOpenRdv('sebastien-seguin', 'home-interview') : undefined} onOpenVideos={onOpenVideos} showResponsesPreview />
-
-        {/* ── Découvrir et expérimenter ── */}
-        <DiscoverSection id="decouvrir" onOpenOracle={onOpenOracle} onOpenChronosphere={onOpenChronosphere} />
 
         {/* ── Boutique ── */}
         <section id="boutique" className="border-t border-gold/15">

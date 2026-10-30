@@ -41,8 +41,8 @@ app = insertAfter(
 app = replaceRequired(
   app,
   `const HOME_RAIL = [
-  { id: 'formation', label: 'Formation' },
   { id: 'consulter', label: 'Consulter' },
+  { id: 'formation', label: 'Formation' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
   { id: 'decouvrir', label: 'Tirages' },
@@ -50,11 +50,11 @@ app = replaceRequired(
   { id: 'praticiens', label: 'Praticiens' },
 ]`,
   `const HOME_RAIL = [
+  { id: 'consulter', label: 'Consulter' },
   { id: 'formation', label: 'Formation' },
   { id: 'quiz', label: 'Quiz' },
   { id: 'approche', label: 'Approche' },
   { id: 'chemin', label: 'Chemin' },
-  { id: 'consulter', label: 'Consulter' },
   { id: 'avis', label: 'Avis' },
   { id: 'videos', label: 'Vidéos' },
   { id: 'arche', label: 'L’Arche' },
@@ -79,8 +79,8 @@ app = replaceRequired(
   'hero quiz door',
 )
 
-// La Formation reste visible dès le premier défilement ; le quiz, l'approche
-// et le chemin suivent, avant les consultations.
+// Les consultations restent prioritaires à l'accueil. Après la Formation,
+// le quiz, l'approche et le chemin enrichissent le parcours de découverte.
 app = replaceRequired(
   app,
   '          <FeaturedAccompagnement onOpen={onOpenFormation} />\n        </section>\n',

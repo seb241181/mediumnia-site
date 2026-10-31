@@ -81,7 +81,9 @@ const newUpdateLoop = `        const update = {}
         }
       }`
 
-if (!text.includes(newUpdateLoop)) {
+// Le calendrier récent possède son propre finishMonth() ; ne pas réinjecter
+// l'ancien mécanisme d'avance et ne pas échouer au prebuild.
+if (!text.includes(newUpdateLoop) && !text.includes('finishMonth(monthHasAvailability)')) {
   if (!text.includes(oldUpdateLoop)) {
     throw new Error(`Expected calendar update anchor not found in ${path}`)
   }

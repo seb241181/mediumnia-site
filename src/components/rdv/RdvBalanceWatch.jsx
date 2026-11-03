@@ -171,7 +171,7 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
               <Badge tone={tone}>{label}</Badge>
             </div>
             <p className="mt-1 text-xs text-[#4A3F6B]">
-              Réglé {money(item.paid_cents)} · solde dû <strong>{money(item.due_cents)}</strong> · échéance H-48 {dayTime(item.cancel_deadline_at)}
+              Réglé {money(item.paid_cents)} · solde dû <strong>{money(item.due_cents)}</strong> · échéance {dayTime(item.late_payment_until || item.cancel_deadline_at)}
               {' · '}rappel client {item.balance_reminder_sent_at ? 'envoyé' : 'non envoyé'}
               {item.balance_link_valid ? ` · lien valable jusqu’au ${dayTime(item.balance_link_expires_at)}` : ''}
               {item.balance_payment ? ` · PayPal : ${item.balance_payment.status}${item.balance_payment.has_order ? ' (commande créée)' : ''}` : ''}
@@ -190,7 +190,8 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
               {item.owner_decision !== 'hold' && <button type="button" disabled={!!busy} className="min-h-11 rounded-full bg-deep px-4 text-xs font-semibold text-gold disabled:opacity-50" onClick={() => post({ op: 'decision', booking_id: item.booking_id, decision: 'hold' }, 'hold')}>Maintenir (pas d’annulation auto)</button>}
               {item.owner_decision !== 'cancel' && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-rose-300 px-4 text-xs font-semibold text-rose-900 disabled:opacity-50" onClick={() => { if (window.confirm('Approuver l’annulation automatique de ce rendez-vous au prochain passage du cron ?')) post({ op: 'decision', booking_id: item.booking_id, decision: 'cancel' }, 'cancel') }}>Approuver l’annulation</button>}
               {item.owner_decision && <button type="button" disabled={!!busy} className="min-h-11 px-3 text-xs underline disabled:opacity-50" onClick={() => post({ op: 'decision', booking_id: item.booking_id, decision: null }, 'clear')}>Revenir à la règle habituelle</button>}
-              {data.restore_enabled && item.restored_at && item.due_cents > 0 && !restorePending && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-gold/40 px-4 text-xs font-semibold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'rotate', booking_id: item.booking_id, send_email: false }, 'rotate'); if (body) setLink(body) }}>Nouveau lien de solde</button>}
+              {item.status === 'confirmed' && item.due_cents > 0 && !restorePending && !item.balance_payment && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-gold/40 px-4 text-xs font-semibold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'renew', booking_id: item.booking_id, hours_before: 1, send_email: true }, 'renew'); if (body?.payment_url) setLink(body) }}>Renouveler et envoyer un lien de solde</button>}
+               {data.restore_enabled && item.restored_at && item.due_cents > 0 && !restorePending && <button type="button" disabled={!!busy} className="min-h-11 rounded-full border border-gold/40 px-4 text-xs font-semibold disabled:opacity-50" onClick={async () => { const body = await post({ op: 'rotate', booking_id: item.booking_id, send_email: false }, 'rotate'); if (body) setLink(body) }}>Nouveau lien de solde</button>}
             </div>}
             {cancelled && <div className="mt-2">
               {item.restore_blocker ? <p className="text-xs text-[#4A3F6B]">Rétablissement impossible : {RESTORE_BLOCKERS[item.restore_blocker] || item.restore_blocker}.</p>

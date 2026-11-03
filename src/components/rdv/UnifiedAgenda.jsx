@@ -278,10 +278,11 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
         {actionMessage && <p className="agenda-action-status" role="status">{actionMessage}</p>}
         <h4>Historique</h4>
         {historyError ? <p role="status">{historyError}</p> : history.length ? <ol className="agenda-history">{history.map(item => <li key={`${item.source}:${item.id}`}>
-          <strong>{item.kind === 'cancel' ? 'Annulation via Lumia' : 'Déplacement'}</strong>
+          <strong>{item.kind === 'cancel' ? 'Annulation via Lumia' : item.kind === 'no_show' ? 'Pas venu — arrhes conservées' : 'Déplacement'}</strong>
           <time>{new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.occurred_at || item.created_at))}</time>
           {item.kind === 'reschedule' && <span>{new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.previous_starts_at))} → {new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.next_starts_at))}</span>}
           {item.kind === 'cancel' && <span>{item.status === 'succeeded' ? 'Exécutée' : `État : ${item.status}`}</span>}
+          {item.kind === 'no_show' && <span>Montant des arrhes conservées : {money(item.retained_cents || 0)} · aucune recette supplémentaire créée</span>}
         </li>)}</ol> : <p>Aucune modification enregistrée.</p>}
       </aside>}
     </div>

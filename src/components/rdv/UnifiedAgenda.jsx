@@ -8,7 +8,7 @@ import { rescheduleErrorMessage } from '../../lib/rdvAgendaMessages.js'
 import './UnifiedAgenda.css'
 
 const money = value => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value / 100)
-const statusLabel = { confirmed: 'Confirmé', cancelled: 'Annulé', completed: 'Terminé', pending: 'En attente', no_show: 'Absent' }
+const statusLabel = { confirmed: 'Confirmé', cancelled: 'Annulé', completed: 'Terminé', pending: 'En attente', no_show: 'Pas venu' }
 const modalityLabel = { video: 'En visio', 'in-person': 'En présence', phone: 'Par téléphone' }
 const modalityShort = { video: 'Visio', 'in-person': 'Cabinet', phone: 'Téléphone' }
 function paymentCategory(payment) {
@@ -142,6 +142,40 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
     } finally { setActionBusy(false) }
   }
 
+  async function markNoShow() {
+    if (!selected?.booking_id || !session?.access_token || actionBusy) return
+    if (!window.confirm(
+      'Marquer ce rendez-vous comme « Pas venu » ? Les arrhes PayPal réellement encaissées seront conservées si aucun remboursement ni paiement complémentaire n’est en cours. Aucun montant ne sera débité, aucune nouvelle recette ou notification ne sera créée. Ce traitement doit être corrigé manuellement en cas d’erreur.'
+    )) return
+    setActionBusy(true); setActionMessage('')
+    try {
+      const response = await fetch('/api/rdv-admin?action=agenda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ op: 'no_show', booking_id: selected.booking_id, practitioner_id: practitionerId }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const messages = {
+          appointment_not_finished: 'Le rendez-vous doit être terminé avant de le marquer « Pas venu ».',
+          captured_deposit_not_found: 'Aucune capture d’arrhes confirmée : vérifiez le paiement avant de valider.',
+          deposit_payment_review_required: 'Arrhes déjà traitées ou paiement incertain : une vérification est nécessaire.',
+          deposit_refund_review_required: 'Un remboursement existe pour ce paiement : vérification nécessaire.',
+          other_payment_review_required: 'Un autre règlement est enregistré : vérifiez avant de confirmer l’absence.',
+          balance_payment_review_required: 'Un paiement PayPal du solde est engagé : vérifiez avant de confirmer l’absence.',
+          migration_pending: 'Cette fonction n’est pas encore activée dans MediumIA.',
+        }
+        throw new Error(messages[data.error] || 'Impossible de marquer cette absence pour le moment.')
+      }
+      setActionMessage(data.already
+        ? 'Cette absence est déjà enregistrée.'
+        : `Absence enregistrée. Arrhes conservées : ${money(data.retained_cents)}. Aucun nouveau règlement ni e-mail envoyé.`)
+      setRefreshKey(value => value + 1)
+    } catch (error) {
+      setActionMessage(error.message || 'Modification indisponible.')
+    } finally { setActionBusy(false) }
+  }
+
   async function retryGoogleSync() {
     if (!selected?.booking_id || !session?.access_token || actionBusy) return
     setActionBusy(true); setActionMessage('')
@@ -166,7 +200,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
     event.title.toLocaleLowerCase('fr').includes(search.toLocaleLowerCase('fr')),
   ).map(event => ({
     id: event.id, title: event.title, start: event.start, end: event.end, allDay: event.allDay,
-    classNames: [event.source === 'google' ? 'agenda-google' : 'agenda-mediumia', event.status === 'cancelled' ? 'agenda-cancelled' : ''],
+    classNames: [event.source === 'google' ? 'agenda-google' : 'agenda-mediumia', event.status === 'cancelled' ? 'agenda-cancelled' : event.status === 'no_show' ? 'agenda-no-show' : ''],
     extendedProps: { record: event },
   })), [snapshot.events, current, origin, status, payment, search])
 
@@ -221,8 +255,15 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
           {selected.google_sync.error && <> — {selected.google_sync.error}</>}
         </p>}
         <h4>Paiement</h4>
-        {selected.payment ? <><dl><dt>Montant</dt><dd>{money(selected.payment.total_cents)}</dd><dt>Enregistré net</dt><dd>{money(selected.payment.paid_cents)}</dd><dt>Reste à régler</dt><dd>{money(selected.payment.remaining_cents)}</dd></dl><p>Registre MediumIA. Non vérifié auprès du prestataire dans cet agenda.</p></> : <p>{selected.source === 'google' ? 'Aucun paiement MediumIA associé.' : 'Montants inconnus.'}</p>}
+        {selected.payment ? <><dl><dt>Montant</dt><dd>{money(selected.payment.total_cents)}</dd><dt>Enregistré net</dt><dd>{money(selected.payment.paid_cents)}</dd>{selected.status === 'no_show' ? <><dt>Solde non encaissé</dt><dd>{money(selected.payment.remaining_cents)}</dd></> : <><dt>Reste à régler</dt><dd>{money(selected.payment.remaining_cents)}</dd></>}</dl><p>Registre MediumIA. Non vérifié auprès du prestataire dans cet agenda.</p></> : <p>{selected.source === 'google' ? 'Aucun paiement MediumIA associé.' : 'Montants inconnus.'}</p>}
+        {selected.source === 'mediumia' && selected.status === 'no_show' && <p className="agenda-action-status">Client non présenté. Le solde non encaissé n’est pas facturé automatiquement ; les arrhes déjà versées restent inscrites à leur date d’encaissement.</p>}
         {selected.source === 'mediumia' && selected.status === 'confirmed' && <>
+          {new Date(selected.end).getTime() <= Date.now() && <button
+            className="agenda-secondary-action"
+            type="button"
+            disabled={actionBusy}
+            onClick={markNoShow}
+          >{actionBusy ? 'Traitement…' : 'Pas venu — conserver les arrhes'}</button>}
           <form className="agenda-move-form" onSubmit={moveBooking}>
             <label htmlFor="agenda-new-start">Déplacer vers (heure de Paris)</label>
             <input id="agenda-new-start" type="datetime-local" value={newStart} onChange={event => { setNewStart(event.target.value); setMoveIdempotencyKey('') }} required />
@@ -237,10 +278,11 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
         {actionMessage && <p className="agenda-action-status" role="status">{actionMessage}</p>}
         <h4>Historique</h4>
         {historyError ? <p role="status">{historyError}</p> : history.length ? <ol className="agenda-history">{history.map(item => <li key={`${item.source}:${item.id}`}>
-          <strong>{item.kind === 'cancel' ? 'Annulation via Lumia' : 'Déplacement'}</strong>
+          <strong>{item.kind === 'cancel' ? 'Annulation via Lumia' : item.kind === 'no_show' ? 'Pas venu — arrhes conservées' : 'Déplacement'}</strong>
           <time>{new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.occurred_at || item.created_at))}</time>
           {item.kind === 'reschedule' && <span>{new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.previous_starts_at))} → {new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.next_starts_at))}</span>}
           {item.kind === 'cancel' && <span>{item.status === 'succeeded' ? 'Exécutée' : `État : ${item.status}`}</span>}
+          {item.kind === 'no_show' && <span>Montant des arrhes conservées : {money(item.retained_cents || 0)} · aucune recette supplémentaire créée</span>}
         </li>)}</ol> : <p>Aucune modification enregistrée.</p>}
       </aside>}
     </div>

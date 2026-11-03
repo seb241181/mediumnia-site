@@ -1,4 +1,5 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
+import { markAgendaNoShow } from '../lib/rdvNoShow.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
 import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
 import { setFicheAssistantPublic } from '../lib/publicAssistant.js'
@@ -923,6 +924,7 @@ export default async function handler(req, res) {
       let result
       if (req.method === 'GET') result = await getUnifiedAgenda({ supabase, userId, query: req.query })
       else if (req.method === 'POST' && req.body?.op === 'reschedule') result = await rescheduleAgendaBooking({ supabase, userId, input: req.body })
+      else if (req.method === 'POST' && req.body?.op === 'no_show') result = await markAgendaNoShow({ supabase, userId, input: req.body })
       else result = { status: 405, body: { error: 'Method not allowed' } }
       return res.status(result.status).json(result.body)
     }

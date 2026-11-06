@@ -331,3 +331,18 @@ test('migration : additive, fonctions réservées au serveur, paiement encaissé
     assert.match(sql, new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role`))
   }
 })
+
+// ── Agenda fictif de TEST ───────────────────────────────────────────────────
+test('agenda fictif : actif hors Production seulement, présent à chaque appel Google', async () => {
+  const { isTestFakeCalendar, TEST_FAKE_CALENDAR_ID } = await import('../lib/rdvTestCalendar.js')
+  const conn = { google_calendar_id: TEST_FAKE_CALENDAR_ID }
+  assert.equal(isTestFakeCalendar(conn, { VERCEL_ENV: 'preview' }), true)
+  assert.equal(isTestFakeCalendar(conn, {}), true)
+  assert.equal(isTestFakeCalendar(conn, { VERCEL_ENV: 'production' }), false, 'jamais en Production')
+  assert.equal(isTestFakeCalendar({ google_calendar_id: 'agenda@group.calendar.google.com' }, { VERCEL_ENV: 'preview' }), false)
+  assert.equal(isTestFakeCalendar(null), false)
+  assert.equal((read('api/rdv-availability.js').match(/if \(!isTestFakeCalendar\(conn\)\)/g) || []).length, 2)
+  assert.match(read('lib/rdvDepositApiHandler.js'), /if \(isTestFakeCalendar\(connection\)\) return \{ startsAt, endsAt \}/)
+  assert.match(read('lib/rdvFullPaymentApiHandler.js'), /if \(isTestFakeCalendar\(connection\)\) return \{ startsAt, endsAt \}/)
+  assert.match(read('lib/googleCalendarEvents.js'), /if \(isTestFakeCalendar\(conn\)\) return \{ status: 'not_connected' \}/)
+})

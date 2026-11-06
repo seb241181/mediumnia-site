@@ -199,9 +199,10 @@ export default function RdvDepositCheckout({
       return result.id
     }
 
-    async function pollStatus(attempts = 8) {
+    async function pollStatus(attempts = 8, delayMs = 2000) {
       for (let attempt = 0; attempt < attempts; attempt += 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        if (disposed) return false
+        await new Promise(resolve => setTimeout(resolve, delayMs))
         const response = await fetch(`/api/rdv-config?rdvDepositAction=status&checkout_id=${encodeURIComponent(checkoutIdRef.current)}`).catch(() => null)
         const status = await response?.json().catch(() => ({})) || {}
         if (status.bookingId) {
@@ -255,6 +256,11 @@ export default function RdvDepositCheckout({
             }
             if (['CAPTURE_IN_PROGRESS', 'CAPTURED_PENDING_RECONCILIATION', 'CAPTURE_UNCERTAIN'].includes(result.status)) {
               if (await pollStatus()) return
+              // Issue toujours inconnue : le serveur vérifie auprès de PayPal (lecture seule)
+              // au-delà du délai de sécurité ; on continue de demander l'état ~12 minutes.
+              setNotice(paymentMessage(result.error || 'paypal_capture_uncertain'))
+              void pollStatus(24, 30_000)
+              return
             }
             // Refus définitif sans prélèvement : la prochaine tentative repart à zéro.
             if (['checkout_expired', 'paypal_order_voided', 'paypal_capture_declined', 'paypal_transaction_refused', 'paypal_instrument_declined', 'paypal_auth_failed'].includes(result.error)) renewCheckoutId()

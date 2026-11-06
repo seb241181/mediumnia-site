@@ -110,15 +110,16 @@ function fakeDb({ claim = { ok: true, hold_id: 'hold-1' }, convert = { ok: true,
   const rpc = []
   const events = []
   const db = {
-    rpc: async (name, args) => {
+    // Comme supabase-js : un « thenable » sans .catch() (un .catch direct plantait en TEST).
+    rpc: (name, args) => {
       rpc.push({ name, args })
-      if (name === 'claim_rdv_deposit_capture') return { data: claim, error: null }
-      if (name === 'next_rdv_capture_attempt') return { data: 2, error: null }
-      if (name === 'release_rdv_deposit_capture') return { data: { ok: true }, error: null }
-      if (name === 'convert_rdv_deposit_hold') return { data: convert, error: null }
-      if (name === 'note_rdv_payment_error') return { data: null, error: null }
-      if (name === 'supersede_rdv_own_pending_holds') return { data: 1, error: null }
-      return { data: null, error: null }
+      const value = name === 'claim_rdv_deposit_capture' ? { data: claim, error: null }
+        : name === 'next_rdv_capture_attempt' ? { data: 2, error: null }
+          : name === 'release_rdv_deposit_capture' ? { data: { ok: true }, error: null }
+            : name === 'convert_rdv_deposit_hold' ? { data: convert, error: null }
+              : name === 'supersede_rdv_own_pending_holds' ? { data: 1, error: null }
+                : { data: null, error: null }
+      return { then: (resolve, reject) => Promise.resolve(value).then(resolve, reject) }
     },
     from(table) {
       const q = {
@@ -378,4 +379,61 @@ test('fonctions de paiement réservées au serveur : jamais exécutables avec la
   // Les pages n'appellent jamais ces fonctions : seul le serveur (clé service_role) le fait.
   const client = read('src/lib/supabase.js')
   assert.doesNotMatch(client, /create_rdv_|claim_rdv_|convert_rdv_/)
+})
+
+// ── Vérification d'un paiement resté « en capture » à la demande d'état ─────
+function statusDb({ status = 'capturing', holdStatus = 'payment_capturing', expiresAt = '2020-01-01T00:00:00Z' } = {}) {
+  const rpc = []
+  let state = { status, holdStatus, converted: null }
+  const row = () => ({ paypal_order_id: 'ORDER-STUCK-325B', status: state.status, amount_cents: 8000, confirmation_sent_at: null, paypal_env: 'sandbox', currency: 'EUR', client_checkout_id: 'a0b2ac90-0000-4000-8000-000000000000', hold: { id: 'hold-9', status: state.holdStatus, expires_at: expiresAt, starts_at: '2099-11-16T15:00:00Z', converted_booking_id: state.converted, service_price_cents: 8000, reservation_payment_cents: 8000 } })
+  return {
+    rpc,
+    db: {
+      rpc: (name, args) => {
+        rpc.push({ name, args })
+        if (name === 'convert_rdv_deposit_hold') state = { status: 'captured', holdStatus: 'converted', converted: 'booking-9' }
+        return { then: (resolve) => resolve({ data: name === 'convert_rdv_deposit_hold' ? { ok: true, booking_id: 'booking-9' } : { ok: true }, error: null }) }
+      },
+      from() {
+        const q = { select: () => q, eq: () => q, is: () => q, lt: () => q, limit: async () => ({ data: state.status === 'capturing' ? [row()] : [], error: null }), maybeSingle: async () => ({ data: row(), error: null }) }
+        return q
+      },
+    },
+  }
+}
+
+test('état d’un paiement bloqué : « report » lit PayPal sans rien modifier', async () => {
+  const { handleStatusForTest } = await import('../lib/rdvDepositApiHandler.js')
+  const { db, rpc } = statusDb()
+  const calls = fakePayPal({ capture: { status: 201, body: {} }, order: { status: 200, body: { ...completedOrder('80.00'), purchase_units: [{ ...completedOrder('80.00').purchase_units[0], custom_id: 'MEDIUMIA:RDV-ARRHES:hold-9' }] } } })
+  const res = response()
+  await handleStatusForTest({ query: { checkout_id: 'a0b2ac90-0000-4000-8000-000000000000', reconcile: 'report' }, headers: {} }, res, db)
+  assert.equal(res.body.reconciliation.paypalStatus, 'COMPLETED')
+  assert.equal(res.body.reconciliation.action, 'would_convert')
+  assert.equal(rpc.length, 0, 'aucune écriture')
+  assert.equal(calls.some((c) => c.url.endsWith('/capture')), false, 'jamais de capture')
+})
+
+test('état d’un paiement bloqué : PayPal a encaissé → un seul rendez-vous, aucune nouvelle capture', async () => {
+  const { handleStatusForTest } = await import('../lib/rdvDepositApiHandler.js')
+  const { db, rpc } = statusDb()
+  const calls = fakePayPal({ capture: { status: 201, body: {} }, order: { status: 200, body: { ...completedOrder('80.00'), purchase_units: [{ ...completedOrder('80.00').purchase_units[0], custom_id: 'MEDIUMIA:RDV-ARRHES:hold-9' }] } } })
+  const res = response()
+  await handleStatusForTest({ query: { checkout_id: 'a0b2ac90-0000-4000-8000-000000000000' }, headers: {} }, res, db)
+  assert.equal(res.body.bookingId, 'booking-9')
+  assert.equal(rpc.filter((c) => c.name === 'convert_rdv_deposit_hold').length, 1)
+  assert.equal(calls.some((c) => c.url.endsWith('/capture')), false)
+  const again = response()
+  await handleStatusForTest({ query: { checkout_id: 'a0b2ac90-0000-4000-8000-000000000000' }, headers: {} }, again, db)
+  assert.equal(rpc.filter((c) => c.name === 'convert_rdv_deposit_hold').length, 1, 'pas de seconde conversion')
+})
+
+test('état d’un paiement encore dans le délai de sécurité : PayPal n’est pas interrogé', async () => {
+  const { handleStatusForTest } = await import('../lib/rdvDepositApiHandler.js')
+  const { db, rpc } = statusDb({ expiresAt: new Date(Date.now() + 60_000).toISOString() })
+  const calls = fakePayPal({ capture: { status: 201, body: {} }, order: { status: 200, body: completedOrder() } })
+  const res = response()
+  await handleStatusForTest({ query: { checkout_id: 'a0b2ac90-0000-4000-8000-000000000000' }, headers: {} }, res, db)
+  assert.equal(res.body.paymentStatus, 'capturing')
+  assert.equal(calls.length + rpc.length, 0)
 })

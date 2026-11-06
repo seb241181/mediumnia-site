@@ -6,10 +6,9 @@ import { readFileSync } from 'node:fs'
 import {
   captureRdvDepositPayPalOrder,
   classifyRdvCaptureFailure,
-  diagnoseRdvDepositPayPalReadOrder,
   rdvDepositCaptureRequestId,
 } from '../lib/rdvDepositPayPal.js'
-import { handlePayPalLiveReadDiagnostic, handleRdvDepositApi, reconcileStaleRdvCaptures, slotUnavailable, supersedeOwnPendingHolds } from '../lib/rdvDepositApiHandler.js'
+import { handleRdvDepositApi, reconcileStaleRdvCaptures, slotUnavailable, supersedeOwnPendingHolds } from '../lib/rdvDepositApiHandler.js'
 import { buildCheckoutEvent, clientKind } from '../lib/rdvCheckoutEvents.js'
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
@@ -111,39 +110,6 @@ test('capture Live : une demande de simulation est sans effet', async () => {
   assert.ok(capture.url.startsWith('https://api-m.paypal.com/'))
 })
 
-// ── Diagnostic Live temporaire, OAuth + GET uniquement ────────────────────
-test('diagnostic Live : OAuth refusé expose seulement HTTP + catégorie et ne peut pas atteindre un endpoint financier', async () => {
-  Object.assign(process.env, { VERCEL_ENV: 'production', PAYPAL_RDV_DEPOSIT_ENABLED: 'true', PAYPAL_RDV_DEPOSIT_ENV: 'live' })
-  const calls = []
-  const result = await diagnoseRdvDepositPayPalReadOrder(ORDER, {
-    fetchImpl: async (url, init = {}) => {
-      calls.push({ url: String(url), method: init.method || 'GET' })
-      return { ok: false, status: 401, json: async () => ({ name: 'ignored' }) }
-    },
-  })
-  assert.deepEqual(result, { stage: 'oauth', httpStatus: 401, category: 'oauth_credentials_rejected' })
-  assert.deepEqual(calls.map((call) => call.method), ['POST'])
-  assert.ok(calls[0].url.endsWith('/v1/oauth2/token'))
-  assert.doesNotMatch(calls.map((call) => call.url).join('\n'), /capture|refund/i)
-})
-
-test('diagnostic Live : OAuth réussi puis GET refusé ne révèle pas la commande et ne peut ni capturer ni rembourser', async () => {
-  Object.assign(process.env, { VERCEL_ENV: 'production', PAYPAL_RDV_DEPOSIT_ENABLED: 'true', PAYPAL_RDV_DEPOSIT_ENV: 'live' })
-  const calls = []
-  const result = await diagnoseRdvDepositPayPalReadOrder(ORDER, {
-    fetchImpl: async (url, init = {}) => {
-      calls.push({ url: String(url), method: init.method || 'GET' })
-      if (String(url).endsWith('/v1/oauth2/token')) return { ok: true, status: 200, json: async () => ({ access_token: 'token-never-returned' }) }
-      return { ok: false, status: 404, json: async () => ({ name: 'ignored' }) }
-    },
-  })
-  assert.deepEqual(result, { stage: 'order', httpStatus: 404, category: 'order_not_found' })
-  assert.deepEqual(calls.map((call) => call.method), ['POST', 'GET'])
-  assert.ok(calls[1].url.includes('/v2/checkout/orders/'))
-  assert.doesNotMatch(calls.map((call) => call.url).join('\n'), /capture|refund/i)
-  assert.doesNotMatch(JSON.stringify(result), /token|ORDER-TEST/)
-})
-
 // ── Gestionnaire de capture ─────────────────────────────────────────────────
 function fakeDb({ claim = { ok: true, hold_id: 'hold-1' }, convert = { ok: true, booking_id: 'booking-1' }, payment } = {}) {
   const rpc = []
@@ -182,42 +148,6 @@ function response() {
   res.json = (body) => { res.body = body; return res }
   return res
 }
-
-test('diagnostic temporaire : lookup serveur borné, réponse assainie, aucune mutation Supabase', async () => {
-  const calls = []
-  const db = {
-    rpc: () => { throw new Error('rpc interdit') },
-    from(table) {
-      assert.equal(table, 'rdv_paypal_payments')
-      const q = {
-        select: (columns) => { calls.push(['select', columns]); return q },
-        eq: (column, value) => { calls.push(['eq', column, value]); return q },
-        like: (column, value) => { calls.push(['like', column, value]); return q },
-        limit: async (count) => { calls.push(['limit', count]); return { data: [{ paypal_order_id: ORDER, paypal_env: 'live' }], error: null } },
-        update: () => { throw new Error('update interdit') },
-        insert: () => { throw new Error('insert interdit') },
-        delete: () => { throw new Error('delete interdit') },
-      }
-      return q
-    },
-  }
-  const res = response()
-  await handlePayPalLiveReadDiagnostic({}, res, db, { diagnose: async () => ({ stage: 'order', httpStatus: 404, category: 'order_not_found', leaked: ORDER }) })
-  assert.deepEqual(res.body, { stage: 'order', httpStatus: 404, category: 'order_not_found' })
-  assert.deepEqual(calls, [['select', 'paypal_order_id, paypal_env'], ['eq', 'paypal_env', 'live'], ['like', 'paypal_order_id', '%7357'], ['limit', 2]])
-  assert.doesNotMatch(JSON.stringify(res.body), /ORDER-TEST/)
-})
-
-test('diagnostic temporaire : inaccessible sans authentification serveur avant toute lecture', async () => {
-  Object.assign(process.env, {
-    VERCEL_ENV: 'production', PAYPAL_RDV_DEPOSIT_ENABLED: 'true', PAYPAL_RDV_DEPOSIT_ENV: 'live',
-    SUPABASE_URL: 'https://test.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-key', CRON_SECRET: 'server-only-test-secret',
-  })
-  const res = response()
-  await handleRdvDepositApi({ method: 'POST', body: {}, headers: {}, query: {} }, res, 'diagnostic')
-  assert.deepEqual([res.statusCode, res.body], [401, { error: 'unauthorized' }])
-})
-
 async function capture(db, body = { orderId: ORDER }) {
   const res = response()
   const { handleCaptureForTest } = await import('../lib/rdvDepositApiHandler.js')

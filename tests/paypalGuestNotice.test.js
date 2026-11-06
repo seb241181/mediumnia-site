@@ -39,6 +39,7 @@ test('booking checkout payment functions unchanged and no account-free absolute 
   const checkout = await read('../src/components/rdv/RdvDepositCheckout.jsx')
   assert.match(checkout, /rdvDepositAction=\$\{action\}/)
   assert.match(checkout, /rdvDepositAction=capture/)
-  assert.match(checkout, /onApprove: async data/)
+  // onApprove reçoit aussi « actions » : relance PayPal après un refus de carte.
+  assert.match(checkout, /onApprove: async \(data, actions\)/)
   assert.doesNotMatch(checkout, /aucun compte n’est nécessaire/)
 })

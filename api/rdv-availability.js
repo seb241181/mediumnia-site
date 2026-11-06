@@ -30,7 +30,6 @@
  */
 import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
-import { isTestFakeCalendar } from '../lib/rdvTestCalendar.js'
 import { activeHolds, addDays, effectiveRules, generateSlots, parisTimeToUTC } from '../lib/rdvAvailability.js'
 
 const SLUG_RE         = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
@@ -151,46 +150,43 @@ async function handleRange(req, res, slug) {
     return res.status(200).json({ mode: 'live', days: result })
   }
 
-  // Agenda fictif de TEST : aucun appel Google.
   let googleBusy = []
-  if (!isTestFakeCalendar(conn)) {
-    let accessToken
-    try {
-      const expiry = new Date(conn.token_expiry).getTime()
-      if (Date.now() > expiry - 60_000) {
-        const refreshed = await refreshGoogleToken(conn.refresh_token_enc)
-        accessToken = refreshed.access_token
-        await supabase.from('booking_calendar_connections').update({
-          access_token_enc: encrypt(accessToken),
-          token_expiry: refreshed.expires_at,
-          updated_at: new Date().toISOString(),
-        }).eq('practitioner_id', practitioner.id)
-      } else {
-        accessToken = decrypt(conn.access_token_enc)
-      }
-    } catch {
-      return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de rafraîchir le token Google — reconnectez votre agenda.' })
+  let accessToken
+  try {
+    const expiry = new Date(conn.token_expiry).getTime()
+    if (Date.now() > expiry - 60_000) {
+      const refreshed = await refreshGoogleToken(conn.refresh_token_enc)
+      accessToken = refreshed.access_token
+      await supabase.from('booking_calendar_connections').update({
+        access_token_enc: encrypt(accessToken),
+        token_expiry: refreshed.expires_at,
+        updated_at: new Date().toISOString(),
+      }).eq('practitioner_id', practitioner.id)
+    } else {
+      accessToken = decrypt(conn.access_token_enc)
     }
+  } catch {
+    return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de rafraîchir le token Google — reconnectez votre agenda.' })
+  }
 
-    try {
-      const freeBusyRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          timeMin: new Date(rangeStartUTC - bufBeforeMs).toISOString(),
-          timeMax: new Date(rangeEndUTC + bufAfterMs).toISOString(),
-          timeZone: 'Europe/Paris',
-          items: [{ id: conn.google_calendar_id }],
-        }),
-      })
-      if (!freeBusyRes.ok) {
-        return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de synchroniser avec Google Agenda.' })
-      }
-      const freeBusyData = await freeBusyRes.json()
-      googleBusy = freeBusyData.calendars?.[conn.google_calendar_id]?.busy ?? []
-    } catch {
-      return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
+  try {
+    const freeBusyRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timeMin: new Date(rangeStartUTC - bufBeforeMs).toISOString(),
+        timeMax: new Date(rangeEndUTC + bufAfterMs).toISOString(),
+        timeZone: 'Europe/Paris',
+        items: [{ id: conn.google_calendar_id }],
+      }),
+    })
+    if (!freeBusyRes.ok) {
+      return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de synchroniser avec Google Agenda.' })
     }
+    const freeBusyData = await freeBusyRes.json()
+    googleBusy = freeBusyData.calendars?.[conn.google_calendar_id]?.busy ?? []
+  } catch {
+    return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
   }
 
   const earliestBookableAt = Date.now() + (practitioner.min_advance_hours ?? 0) * 3600_000
@@ -351,56 +347,53 @@ export default async function handler(req, res) {
 
   // ── Rafraîchissement du token ─────────────────────────────────────────────
 
-  // Agenda fictif de TEST : aucun appel Google.
   let googleBusy = []
-  if (!isTestFakeCalendar(conn)) {
-    let accessToken
-    try {
-      const expiry = new Date(conn.token_expiry).getTime()
-      if (Date.now() > expiry - 60_000) {
-        const refreshed = await refreshGoogleToken(conn.refresh_token_enc)
-        accessToken = refreshed.access_token
-        await supabase.from('booking_calendar_connections').update({
-          access_token_enc: encrypt(accessToken),
-          token_expiry: refreshed.expires_at,
-          updated_at: new Date().toISOString(),
-        }).eq('practitioner_id', practitioner.id)
-      } else {
-        accessToken = decrypt(conn.access_token_enc)
-      }
-    } catch {
-      return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de rafraîchir le token Google — reconnectez votre agenda.' })
+  let accessToken
+  try {
+    const expiry = new Date(conn.token_expiry).getTime()
+    if (Date.now() > expiry - 60_000) {
+      const refreshed = await refreshGoogleToken(conn.refresh_token_enc)
+      accessToken = refreshed.access_token
+      await supabase.from('booking_calendar_connections').update({
+        access_token_enc: encrypt(accessToken),
+        token_expiry: refreshed.expires_at,
+        updated_at: new Date().toISOString(),
+      }).eq('practitioner_id', practitioner.id)
+    } else {
+      accessToken = decrypt(conn.access_token_enc)
     }
+  } catch {
+    return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de rafraîchir le token Google — reconnectez votre agenda.' })
+  }
 
-    // Fenêtre de la journée (bornes des règles) + extension par les buffers
-    // pour attraper les événements Google qui débordent dans les zones tampon des créneaux de bord.
-    const timeMinUTC     = parisTimeToUTC(date, rules[0].start_time,              offsetMs).toISOString()
-    const timeMaxUTC     = parisTimeToUTC(date, rules[rules.length - 1].end_time, offsetMs).toISOString()
-    const timeMinFB      = new Date(new Date(timeMinUTC).getTime() - bufBeforeMs).toISOString()
-    const timeMaxFB      = new Date(new Date(timeMaxUTC).getTime() + bufAfterMs).toISOString()
+  // Fenêtre de la journée (bornes des règles) + extension par les buffers
+  // pour attraper les événements Google qui débordent dans les zones tampon des créneaux de bord.
+  const timeMinUTC     = parisTimeToUTC(date, rules[0].start_time,              offsetMs).toISOString()
+  const timeMaxUTC     = parisTimeToUTC(date, rules[rules.length - 1].end_time, offsetMs).toISOString()
+  const timeMinFB      = new Date(new Date(timeMinUTC).getTime() - bufBeforeMs).toISOString()
+  const timeMaxFB      = new Date(new Date(timeMaxUTC).getTime() + bufAfterMs).toISOString()
 
-    // ── Google FreeBusy ───────────────────────────────────────────────────────
+  // ── Google FreeBusy ───────────────────────────────────────────────────────
 
-    try {
-      const freeBusyRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          timeMin: timeMinFB,
-          timeMax: timeMaxFB,
-          timeZone: 'Europe/Paris',
-          items: [{ id: conn.google_calendar_id }],
-        }),
-      })
-      if (!freeBusyRes.ok) {
-        return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de synchroniser avec Google Agenda.' })
-      }
-      const freeBusyData = await freeBusyRes.json()
-      const calKey = conn.google_calendar_id
-      googleBusy = freeBusyData.calendars?.[calKey]?.busy ?? []
-    } catch {
-      return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
+  try {
+    const freeBusyRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timeMin: timeMinFB,
+        timeMax: timeMaxFB,
+        timeZone: 'Europe/Paris',
+        items: [{ id: conn.google_calendar_id }],
+      }),
+    })
+    if (!freeBusyRes.ok) {
+      return res.status(200).json({ mode: 'error', slots: [], notice: 'Impossible de synchroniser avec Google Agenda.' })
     }
+    const freeBusyData = await freeBusyRes.json()
+    const calKey = conn.google_calendar_id
+    googleBusy = freeBusyData.calendars?.[calKey]?.busy ?? []
+  } catch {
+    return res.status(200).json({ mode: 'error', slots: [], notice: 'Erreur réseau lors de la synchronisation Google Agenda.' })
   }
 
   // ── Réservations MediumIA existantes ─────────────────────────────────────

@@ -47,8 +47,6 @@ import {
   createCancellationToken,
   hashCancellationToken,
 } from '../lib/bookingCancellation.js'
-import { rdvRateLimitSecret } from '../lib/rdvRateLimitSecret.js'
-import { isTestFakeCalendar } from '../lib/rdvTestCalendar.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_RE  = /^\d{4}-\d{2}-\d{2}$/
@@ -64,8 +62,8 @@ function extractClientIp(req) {
 }
 
 async function checkBookingRateLimit(req, res, supabase) {
-  const secret = rdvRateLimitSecret()
-  if (!secret) {
+  const secret = (process.env.RDV_RATE_LIMIT_SECRET || '').trim()
+  if (!/^[0-9a-fA-F]{64}$/.test(secret)) {
     res.status(503).json({ error: 'Le service de réservation est temporairement indisponible. Merci de réessayer dans quelques instants.' })
     return true
   }
@@ -764,8 +762,7 @@ export default async function handler(req, res) {
     })
   }
 
-  // Agenda fictif de TEST : aucun appel Google (ignoré en Production).
-  if (!isTestFakeCalendar(conn)) {
+  {
     let accessToken
     try {
       const expiry = new Date(conn.token_expiry).getTime()

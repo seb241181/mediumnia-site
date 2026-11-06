@@ -6,11 +6,6 @@ import RdvBookingHelp from './RdvBookingHelp.jsx'
 // PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
 const PAY_LATER_MIN_CENTS = 3000
 
-// Simulation d'un refus PayPal (TEST uniquement : le serveur l'ignore en Production).
-const sandboxSimulation = typeof window !== 'undefined'
-  ? (new URLSearchParams(window.location.search).get('paypal_simulate') || '').toUpperCase().replace(/[^A-Z_]/g, '') || null
-  : null
-
 function money(cents) {
   return `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
 }
@@ -86,8 +81,6 @@ export default function RdvDepositCheckout({
   // Référence (et non état) : changer d'identifiant pendant qu'une fenêtre PayPal est
   // ouverte ne doit pas redessiner les boutons.
   const checkoutIdRef = useRef(checkoutId)
-  // Simulation TEST appliquée au seul premier essai : la relance doit pouvoir aboutir.
-  const simulationUsed = useRef(false)
   function renewCheckoutId() {
     const id = globalThis.crypto?.randomUUID?.() || checkoutIdRef.current
     checkoutIdRef.current = id
@@ -230,13 +223,11 @@ export default function RdvDepositCheckout({
           onApprove: async (data, actions) => {
             setNotice('')
             let result
-            const simulate = sandboxSimulation && !simulationUsed.current ? sandboxSimulation : null
-            simulationUsed.current = true
             try {
               const response = await fetch('/api/rdv-config?rdvDepositAction=capture', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: data.orderID, ...(simulate ? { simulate } : {}) }),
+                body: JSON.stringify({ orderId: data.orderID }),
               })
               result = await response.json().catch(() => ({}))
             } catch {

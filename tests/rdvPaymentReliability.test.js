@@ -68,14 +68,14 @@ test('clé d’idempotence : inchangée au 1er essai, nouvelle après un refus',
   assert.equal(rdvDepositCaptureRequestId(ORDER, 2), `rdv-deposit-capture-${ORDER}-2`)
 })
 
-test('capture : carte refusée (Sandbox simulée) = refus certain, clé de la tentative 2', async () => {
+test('capture : carte refusée par PayPal = refus certain, clé de la tentative 2', async () => {
   const calls = fakePayPal({ capture: declined('INSTRUMENT_DECLINED'), order: { status: 200, body: { id: ORDER, status: 'APPROVED' } } })
-  await assert.rejects(captureRdvDepositPayPalOrder(ORDER, { attempt: 2, mock: 'INSTRUMENT_DECLINED' }), (error) => error.code === 'paypal_instrument_declined' && error.outcome === 'definite' && error.restartable)
+  await assert.rejects(captureRdvDepositPayPalOrder(ORDER, { attempt: 2 }), (error) => error.code === 'paypal_instrument_declined' && error.outcome === 'definite' && error.restartable)
   const capture = calls.find((c) => c.url.endsWith('/capture'))
   assert.equal(capture.headers['PayPal-Request-Id'], `rdv-deposit-capture-${ORDER}-2`)
-  assert.deepEqual(JSON.parse(capture.headers['PayPal-Mock-Response']), { mock_application_codes: 'INSTRUMENT_DECLINED' })
+  // Version Production : aucune réponse simulée n'est jamais demandée à PayPal.
+  assert.equal(capture.headers['PayPal-Mock-Response'], undefined)
 })
-
 test('capture : réponse perdue mais commande encaissée = succès, jamais un refus', async () => {
   fakePayPal({ capture: 'network', order: { status: 200, body: completedOrder() } })
   const result = await captureRdvDepositPayPalOrder(ORDER)
@@ -89,13 +89,7 @@ test('capture : réponse perdue et commande illisible = incertain', async () => 
   await assert.rejects(captureRdvDepositPayPalOrder(ORDER), (error) => error.outcome === 'uncertain')
 })
 
-test('capture : absence de réponse simulée = aucune capture envoyée, issue incertaine', async () => {
-  const calls = fakePayPal({ capture: { status: 201, body: completedOrder() }, order: { status: 200, body: { id: ORDER, status: 'APPROVED' } } })
-  await assert.rejects(captureRdvDepositPayPalOrder(ORDER, { mock: 'CAPTURE_TIMEOUT' }), (error) => error.outcome === 'uncertain')
-  assert.equal(calls.some((c) => c.url.endsWith('/capture')), false)
-})
-
-test('capture : la simulation est ignorée en Production (Live)', async () => {
+test('capture Live : une demande de simulation est sans effet', async () => {
   Object.assign(process.env, { VERCEL_ENV: 'production', PAYPAL_RDV_DEPOSIT_ENABLED: 'true', PAYPAL_RDV_DEPOSIT_ENV: 'live' })
   const calls = fakePayPal({ capture: { status: 201, body: { ...completedOrder(), purchase_units: [] } }, order: { status: 200, body: completedOrder() } })
   await captureRdvDepositPayPalOrder(ORDER, { mock: 'CAPTURE_TIMEOUT' })
@@ -194,13 +188,6 @@ test('gestionnaire : commande d’une tentative remplacée → « tentative expi
   const res = await capture(db)
   assert.deepEqual([res.statusCode, res.body.error], [409, 'checkout_expired'])
   assert.equal(calls.length, 0)
-})
-
-test('gestionnaire : simulation Sandbox transmise hors Production seulement', async () => {
-  const calls = fakePayPal({ capture: declined('INSTRUMENT_DECLINED'), order: { status: 200, body: { id: ORDER, status: 'APPROVED' } } })
-  const { db } = fakeDb()
-  await capture(db, { orderId: ORDER, simulate: 'INSTRUMENT_DECLINED' })
-  assert.ok(calls.find((c) => c.url.endsWith('/capture')).headers['PayPal-Mock-Response'])
 })
 
 // ── Nouvelle tentative et créneau tenu ──────────────────────────────────────
@@ -319,8 +306,8 @@ test('page : identifiant partagé entre onglets, créneau tenu repris par son na
   assert.match(checkout, /return actions\.restart\(\)/)
   assert.match(checkout, /result\.error === 'checkout_expired'/)
   assert.doesNotMatch(checkout, /Ne repayez pas : réessayez la confirmation/)
-  // La simulation TEST d'un refus ne vaut que pour le premier essai de capture.
-  assert.match(checkout, /sandboxSimulation && !simulationUsed\.current/)
+  // Version Production : aucune simulation PayPal dans la page.
+  assert.doesNotMatch(checkout, /paypal_simulate|simulate/)
 })
 
 test('migration : additive, fonctions réservées au serveur, paiement encaissé jamais libéré', () => {
@@ -334,42 +321,7 @@ test('migration : additive, fonctions réservées au serveur, paiement encaissé
 })
 
 // ── Agenda fictif de TEST ───────────────────────────────────────────────────
-test('agenda fictif : actif hors Production seulement, présent à chaque appel Google', async () => {
-  const { isTestFakeCalendar, TEST_FAKE_CALENDAR_ID } = await import('../lib/rdvTestCalendar.js')
-  const conn = { google_calendar_id: TEST_FAKE_CALENDAR_ID }
-  assert.equal(isTestFakeCalendar(conn, { VERCEL_ENV: 'preview' }), true)
-  assert.equal(isTestFakeCalendar(conn, {}), true)
-  assert.equal(isTestFakeCalendar(conn, { VERCEL_ENV: 'production' }), false, 'jamais en Production')
-  assert.equal(isTestFakeCalendar({ google_calendar_id: 'agenda@group.calendar.google.com' }, { VERCEL_ENV: 'preview' }), false)
-  assert.equal(isTestFakeCalendar(null), false)
-  assert.equal((read('api/rdv-availability.js').match(/if \(!isTestFakeCalendar\(conn\)\)/g) || []).length, 2)
-  assert.match(read('lib/rdvDepositApiHandler.js'), /if \(isTestFakeCalendar\(connection\)\) return \{ startsAt, endsAt \}/)
-  assert.match(read('lib/rdvFullPaymentApiHandler.js'), /if \(isTestFakeCalendar\(connection\)\) return \{ startsAt, endsAt \}/)
-  assert.match(read('lib/googleCalendarEvents.js'), /if \(isTestFakeCalendar\(conn\)\) return \{ status: 'not_connected' \}/)
-  assert.match(read('api/rdv-book.js'), /if \(!isTestFakeCalendar\(conn\)\) \{/)
-  // Aucun autre point du parcours ne lit l'agenda Google sans passer par cette garde.
-  for (const file of ['api/rdv-book.js', 'api/rdv-availability.js', 'lib/rdvDepositApiHandler.js', 'lib/rdvFullPaymentApiHandler.js']) {
-    const source = read(file)
-    assert.ok((source.match(/googleapis\.com\/calendar\/v3\/freeBusy/g) || []).length <= (source.match(/isTestFakeCalendar\(/g) || []).length, file)
-  }
-})
-
 // ── Limiteur anti-abus ──────────────────────────────────────────────────────
-test('limiteur : clé obligatoire en Production, clé dérivée seulement hors Production', async () => {
-  const { rdvRateLimitSecret } = await import('../lib/rdvRateLimitSecret.js')
-  const configured = 'a'.repeat(64)
-  assert.equal(rdvRateLimitSecret({ VERCEL_ENV: 'production', RDV_RATE_LIMIT_SECRET: configured }), configured)
-  assert.equal(rdvRateLimitSecret({ VERCEL_ENV: 'production' }), null, 'Production sans clé : service refusé comme avant')
-  assert.equal(rdvRateLimitSecret({ VERCEL_ENV: 'production', RDV_RATE_LIMIT_SECRET: 'trop-court' }), null)
-  const derived = rdvRateLimitSecret({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://test.supabase.co' })
-  assert.match(derived, /^[0-9a-f]{64}$/)
-  assert.equal(derived, rdvRateLimitSecret({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://test.supabase.co' }), 'stable')
-  for (const file of ['api/rdv-book.js', 'lib/rdvDepositApiHandler.js', 'lib/rdvFullPaymentApiHandler.js']) {
-    assert.match(read(file), /const secret = rdvRateLimitSecret\(\)/, file)
-    assert.doesNotMatch(read(file), /process\.env\.RDV_RATE_LIMIT_SECRET/, file)
-  }
-})
-
 test('fonctions de paiement réservées au serveur : jamais exécutables avec la clé publique', () => {
   const sql = read('supabase/migrations/20261106130000_rdv_payment_functions_server_only.sql')
   for (const fn of ['create_rdv_deposit_hold', 'create_rdv_full_payment_hold', 'claim_rdv_deposit_capture', 'convert_rdv_deposit_hold']) {

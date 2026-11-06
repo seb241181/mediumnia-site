@@ -437,3 +437,36 @@ test('état d’un paiement encore dans le délai de sécurité : PayPal n’est
   assert.equal(res.body.paymentStatus, 'capturing')
   assert.equal(calls.length + rpc.length, 0)
 })
+
+test('rapprochement : rendez-vous refusé après encaissement → code tracé et journalisé, créneau jamais libéré', async () => {
+  const rpc = []
+  const db = {
+    rpc: (name, args) => {
+      rpc.push({ name, args })
+      const value = name === 'convert_rdv_deposit_hold' ? { data: null, error: { code: '23514', message: 'reservation_payment_required' } } : { data: null, error: null }
+      return { then: (resolve) => resolve(value) }
+    },
+    from() {
+      const q = { select: () => q, eq: () => q, is: () => q, lt: () => q, limit: async () => ({ data: [staleRow('2099-11-16T15:00:00Z')], error: null }) }
+      return q
+    },
+  }
+  const paid = { cfg: sandboxCfg, data: { ...completedOrder(), purchase_units: [{ ...completedOrder().purchase_units[0], custom_id: 'MEDIUMIA:RDV-ARRHES:hold-1' }] } }
+  const errors = []
+  const original = console.error
+  console.error = (line) => errors.push(String(line))
+  const report = await reconcileStaleRdvCaptures(db, { apply: true, now: new Date('2026-11-06T15:00:00Z'), getOrder: async () => paid, finalize: async () => { throw new Error('jamais') } })
+  console.error = original
+  assert.equal(report[0].action, 'manual_review:reservation_payment_required')
+  assert.deepEqual(rpc.find((c) => c.name === 'note_rdv_payment_error').args, { p_paypal_order_id: 'ORDER-STALE-9876', p_error_code: 'captured_reservation_payment_required' })
+  assert.equal(rpc.some((c) => c.name === 'release_rdv_deposit_capture'), false)
+  assert.ok(errors.some((line) => line.includes('[rdv-reconcile]') && line.includes('…9876')))
+})
+
+test('migration de protection : paiement intégral toutes modalités, montants toujours contrôlés', () => {
+  const sql = read('supabase/migrations/20261106140000_rdv_full_payment_booking_guard.sql')
+  assert.doesNotMatch(sql.replace(/^--.*$/gm, ''), /'video'/)
+  assert.match(sql, /NEW\.booked_price_cents IS NOT DISTINCT FROM v_service\.price_cents/)
+  assert.match(sql, /NEW\.reservation_payment_cents IS NOT DISTINCT FROM v_service\.reservation_payment_cents\s+OR NEW\.reservation_payment_cents IS NOT DISTINCT FROM v_service\.price_cents/)
+  assert.match(sql, /À déployer TOUJOURS avec 20260923200000/)
+})

@@ -318,6 +318,8 @@ test('page : identifiant partagé entre onglets, créneau tenu repris par son na
   assert.match(checkout, /return actions\.restart\(\)/)
   assert.match(checkout, /result\.error === 'checkout_expired'/)
   assert.doesNotMatch(checkout, /Ne repayez pas : réessayez la confirmation/)
+  // La simulation TEST d'un refus ne vaut que pour le premier essai de capture.
+  assert.match(checkout, /sandboxSimulation && !simulationUsed\.current/)
 })
 
 test('migration : additive, fonctions réservées au serveur, paiement encaissé jamais libéré', () => {

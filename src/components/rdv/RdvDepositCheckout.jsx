@@ -86,6 +86,8 @@ export default function RdvDepositCheckout({
   // Référence (et non état) : changer d'identifiant pendant qu'une fenêtre PayPal est
   // ouverte ne doit pas redessiner les boutons.
   const checkoutIdRef = useRef(checkoutId)
+  // Simulation TEST appliquée au seul premier essai : la relance doit pouvoir aboutir.
+  const simulationUsed = useRef(false)
   function renewCheckoutId() {
     const id = globalThis.crypto?.randomUUID?.() || checkoutIdRef.current
     checkoutIdRef.current = id
@@ -227,11 +229,13 @@ export default function RdvDepositCheckout({
           onApprove: async (data, actions) => {
             setNotice('')
             let result
+            const simulate = sandboxSimulation && !simulationUsed.current ? sandboxSimulation : null
+            simulationUsed.current = true
             try {
               const response = await fetch('/api/rdv-config?rdvDepositAction=capture', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: data.orderID, ...(sandboxSimulation ? { simulate: sandboxSimulation } : {}) }),
+                body: JSON.stringify({ orderId: data.orderID, ...(simulate ? { simulate } : {}) }),
               })
               result = await response.json().catch(() => ({}))
             } catch {

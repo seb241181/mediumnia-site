@@ -346,3 +346,19 @@ test('agenda fictif : actif hors Production seulement, présent à chaque appel 
   assert.match(read('lib/rdvFullPaymentApiHandler.js'), /if \(isTestFakeCalendar\(connection\)\) return \{ startsAt, endsAt \}/)
   assert.match(read('lib/googleCalendarEvents.js'), /if \(isTestFakeCalendar\(conn\)\) return \{ status: 'not_connected' \}/)
 })
+
+// ── Limiteur anti-abus ──────────────────────────────────────────────────────
+test('limiteur : clé obligatoire en Production, clé dérivée seulement hors Production', async () => {
+  const { rdvRateLimitSecret } = await import('../lib/rdvRateLimitSecret.js')
+  const configured = 'a'.repeat(64)
+  assert.equal(rdvRateLimitSecret({ VERCEL_ENV: 'production', RDV_RATE_LIMIT_SECRET: configured }), configured)
+  assert.equal(rdvRateLimitSecret({ VERCEL_ENV: 'production' }), null, 'Production sans clé : service refusé comme avant')
+  assert.equal(rdvRateLimitSecret({ VERCEL_ENV: 'production', RDV_RATE_LIMIT_SECRET: 'trop-court' }), null)
+  const derived = rdvRateLimitSecret({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://test.supabase.co' })
+  assert.match(derived, /^[0-9a-f]{64}$/)
+  assert.equal(derived, rdvRateLimitSecret({ VERCEL_ENV: 'preview', SUPABASE_URL: 'https://test.supabase.co' }), 'stable')
+  for (const file of ['api/rdv-book.js', 'lib/rdvDepositApiHandler.js', 'lib/rdvFullPaymentApiHandler.js']) {
+    assert.match(read(file), /const secret = rdvRateLimitSecret\(\)/, file)
+    assert.doesNotMatch(read(file), /process\.env\.RDV_RATE_LIMIT_SECRET/, file)
+  }
+})

@@ -368,3 +368,14 @@ test('limiteur : clé obligatoire en Production, clé dérivée seulement hors P
     assert.doesNotMatch(read(file), /process\.env\.RDV_RATE_LIMIT_SECRET/, file)
   }
 })
+
+test('fonctions de paiement réservées au serveur : jamais exécutables avec la clé publique', () => {
+  const sql = read('supabase/migrations/20261106130000_rdv_payment_functions_server_only.sql')
+  for (const fn of ['create_rdv_deposit_hold', 'create_rdv_full_payment_hold', 'claim_rdv_deposit_capture', 'convert_rdv_deposit_hold']) {
+    assert.match(sql, new RegExp(`revoke execute on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated;`), fn)
+    assert.match(sql, new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role;`), fn)
+  }
+  // Les pages n'appellent jamais ces fonctions : seul le serveur (clé service_role) le fait.
+  const client = read('src/lib/supabase.js')
+  assert.doesNotMatch(client, /create_rdv_|claim_rdv_|convert_rdv_/)
+})

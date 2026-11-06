@@ -35,7 +35,11 @@ const B = {
 }
 
 replaceOnce('api/rdv-availability.js', B.old_select, B.new_select)
-replaceOnce('api/rdv-availability.js', B.old_backend_final, B.new_backend_final)
+// Le délai minimum de réservation est désormais calculé dans le fichier source
+// (avec les paiements en cours) : le correctif d'origine n'a plus lieu d'être.
+if (!fs.readFileSync('api/rdv-availability.js', 'utf8').includes('earliestBookableAt')) {
+  replaceOnce('api/rdv-availability.js', B.old_backend_final, B.new_backend_final)
+}
 
 // CalendarGrid fetches per-day availability directly and shows gold dots,
 // superseding the findNextAvailableDate auto-search these patches injected.

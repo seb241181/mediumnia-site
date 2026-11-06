@@ -30,7 +30,7 @@
  */
 import { encrypt, decrypt, refreshGoogleToken, parisUTCOffsetMs } from '../lib/googleOAuth.js'
 import { getSupabaseAdmin, isSupabaseConfigured } from '../lib/supabaseAdmin.js'
-import { addDays, effectiveRules, generateSlots, parisTimeToUTC } from '../lib/rdvAvailability.js'
+import { activeHolds, addDays, effectiveRules, generateSlots, parisTimeToUTC } from '../lib/rdvAvailability.js'
 
 const SLUG_RE         = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 const DATE_RE         = /^\d{4}-\d{2}-\d{2}$/
@@ -44,6 +44,22 @@ const CONFIG_REQUIRED = (notice) => ({
 
 // Grille, conversion Paris → UTC et règle de conflit : lib/rdvAvailability.js
 // (moteur partagé avec Lumia).
+
+// Réservations provisoires actives (paiement en cours) : mêmes règles que la base au
+// moment du paiement, pour ne jamais afficher libre un créneau qui serait refusé.
+async function loadActiveHoldsBusy(supabase, practitionerId, fromMs, toMs, bufBeforeMs, bufAfterMs) {
+  const { data } = await supabase
+    .from('rdv_booking_holds')
+    .select('starts_at, ends_at, status, expires_at')
+    .eq('practitioner_id', practitionerId)
+    .in('status', ['payment_pending', 'payment_capturing', 'payment_captured'])
+    .gte('starts_at', new Date(fromMs).toISOString())
+    .lt('starts_at', new Date(toMs).toISOString())
+  return activeHolds(data || [], new Date()).map(h => ({
+    start: new Date(h.starts_at).getTime() - bufBeforeMs,
+    end:   new Date(h.ends_at).getTime() + bufAfterMs,
+  }))
+}
 
 /**
  * GET /api/rdv-availability?practitioner=<slug>&service_slug=<slug>&from=YYYY-MM-DD&days=N
@@ -174,6 +190,7 @@ async function handleRange(req, res, slug) {
   }
 
   const earliestBookableAt = Date.now() + (practitioner.min_advance_hours ?? 0) * 3600_000
+  const holdsBusy = await loadActiveHoldsBusy(supabase, practitioner.id, rangeStartUTC, rangeEndUTC, bufBeforeMs, bufAfterMs)
 
   for (const date of dates) {
     const rules = rulesByDate.get(date)
@@ -187,10 +204,10 @@ async function handleRange(req, res, slug) {
       return s >= dayStart && s < dayEnd
     })
     if (practitioner.max_per_day != null && dayBookings.length >= practitioner.max_per_day) continue
-    const existingBusy = dayBookings.map(b => ({
+    const existingBusy = [...dayBookings.map(b => ({
       start: new Date(b.starts_at).getTime() - bufBeforeMs,
       end:   new Date(b.ends_at).getTime() + bufAfterMs,
-    }))
+    })), ...holdsBusy]
     result[date] = generateSlots(date, rules, googleBusy, existingBusy, offsetMs, svc.duration_min, bufBeforeMs, bufAfterMs)
       .some(slot => slot.available && parisTimeToUTC(date, slot.time, offsetMs).getTime() >= earliestBookableAt)
   }
@@ -406,10 +423,19 @@ export default async function handler(req, res) {
   const minAdvanceMs = (practitioner.min_advance_hours ?? 0) * 3600_000
   const earliestBookableAt = Date.now() + minAdvanceMs
 
-  const slots = generateSlots(date, rules, googleBusy, existingBusy, offsetMs, durationMin, bufBeforeMs, bufAfterMs)
-    .map(slot => {
+  // « held » : libre sans les paiements en cours. Le navigateur qui tient ce créneau
+  // peut y revenir (même identifiant de paiement) ; les autres le voient indisponible.
+  const holdsBusy = await loadActiveHoldsBusy(supabase, practitioner.id, parisMidnightUTC, parisMidnightEndUTC, bufBeforeMs, bufAfterMs)
+  const withoutHolds = generateSlots(date, rules, googleBusy, existingBusy, offsetMs, durationMin, bufBeforeMs, bufAfterMs)
+  const withHolds = holdsBusy.length
+    ? generateSlots(date, rules, googleBusy, [...existingBusy, ...holdsBusy], offsetMs, durationMin, bufBeforeMs, bufAfterMs)
+    : withoutHolds
+  const slots = withHolds
+    .map((slot, i) => {
       const slotStart = parisTimeToUTC(date, slot.time, offsetMs).getTime()
-      return { ...slot, available: slot.available && slotStart >= earliestBookableAt }
+      const bookable = slotStart >= earliestBookableAt
+      const held = bookable && !slot.available && withoutHolds[i]?.available === true
+      return { ...slot, available: slot.available && bookable, ...(held ? { held: true } : {}) }
     })
 
   return res.status(200).json({ mode: 'live', slots, notice: null })

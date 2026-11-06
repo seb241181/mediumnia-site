@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import LegalFooter from '../LegalFooter'
 import RdvDepositCheckout from './RdvDepositCheckout'
+import { clearCheckoutId, rdvCheckoutKey, readCheckoutId, writeCheckoutId } from './rdvCheckoutStorage.js'
 import { GoogleReviewCard, Stars, useGoogleReviews } from '../ReviewsPage'
 import { commonDepositCents, descriptionParagraphs, groupServices } from '../../lib/rdvServiceGroups.js'
 import VideoInterview from '../VideoInterview'
@@ -578,7 +579,9 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
     )
   }
 
-  const freeSlots = Array.isArray(result?.slots) ? result.slots.filter(slot => slot.available) : []
+  // Un créneau tenu par un paiement en cours reste proposé au navigateur qui le tient.
+  const ownsCheckout = (slotTime) => Boolean(readCheckoutId(rdvCheckoutKey(practitionerSlug, service.id, toDateStr(date), slotTime)))
+  const freeSlots = Array.isArray(result?.slots) ? result.slots.filter(slot => slot.available || (slot.held && ownsCheckout(slot.time))) : []
 
   if (!freeSlots.length) {
     let msg = 'Aucun créneau disponible ce jour.'
@@ -986,7 +989,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const selectedModality = service?.modality?.includes('video') ? 'video' : 'in-person'
   const offersFullPayment = requiresDeposit && service?.price_cents > service?.reservationPaymentCents
   const checkoutStorageKey = service && date && time
-    ? `mediumia:rdv-arrhes:${slug}:${service.id}:${toDateStr(date)}:${time}`
+    ? rdvCheckoutKey(slug, service.id, toDateStr(date), time)
     : null
 
   function selectService(svc) {
@@ -1056,9 +1059,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
     if (requiresDeposit) {
       // This callback is reached after ContactForm validates the required fields.
       trackFunnel('rdv_funnel_contact')
-      const persisted = checkoutStorageKey ? sessionStorage.getItem(checkoutStorageKey) : null
+      const persisted = readCheckoutId(checkoutStorageKey)
       const id = persisted || crypto.randomUUID()
-      if (!persisted && checkoutStorageKey) sessionStorage.setItem(checkoutStorageKey, id)
+      if (!persisted) writeCheckoutId(checkoutStorageKey, id)
       setCheckoutId(id)
       setPaymentCustomer(contactForm)
       setBookingError(null)
@@ -1112,7 +1115,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
   function handlePaidComplete(result) {
     // Includes gift-card confirmations; PayPal orders are separately counted.
     trackFunnel('rdv_funnel_confirmed')
-    if (checkoutStorageKey) sessionStorage.removeItem(checkoutStorageKey)
+    clearCheckoutId(checkoutStorageKey)
     if (!completedMetricSent.current) {
       completedMetricSent.current = true
       trackMediumiaMetric('rdv_booking_completed', metricSource)
@@ -1408,7 +1411,15 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   offerToken={offer?.token || null}
                   onMetric={trackFunnel}
                   onComplete={handlePaidComplete}
-                  onUnavailable={() => { setBookingError('Ce créneau n’est plus disponible.'); if (offer) return; setTime(null); setStep(1) }}
+                  onCheckoutIdChange={(id) => { writeCheckoutId(checkoutStorageKey, id); setCheckoutId(id) }}
+                  onUnavailable={(info) => {
+                    setBookingError(info?.code === 'slot_held'
+                      ? 'Ce créneau est en cours de réservation par une autre personne. S’il n’est pas confirmé, il redeviendra disponible dans quelques minutes.'
+                      : 'Ce créneau n’est plus disponible.')
+                    if (offer) return
+                    setTime(null)
+                    setStep(1)
+                  }}
                 />
               </div>
             )}

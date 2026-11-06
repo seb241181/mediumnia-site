@@ -5,6 +5,11 @@ import PayPalGuestNotice from '../PayPalGuestNotice.jsx'
 // PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
 const PAY_LATER_MIN_CENTS = 3000
 
+// Simulation d'un refus PayPal (TEST uniquement : le serveur l'ignore en Production).
+const sandboxSimulation = typeof window !== 'undefined'
+  ? (new URLSearchParams(window.location.search).get('paypal_simulate') || '').toUpperCase().replace(/[^A-Z_]/g, '') || null
+  : null
+
 function money(cents) {
   return `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
 }
@@ -19,7 +24,15 @@ function paymentMessage(code) {
     paypal_auth_failed: 'Le paiement sécurisé est momentanément indisponible.',
     paypal_create_order_failed: 'PayPal n’a pas pu préparer le paiement. Réessayez.',
     paypal_create_order_in_progress: 'Le paiement est déjà en cours de préparation. Réessayez dans quelques instants.',
-    paypal_capture_failed: 'La confirmation PayPal n’a pas pu être finalisée. Ne repayez pas : réessayez la confirmation.',
+    paypal_capture_failed: 'Nous vérifions votre paiement auprès de PayPal. Ne repayez pas : vous recevrez un e-mail de confirmation dès qu’il est validé.',
+    paypal_capture_uncertain: 'Nous vérifions votre paiement auprès de PayPal. Ne repayez pas : vous recevrez un e-mail de confirmation dès qu’il est validé. S’il n’a pas abouti, le créneau sera libéré sans aucun prélèvement.',
+    paypal_instrument_declined: 'PayPal a refusé ce moyen de paiement : rien n’a été prélevé. Choisissez une autre carte ou un autre moyen de paiement dans la fenêtre PayPal.',
+    paypal_transaction_refused: 'Le paiement n’a pas abouti et rien n’a été prélevé. Vous pouvez réessayer, avec un autre moyen de paiement si besoin.',
+    paypal_capture_declined: 'Le paiement n’a pas abouti et rien n’a été prélevé. Vous pouvez réessayer, avec un autre moyen de paiement si besoin.',
+    paypal_order_voided: 'Le paiement n’a pas abouti et rien n’a été prélevé. Vous pouvez réessayer.',
+    payment_received_pending: 'Votre paiement est bien reçu. La confirmation de votre rendez-vous est en cours : ne repayez pas, vous la recevrez par e-mail.',
+    checkout_expired: 'Votre précédente tentative a expiré et rien n’a été prélevé. Cliquez de nouveau sur le bouton PayPal.',
+    slot_held: 'Ce créneau est en cours de réservation par une autre personne. Choisissez un autre horaire ou réessayez dans quelques minutes.',
     paid_slot_reconciliation_required: 'Le paiement a été reçu mais le créneau nécessite une vérification. Ne repayez pas. Sébastien sera prévenu.',
     full_payment_video_only: 'Le règlement de la totalité en ligne n’est pas encore disponible pour ce rendez-vous : vous pouvez réserver avec les arrhes.',
     invalid_modality: 'Le règlement de la totalité en ligne n’est pas encore disponible pour ce rendez-vous : vous pouvez réserver avec les arrhes.',
@@ -33,6 +46,14 @@ function paymentMessage(code) {
   return messages[code] || 'Le paiement ne peut pas être préparé pour le moment. Réessayez dans quelques instants.'
 }
 
+// Codes renvoyés par le serveur (déjà journalisés là-bas).
+const SERVER_CODES = new Set([
+  'rate_limit_exceeded', 'slot_unavailable', 'slot_held', 'daily_limit_reached', 'google_calendar_unavailable',
+  'paypal_not_configured', 'paypal_auth_failed', 'paypal_create_order_failed', 'paypal_create_order_in_progress',
+  'checkout_expired', 'hold_creation_failed', 'hold_not_available', 'payment_choice_locked', 'invalid_customer',
+  'offer_expired', 'offer_used', 'offer_cancelled', 'offer_invalid', 'balance_requires_full_payment',
+])
+
 export default function RdvDepositCheckout({
   practitionerSlug,
   service,
@@ -44,6 +65,7 @@ export default function RdvDepositCheckout({
   onMetric,
   onComplete,
   onUnavailable,
+  onCheckoutIdChange,
   offerToken = null,
 }) {
   const containerRef = useRef(null)
@@ -60,7 +82,26 @@ export default function RdvDepositCheckout({
     checkoutFunnelSent.current.add(event)
     onMetric?.(event)
   }
-  const [effectiveCheckoutId, setEffectiveCheckoutId] = useState(checkoutId)
+  // Référence (et non état) : changer d'identifiant pendant qu'une fenêtre PayPal est
+  // ouverte ne doit pas redessiner les boutons.
+  const checkoutIdRef = useRef(checkoutId)
+  function renewCheckoutId() {
+    const id = globalThis.crypto?.randomUUID?.() || checkoutIdRef.current
+    checkoutIdRef.current = id
+    onCheckoutIdChange?.(id)
+    return id
+  }
+  // Signale une erreur vue par le navigateur (code seulement, aucune donnée personnelle).
+  function reportClientEvent(code) {
+    try {
+      void fetch('/api/rdv-config?rdvDepositAction=clientEvent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkoutId: checkoutIdRef.current, code }),
+        keepalive: true,
+      }).catch(() => {})
+    } catch { /* jamais bloquant */ }
+  }
 
   const depositCents = Number(service?.reservationPaymentCents || service?.reservation_payment_cents || 0)
   const priceCents = Number(service?.price_cents || 0)
@@ -89,7 +130,7 @@ export default function RdvDepositCheckout({
       : nextChoice === 'full_payment' && fullOnlineAllowed ? 'full_payment' : 'arrhes'
     if (normalized === paymentChoice) return
     setPaymentChoice(normalized)
-    setEffectiveCheckoutId(globalThis.crypto?.randomUUID?.() || checkoutId)
+    renewCheckoutId()
     setHoldUntil(null)
     setNotice('')
   }
@@ -101,11 +142,10 @@ export default function RdvDepositCheckout({
     time,
     selected_modality: selectedModality,
     customer,
-    client_checkout_id: effectiveCheckoutId,
     terms_accepted: true,
     early_performance_requested: true,
     ...(offerToken ? { offer_token: offerToken } : {}),
-  }), [practitionerSlug, service?.slug, dateStr, time, selectedModality, customer, effectiveCheckoutId, offerToken])
+  }), [practitionerSlug, service?.slug, dateStr, time, selectedModality, customer, offerToken])
 
   useEffect(() => {
     let active = true
@@ -129,14 +169,22 @@ export default function RdvDepositCheckout({
     async function createOrder() {
       setNotice('')
       const action = paymentChoice === 'full_payment' ? 'createFull' : 'create'
-      const response = await fetch(`/api/rdv-config?rdvDepositAction=${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const result = await response.json().catch(() => ({}))
+      const requestOrder = async () => {
+        const response = await fetch(`/api/rdv-config?rdvDepositAction=${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, client_checkout_id: checkoutIdRef.current }),
+        })
+        return { response, result: await response.json().catch(() => ({})) }
+      }
+      let { response, result } = await requestOrder()
+      // Tentative précédente expirée ou remplacée : on repart aussitôt d'un nouvel identifiant.
+      if (!response.ok && result.error === 'checkout_expired') {
+        renewCheckoutId()
+        ;({ response, result } = await requestOrder())
+      }
       if (!response.ok) {
-        if (['slot_unavailable', 'daily_limit_reached'].includes(result.error)) onUnavailable?.()
+        if (['slot_unavailable', 'slot_held', 'daily_limit_reached'].includes(result.error)) onUnavailable?.({ code: result.error, retryAt: result.retryAt || null })
         throw new Error(result.error || 'paypal_create_order_failed')
       }
       if (result.status === 'converted' && result.bookingId) {
@@ -148,11 +196,11 @@ export default function RdvDepositCheckout({
       return result.id
     }
 
-    async function pollStatus() {
-      for (let attempt = 0; attempt < 4; attempt += 1) {
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        const response = await fetch(`/api/rdv-config?rdvDepositAction=status&checkout_id=${encodeURIComponent(effectiveCheckoutId)}`)
-        const status = await response.json().catch(() => ({}))
+    async function pollStatus(attempts = 8) {
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        const response = await fetch(`/api/rdv-config?rdvDepositAction=status&checkout_id=${encodeURIComponent(checkoutIdRef.current)}`).catch(() => null)
+        const status = await response?.json().catch(() => ({})) || {}
         if (status.bookingId) {
           onComplete?.({
             status: 'COMPLETED',
@@ -175,25 +223,41 @@ export default function RdvDepositCheckout({
         const buttons = window.paypal.Buttons({
           style: { layout: 'vertical', shape: 'rect', label: 'paypal' },
           createOrder,
-          onApprove: async data => {
+          onApprove: async (data, actions) => {
             setNotice('')
-            const response = await fetch('/api/rdv-config?rdvDepositAction=capture', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderId: data.orderID }),
-            })
-            const result = await response.json().catch(() => ({}))
+            let result
+            try {
+              const response = await fetch('/api/rdv-config?rdvDepositAction=capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: data.orderID, ...(sandboxSimulation ? { simulate: sandboxSimulation } : {}) }),
+              })
+              result = await response.json().catch(() => ({}))
+            } catch {
+              // Réponse perdue : le paiement a peut-être abouti, on vérifie sans repayer.
+              reportClientEvent('capture_network_error')
+              result = { status: 'CAPTURE_UNCERTAIN', error: 'paypal_capture_uncertain' }
+            }
             if (result.status === 'COMPLETED') {
               onComplete?.(result)
               return
             }
-            if (['CAPTURE_IN_PROGRESS', 'CAPTURED_PENDING_RECONCILIATION'].includes(result.status)) {
+            // Carte refusée : PayPal rouvre sa fenêtre pour choisir un autre moyen.
+            if (result.restartable && typeof actions?.restart === 'function') {
+              reportClientEvent('paypal_restart')
+              setNotice(paymentMessage(result.error))
+              return actions.restart()
+            }
+            if (['CAPTURE_IN_PROGRESS', 'CAPTURED_PENDING_RECONCILIATION', 'CAPTURE_UNCERTAIN'].includes(result.status)) {
               if (await pollStatus()) return
             }
-            setNotice(paymentMessage(result.error || 'paypal_capture_failed'))
+            // Refus définitif sans prélèvement : la prochaine tentative repart à zéro.
+            if (['checkout_expired', 'paypal_order_voided', 'paypal_capture_declined', 'paypal_transaction_refused', 'paypal_instrument_declined', 'paypal_auth_failed'].includes(result.error)) renewCheckoutId()
+            setNotice(paymentMessage(result.error || 'paypal_capture_uncertain'))
           },
           onCancel: () => {
             emitOnce('rdv_funnel_paypal_cancel')
+            reportClientEvent('paypal_cancelled')
             setNotice(paymentChoice === 'full_payment'
               ? 'Paiement annulé. Votre rendez-vous n’est pas confirmé tant que le règlement intégral n’est pas effectué.'
               : 'Paiement annulé. Votre rendez-vous n’est pas confirmé tant que les arrhes ne sont pas réglées.')
@@ -201,7 +265,9 @@ export default function RdvDepositCheckout({
           onError: error => {
             if (error?.message === 'already_converted') return
             emitOnce('rdv_funnel_paypal_error')
-            setNotice(paymentMessage(error?.message || 'paypal_capture_failed'))
+            // Les refus du serveur sont déjà journalisés côté serveur.
+            if (!SERVER_CODES.has(error?.message)) reportClientEvent('paypal_onerror')
+            setNotice(paymentMessage(error?.message || 'paypal_capture_uncertain'))
           },
         })
         await buttons.render(container)
@@ -209,6 +275,7 @@ export default function RdvDepositCheckout({
       } catch (error) {
         if (!disposed && error?.message !== 'already_converted') {
           emitOnce('rdv_funnel_paypal_error')
+          reportClientEvent('paypal_render_failed')
           setNotice(paymentMessage(error?.message))
         }
       }
@@ -228,7 +295,7 @@ export default function RdvDepositCheckout({
       document.head.appendChild(script)
     }
     const onLoad = () => { void mountButtons() }
-    const onError = () => { if (!disposed) { emitOnce('rdv_funnel_paypal_error'); setNotice('Le paiement sécurisé est indisponible pour le moment.') } }
+    const onError = () => { if (!disposed) { emitOnce('rdv_funnel_paypal_error'); reportClientEvent('paypal_sdk_load_failed'); setNotice('Le paiement sécurisé est indisponible pour le moment.') } }
     script.addEventListener('load', onLoad, { once: true })
     script.addEventListener('error', onError, { once: true })
 
@@ -238,7 +305,7 @@ export default function RdvDepositCheckout({
       script.removeEventListener('error', onError)
       if (container) container.innerHTML = ''
     }
-  }, [config, consentsReady, payload, effectiveCheckoutId, paymentChoice, paymentCents, priceCents, balanceCents, onComplete, onUnavailable, onMetric])
+  }, [config, consentsReady, payload, paymentChoice, paymentCents, priceCents, balanceCents, onComplete, onUnavailable, onMetric])
 
   return (
     <div className="space-y-5">

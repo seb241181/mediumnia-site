@@ -345,6 +345,12 @@ test('agenda fictif : actif hors Production seulement, présent à chaque appel 
   assert.match(read('lib/rdvDepositApiHandler.js'), /if \(isTestFakeCalendar\(connection\)\) return \{ startsAt, endsAt \}/)
   assert.match(read('lib/rdvFullPaymentApiHandler.js'), /if \(isTestFakeCalendar\(connection\)\) return \{ startsAt, endsAt \}/)
   assert.match(read('lib/googleCalendarEvents.js'), /if \(isTestFakeCalendar\(conn\)\) return \{ status: 'not_connected' \}/)
+  assert.match(read('api/rdv-book.js'), /if \(!isTestFakeCalendar\(conn\)\) \{/)
+  // Aucun autre point du parcours ne lit l'agenda Google sans passer par cette garde.
+  for (const file of ['api/rdv-book.js', 'api/rdv-availability.js', 'lib/rdvDepositApiHandler.js', 'lib/rdvFullPaymentApiHandler.js']) {
+    const source = read(file)
+    assert.ok((source.match(/googleapis\.com\/calendar\/v3\/freeBusy/g) || []).length <= (source.match(/isTestFakeCalendar\(/g) || []).length, file)
+  }
 })
 
 // ── Limiteur anti-abus ──────────────────────────────────────────────────────

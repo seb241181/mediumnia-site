@@ -48,6 +48,7 @@ import {
   hashCancellationToken,
 } from '../lib/bookingCancellation.js'
 import { rdvRateLimitSecret } from '../lib/rdvRateLimitSecret.js'
+import { isTestFakeCalendar } from '../lib/rdvTestCalendar.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_RE  = /^\d{4}-\d{2}-\d{2}$/
@@ -763,7 +764,8 @@ export default async function handler(req, res) {
     })
   }
 
-  {
+  // Agenda fictif de TEST : aucun appel Google (ignoré en Production).
+  if (!isTestFakeCalendar(conn)) {
     let accessToken
     try {
       const expiry = new Date(conn.token_expiry).getTime()

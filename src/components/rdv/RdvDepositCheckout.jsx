@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import GiftCardRedeem from './GiftCardRedeem.jsx'
 import PayPalGuestNotice from '../PayPalGuestNotice.jsx'
+import RdvBookingHelp from './RdvBookingHelp.jsx'
 
 // PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
 const PAY_LATER_MIN_CENTS = 3000
@@ -386,6 +387,7 @@ export default function RdvDepositCheckout({
         </div>
         {holdUntil && <p className="font-georgia text-xs text-mist mb-3">Créneau protégé jusqu’à {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(holdUntil))}.</p>}
         {notice && <p className="font-georgia text-sm text-red-800 bg-red-50 rounded-xl px-3 py-2 mb-3">{notice}</p>}
+        <RdvBookingHelp className="mb-4" />
         {!consentsReady ? (
           <p className="font-georgia text-sm text-mist text-center py-3">Cochez les deux cases ci-dessus pour afficher le paiement PayPal et, si proposée, l’option <strong className="text-deep">carte bancaire sans compte</strong>{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou le paiement en plusieurs fois selon éligibilité' : ''}.</p>
         ) : (

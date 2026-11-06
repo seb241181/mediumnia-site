@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
+import { clearChronosphereMaxOtherUserState, clearChronosphereMaxUserState } from './chronosphereMaxSession.js'
 
 /**
  * Authentification MediumIA Agents (Supabase email + mot de passe).
@@ -19,13 +20,24 @@ export function useAuth() {
       return
     }
     let active = true
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return
-      setSession(data?.session ?? null)
+    let authEventSeen = false
+    let currentUserId = null
+    const applySession = (nextSession) => {
+      const nextUserId = nextSession?.user?.id || null
+      if (currentUserId && currentUserId !== nextUserId) clearChronosphereMaxUserState(currentUserId)
+      clearChronosphereMaxOtherUserState(nextUserId)
+      currentUserId = nextUserId
+      setSession(nextSession ?? null)
       setLoading(false)
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active || authEventSeen) return
+      applySession(data?.session)
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
+      if (!active) return
+      authEventSeen = true
+      applySession(nextSession)
     })
     return () => {
       active = false

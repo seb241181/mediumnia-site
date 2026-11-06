@@ -77,7 +77,7 @@ test('packToken brut reste hors result_json et des écritures Supabase', async (
     readFile(timelinePath, 'utf8'),
     readFile(paypalPath, 'utf8'),
   ])
-  const payload = timeline.slice(timeline.indexOf('const responsePayload = {'), timeline.indexOf('const { data: completeResult'))
+  const payload = timeline.slice(timeline.indexOf('const responsePayload = {'), timeline.indexOf('return responsePayload'))
   assert.doesNotMatch(payload, /packToken/)
   assert.match(payload, /\.\.\.credits/)
   assert.match(timeline, /p_pack_token_hash: tokenHash/)
@@ -93,7 +93,7 @@ test('retry email conserve le solde du résultat et ne modifie aucun crédit', a
   ])
   const delivery = timeline.slice(timeline.indexOf('async function deliverCompletedTimeline'), timeline.indexOf('function validateNumbers'))
   assert.match(timeline, /tokenResult\.result_json\?\.creditsRemaining/)
-  assert.match(timeline, /pack: isPack \? \{ packToken, creditsRemaining: credits\.creditsRemaining, product: maxPack \? 'max3' : 'pack3', expiresAt: packExpiry \} : null/)
+  assert.match(timeline, /pack: isPack \? \{ packToken, creditsRemaining: credits\.creditsRemaining, product: 'pack3', expiresAt: packExpiry \} : null/)
   assert.doesNotMatch(delivery, /credits_remaining|creditsRemaining\s*:/)
   assert.match(email, /idempotencyKey: `chronosphere-result-\$\{drawId\}`/)
 })

@@ -11,6 +11,9 @@ test('every delivered pack carries its product so MAX buyers get the MAX e-mail'
   const packObjects = timeline.match(/pack: isPack \? \{[^}]*\}/g) || []
   assert.ok(packObjects.length >= 2, 'expected the cached and fresh delivery paths')
   for (const packObject of packObjects) {
-    assert.match(packObject, /product: maxPack \? 'max3' : 'pack3'/)
+    assert.match(packObject, /product: 'pack3'/)
   }
+  const recovery = await readFile(new URL('../lib/chronosphereMaxRecovery.js', import.meta.url), 'utf8')
+  assert.match(recovery, /pack: \{ product: 'max3', creditsRemaining: state.pack.creditsRemaining, expiresAt: packExpiresAt\(state.pack\) \}/)
+  assert.match(timeline, /deliver: \(\{ drawId, result, deliveryEmail, pack \}\)/)
 })

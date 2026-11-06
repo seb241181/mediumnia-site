@@ -80,6 +80,12 @@ begin
   r := public.claim_rdv_deposit_capture('ORDER-A2');
   perform pg_temp.check(r->>'ok' = 'true' and r->>'capturing' is null, 'S4 nouvel essai de capture accepté');
   perform pg_temp.check(public.next_rdv_capture_attempt('ORDER-A2') = 2, 'S4 tentative n°2 : nouvelle clé PayPal');
+  update public.rdv_booking_holds h set expires_at = now() - interval '1 day'
+    from public.rdv_paypal_payments p where p.hold_id = h.id and p.paypal_order_id = 'ORDER-A2';
+  r := public.claim_rdv_deposit_capture('ORDER-A2');
+  perform pg_temp.check(r->>'capturing' = 'true', 'S4 capture expirée : aucune nouvelle réclamation');
+  perform pg_temp.check((select capture_attempts from public.rdv_paypal_payments where paypal_order_id = 'ORDER-A2') = 2,
+    'S4 capture expirée : compteur inchangé');
 end $$;
 
 -- ── S5. Un paiement encaissé n'est jamais libéré ──
@@ -100,6 +106,8 @@ begin
   update public.rdv_paypal_payments set paypal_order_id = 'ORDER-B1' where client_checkout_id = '55555555-5555-4555-8555-555555555555';
   r := public.claim_rdv_deposit_capture('ORDER-B1');
   update public.rdv_booking_holds h set expires_at = now() - interval '3 days' from public.rdv_paypal_payments p where p.hold_id = h.id and p.paypal_order_id = 'ORDER-B1';
+  r := public.claim_rdv_deposit_capture('ORDER-B1');
+  perform pg_temp.check(r->>'capturing' = 'true', 'S6 ancien paiement en capture jamais réclamé à nouveau');
   r := pg_temp.hold('suivante@example.org', '66666666-6666-4666-8666-666666666666', v_slot);
   perform pg_temp.check(r->>'error' = 'slot_unavailable', 'S6 BUG reproduit : créneau bloqué indéfiniment par une capture sans réponse');
   r := public.release_rdv_deposit_capture('ORDER-B1', 'expired', 'capture_not_completed');
@@ -145,6 +153,7 @@ do $$
 begin
   perform pg_temp.check(not has_function_privilege('anon', 'public.release_rdv_deposit_capture(text,text,text)', 'execute'), 'S9 visiteur : pas d''accès à la libération');
   perform pg_temp.check(not has_function_privilege('authenticated', 'public.supersede_rdv_own_pending_holds(uuid,timestamptz,timestamptz,text,uuid)', 'execute'), 'S9 compte connecté : pas d''accès au remplacement');
+  perform pg_temp.check(not has_function_privilege('anon', 'public.claim_rdv_deposit_capture(text)', 'execute'), 'S9 visiteur : pas d''accès à la réclamation durcie');
   perform pg_temp.check(has_function_privilege('service_role', 'public.next_rdv_capture_attempt(text)', 'execute'), 'S9 serveur : accès autorisé');
   perform pg_temp.check(not has_table_privilege('anon', 'public.rdv_checkout_events', 'select'), 'S9 journal illisible pour les visiteurs');
 end $$;

@@ -50,13 +50,18 @@ test.after(() => { globalThis.fetch = realFetch })
 
 // ── Classement des issues de capture ────────────────────────────────────────
 test('classement : seul un refus PayPal confirmé par la commande est « certain »', () => {
-  const restart = classifyRdvCaptureFailure({ captureStatus: 422, captureData: declined('INSTRUMENT_DECLINED').body, orderStatus: 'APPROVED' })
+  const approved = { status: 'APPROVED', purchase_units: [{}] }
+  const restart = classifyRdvCaptureFailure({ captureStatus: 422, captureData: declined('INSTRUMENT_DECLINED').body, orderStatus: 'APPROVED', orderData: approved })
   assert.deepEqual([restart.code, restart.outcome, restart.restartable], ['paypal_instrument_declined', 'definite', true])
-  const refused = classifyRdvCaptureFailure({ captureStatus: 422, captureData: declined('TRANSACTION_REFUSED').body, orderStatus: 'APPROVED' })
+  const refused = classifyRdvCaptureFailure({ captureStatus: 422, captureData: declined('TRANSACTION_REFUSED').body, orderStatus: 'APPROVED', orderData: approved })
   assert.deepEqual([refused.code, refused.outcome, refused.restartable], ['paypal_transaction_refused', 'definite', false])
-  assert.equal(classifyRdvCaptureFailure({ captureStatus: 422, orderStatus: 'VOIDED' }).code, 'paypal_order_voided')
+  assert.equal(classifyRdvCaptureFailure({ captureStatus: 422, orderStatus: 'VOIDED', orderData: { status: 'VOIDED', purchase_units: [{}] } }).code, 'paypal_order_voided')
   // Pas de réponse, erreur serveur PayPal ou commande illisible : jamais « certain ».
-  for (const input of [{ captureStatus: null, orderStatus: 'APPROVED' }, { captureStatus: 500, orderStatus: 'APPROVED' }, { captureStatus: 422, orderStatus: null }]) {
+  for (const input of [{ captureStatus: null, orderStatus: 'APPROVED' }, { captureStatus: 500, orderStatus: 'APPROVED' }, { captureStatus: 422, orderStatus: null },
+    { captureStatus: 409, captureData: { name: 'PREVIOUS_REQUEST_IN_PROGRESS' }, orderStatus: 'APPROVED', orderData: approved },
+    { captureStatus: 422, captureData: declined('INSTRUMENT_DECLINED').body, orderStatus: 'APPROVED', orderData: { ...approved, purchase_units: [{ payments: { captures: [{ id: 'capture-in-flight' }] } }] } },
+    { captureStatus: 422, captureData: { name: 'UNPROCESSABLE_ENTITY' }, orderStatus: 'APPROVED', orderData: approved },
+    { captureStatus: 422, captureData: declined('INSTRUMENT_DECLINED').body, orderStatus: 'APPROVED', orderData: { status: 'APPROVED' } }]) {
     const error = classifyRdvCaptureFailure(input)
     assert.deepEqual([error.code, error.outcome], ['paypal_capture_uncertain', 'uncertain'], JSON.stringify(input))
   }
@@ -69,7 +74,7 @@ test('clé d’idempotence : inchangée au 1er essai, nouvelle après un refus',
 })
 
 test('capture : carte refusée par PayPal = refus certain, clé de la tentative 2', async () => {
-  const calls = fakePayPal({ capture: declined('INSTRUMENT_DECLINED'), order: { status: 200, body: { id: ORDER, status: 'APPROVED' } } })
+  const calls = fakePayPal({ capture: declined('INSTRUMENT_DECLINED'), order: { status: 200, body: { id: ORDER, status: 'APPROVED', purchase_units: [{}] } } })
   await assert.rejects(captureRdvDepositPayPalOrder(ORDER, { attempt: 2 }), (error) => error.code === 'paypal_instrument_declined' && error.outcome === 'definite' && error.restartable)
   const capture = calls.find((c) => c.url.endsWith('/capture'))
   assert.equal(capture.headers['PayPal-Request-Id'], `rdv-deposit-capture-${ORDER}-2`)
@@ -87,6 +92,12 @@ test('capture : réponse perdue mais commande encaissée = succès, jamais un re
 test('capture : réponse perdue et commande illisible = incertain', async () => {
   fakePayPal({ capture: 'network', order: 'network' })
   await assert.rejects(captureRdvDepositPayPalOrder(ORDER), (error) => error.outcome === 'uncertain')
+})
+
+test('capture : 409 PayPal et relecture APPROVED restent incertains, même sans capture visible', async () => {
+  const calls = fakePayPal({ capture: { status: 409, body: { name: 'PREVIOUS_REQUEST_IN_PROGRESS' } }, order: { status: 200, body: { id: ORDER, status: 'APPROVED', purchase_units: [{}] } } })
+  await assert.rejects(captureRdvDepositPayPalOrder(ORDER), (error) => error.outcome === 'uncertain' && error.code === 'paypal_capture_uncertain')
+  assert.equal(calls.filter((call) => call.url.endsWith('/capture')).length, 1, 'aucun second POST de capture')
 })
 
 test('capture Live : une demande de simulation est sans effet', async () => {
@@ -145,7 +156,7 @@ async function capture(db, body = { orderId: ORDER }) {
 }
 
 test('gestionnaire : carte refusée → créneau rendu au client, relance PayPal proposée, journal sans donnée personnelle', async () => {
-  fakePayPal({ capture: declined('INSTRUMENT_DECLINED'), order: { status: 200, body: { id: ORDER, status: 'APPROVED' } } })
+  fakePayPal({ capture: declined('INSTRUMENT_DECLINED'), order: { status: 200, body: { id: ORDER, status: 'APPROVED', purchase_units: [{}] } } })
   const { db, rpc, events } = fakeDb()
   const res = await capture(db)
   assert.deepEqual([res.statusCode, res.body], [402, { error: 'paypal_instrument_declined', restartable: true }])
@@ -162,6 +173,33 @@ test('gestionnaire : issue incertaine → rien n’est libéré ni relancé, le 
   assert.deepEqual([res.statusCode, res.body.status], [202, 'CAPTURE_UNCERTAIN'])
   assert.equal(rpc.some((c) => c.name === 'release_rdv_deposit_capture'), false)
   assert.deepEqual(rpc.find((c) => c.name === 'note_rdv_payment_error').args, { p_paypal_order_id: ORDER, p_error_code: 'paypal_capture_uncertain' })
+})
+
+test('gestionnaire : 409 simultané ne libère pas le créneau et ne relance pas la capture', async () => {
+  const calls = fakePayPal({ capture: { status: 409, body: { name: 'PREVIOUS_REQUEST_IN_PROGRESS' } }, order: { status: 200, body: { id: ORDER, status: 'APPROVED', purchase_units: [{}] } } })
+  const { db, rpc } = fakeDb()
+  const res = await capture(db)
+  assert.equal(res.body.status, 'CAPTURE_UNCERTAIN')
+  assert.equal(rpc.some((call) => call.name === 'release_rdv_deposit_capture'), false)
+  assert.equal(calls.filter((call) => call.url.endsWith('/capture')).length, 1)
+})
+
+test('captures simultanées : la seconde voit la réclamation en cours et n’envoie aucun POST PayPal', async () => {
+  const calls = fakePayPal({ capture: { status: 201, body: completedOrder() }, order: { status: 200, body: completedOrder() } })
+  const { db, rpc } = fakeDb()
+  const originalRpc = db.rpc
+  let claims = 0
+  db.rpc = (name, args) => {
+    if (name === 'claim_rdv_deposit_capture' && ++claims === 2) {
+      rpc.push({ name, args })
+      return { then: (resolve) => resolve({ data: { ok: true, capturing: true }, error: null }) }
+    }
+    return originalRpc(name, args)
+  }
+  const responses = await Promise.all([capture(db), capture(db)])
+  assert.deepEqual(responses.map((res) => res.body.status).sort(), ['CAPTURE_IN_PROGRESS', 'COMPLETED'])
+  assert.equal(calls.filter((call) => call.url.endsWith('/capture')).length, 1)
+  assert.equal(rpc.filter((call) => call.name === 'convert_rdv_deposit_hold').length, 1)
 })
 
 test('gestionnaire : encaissé mais confirmation impossible → jamais libéré, client rassuré', async () => {
@@ -230,23 +268,38 @@ function reconcileDb(rows) {
     },
   }
 }
-const staleRow = (startsAt) => ({ paypal_order_id: 'ORDER-STALE-9876', paypal_env: 'sandbox', amount_cents: 2000, currency: 'EUR', client_checkout_id: 'cfc3f81d-0000-4000-8000-000000000000', hold: { id: 'hold-1', status: 'payment_capturing', expires_at: '2026-11-03T09:40:19Z', starts_at: startsAt } })
+const staleRow = (startsAt, captureAttempts = 1) => ({ paypal_order_id: 'ORDER-STALE-9876', paypal_env: 'sandbox', amount_cents: 2000, currency: 'EUR', client_checkout_id: 'cfc3f81d-0000-4000-8000-000000000000', capture_attempts: captureAttempts, hold: { id: 'hold-1', status: 'payment_capturing', expires_at: '2026-11-03T09:40:19Z', starts_at: startsAt } })
 const sandboxCfg = { env: 'sandbox', referenceId: 'MEDIUMIA_RDV_ARRHES_SANDBOX' }
 
 test('rapprochement : par défaut un simple rapport, rien n’est modifié', async () => {
   const { db, rpc } = reconcileDb([staleRow('2026-11-16T10:00:00Z')])
   const report = await reconcileStaleRdvCaptures(db, { now: new Date('2026-11-06T15:00:00Z'), getOrder: async () => ({ cfg: sandboxCfg, data: { status: 'APPROVED' } }) })
-  assert.deepEqual(report, [{ checkoutRef: 'cfc3f81d', orderRef: '…9876', slot: '2026-11-16T10:00:00Z', paypalStatus: 'APPROVED', action: 'would_release' }])
+  assert.deepEqual(report, [{ checkoutRef: 'cfc3f81d', orderRef: '…9876', slot: '2026-11-16T10:00:00Z', paypalStatus: 'APPROVED', action: 'manual_review:order_not_completed' }])
   assert.equal(rpc.length, 0)
 })
 
-test('rapprochement appliqué : non encaissé → créneau libéré ; jamais de capture', async () => {
+test('cron rendez-vous : rapport uniquement, aucun drapeau ne peut appliquer une réconciliation', () => {
+  const cron = read('lib/rdvBalanceCronHandler.js')
+  assert.match(cron, /reconcileStaleRdvCaptures\(supabase, \{ apply: false \}\)/)
+  assert.doesNotMatch(cron, /RDV_PAYMENT_RECONCILE_APPLY/)
+})
+
+test('rapprochement appliqué : commande APPROVED ne prouve pas absence de capture, créneau conservé', async () => {
   const { db, rpc } = reconcileDb([staleRow('2026-11-16T10:00:00Z')])
   const calls = fakePayPal({ capture: { status: 201, body: completedOrder() }, order: { status: 200, body: completedOrder() } })
   const report = await reconcileStaleRdvCaptures(db, { apply: true, now: new Date('2026-11-06T15:00:00Z'), getOrder: async () => ({ cfg: sandboxCfg, data: { status: 'APPROVED' } }) })
-  assert.equal(report[0].action, 'released')
-  assert.deepEqual(rpc[0], { name: 'release_rdv_deposit_capture', args: { p_paypal_order_id: 'ORDER-STALE-9876', p_next: 'expired', p_error_code: 'capture_not_completed' } })
+  assert.equal(report[0].action, 'manual_review:order_not_completed')
+  assert.equal(rpc.length, 0)
   assert.equal(calls.length, 0)
+})
+
+test('rapprochement appliqué : les captures historiques restent intactes, même COMPLETED', async () => {
+  for (const status of ['APPROVED', 'COMPLETED']) {
+    const { db, rpc } = reconcileDb([staleRow('2026-11-16T10:00:00Z', 0)])
+    const report = await reconcileStaleRdvCaptures(db, { apply: true, now: new Date('2026-11-06T15:00:00Z'), getOrder: async () => ({ cfg: sandboxCfg, data: { ...completedOrder(), status } }) })
+    assert.equal(report[0].action, 'historical_report_only')
+    assert.equal(rpc.length, 0, 'aucune conversion, libération, ni journalisation de l’ancien paiement')
+  }
 })
 
 test('rapprochement appliqué : encaissé → rendez-vous confirmé (créneau futur) ou examen manuel (créneau passé)', async () => {
@@ -310,14 +363,30 @@ test('page : identifiant partagé entre onglets, créneau tenu repris par son na
   assert.doesNotMatch(checkout, /paypal_simulate|simulate/)
 })
 
-test('migration : additive, fonctions réservées au serveur, paiement encaissé jamais libéré', () => {
+test('migration : réclamation durcie, nouvelles fonctions réservées au serveur, paiement encaissé jamais libéré', () => {
   const sql = read('supabase/migrations/20261106120000_rdv_payment_reliability.sql')
-  assert.doesNotMatch(sql, /create or replace function public\.(create_rdv_deposit_hold|claim_rdv_deposit_capture|convert_rdv_deposit_hold)/i)
+  assert.doesNotMatch(sql, /create or replace function public\.(create_rdv_deposit_hold|convert_rdv_deposit_hold)/i)
+  assert.match(sql, /IF v_hold\.status = 'payment_capturing' THEN/)
+  assert.doesNotMatch(sql, /IF v_hold\.status = 'payment_capturing' AND v_hold\.expires_at > now\(\) THEN/)
   assert.match(sql, /payment_already_captured/)
   for (const fn of ['next_rdv_capture_attempt', 'release_rdv_deposit_capture', 'note_rdv_payment_error', 'supersede_rdv_own_pending_holds']) {
     assert.match(sql, new RegExp(`revoke all on function public\\.${fn}\\([^)]*\\) from public, anon, authenticated`))
     assert.match(sql, new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to service_role`))
   }
+})
+
+test('runbook : transactions, préconditions internes et rollback bloqué par tout paiement intégral présentiel', () => {
+  const deploy = read('supabase/runbooks/20261106-rdv-paypal-production/01-migration-atomique.sql')
+  const rollback = read('supabase/runbooks/20261106-rdv-paypal-production/03-retour-arriere.sql')
+  for (const sql of [deploy, rollback]) {
+    assert.match(sql, /\bBEGIN;[\s\S]*\bCOMMIT;\s*$/i)
+    assert.match(sql, /SET LOCAL lock_timeout/i)
+  }
+  assert.match(deploy, /rdv_preflight_signature_mismatch/)
+  assert.match(deploy, /rdv_preflight_payment_permissions_mismatch/)
+  assert.match(rollback, /LOCK TABLE public\.rdv_paypal_payments, public\.rdv_booking_holds, public\.bookings IN ACCESS EXCLUSIVE MODE/)
+  assert.match(rollback, /rdv_rollback_full_in_person_payment_exists/)
+  assert.doesNotMatch(rollback, /p\.status in \('order_pending', 'capturing'\)/i)
 })
 
 // ── Agenda fictif de TEST ───────────────────────────────────────────────────
@@ -366,18 +435,19 @@ test('état d’un paiement bloqué : « report » lit PayPal sans rien modifier
   assert.equal(calls.some((c) => c.url.endsWith('/capture')), false, 'jamais de capture')
 })
 
-test('état d’un paiement bloqué : PayPal a encaissé → un seul rendez-vous, aucune nouvelle capture', async () => {
+test('état d’un paiement bloqué : consultation ordinaire ne contacte pas PayPal et ne modifie rien', async () => {
   const { handleStatusForTest } = await import('../lib/rdvDepositApiHandler.js')
   const { db, rpc } = statusDb()
   const calls = fakePayPal({ capture: { status: 201, body: {} }, order: { status: 200, body: { ...completedOrder('80.00'), purchase_units: [{ ...completedOrder('80.00').purchase_units[0], custom_id: 'MEDIUMIA:RDV-ARRHES:hold-9' }] } } })
   const res = response()
   await handleStatusForTest({ query: { checkout_id: 'a0b2ac90-0000-4000-8000-000000000000' }, headers: {} }, res, db)
-  assert.equal(res.body.bookingId, 'booking-9')
-  assert.equal(rpc.filter((c) => c.name === 'convert_rdv_deposit_hold').length, 1)
-  assert.equal(calls.some((c) => c.url.endsWith('/capture')), false)
+  assert.equal(res.body.bookingId, null)
+  assert.equal(res.body.paymentStatus, 'capturing')
+  assert.equal(rpc.length, 0)
+  assert.equal(calls.length, 0)
   const again = response()
   await handleStatusForTest({ query: { checkout_id: 'a0b2ac90-0000-4000-8000-000000000000' }, headers: {} }, again, db)
-  assert.equal(rpc.filter((c) => c.name === 'convert_rdv_deposit_hold').length, 1, 'pas de seconde conversion')
+  assert.equal(rpc.length, 0, 'aucune conversion apres deux lectures')
 })
 
 test('état d’un paiement encore dans le délai de sécurité : PayPal n’est pas interrogé', async () => {

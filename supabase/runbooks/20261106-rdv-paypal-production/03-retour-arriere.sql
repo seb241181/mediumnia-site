@@ -2,13 +2,42 @@
 -- relevées le 06/11/2026 (empreintes 123f4c27… et aa738e5c…).
 -- Ordre INVERSE de 01 : on referme d'abord le paiement intégral en présentiel, puis on
 -- restaure la protection — jamais de moment où l'on capture sans pouvoir convertir.
--- Les objets de fiabilité (20261106120000) sont de purs ajouts : ils restent en place, la
--- version précédente du site ne les utilise pas.
--- AVANT d'exécuter : vérifier qu'aucun paiement intégral en présentiel n'est en cours
---   select count(*) from rdv_paypal_payments p join rdv_booking_holds h on h.id = p.hold_id
---    where p.payment_option = 'full' and h.selected_modality = 'in-person'
---      and p.status in ('order_pending', 'capturing');   -- attendu : 0
--- sinon, il pourrait être encaissé puis refusé par la protection restaurée.
+-- Les objets de fiabilite restent en place. La reclamation de capture durcie
+-- reste aussi en place : restaurer l'ancienne fonction rouvrirait un risque
+-- de deuxieme POST PayPal apres expiration d'une capture incertaine.
+-- Le rollback SQL n'est possible que si AUCUNE tentative intégrale en présentiel
+-- n'existe, y compris capturée, convertie, échouée ou expirée : un règlement PayPal
+-- passé pourrait encore nécessiter une conversion ou un contrôle ultérieur.
+-- Sinon, conserver le schéma compatible et revenir au code seulement après
+-- avoir arrêté les nouvelles créations et résolu toutes les captures en cours.
+
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+-- Bloque les écritures concurrentes pendant le contrôle et la restauration.
+LOCK TABLE public.rdv_paypal_payments, public.rdv_booking_holds, public.bookings IN ACCESS EXCLUSIVE MODE;
+DO $rollback_preflight$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM public.rdv_paypal_payments p
+    JOIN public.rdv_booking_holds h ON h.id = p.hold_id
+    WHERE p.payment_option = 'full' AND h.selected_modality = 'in-person'
+  ) THEN RAISE EXCEPTION 'rdv_rollback_full_in_person_payment_exists'; END IF;
+
+  IF md5(regexp_replace(pg_get_functiondef('public.create_rdv_full_payment_hold'::regproc), '\s+', ' ', 'g')) <> '16b38c5a8809a0dc0f0d2beb0badae7e'
+    OR md5(regexp_replace(pg_get_functiondef('public.enforce_mediumia_booking_reservation_payment'::regproc), '\s+', ' ', 'g')) <> '4b9d860da9115b785756ef945d27fb9c'
+    OR md5(regexp_replace(pg_get_functiondef('public.claim_rdv_deposit_capture'::regproc), '\s+', ' ', 'g')) <> '7a12521b3d0bbcf0e8a572289a4eddeb'
+  THEN RAISE EXCEPTION 'rdv_rollback_unexpected_function_version'; END IF;
+
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname IN (
+        'create_rdv_deposit_hold', 'create_rdv_full_payment_hold',
+        'claim_rdv_deposit_capture', 'convert_rdv_deposit_hold'
+      ) AND NOT has_function_privilege('anon', p.oid, 'execute')
+        AND NOT has_function_privilege('authenticated', p.oid, 'execute')
+        AND has_function_privilege('service_role', p.oid, 'execute')) <> 4
+  THEN RAISE EXCEPTION 'rdv_rollback_payment_permissions_mismatch'; END IF;
+END;
+$rollback_preflight$;
 
 -- 1/2 · Paiement intégral : retour à la visio seule
 CREATE OR REPLACE FUNCTION public.create_rdv_full_payment_hold(p_practitioner_id uuid, p_service_id uuid, p_starts_at timestamp with time zone, p_ends_at timestamp with time zone, p_selected_modality text, p_customer_first_name text, p_customer_last_name text, p_customer_email text, p_customer_phone text, p_customer_message text, p_client_checkout_id uuid, p_paypal_env text, p_terms_version text, p_early_performance_requested boolean)
@@ -174,3 +203,4 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
+COMMIT;

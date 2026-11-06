@@ -21,7 +21,7 @@ function paymentMessage(code) {
     paypal_create_order_failed: 'PayPal n’a pas pu préparer le paiement. Réessayez.',
     paypal_create_order_in_progress: 'Le paiement est déjà en cours de préparation. Réessayez dans quelques instants.',
     paypal_capture_failed: 'Nous vérifions votre paiement auprès de PayPal. Ne repayez pas : vous recevrez un e-mail de confirmation dès qu’il est validé.',
-    paypal_capture_uncertain: 'Nous vérifions votre paiement auprès de PayPal. Ne repayez pas : vous recevrez un e-mail de confirmation dès qu’il est validé. S’il n’a pas abouti, le créneau sera libéré sans aucun prélèvement.',
+    paypal_capture_uncertain: 'L’issue de votre paiement nécessite une vérification. Ne repayez pas : votre créneau reste protégé. Contactez l’assistance si vous ne recevez pas de confirmation.',
     paypal_instrument_declined: 'PayPal a refusé ce moyen de paiement : rien n’a été prélevé. Choisissez une autre carte ou un autre moyen de paiement dans la fenêtre PayPal.',
     paypal_transaction_refused: 'Le paiement n’a pas abouti et rien n’a été prélevé. Vous pouvez réessayer, avec un autre moyen de paiement si besoin.',
     paypal_capture_declined: 'Le paiement n’a pas abouti et rien n’a été prélevé. Vous pouvez réessayer, avec un autre moyen de paiement si besoin.',
@@ -247,8 +247,8 @@ export default function RdvDepositCheckout({
             }
             if (['CAPTURE_IN_PROGRESS', 'CAPTURED_PENDING_RECONCILIATION', 'CAPTURE_UNCERTAIN'].includes(result.status)) {
               if (await pollStatus()) return
-              // Issue toujours inconnue : le serveur vérifie auprès de PayPal (lecture seule)
-              // au-delà du délai de sécurité ; on continue de demander l'état ~12 minutes.
+              // Issue inconnue : le statut ne modifie jamais le paiement. On attend
+              // une éventuelle finalisation par l'opérateur sans relancer la capture.
               setNotice(paymentMessage(result.error || 'paypal_capture_uncertain'))
               void pollStatus(24, 30_000)
               return

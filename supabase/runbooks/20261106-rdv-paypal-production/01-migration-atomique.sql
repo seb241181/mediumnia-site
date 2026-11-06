@@ -1,8 +1,34 @@
 -- 01 — Migration Production ATOMIQUE (une seule transaction : tout ou rien).
 -- Ordre imposé : la protection des rendez-vous AVANT l'ouverture du paiement intégral en
 -- présentiel, pour qu'aucun paiement intégral ne puisse être capturé sans pouvoir devenir
--- un rendez-vous. Puis la fiabilité du paiement (ajouts uniquement).
+-- un rendez-vous. Puis la fiabilite du paiement et la reclamation sans rejeu.
 -- Ne pas appliquer sans GO Production explicite. Lancer d'abord 00-controles-avant.sql.
+
+-- Garder les preconditions dans la transaction : un controle externe devenu
+-- perime entre-temps ne doit jamais permettre une application partielle.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+DO $preflight$
+BEGIN
+  IF md5(regexp_replace(pg_get_functiondef('public.create_rdv_full_payment_hold'::regproc), '\s+', ' ', 'g')) <> '123f4c27a4dbafcbbe53d5cd6465c3e0'
+    OR md5(regexp_replace(pg_get_functiondef('public.enforce_mediumia_booking_reservation_payment'::regproc), '\s+', ' ', 'g')) <> 'aa738e5cf2f3653ebeb60bafbc3b1228'
+    OR md5(regexp_replace(pg_get_functiondef('public.claim_rdv_deposit_capture'::regproc), '\s+', ' ', 'g')) <> '023638252baeb4d35c45f44c83716fb4'
+  THEN RAISE EXCEPTION 'rdv_preflight_signature_mismatch'; END IF;
+
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname IN (
+        'create_rdv_deposit_hold', 'create_rdv_full_payment_hold',
+        'claim_rdv_deposit_capture', 'convert_rdv_deposit_hold'
+      ) AND NOT has_function_privilege('anon', p.oid, 'execute')
+        AND NOT has_function_privilege('authenticated', p.oid, 'execute')
+        AND has_function_privilege('service_role', p.oid, 'execute')) <> 4
+  THEN RAISE EXCEPTION 'rdv_preflight_payment_permissions_mismatch'; END IF;
+
+  IF to_regclass('public.rdv_checkout_events') IS NOT NULL
+    OR EXISTS (SELECT 1 FROM pg_proc WHERE pronamespace = 'public'::regnamespace AND proname = 'release_rdv_deposit_capture')
+  THEN RAISE EXCEPTION 'rdv_preflight_reliability_objects_present'; END IF;
+END;
+$preflight$;
 
 -- ── 1/3 · Protection des rendez-vous (20261106140000) ─────────────────────────
 CREATE OR REPLACE FUNCTION public.enforce_mediumia_booking_reservation_payment()
@@ -190,7 +216,7 @@ REVOKE ALL ON FUNCTION public.create_rdv_full_payment_hold(UUID, UUID, TIMESTAMP
 GRANT EXECUTE ON FUNCTION public.create_rdv_full_payment_hold(UUID, UUID, TIMESTAMPTZ, TIMESTAMPTZ, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, BOOLEAN) TO service_role;
 revoke execute on function public.create_rdv_full_payment_hold(uuid, uuid, timestamptz, timestamptz, text, text, text, text, text, text, uuid, text, text, boolean) from public, anon, authenticated;
 
--- ── 3/3 · Fiabilité du paiement PayPal (20261106120000, ajouts uniquement) ───
+-- ── 3/3 · Fiabilité du paiement PayPal (20261106120000) ───
 
 alter table public.rdv_paypal_payments
   add column if not exists capture_attempts integer not null default 0 check (capture_attempts >= 0);
@@ -352,3 +378,109 @@ grant execute on function public.next_rdv_capture_attempt(text) to service_role;
 grant execute on function public.release_rdv_deposit_capture(text, text, text) to service_role;
 grant execute on function public.note_rdv_payment_error(text, text) to service_role;
 grant execute on function public.supersede_rdv_own_pending_holds(uuid, timestamptz, timestamptz, text, uuid) to service_role;
+
+-- Une capture deja reclamee reste en cours meme apres expiration du delai UI.
+-- Rejouer la capture avec une nouvelle cle PayPal pourrait provoquer un double debit.
+-- Copie de la fonction Production controlee par empreinte dans le runbook.
+CREATE OR REPLACE FUNCTION public.claim_rdv_deposit_capture(p_paypal_order_id text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_hold public.rdv_booking_holds;
+  v_payment public.rdv_paypal_payments;
+  v_before INTEGER;
+  v_after INTEGER;
+  v_max_per_day INTEGER;
+  v_conflict BOOLEAN;
+  v_active_count INTEGER;
+BEGIN
+  SELECT h.* INTO v_hold
+  FROM public.rdv_paypal_payments p
+  JOIN public.rdv_booking_holds h ON h.id = p.hold_id
+  WHERE p.paypal_order_id = p_paypal_order_id
+  FOR UPDATE OF h, p;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'error', 'payment_not_found'); END IF;
+
+  SELECT * INTO v_payment FROM public.rdv_paypal_payments WHERE hold_id = v_hold.id;
+  PERFORM pg_advisory_xact_lock(hashtext(v_hold.practitioner_id::text));
+
+  IF v_hold.status = 'converted' THEN
+    RETURN jsonb_build_object('ok', true, 'converted', true, 'booking_id', v_hold.converted_booking_id);
+  END IF;
+  IF v_hold.status = 'payment_captured' THEN
+    RETURN jsonb_build_object('ok', true, 'captured', true, 'hold_id', v_hold.id);
+  END IF;
+  IF v_hold.status = 'payment_capturing' THEN
+    RETURN jsonb_build_object('ok', true, 'capturing', true, 'hold_id', v_hold.id);
+  END IF;
+  IF v_hold.status NOT IN ('payment_pending', 'payment_capturing') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'hold_not_capturable');
+  END IF;
+
+  SELECT buffer_before_min, buffer_after_min, max_per_day
+  INTO v_before, v_after, v_max_per_day
+  FROM public.booking_practitioners WHERE id = v_hold.practitioner_id;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.bookings b
+    WHERE b.practitioner_id = v_hold.practitioner_id
+      AND b.status = 'confirmed'
+      AND (b.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval) < (v_hold.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval)
+      AND (b.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval) > (v_hold.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval)
+  ) OR EXISTS (
+    SELECT 1 FROM public.rdv_booking_holds h
+    WHERE h.practitioner_id = v_hold.practitioner_id
+      AND h.id <> v_hold.id
+      AND (h.status IN ('payment_capturing', 'payment_captured') OR (h.status = 'payment_pending' AND h.expires_at > now()))
+      AND (h.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval) < (v_hold.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval)
+      AND (h.ends_at + (COALESCE(v_after, 0) || ' minutes')::interval) > (v_hold.starts_at - (COALESCE(v_before, 0) || ' minutes')::interval)
+  ) INTO v_conflict;
+
+  IF v_conflict THEN
+    IF v_hold.status = 'payment_capturing' OR v_payment.paypal_capture_id IS NOT NULL THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'paid_slot_reconciliation_required');
+    END IF;
+    UPDATE public.rdv_booking_holds SET status = 'expired' WHERE id = v_hold.id;
+    UPDATE public.rdv_paypal_payments SET status = 'expired', last_error_code = 'slot_unavailable' WHERE id = v_payment.id;
+    RETURN jsonb_build_object('ok', false, 'error', 'slot_unavailable');
+  END IF;
+
+  IF v_max_per_day IS NOT NULL THEN
+    SELECT COUNT(*) INTO v_active_count FROM (
+      SELECT starts_at FROM public.bookings
+      WHERE practitioner_id = v_hold.practitioner_id
+        AND status = 'confirmed'
+        AND starts_at >= date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'
+        AND starts_at < (date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') + INTERVAL '1 day') AT TIME ZONE 'Europe/Paris'
+      UNION ALL
+      SELECT starts_at FROM public.rdv_booking_holds h
+      WHERE practitioner_id = v_hold.practitioner_id
+        AND h.id <> v_hold.id
+        AND (status IN ('payment_capturing', 'payment_captured') OR (status = 'payment_pending' AND expires_at > now()))
+        AND starts_at >= date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') AT TIME ZONE 'Europe/Paris'
+        AND starts_at < (date_trunc('day', v_hold.starts_at AT TIME ZONE 'Europe/Paris') + INTERVAL '1 day') AT TIME ZONE 'Europe/Paris'
+    ) active_slots;
+    IF v_active_count >= v_max_per_day THEN
+      IF v_hold.status = 'payment_capturing' OR v_payment.paypal_capture_id IS NOT NULL THEN
+        RETURN jsonb_build_object('ok', false, 'error', 'paid_slot_reconciliation_required');
+      END IF;
+      UPDATE public.rdv_booking_holds SET status = 'expired' WHERE id = v_hold.id;
+      UPDATE public.rdv_paypal_payments SET status = 'expired', last_error_code = 'daily_limit_reached' WHERE id = v_payment.id;
+      RETURN jsonb_build_object('ok', false, 'error', 'daily_limit_reached');
+    END IF;
+  END IF;
+
+  UPDATE public.rdv_booking_holds
+  SET status = 'payment_capturing', expires_at = now() + INTERVAL '5 minutes'
+  WHERE id = v_hold.id;
+  UPDATE public.rdv_paypal_payments SET status = 'capturing' WHERE id = v_payment.id;
+
+  RETURN jsonb_build_object('ok', true, 'hold_id', v_hold.id);
+END;
+$function$;
+revoke execute on function public.claim_rdv_deposit_capture(text) from public, anon, authenticated;
+grant execute on function public.claim_rdv_deposit_capture(text) to service_role;
+COMMIT;

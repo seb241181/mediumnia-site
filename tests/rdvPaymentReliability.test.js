@@ -6,7 +6,9 @@ import { readFileSync } from 'node:fs'
 import {
   captureRdvDepositPayPalOrder,
   classifyRdvCaptureFailure,
+  getRdvDepositPayPalOrder,
   rdvDepositCaptureRequestId,
+  verifyRdvDepositPayPalPayment,
 } from '../lib/rdvDepositPayPal.js'
 import { handleRdvDepositApi, reconcileStaleRdvCaptures, slotUnavailable, supersedeOwnPendingHolds } from '../lib/rdvDepositApiHandler.js'
 import { buildCheckoutEvent, clientKind } from '../lib/rdvCheckoutEvents.js'
@@ -108,6 +110,20 @@ test('capture Live : une demande de simulation est sans effet', async () => {
   assert.ok(capture, 'la vraie capture a lieu')
   assert.equal(capture.headers['PayPal-Mock-Response'], undefined)
   assert.ok(capture.url.startsWith('https://api-m.paypal.com/'))
+})
+
+test('lecture : Order 200 sans statut global conserve les captures et devient status_unavailable', async () => {
+  fakePayPal({ capture: { status: 201, body: completedOrder() }, order: { status: 200, body: { ...completedOrder(), status: undefined } } })
+  const order = await getRdvDepositPayPalOrder(ORDER)
+  assert.equal(order.data.status, 'status_unavailable')
+  assert.equal(verifyRdvDepositPayPalPayment({ cfg: order.cfg, data: order.data, holdId: 'hold-1', amountCents: 2000, currency: 'EUR' }).captureId, 'CAP-1')
+})
+
+test('lecture : Order 200 sans identifiant correspondant reste refusé', async () => {
+  for (const id of [undefined, 'ORDER-OTHER-9999']) {
+    fakePayPal({ capture: { status: 201, body: {} }, order: { status: 200, body: { ...completedOrder(), id } } })
+    await assert.rejects(getRdvDepositPayPalOrder(ORDER), /paypal_order_fetch_failed/)
+  }
 })
 
 // ── Gestionnaire de capture ─────────────────────────────────────────────────
@@ -426,7 +442,7 @@ function statusDb({ status = 'capturing', holdStatus = 'payment_capturing', expi
 test('état d’un paiement bloqué : « report » lit PayPal sans rien modifier', async () => {
   const { handleStatusForTest } = await import('../lib/rdvDepositApiHandler.js')
   const { db, rpc } = statusDb()
-  const calls = fakePayPal({ capture: { status: 201, body: {} }, order: { status: 200, body: { ...completedOrder('80.00'), purchase_units: [{ ...completedOrder('80.00').purchase_units[0], custom_id: 'MEDIUMIA:RDV-ARRHES:hold-9' }] } } })
+  const calls = fakePayPal({ capture: { status: 201, body: {} }, order: { status: 200, body: { ...completedOrder('80.00'), id: 'ORDER-STUCK-325B', purchase_units: [{ ...completedOrder('80.00').purchase_units[0], custom_id: 'MEDIUMIA:RDV-ARRHES:hold-9' }] } } })
   const res = response()
   await handleStatusForTest({ query: { checkout_id: 'a0b2ac90-0000-4000-8000-000000000000', reconcile: 'report' }, headers: {} }, res, db)
   assert.equal(res.body.reconciliation.paypalStatus, 'COMPLETED')

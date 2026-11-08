@@ -196,3 +196,12 @@ test('migration SQL : additive, ChronoSphère exclue, retour arrière confirmé 
   assert.match(read('supabase/runbooks/20261108-environment-separation/activer-production.sql'), /pas_la_base_de_production/)
   assert.match(read('supabase/runbooks/20261108-environment-separation/activer-test.sql'), /base_de_production_detectee/)
 })
+
+test('build Vercel : les tests ne voient ni le niveau de déploiement ni aucun secret', async () => {
+  const { isolatedTestEnv } = await import('../scripts/run-tests-isolated.mjs')
+  const kept = isolatedTestEnv({ VERCEL_ENV: 'production', VERCEL_URL: 'x.vercel.app', SUPABASE_URL: PROD_URL, SUPABASE_SERVICE_ROLE_KEY: 'k', VITE_SUPABASE_URL: PROD_URL, PAYPAL_CLIENT_SECRET: 's', RESEND_API_KEY: 'r', ANTHROPIC_API_KEY: 'a', CRON_SECRET: 'c', PATH: '/bin', HOME: '/root' })
+  assert.deepEqual(Object.keys(kept).sort(), ['HOME', 'PATH', 'VERCEL_URL'])
+  const pkg = JSON.parse(read('package.json'))
+  assert.match(pkg.scripts.prebuild, /&& node scripts\/run-tests-isolated\.mjs$/)
+  assert.equal(pkg.scripts.test, 'node scripts/run-tests-isolated.mjs')
+})

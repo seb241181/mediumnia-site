@@ -38,6 +38,7 @@
 
     <div id="paidState" class="state hidden"><div class="symbol">✦</div><h2>Rendez-vous entièrement réglé</h2><p>Votre paiement est bien enregistré. Il ne reste plus aucun solde à régler.</p></div>
     <div id="expiredState" class="state hidden"><div class="symbol">◌</div><h2>Délai de règlement dépassé</h2><p>Le lien de paiement n’est plus actif, car l’échéance de 48 heures avant le rendez-vous est atteinte.</p></div>
+    <div id="offlineState" class="state hidden"><div class="symbol">✦</div><h2>Règlement annoncé</h2><p>Votre règlement du solde (virement ou autre moyen) a été signalé à Sébastien. Il le confirmera dès sa réception sur son compte. Inutile de payer à nouveau ici.</p></div>
     <div id="cancelledState" class="state hidden"><div class="symbol">◌</div><h2>Rendez-vous annulé</h2><p>Ce rendez-vous n’est plus actif et ne peut plus être réglé depuis ce lien.</p></div>
     <div id="invalidState" class="state hidden"><div class="symbol">◌</div><h2>Lien invalide ou expiré</h2><p>Ce lien de règlement ne peut pas être utilisé. Vérifiez que vous avez ouvert le lien reçu par e-mail.</p></div>
   </section>
@@ -55,7 +56,7 @@
 
   const money = cents => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
   const fmt = value => new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }).format(new Date(value))
-  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','invalidState'].forEach(id => $(id).classList.add('hidden'))
+  const hideAll = () => ['loading','payable','paidState','offlineState','expiredState','cancelledState','invalidState'].forEach(id => $(id).classList.add('hidden'))
   const show = id => { hideAll(); $(id).classList.remove('hidden') }
   const showError = text => { $('paymentNotice').textContent = text; $('paymentNotice').classList.remove('hidden') }
 
@@ -75,6 +76,7 @@
       paypal_create_order_failed:'PayPal n’a pas pu préparer le paiement. Réessayez dans quelques instants.',
       paypal_capture_failed:'La confirmation PayPal n’a pas pu être finalisée. Ne repayez pas : rechargez d’abord cette page.',
       balance_capture_in_progress:'Le paiement est déjà en cours de confirmation. Patientez quelques instants.',
+      offline_payment_announced:'Un règlement par virement (ou autre moyen) a déjà été signalé pour ce solde. Ne payez pas une seconde fois : Sébastien confirmera sa réception.',
     }
     return map[code] || 'Le paiement ne peut pas être finalisé pour le moment. Réessayez dans quelques instants.'
   }
@@ -146,6 +148,7 @@
       current = await api('status', { token })
       if (current.status === 'PAID') { show('paidState'); return }
       if (current.status === 'CANCELLED') { show('cancelledState'); return }
+      if (current.status === 'OFFLINE_ANNOUNCED') { show('offlineState'); return }
       if (current.status === 'EXPIRED') { show('expiredState'); return }
       if (current.status !== 'PAYABLE') { show('invalidState'); return }
       $('service').textContent = current.serviceTitle

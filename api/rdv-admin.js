@@ -1,4 +1,5 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
+import { handleOfflinePaymentAdmin } from '../lib/rdvOfflinePayments.js'
 import { markAgendaNoShow } from '../lib/rdvNoShow.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
 import { getChronosphereIncome } from '../lib/chronosphereFinance.js'
@@ -953,6 +954,11 @@ export default async function handler(req, res) {
     case 'booking-balances': {
       if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
       const result = await getBookingBalances({ supabase, userId, practitionerId: req.query.practitioner_id, ids: req.query.ids })
+      return res.status(result.status).json(result.body)
+    }
+    case 'offline-payment': {
+      // Règlements hors PayPal : virement annoncé, réception confirmée, retrait.
+      const result = await handleOfflinePaymentAdmin({ supabase, userId, method: req.method, query: req.query || {}, input: req.body || {} })
       return res.status(result.status).json(result.body)
     }
     case 'day-payments': {

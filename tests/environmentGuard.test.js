@@ -103,8 +103,8 @@ test('matrice niveau × base : seules les combinaisons cohérentes passent', () 
   const cases = [
     [{ VERCEL_ENV: 'production' }, PROD_URL, true],
     [{ VERCEL_ENV: 'production' }, TEST_URL, false],
-    [{ VERCEL_ENV: 'production' }, 'https://autre.supabase.co', false],
-    [{ VERCEL_ENV: 'production' }, 'https://api.mediumia.fr', false],
+    // Base inconnue en Production : non bloquée (pas d'interruption) mais signalée par le diagnostic.
+    [{ VERCEL_ENV: 'production' }, 'https://autre.supabase.co', true],
     [{ VERCEL_ENV: 'preview' }, TEST_URL, true],
     [{ VERCEL_ENV: 'preview' }, PROD_URL, false],
     [{ VERCEL_ENV: 'preview' }, 'https://api.mediumia.fr', false],
@@ -161,6 +161,9 @@ test('diagnostic d’environnement : utile et sans secret', () => {
   assert.equal(preview.consistent, false)
   assert.deepEqual(preview.problems, ['server_non_production_must_not_use_production_database', 'browser_non_production_must_not_use_production_database', 'paypal_configuration_mismatch'])
   assert.match(read('api/rdv-config.js'), /req\.query\?\.environmentCheck/)
+  const unknown = guard.environmentReport({ ...PRODUCTION, SUPABASE_URL: 'https://autre.supabase.co' })
+  assert.equal(unknown.consistent, false)
+  assert.ok(unknown.problems.includes('server_unknown_database'), 'une base inconnue en Production bloque la promotion')
 })
 
 test('inventaire : tout accès Supabase du serveur passe par la garde', () => {
@@ -187,6 +190,8 @@ test('migration SQL : additive, ChronoSphère exclue, retour arrière confirmé 
   assert.doesNotMatch(sql, /DELETE FROM|DROP TABLE|TRUNCATE|UPDATE public\./i, 'aucune donnée modifiée')
   assert.doesNotMatch(sql, /INSERT INTO public\.mediumia_runtime_environment/, 'activation séparée de la migration')
   assert.doesNotMatch(sql.split('payment_tables TEXT[]')[1].split('];')[0], /chronosphere|oracle_timeline/)
+  assert.doesNotMatch(sql, /\bmediumia_entitlements\b/, 'droits Formation : script séparé avec GO dédié')
+  assert.match(read('supabase/runbooks/20261108-environment-separation/garde-droits-formation.sql'), /zz_mediumia_no_sandbox_entitlement_in_production/)
   assert.match(rollback, /mediumia\.confirm_guard_removal/)
   assert.match(read('supabase/runbooks/20261108-environment-separation/activer-production.sql'), /pas_la_base_de_production/)
   assert.match(read('supabase/runbooks/20261108-environment-separation/activer-test.sql'), /base_de_production_detectee/)

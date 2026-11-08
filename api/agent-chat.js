@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import process from 'node:process'
 import { createClient } from '@supabase/supabase-js'
+import { checkDatabaseAccess } from '../lib/environmentGuard.js'
 import { getSupabaseAdmin, requireAuth } from '../lib/supabaseAdmin.js'
 import {
   buildAgentInstructions,
@@ -435,7 +436,7 @@ export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
   let knowledgeMatches = []
-  if (supabaseUrl && publishableKey && !auth.rehearsal) {
+  if (supabaseUrl && publishableKey && !auth.rehearsal && checkDatabaseAccess(process.env, supabaseUrl).ok) {
     const token = (req.headers.authorization || '').slice(7)
     const userDb = createClient(supabaseUrl, publishableKey, {
       auth: { persistSession: false, autoRefreshToken: false },

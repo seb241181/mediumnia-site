@@ -1,8 +1,9 @@
 -- MediumIA — rattrapage de la base TEST — Garde TEST/PROD (marqueur « test ») et signalement des problèmes de paiement
 -- Projet : MediumIA RDV PayPal Test (wnbwhnqiulsdjcvkuwos) UNIQUEMENT.
--- Exécution : Supabase > projet TEST > SQL Editor > coller tout le fichier > Run.
--- Tout ou rien : en cas d'erreur, rien n'est conservé. Refusé sur la Production
--- et refusé si le fichier a déjà été exécuté. Inscrit dans l'historique : environment_separation_guard, activer_test_marqueur, payment_issue_reports.
+-- Fichier généré par generer.py (ne pas modifier à la main).
+-- Tout ou rien : en cas d'erreur, rien n'est conservé. Refusé sur la Production,
+-- refusé s'il a déjà été exécuté ou si l'étape précédente manque.
+-- Inscrit dans l'historique : environment_separation_guard, activer_test_marqueur, payment_issue_reports.
 begin;
 
 do $garde$
@@ -11,11 +12,11 @@ begin
      or not exists (select 1 from public.booking_practitioners where slug = 'seb-test') then
     raise exception 'ARRET : cette base n''est pas TEST (wnbwhnqiulsdjcvkuwos). Rien n''a été modifié.';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version in ('20261108200400', '20261108200500', '20261108200600')) then
+  if exists (select 1 from supabase_migrations.schema_migrations where name in ('environment_separation_guard', 'activer_test_marqueur', 'payment_issue_reports')) then
     raise exception 'ARRET : ce fichier a déjà été exécuté sur TEST. Rien n''a été modifié.';
   end if;
-  if (select count(*) from supabase_migrations.schema_migrations where version in ('20261108200000', '20261108200100', '20261108200200', '20261108200300')) <> 4 then
-    raise exception 'ARRET : exécutez d''abord le fichier précédent. Rien n''a été modifié.';
+  if (select count(distinct name) from supabase_migrations.schema_migrations where name in ('b2_10_bloc1_oracle_pro_waitlist_reseau_order_intents', 'b2_10_bloc2_pro_workspace_shadow_fk_indexes', 'b2_10_bloc3_document_shadow_a_rdv_appointment_reminder', 'b2_20_objets_hors_depot', 'b2_30_alignement_fonctions')) <> 5 then
+    raise exception 'ARRET : une étape précédente manque. Rien n''a été modifié.';
   end if;
 end $garde$;
 
@@ -134,7 +135,7 @@ REVOKE ALL ON FUNCTION public.mediumia_reject_sandbox_in_production() FROM PUBLI
 REVOKE ALL ON FUNCTION public.mediumia_protect_runtime_environment() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.mediumia_runtime_environment_value() TO service_role;
 
-insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200400', 'environment_separation_guard', 'rattrapage-test-sql-editor');
+insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200400', 'environment_separation_guard', 'rattrapage-test');
 
 -- >>> runbooks/20261108-environment-separation/activer-test.sql
 -- Marque la base TEST (après la migration 20261108130000). Refuse la Production.
@@ -154,7 +155,7 @@ BEGIN
 END $$;
 SELECT environment, set_at FROM public.mediumia_runtime_environment;
 
-insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200500', 'activer_test_marqueur', 'rattrapage-test-sql-editor');
+insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200500', 'activer_test_marqueur', 'rattrapage-test');
 
 -- >>> migrations/20261108140000_payment_issue_reports.sql
 -- Signalements de problèmes de paiement (« Signaler un problème de paiement »).
@@ -351,7 +352,7 @@ GRANT EXECUTE ON FUNCTION public.submit_payment_issue_report(TEXT, TEXT, TEXT, T
 GRANT EXECUTE ON FUNCTION public.mark_payment_issue_notified(UUID, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.update_payment_issue_report(UUID, UUID, TEXT, TEXT) TO service_role;
 
-insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200600', 'payment_issue_reports', 'rattrapage-test-sql-editor');
+insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200600', 'payment_issue_reports', 'rattrapage-test');
 
 commit;
 

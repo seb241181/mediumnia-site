@@ -1,8 +1,9 @@
 -- MediumIA — rattrapage de la base TEST — B2-20 et B2-30 : objets hors dépôt et alignement des 29 fonctions sur la Production
 -- Projet : MediumIA RDV PayPal Test (wnbwhnqiulsdjcvkuwos) UNIQUEMENT.
--- Exécution : Supabase > projet TEST > SQL Editor > coller tout le fichier > Run.
--- Tout ou rien : en cas d'erreur, rien n'est conservé. Refusé sur la Production
--- et refusé si le fichier a déjà été exécuté. Inscrit dans l'historique : b2_20_objets_hors_depot, b2_30_alignement_fonctions.
+-- Fichier généré par generer.py (ne pas modifier à la main).
+-- Tout ou rien : en cas d'erreur, rien n'est conservé. Refusé sur la Production,
+-- refusé s'il a déjà été exécuté ou si l'étape précédente manque.
+-- Inscrit dans l'historique : b2_20_objets_hors_depot, b2_30_alignement_fonctions.
 begin;
 
 do $garde$
@@ -11,11 +12,11 @@ begin
      or not exists (select 1 from public.booking_practitioners where slug = 'seb-test') then
     raise exception 'ARRET : cette base n''est pas TEST (wnbwhnqiulsdjcvkuwos). Rien n''a été modifié.';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version in ('20261108200200', '20261108200300')) then
+  if exists (select 1 from supabase_migrations.schema_migrations where name in ('b2_20_objets_hors_depot', 'b2_30_alignement_fonctions')) then
     raise exception 'ARRET : ce fichier a déjà été exécuté sur TEST. Rien n''a été modifié.';
   end if;
-  if (select count(*) from supabase_migrations.schema_migrations where version in ('20261108200000', '20261108200100')) <> 2 then
-    raise exception 'ARRET : exécutez d''abord le fichier précédent. Rien n''a été modifié.';
+  if (select count(distinct name) from supabase_migrations.schema_migrations where name in ('b2_10_bloc1_oracle_pro_waitlist_reseau_order_intents', 'b2_10_bloc2_pro_workspace_shadow_fk_indexes', 'b2_10_bloc3_document_shadow_a_rdv_appointment_reminder')) <> 3 then
+    raise exception 'ARRET : une étape précédente manque. Rien n''a été modifié.';
   end if;
 end $garde$;
 
@@ -578,7 +579,7 @@ ON CONFLICT (id) DO NOTHING;
 DROP TRIGGER IF EXISTS trg_on_auth_user_created ON auth.users;
 CREATE TRIGGER trg_on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.mediumia_handle_new_user();
 
-insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200200', 'b2_20_objets_hors_depot', 'rattrapage-test-sql-editor');
+insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200200', 'b2_20_objets_hors_depot', 'rattrapage-test');
 
 -- >>> runbooks/20261108-environment-separation/test-rattrapage/30-alignement-fonctions.sql
 -- TEST UNIQUEMENT. Étape B2-30 : alignement des 29 fonctions qui diffèrent entre TEST et Production
@@ -2639,7 +2640,7 @@ $function$;
 REVOKE ALL ON FUNCTION public.pro_reconcile_legacy_document(uuid,uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.pro_reconcile_legacy_document(uuid,uuid) TO service_role;
 
-insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200300', 'b2_30_alignement_fonctions', 'rattrapage-test-sql-editor');
+insert into supabase_migrations.schema_migrations (version, name, created_by) values ('20261108200300', 'b2_30_alignement_fonctions', 'rattrapage-test');
 
 commit;
 

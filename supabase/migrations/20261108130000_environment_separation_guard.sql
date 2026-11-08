@@ -1,7 +1,7 @@
 -- Séparation TEST / PRODUCTION, garde dans la base (indépendante de Vercel).
 --
--- Une base marquée « production » refuse toute NOUVELLE ligne de paiement ou de
--- droit issue de PayPal Sandbox, quel que soit le client qui écrit (site,
+-- Une base marquée « production » refuse toute NOUVELLE ligne de paiement
+-- issue de PayPal Sandbox, quel que soit le client qui écrit (site,
 -- préversion, script, fonction SQL, tâche automatique).
 --
 -- Sans marquage, rien ne change : la migration peut être appliquée sans
@@ -12,9 +12,12 @@
 -- présentes restent lisibles et modifiables (statut, consommation), seule leur
 -- création ou leur passage en Sandbox est refusé.
 --
--- Tables ChronoSphère (chronosphere_credit_packs, chronosphere_paid_draws,
--- oracle_timeline_follow_plans) volontairement exclues : chantier en cours de
--- Codex, à ajouter en coordination.
+-- Exclusions volontaires :
+--   - tables ChronoSphère (chronosphere_credit_packs, chronosphere_paid_draws,
+--     oracle_timeline_follow_plans) : chantier en cours de Codex ;
+--   - droits d'accès Formation : le parcours Formation est protégé contre toute
+--     migration ultérieure ; leur garde est un script séparé, soumis à un GO
+--     dédié (runbooks/20261108-environment-separation/garde-droits-formation.sql).
 
 -- ── 1. Marqueur d'environnement (une ligne, verrouillée une fois « production ») ──
 CREATE TABLE IF NOT EXISTS public.mediumia_runtime_environment (
@@ -80,25 +83,7 @@ BEGIN
 END;
 $$;
 
--- ── 3. Refus des droits d'origine Sandbox dans une base de Production ──────
--- Les références de droits encodent l'environnement : « paypal:sandbox:… »,
--- « parcours:sandbox:… », « conference-pass:sandbox:… ».
-CREATE OR REPLACE FUNCTION public.mediumia_reject_sandbox_entitlement_in_production()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  IF COALESCE(NEW.origin_ref, '') !~ '^[a-z-]+:sandbox:' THEN RETURN NEW; END IF;
-  IF public.mediumia_runtime_environment_value() IS DISTINCT FROM 'production' THEN RETURN NEW; END IF;
-  IF TG_OP = 'UPDATE' AND COALESCE(OLD.origin_ref, '') ~ '^[a-z-]+:sandbox:' THEN RETURN NEW; END IF;
-  RAISE EXCEPTION 'sandbox_entitlement_in_production' USING ERRCODE = 'P0001',
-    HINT = 'Droit issu de PayPal Sandbox refusé : cette base est la Production.';
-END;
-$$;
-
--- ── 4. Branchement sur les tables présentes (tolérant aux bases incomplètes) ──
+-- ── 3. Branchement sur les tables présentes (tolérant aux bases incomplètes) ──
 DO $$
 DECLARE
   t TEXT;
@@ -120,16 +105,9 @@ BEGIN
     END IF;
   END LOOP;
 
-  IF to_regclass('public.mediumia_entitlements') IS NOT NULL THEN
-    DROP TRIGGER IF EXISTS zz_mediumia_no_sandbox_entitlement_in_production ON public.mediumia_entitlements;
-    CREATE TRIGGER zz_mediumia_no_sandbox_entitlement_in_production
-      BEFORE INSERT OR UPDATE OF origin_ref ON public.mediumia_entitlements
-      FOR EACH ROW EXECUTE FUNCTION public.mediumia_reject_sandbox_entitlement_in_production();
-  END IF;
 END $$;
 
 REVOKE ALL ON FUNCTION public.mediumia_runtime_environment_value() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.mediumia_reject_sandbox_in_production() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.mediumia_reject_sandbox_entitlement_in_production() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.mediumia_protect_runtime_environment() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.mediumia_runtime_environment_value() TO service_role;

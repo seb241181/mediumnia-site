@@ -1,3 +1,4 @@
+import { handleConferencePassPayPal } from '../lib/conferencePassPayPal.js'
 /**
  * GET /api/rdv-config?practitioner=<slug>
  *
@@ -32,6 +33,7 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 })
 
 export default async function handler(req, res) {
+  if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res, req.query.conferencePassAction)
   res.setHeader('Cache-Control', 'no-store')
 
   // Rapports CSP (en-tête Content-Security-Policy-Report-Only, vercel.json)

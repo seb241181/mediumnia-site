@@ -1,3 +1,5 @@
+import { openPaymentIssueReport } from '../lib/paymentAttempt.js'
+
 // Information sur le paiement invité : PayPal décide de sa disponibilité
 // pour chaque transaction. N'invente pas un second système d'encaissement CB.
 export default function PayPalGuestNotice({ className = '' }) {
@@ -6,6 +8,12 @@ export default function PayPalGuestNotice({ className = '' }) {
       <p className="text-sm font-semibold leading-relaxed">Pas de compte PayPal ? Ce n’est pas forcément nécessaire !</p>
       <p className="mt-1 text-xs leading-relaxed text-mist">
         Si PayPal affiche « Carte bancaire » ou « Carte de débit ou de crédit », choisissez cette option pour payer en une fois sans créer de compte PayPal. L’option dépend de PayPal et peut ne pas être proposée pour certains paiements.
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-mist">
+        Un problème pendant le paiement ?{' '}
+        <button type="button" onClick={() => openPaymentIssueReport()} className="font-semibold text-deep underline underline-offset-2 hover:text-gold">
+          Signaler un problème de paiement
+        </button>
       </p>
     </aside>
   )

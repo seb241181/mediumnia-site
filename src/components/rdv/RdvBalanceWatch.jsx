@@ -14,6 +14,7 @@ const CANCEL_STATE = {
   owner_hold: ['Maintenu par vous : aucune annulation automatique', 'ok'],
   late_payment_window: ['Lien de solde tardif en cours', 'ok'],
   payment_uncertain: ['Paiement PayPal engagé non confirmé : à vérifier', 'warn'],
+  offline_payment_announced: ['Virement annoncé : vérifiez la réception, aucune annulation', 'warn'],
   external_payment_recorded: ['Paiement externe enregistré : aucune annulation', 'ok'],
   awaiting_owner_decision: ['En attente de votre décision', 'warn'],
   owner_not_alerted: ['Annulation suspendue : alerte pas encore partie', 'warn'],

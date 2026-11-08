@@ -3,6 +3,7 @@ import LegalFooter from './LegalFooter'
 import ConferencePassRequest from './ConferencePassRequest'
 import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
+import { needsButtonsRender, reconcileApprovedOrder } from '../lib/conferencePassCheckout.js'
 
 const API = '/api/rdv-config?conferencePassAction='
 const PAYPAL_SCRIPT_ID = 'mediumia-paypal-sdk'
@@ -74,8 +75,33 @@ function messageForState(state, error) {
   if (state === 'already_redeemed') return 'Ce Pass a déjà été utilisé pour activer un accès MediumIA.'
   if (state === 'invalid') return 'Ce Pass est introuvable ou invalide.'
   if (state === 'offer_disabled') return 'L’offre spéciale conférence n’est pas encore configurée.'
+  if (state === 'uncertain') return 'Votre paiement est peut-être déjà enregistré par PayPal. Ne payez pas une seconde fois : vérifiez d’abord son état ci-dessous.'
   if (error) return `${userErrorMessage(error, 'Le paiement n’a pas abouti.')} Votre Pass reste valable : vous pouvez réessayer.`
   return ''
+}
+
+async function fetchOrderStatus(orderId) {
+  const res = await fetch(`${API}status&orderId=${encodeURIComponent(orderId)}`, { cache: 'no-store' })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || 'status_unavailable')
+  return data
+}
+
+// Après une approbation PayPal dont la confirmation a échoué : réconciliation d'abord,
+// boutons ensuite, et seulement si aucune capture n'est connue.
+async function settleApprovedOrder(orderId, { capture, setState, setError, setPendingOrderId, setAttempt }) {
+  setState('reconciling')
+  const settled = await reconcileApprovedOrder(orderId, { capture, status: fetchOrderStatus })
+  if (settled.outcome === 'paid') return
+  setError(settled.error?.message || 'paypal_capture_failed')
+  if (settled.outcome === 'uncertain') {
+    setPendingOrderId(orderId)
+    setState('uncertain')
+    return
+  }
+  setPendingOrderId('')
+  setAttempt((value) => value + 1)
+  setState('valid')
 }
 
 export default function ConferencePassPage({ onBack, onNavigate }) {
@@ -86,6 +112,8 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   const [tick, setTick] = useState(0)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [immediateAccessAccepted, setImmediateAccessAccepted] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const [pendingOrderId, setPendingOrderId] = useState('')
   const paypalRef = useRef(null)
   const renderedRef = useRef(null)
   const messageRef = useRef(null)
@@ -102,6 +130,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
     setState(result.alreadyProvisioned ? 'already_provisioned' : 'success')
     return result
   }
+
 
   useEffect(() => {
     let cancelled = false
@@ -169,14 +198,17 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   useEffect(() => {
     if (!consentsOk) renderedRef.current = null
     if (state !== 'valid' || !consentsOk || !config?.paypal?.clientId || !passToken || !paypalRef.current) return
-    if (renderedRef.current === passToken) return
+    // Nouveau rendu si le conteneur a été remonté (retour après un échec), si le Pass change
+    // ou si un nouvel essai est demandé après une erreur PayPal.
+    const target = { token: passToken, container: paypalRef.current, attempt }
+    if (!needsButtonsRender(renderedRef.current, target)) return
 
     let cancelled = false
     paypalRef.current.innerHTML = ''
     loadPayPalSdk(config.paypal.clientId)
       .then(() => {
         if (cancelled || !window.paypal?.Buttons) return
-        renderedRef.current = passToken
+        renderedRef.current = target
         return window.paypal.Buttons({
           style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' },
           createOrder: async () => {
@@ -196,13 +228,20 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
           },
           onApprove: async (data) => {
             setState('payment')
-            await captureExistingOrder(data.orderID)
+            try {
+              await captureExistingOrder(data.orderID)
+            } catch {
+              await settleApprovedOrder(data.orderID, { capture: captureExistingOrder, setState, setError, setPendingOrderId, setAttempt })
+            }
           },
+          // Annulation ou refus avant approbation (Pay Later refusé, fenêtre fermée) :
+          // rien n'est capturé, les boutons restent disponibles pour un autre moyen.
           onCancel: () => setState('valid'),
           onError: (err) => {
             if (err?.message === 'conference_pass_reconciled') return
             setError(err?.message || 'paypal_error')
             setState('valid')
+            setAttempt((value) => value + 1)
           },
         }).render(paypalRef.current)
       })
@@ -212,7 +251,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
       })
 
     return () => { cancelled = true }
-  }, [state, config, passToken, consentsOk])
+  }, [state, config, passToken, consentsOk, attempt])
 
   const expired = useMemo(() => {
     if (!config?.pass?.expiresAt) return false
@@ -285,6 +324,13 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                 <p className="font-georgia text-sm leading-relaxed text-mist">{notice}</p>
               )}
               {visibleState === 'payment' && <p className="mb-4 font-georgia text-sm text-mist">Paiement en cours de confirmation…</p>}
+              {visibleState === 'reconciling' && <p className="mb-4 font-georgia text-sm text-mist">Vérification de votre paiement auprès de PayPal…</p>}
+              {visibleState === 'uncertain' && (
+                <div className="font-georgia text-sm leading-relaxed text-mist">
+                  <p className="text-deep">{notice}</p>
+                  <button type="button" onClick={() => settleApprovedOrder(pendingOrderId, { capture: captureExistingOrder, setState, setError, setPendingOrderId, setAttempt })} className="mt-4 inline-flex rounded-lg border border-gold/45 px-5 py-2.5 font-semibold text-deep hover:bg-gold/10">Vérifier mon paiement</button>
+                </div>
+              )}
               {['success', 'already_provisioned'].includes(visibleState) && (
                 <div className="font-georgia text-mist">
                   <p className="text-xl text-deep">{visibleState === 'already_provisioned' ? 'Votre accès est déjà activé.' : 'Paiement confirmé, accès MediumIA activé.'}</p>

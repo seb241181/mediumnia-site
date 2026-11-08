@@ -1,4 +1,4 @@
--- TEST UNIQUEMENT. Étape B2-30 : alignement des 25 fonctions qui diffèrent entre TEST et Production
+-- TEST UNIQUEMENT. Étape B2-30 : alignement des 29 fonctions qui diffèrent entre TEST et Production
 -- sur la définition exacte de Production (08/11/2026). Les fonctions propres à TEST ne sont pas supprimées.
 BEGIN;
 DO $$
@@ -1459,4 +1459,601 @@ REVOKE ALL ON FUNCTION public.sync_student_state(bigint,jsonb,jsonb,jsonb,jsonb,
 GRANT EXECUTE ON FUNCTION public.sync_student_state(bigint,jsonb,jsonb,jsonb,jsonb,jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.sync_student_state(bigint,jsonb,jsonb,jsonb,jsonb,jsonb) TO service_role;
 
+-- consume_oracle_rate_limit(text,integer,integer) (définition de Production, modifiée après sa migration du dépôt)
+CREATE OR REPLACE FUNCTION public.consume_oracle_rate_limit(p_ip_hash text, p_hourly_limit integer DEFAULT 10, p_daily_limit integer DEFAULT 30)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_now timestamptz := now();
+  v_hour_start timestamptz := date_trunc('hour', v_now);
+  v_day_start timestamptz := date_trunc('day', v_now);
+  v_hour_count integer;
+  v_day_count integer;
+begin
+  delete from public.oracle_rate_limits
+  where updated_at < v_now - interval '48 hours';
+
+  insert into public.oracle_rate_limits (ip_hash, window_type, window_start, request_count, updated_at)
+  values (p_ip_hash, 'hour', v_hour_start, 1, v_now)
+  on conflict (ip_hash, window_type, window_start)
+  do update set
+    request_count = oracle_rate_limits.request_count + 1,
+    updated_at = v_now
+  returning request_count into v_hour_count;
+
+  if v_hour_count > p_hourly_limit then
+    return jsonb_build_object('allowed', false, 'reason', 'hourly');
+  end if;
+
+  insert into public.oracle_rate_limits (ip_hash, window_type, window_start, request_count, updated_at)
+  values (p_ip_hash, 'day', v_day_start, 1, v_now)
+  on conflict (ip_hash, window_type, window_start)
+  do update set
+    request_count = oracle_rate_limits.request_count + 1,
+    updated_at = v_now
+  returning request_count into v_day_count;
+
+  if v_day_count > p_daily_limit then
+    return jsonb_build_object('allowed', false, 'reason', 'daily');
+  end if;
+
+  return jsonb_build_object('allowed', true);
+end;
+$function$;
+REVOKE ALL ON FUNCTION public.consume_oracle_rate_limit(text,integer,integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_oracle_rate_limit(text,integer,integer) TO service_role;
+
+-- consume_public_assistant_quota(uuid,text,integer,integer,integer) (définition de Production, modifiée après sa migration du dépôt)
+CREATE OR REPLACE FUNCTION public.consume_public_assistant_quota(p_agent_id uuid, p_visitor_hash text, p_monthly_limit integer, p_visitor_hourly_limit integer, p_visitor_daily_limit integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_now timestamptz := now();
+  v_month_start timestamptz := date_trunc('month', v_now at time zone 'Europe/Paris') at time zone 'Europe/Paris';
+  v_hour_start timestamptz := date_trunc('hour', v_now);
+  v_day_start timestamptz := date_trunc('day', v_now at time zone 'Europe/Paris') at time zone 'Europe/Paris';
+  v_month_used integer := 0;
+  v_hour_used integer := 0;
+  v_day_used integer := 0;
+begin
+  if p_agent_id is null
+     or p_visitor_hash is null or p_visitor_hash !~ '^[0-9a-f]{64}$'
+     or p_monthly_limit is null or p_monthly_limit < 1 or p_monthly_limit > 100000
+     or p_visitor_hourly_limit is null or p_visitor_hourly_limit < 1
+     or p_visitor_daily_limit is null or p_visitor_daily_limit < p_visitor_hourly_limit then
+    return jsonb_build_object('allowed', false, 'reason', 'invalid_quota_request');
+  end if;
+
+  perform 1 from public.agents where id = p_agent_id and status = 'active';
+  if not found then
+    return jsonb_build_object('allowed', false, 'reason', 'agent_unavailable');
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('public-assistant:' || p_agent_id::text, 0));
+
+  delete from public.pro_public_assistant_usage
+  where scope in ('visitor_hour', 'visitor_day')
+    and window_start < v_now - interval '2 days';
+
+  select coalesce(sum(consumed_units), 0) into v_month_used
+  from public.pro_public_assistant_usage
+  where agent_id = p_agent_id and scope = 'agent_month' and subject = 'all' and window_start = v_month_start;
+
+  select coalesce(sum(consumed_units), 0) into v_hour_used
+  from public.pro_public_assistant_usage
+  where agent_id = p_agent_id and scope = 'visitor_hour' and subject = p_visitor_hash and window_start = v_hour_start;
+
+  select coalesce(sum(consumed_units), 0) into v_day_used
+  from public.pro_public_assistant_usage
+  where agent_id = p_agent_id and scope = 'visitor_day' and subject = p_visitor_hash and window_start = v_day_start;
+
+  if v_month_used + 1 > p_monthly_limit then
+    return jsonb_build_object('allowed', false, 'reason', 'monthly', 'monthly_used', v_month_used, 'monthly_limit', p_monthly_limit);
+  end if;
+  if v_hour_used + 1 > p_visitor_hourly_limit then
+    return jsonb_build_object('allowed', false, 'reason', 'visitor_hourly', 'monthly_used', v_month_used, 'monthly_limit', p_monthly_limit);
+  end if;
+  if v_day_used + 1 > p_visitor_daily_limit then
+    return jsonb_build_object('allowed', false, 'reason', 'visitor_daily', 'monthly_used', v_month_used, 'monthly_limit', p_monthly_limit);
+  end if;
+
+  insert into public.pro_public_assistant_usage (agent_id, scope, subject, window_start, consumed_units, updated_at)
+  values
+    (p_agent_id, 'agent_month', 'all', v_month_start, 1, v_now),
+    (p_agent_id, 'visitor_hour', p_visitor_hash, v_hour_start, 1, v_now),
+    (p_agent_id, 'visitor_day', p_visitor_hash, v_day_start, 1, v_now)
+  on conflict (agent_id, scope, subject, window_start)
+  do update set
+    consumed_units = public.pro_public_assistant_usage.consumed_units + 1,
+    updated_at = excluded.updated_at;
+
+  return jsonb_build_object('allowed', true, 'monthly_used', v_month_used + 1, 'monthly_limit', p_monthly_limit);
+end;
+$function$;
+REVOKE ALL ON FUNCTION public.consume_public_assistant_quota(uuid,text,integer,integer,integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_public_assistant_quota(uuid,text,integer,integer,integer) TO service_role;
+
+-- pro_approve_document_version(uuid,uuid,uuid) (définition de Production, modifiée après sa migration du dépôt)
+CREATE OR REPLACE FUNCTION public.pro_approve_document_version(p_version_id uuid, p_actor_user_id uuid, p_request_id uuid)
+ RETURNS TABLE(document_id uuid, version_id uuid, approved_for_ai boolean, replayed boolean)
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_document_id uuid;
+  v_workspace_id uuid;
+  v_version public.pro_document_versions%rowtype;
+begin
+  if p_request_id is null then
+    raise exception using errcode = 'P0001', message = 'request_id_required';
+  end if;
+  select v.document_id into v_document_id
+  from public.pro_document_versions v
+  where v.id = p_version_id;
+  select d.workspace_id into v_workspace_id
+  from public.pro_documents d
+  where d.id = v_document_id
+  for update;
+  if v_workspace_id is null then
+    raise exception using errcode = 'P0001', message = 'document_version_not_found';
+  end if;
+
+  perform mediumia_private.pro_assert_workspace_actor(
+    v_workspace_id,
+    p_actor_user_id,
+    array['owner', 'admin', 'editor']::text[]
+  );
+
+  select v.* into v_version
+  from public.pro_document_versions v
+  where v.id = p_version_id
+  for update;
+
+  if exists (
+    select 1
+    from public.pro_document_versions v
+    where v.workspace_id = v_workspace_id
+      and v.approval_request_id = p_request_id
+      and v.id <> p_version_id
+  ) then
+    raise exception using errcode = 'P0001', message = 'request_id_conflict';
+  end if;
+
+  if v_version.approved_for_ai then
+    return query select v_document_id, p_version_id, true, true;
+    return;
+  end if;
+  if v_version.extraction_status <> 'ready' then
+    raise exception using errcode = 'P0001', message = 'document_version_not_ready';
+  end if;
+  if v_version.published_at is not null then
+    raise exception using errcode = 'P0001', message = 'published_version_immutable';
+  end if;
+
+  update public.pro_document_versions v
+  set approved_for_ai = true,
+      approved_at = now(),
+      approved_by = p_actor_user_id,
+      approval_origin = 'explicit',
+      approval_request_id = p_request_id,
+      state_revision = v.state_revision + 1
+  where v.id = p_version_id;
+
+  perform mediumia_private.pro_write_audit(
+    v_workspace_id,
+    'user',
+    p_actor_user_id,
+    'document_version_approved',
+    'document_version',
+    p_version_id,
+    null,
+    v_document_id,
+    p_version_id,
+    p_request_id,
+    '{}'::jsonb
+  );
+
+  return query select v_document_id, p_version_id, true, false;
+end;
+$function$;
+REVOKE ALL ON FUNCTION public.pro_approve_document_version(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.pro_approve_document_version(uuid,uuid,uuid) TO service_role;
+
+-- pro_reconcile_legacy_document(uuid,uuid) (définition de Production, modifiée après sa migration du dépôt)
+CREATE OR REPLACE FUNCTION public.pro_reconcile_legacy_document(p_document_id uuid, p_request_id uuid)
+ RETURNS TABLE(document_id uuid, version_id uuid, reconciliation_action text, replayed boolean)
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare
+  v_legacy public.agent_documents%rowtype;
+  v_document public.pro_documents%rowtype;
+  v_version_id uuid;
+  v_version_number integer;
+  v_created_by uuid;
+  v_sync_hash text;
+  v_extraction_status text;
+  v_ready boolean;
+  v_approved boolean;
+  v_queue_revision bigint;
+  v_queue_last_request_id uuid;
+begin
+  if p_document_id is null or p_request_id is null then
+    raise exception using errcode = 'P0001', message = 'invalid_reconciliation_request';
+  end if;
+
+  perform pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_document_id::text, 18641)
+  );
+
+  select d.* into v_document
+  from public.pro_documents d
+  where d.id = p_document_id
+  for update;
+
+  select d.* into v_legacy
+  from public.agent_documents d
+  where d.id = p_document_id
+  for update;
+
+  if v_legacy.id is null then
+    if v_document.id is not null then
+      update public.pro_documents d
+      set lifecycle_status = 'deleting',
+          ai_enabled = false,
+          state_revision = d.state_revision + 1
+      where d.id = p_document_id
+        and d.lifecycle_status not in ('deleting', 'deleted');
+
+      update public.pro_document_agent_access a
+      set revoked_at = coalesce(a.revoked_at, now()),
+          revoked_reason = coalesce(a.revoked_reason, 'legacy_document_missing')
+      where a.workspace_id = v_document.workspace_id
+        and a.document_id = p_document_id
+        and a.revoked_at is null;
+
+      insert into public.pro_document_storage_jobs(
+        workspace_id,
+        document_id,
+        document_version_id,
+        storage_bucket,
+        storage_path,
+        request_id
+      )
+      select
+        v.workspace_id,
+        v.document_id,
+        v.id,
+        v.storage_bucket,
+        v.storage_path,
+        p_request_id
+      from public.pro_document_versions v
+      where v.workspace_id = v_document.workspace_id
+        and v.document_id = p_document_id
+        and v.storage_bucket is not null
+        and v.storage_path is not null
+      on conflict (workspace_id, document_version_id, operation) do nothing;
+
+      perform mediumia_private.pro_write_audit(
+        v_document.workspace_id,
+        'system',
+        null,
+        'legacy_document_missing',
+        'document',
+        p_document_id,
+        null,
+        p_document_id,
+        v_document.current_version_id,
+        p_request_id,
+        '{}'::jsonb
+      );
+    end if;
+
+    delete from public.pro_document_sync_queue q
+    where q.document_id = p_document_id;
+
+    return query select p_document_id, null::uuid, 'legacy_missing'::text, false;
+    return;
+  end if;
+
+  select q.dirty_revision, q.last_request_id
+    into v_queue_revision, v_queue_last_request_id
+  from public.pro_document_sync_queue q
+  where q.workspace_id = v_legacy.workspace_id
+    and q.document_id = p_document_id;
+
+  select case when exists (
+    select 1
+    from public.pro_workspace_members wm
+    where wm.workspace_id = v_legacy.workspace_id
+      and wm.user_id = v_legacy.owner_id
+  ) then v_legacy.owner_id else null end
+  into v_created_by;
+
+  select md5(concat_ws(
+    '|',
+    v_legacy.workspace_id::text,
+    v_legacy.agent_id::text,
+    v_legacy.name,
+    v_legacy.source_type,
+    coalesce(v_legacy.storage_bucket, ''),
+    coalesce(v_legacy.storage_path, ''),
+    coalesce(v_legacy.mime_type, ''),
+    coalesce(v_legacy.size_bytes::text, ''),
+    v_legacy.status,
+    v_legacy.approved_for_ai::text,
+    v_legacy.sensitivity,
+    coalesce((
+      select string_agg(c.chunk_index::text || ':' || md5(c.content), ',' order by c.chunk_index)
+      from public.agent_document_chunks c
+      where c.document_id = v_legacy.id
+        and c.agent_id = v_legacy.agent_id
+        and c.owner_id = v_legacy.owner_id
+    ), '')
+  )) into v_sync_hash;
+
+  if v_document.id is not null and v_document.legacy_sync_hash = v_sync_hash then
+    delete from public.pro_document_sync_queue q
+    where q.workspace_id = v_legacy.workspace_id
+      and q.document_id = p_document_id
+      and v_queue_revision is not null
+      and q.dirty_revision = v_queue_revision;
+    return query select p_document_id, v_document.current_version_id, 'already_synced'::text, true;
+    return;
+  end if;
+
+  if v_document.id is not null then
+    if v_queue_last_request_id = p_request_id then
+      return query select
+        p_document_id,
+        v_document.current_version_id,
+        'divergence'::text,
+        true;
+      return;
+    end if;
+
+    if exists (
+      select 1
+      from public.pro_audit_events a
+      where a.workspace_id = v_legacy.workspace_id
+        and a.request_id = p_request_id
+    ) then
+      raise exception using errcode = 'P0001', message = 'request_id_conflict';
+    end if;
+
+    insert into public.pro_document_sync_queue(
+      workspace_id,
+      document_id,
+      dirty_revision,
+      dirty_at,
+      reason,
+      attempts,
+      next_attempt_at,
+      locked_at,
+      last_error_code,
+      last_request_id
+    ) values (
+      v_legacy.workspace_id,
+      p_document_id,
+      1,
+      now(),
+      'legacy_shadow_divergence',
+      1,
+      now() + interval '30 seconds',
+      null,
+      'legacy_shadow_divergence',
+      p_request_id
+    )
+    on conflict on constraint pro_document_sync_queue_pkey do update set
+      attempts = public.pro_document_sync_queue.attempts + 1,
+      next_attempt_at = now() + make_interval(
+        secs => least(
+          3600,
+          30 * power(2, least(public.pro_document_sync_queue.attempts, 6))::integer
+        )
+      ),
+      locked_at = null,
+      last_error_code = 'legacy_shadow_divergence',
+      last_request_id = p_request_id;
+
+    perform mediumia_private.pro_write_audit(
+      v_legacy.workspace_id,
+      'system',
+      null,
+      'legacy_document_divergence',
+      'document',
+      p_document_id,
+      v_legacy.agent_id,
+      p_document_id,
+      v_document.current_version_id,
+      p_request_id,
+      jsonb_build_object('queue_revision', coalesce(v_queue_revision, 1))
+    );
+
+    return query select
+      p_document_id,
+      v_document.current_version_id,
+      'divergence'::text,
+      false;
+    return;
+  end if;
+
+  v_ready := v_legacy.status = 'ready';
+  v_approved := v_ready and v_legacy.approved_for_ai;
+  v_extraction_status := case v_legacy.status
+    when 'ready' then 'ready'
+    when 'error' then 'failed'
+    when 'uploaded' then 'uploaded'
+    when 'processing' then 'uploaded'
+    when 'archived' then 'failed'
+    else 'failed'
+  end;
+
+  insert into public.pro_documents(
+    id,
+    workspace_id,
+    name,
+    lifecycle_status,
+    sensitivity,
+    ai_enabled,
+    created_by,
+    legacy_sync_hash,
+    legacy_synced_at,
+    created_at,
+    updated_at
+  ) values (
+    v_legacy.id,
+    v_legacy.workspace_id,
+    v_legacy.name,
+    case when v_legacy.status = 'archived' then 'archived' else 'active' end,
+    v_legacy.sensitivity,
+    false,
+    v_created_by,
+    v_sync_hash,
+    now(),
+    v_legacy.created_at,
+    v_legacy.updated_at
+  );
+  v_version_number := greatest(1, v_legacy.version);
+
+  v_version_id := gen_random_uuid();
+  insert into public.pro_document_versions(
+    id,
+    workspace_id,
+    document_id,
+    version_number,
+    source_type,
+    storage_bucket,
+    storage_path,
+    mime_type,
+    size_bytes,
+    extraction_status,
+    extracted_at,
+    approved_for_ai,
+    approved_at,
+    approved_by,
+    approval_origin,
+    published_at,
+    publication_origin,
+    error_code,
+    metadata,
+    created_by,
+    created_at,
+    updated_at
+  ) values (
+    v_version_id,
+    v_legacy.workspace_id,
+    v_legacy.id,
+    v_version_number,
+    v_legacy.source_type,
+    v_legacy.storage_bucket,
+    v_legacy.storage_path,
+    v_legacy.mime_type,
+    v_legacy.size_bytes,
+    v_extraction_status,
+    case when v_ready then coalesce(v_legacy.updated_at, now()) else null end,
+    v_approved,
+    case when v_approved then v_legacy.approved_at else null end,
+    null,
+    case when v_approved then 'legacy_state' else null end,
+    null,
+    null,
+    v_legacy.error_message,
+    coalesce(v_legacy.metadata, '{}'::jsonb)
+      || jsonb_build_object('legacy_document_version', v_legacy.version),
+    v_created_by,
+    v_legacy.created_at,
+    v_legacy.updated_at
+  );
+
+  insert into public.pro_document_chunks(
+    workspace_id, document_id, document_version_id, chunk_index, content, created_at
+  )
+  select
+    c.workspace_id,
+    c.document_id,
+    v_version_id,
+    c.chunk_index,
+    c.content,
+    c.created_at
+  from public.agent_document_chunks c
+  where c.document_id = v_legacy.id
+    and c.agent_id = v_legacy.agent_id
+    and c.owner_id = v_legacy.owner_id
+  order by c.chunk_index;
+
+  insert into public.pro_document_agent_access(
+    workspace_id,
+    document_id,
+    agent_id,
+    grant_source,
+    granted_by,
+    granted_at
+  ) values (
+    v_legacy.workspace_id,
+    v_legacy.id,
+    v_legacy.agent_id,
+    'legacy_backfill',
+    null,
+    now()
+  )
+  on conflict do nothing;
+
+  if v_approved then
+    update public.pro_document_versions v
+    set published_at = now(),
+        publication_origin = 'legacy_backfill',
+        state_revision = v.state_revision + 1
+    where v.id = v_version_id;
+
+    update public.pro_documents d
+    set current_version_id = v_version_id,
+        ai_enabled = true,
+        legacy_sync_hash = v_sync_hash,
+        legacy_synced_at = now(),
+        state_revision = d.state_revision + 1
+    where d.id = p_document_id;
+  else
+    update public.pro_documents d
+    set legacy_sync_hash = v_sync_hash,
+        legacy_synced_at = now()
+    where d.id = p_document_id;
+  end if;
+
+  perform mediumia_private.pro_write_audit(
+    v_legacy.workspace_id,
+    'system',
+    null,
+    'legacy_document_reconciled',
+    'document',
+    p_document_id,
+    v_legacy.agent_id,
+    p_document_id,
+    v_version_id,
+    p_request_id,
+    jsonb_build_object(
+      'version_number', v_version_number,
+      'approval_origin', case when v_approved then 'legacy_state' else null end,
+      'legacy_approved_at_present', v_legacy.approved_at is not null,
+      'publication_origin', case when v_approved then 'legacy_backfill' else null end
+    )
+  );
+
+  delete from public.pro_document_sync_queue q
+  where q.workspace_id = v_legacy.workspace_id
+    and q.document_id = p_document_id
+    and v_queue_revision is not null
+    and q.dirty_revision = v_queue_revision;
+
+  return query select p_document_id, v_version_id, 'synchronized'::text, false;
+end;
+$function$;
+REVOKE ALL ON FUNCTION public.pro_reconcile_legacy_document(uuid,uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.pro_reconcile_legacy_document(uuid,uuid) TO service_role;
 COMMIT;

@@ -21,7 +21,24 @@ if (process.env.MEDIUMIA_ISOLATED_TEST === 'true') {
   }
 }
 
+// Séparation TEST / PRODUCTION : niveau du déploiement figé au build, lu par
+// src/lib/supabase.js pour refuser une base incompatible côté navigateur.
+function deployTier(env) {
+  if (env.MEDIUMIA_ISOLATED_TEST === 'true') return 'isolated_test'
+  if (env.VERCEL_ENV === 'production') return 'production'
+  if (env.VERCEL_ENV === 'preview') return 'preview'
+  if (env.VERCEL_ENV === 'development') return 'development'
+  return 'local'
+}
+const PRODUCTION_SUPABASE_HOST = 'uotkpygeqqnekpolezts.supabase.co'
+if (deployTier(process.env) !== 'production' && String(process.env.VITE_SUPABASE_URL || '').includes(PRODUCTION_SUPABASE_HOST)) {
+  console.warn('[vite] base de Production désignée hors Production : client Supabase désactivé dans ce build')
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'import.meta.env.VITE_MEDIUMIA_DEPLOY_TIER': JSON.stringify(deployTier(process.env)),
+  },
 })

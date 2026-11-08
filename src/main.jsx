@@ -12,6 +12,8 @@ import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 import { supabase } from './lib/supabase.js'
 import { installProOnboardingRedirect } from './lib/proOnboarding.js'
 import { countSiteVisitOnce } from './lib/siteVisit.js'
+import PaymentIssueLauncher from './components/PaymentIssueLauncher.jsx'
+import { installPaymentAttemptObserver } from './lib/paymentAttempt.js'
 
 const pathname = window.location.pathname
 const isConferenceLiveRoute = pathname.startsWith('/live/')
@@ -23,6 +25,10 @@ installProOnboardingRedirect(supabase)
 
 // Compteur de visites du site (une fois par visite, sans cookie).
 countSiteVisitOnce()
+
+// « Signaler un problème de paiement » : contexte de la dernière tentative,
+// observé sans jamais modifier le paiement.
+installPaymentAttemptObserver()
 
 let page = <App />
 if (isConferenceLiveRoute) page = <ConferenceLivePage />
@@ -37,5 +43,6 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AppErrorBoundary>{page}</AppErrorBoundary>
     <AppErrorBoundary silent><GlobalAccount /></AppErrorBoundary>
+    <AppErrorBoundary silent><PaymentIssueLauncher /></AppErrorBoundary>
   </StrictMode>,
 )

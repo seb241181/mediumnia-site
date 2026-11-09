@@ -179,7 +179,9 @@ test('completed provisioned order returns alreadyProvisioned before any PayPal r
 test('retry after a lost capture response reconciles by deterministic order and capture identifiers', async () => {
   const { handler, migration } = await sources()
 
-  assert.match(handler, /PayPal-Request-Id': `mediumia-pass-capture-\$\{orderId\}`/)
+  // Clé de capture déterministe pour une même approbation de la commande (rejeu idempotent).
+  assert.match(handler, /'PayPal-Request-Id': captureRequestId\(order\)/)
+  assert.match(handler, /mediumia-pass-capture-\$\{order\?\.id\}-\$\{sha256Hex\(`\$\{order\?\.id\}:\$\{approval\}`\)/)
   assert.match(handler, /redeem_conference_pass_after_payment/)
   assert.match(migration, /if v_pass\.paypal_capture_id = trim\(p_paypal_capture_id\) and v_pass\.redeemed_at is not null then/)
   assert.match(migration, /'alreadyRedeemed', true/)
@@ -215,7 +217,7 @@ test('refresh with completed existing order reconciles instead of creating a new
 
   assert.ok(completedReturn > -1)
   assert.ok(completedReturn < createOrder)
-  assert.match(page, /if \(data\.completed\) \{\s*await captureExistingOrder\(data\.id\)/)
+  assert.match(page, /if \(data\.completed\) \{[\s\S]{0,200}await captureExistingOrder\(data\.id\)/)
   assert.match(page, /conference_pass_reconciled/)
   assert.match(page, /err\?\.message === 'conference_pass_reconciled'/)
 })
@@ -258,9 +260,12 @@ test('conference pass handler awaits async branches so errors stay inside its ca
 test('frontend keeps raw pass token in fragment flow and never hardcodes a promo amount', async () => {
   const { page } = await sources()
 
-  assert.match(page, /new URLSearchParams/)
-  assert.match(page, /params\.get\('pass'\)/)
-  assert.match(page, /window\.history\.replaceState/)
+  // Jeton lu dans le fragment puis retiré de l'adresse (module dédié, conservé dans l'onglet).
+  const tokenModule = await readFile(new URL('../src/lib/conferencePassToken.js', import.meta.url), 'utf8')
+  assert.match(page, /takePassToken\(\)/)
+  assert.match(tokenModule, /new URLSearchParams/)
+  assert.match(tokenModule, /params\.get\('pass'\)/)
+  assert.match(tokenModule, /history\?\.replaceState/)
   assert.match(page, /conferencePassAction='/)
   assert.match(page, /fetch\(`\$\{API\}config`/)
   assert.match(page, /fetch\(`\$\{API\}create`/)

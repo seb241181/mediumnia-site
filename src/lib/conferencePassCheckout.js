@@ -16,6 +16,9 @@ export function needsButtonsRender(previous, next) {
     || previous.attempt !== next.attempt
 }
 
+// Statuts PayPal qui prouvent qu'aucun encaissement n'a eu lieu sur cette commande.
+const NOT_PAID_STATUSES = new Set(['CREATED', 'SAVED', 'PAYER_ACTION_REQUIRED', 'VOIDED', 'NOT_FOUND'])
+
 export async function reconcileApprovedOrder(orderId, { capture, status }) {
   const confirmed = await capture(orderId).then(
     (result) => ({ ok: true, result }),
@@ -25,12 +28,11 @@ export async function reconcileApprovedOrder(orderId, { capture, status }) {
 
   const known = await status(orderId).catch(() => null)
 
-  // Serveur injoignable, ou paiement enregistré sans accès confirmé : pas de nouveau paiement.
-  if (!known || known.captured || known.redeemed || known.passStatus === 'captured' || known.passStatus === 'redeemed') {
-    return { outcome: 'uncertain', error: confirmed.error }
-  }
-
-  // Aucune capture connue : un nouvel essai est possible. Le serveur revérifie de toute
-  // façon la commande chez PayPal avant de la réutiliser ou d'en créer une autre.
-  return { outcome: 'retry', error: confirmed.error }
+  // Nouveau paiement proposé seulement si PayPal confirme qu'il n'y a eu aucun
+  // encaissement et que rien n'est enregistré chez nous. Tout autre cas (commande payée
+  // ou approuvée, état inconnu, serveur injoignable) : vérification, jamais de bouton.
+  const provablyUnpaid = known
+    && !known.redeemed && !known.captured && !known.paymentRecorded
+    && NOT_PAID_STATUSES.has(String(known.paypalStatus || ''))
+  return { outcome: provablyUnpaid ? 'retry' : 'uncertain', error: confirmed.error }
 }

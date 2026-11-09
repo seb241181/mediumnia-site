@@ -29,6 +29,7 @@ function pass(overrides = {}) {
     id: '11111111-1111-4111-8111-111111111111', event_id: 'e', registration_id: 'r', status: 'reserved',
     paypal_order_id: OLD, paypal_capture_id: null, paypal_env: 'sandbox', amount_cents: 100, currency: 'EUR',
     reference_id: 'MEDIUMIA_CONFERENCE_PASS_SANDBOX', redeemed_at: null, expires_at: '2099-01-01T00:00:00Z',
+    reserved_at: '2026-11-01T12:20:06Z',
     terms_accepted_at: '2026-11-01T12:20:06Z', immediate_access_accepted_at: '2026-11-01T12:20:06Z', ...overrides,
   }
 }

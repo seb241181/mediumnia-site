@@ -15,39 +15,30 @@ delete process.env.VERCEL_ENV
 const { handleConferencePassPayPal, isExpiredPaypalOrder, describePaypalError } = await import('../lib/conferencePassPayPal.js')
 import fs from 'node:fs'
 
+import { fakeConferenceDb } from './helpers/conferencePassFakeDb.js'
+
 const OLD = 'OLDORDER12345678A'
 const NEW = 'NEWORDER12345678B'
 
-function fakeSupabase(passOverrides = {}) {
-  const calls = []
-  const pass = {
-    id: '11111111-1111-4111-8111-111111111111', event_id: 'e', registration_id: 'r', status: 'reserved',
-    paypal_order_id: OLD, paypal_capture_id: null, paypal_env: 'sandbox', amount_cents: 100, currency: 'EUR',
-    reference_id: 'MEDIUMIA_CONFERENCE_PASS_SANDBOX', redeemed_at: null, expires_at: '2099-01-01T00:00:00Z',
-    terms_accepted_at: '2026-11-01T12:20:06Z', immediate_access_accepted_at: '2026-11-01T12:20:06Z', ...passOverrides,
-  }
-  return {
-    calls,
-    rpc(name, args) {
-      calls.push({ rpc: name, args })
-      if (name === 'validate_conference_pass') return Promise.resolve({ data: { ok: true, offerEnabled: true, offerAmountCents: 49900 }, error: null })
-      if (name === 'release_conference_pass_checkout') return Promise.resolve({ data: { ok: true }, error: null })
-      if (name === 'reserve_conference_pass_checkout') return Promise.resolve({ data: { ok: true }, error: null })
-      return Promise.resolve({ data: null, error: { message: 'unexpected' } })
+function fakeSupabase(passOverrides = {}, dbOptions = {}) {
+  return fakeConferenceDb({
+    ...dbOptions,
+    pass: {
+      id: '11111111-1111-4111-8111-111111111111', event_id: 'e', registration_id: 'r', status: 'reserved',
+      paypal_order_id: OLD, paypal_capture_id: null, paypal_env: 'sandbox', amount_cents: 100, currency: 'EUR',
+      reference_id: 'MEDIUMIA_CONFERENCE_PASS_SANDBOX', redeemed_at: null, expires_at: '2099-01-01T00:00:00Z',
+      reserved_at: '2026-11-01T12:20:06Z',
+      terms_accepted_at: '2026-11-01T12:20:06Z', immediate_access_accepted_at: '2026-11-01T12:20:06Z', ...passOverrides,
     },
-    from() {
-      const builder = { select: () => builder, eq: () => builder, is: () => builder, update: () => builder, maybeSingle: () => Promise.resolve({ data: pass, error: null }) }
-      return builder
-    },
-  }
+  })
 }
 
 function fakeRes() {
   return { statusCode: 0, body: null, headers: {}, setHeader(k, v) { this.headers[k] = v }, status(c) { this.statusCode = c; return this }, json(b) { this.body = b; return this } }
 }
 
-async function attempt({ lookup, passOverrides } = {}) {
-  const supabase = fakeSupabase(passOverrides)
+async function attempt({ lookup, passOverrides, db } = {}) {
+  const supabase = fakeSupabase(passOverrides, db)
   const paypal = []
   const logs = []
   const realFetch = globalThis.fetch
@@ -125,7 +116,8 @@ const PAYPAL_404 = { name: 'RESOURCE_NOT_FOUND', message: 'The specified resourc
 
 test('la réponse exacte de PayPal est journalisée (code, nom, motif, debug_id), sans donnée personnelle', async () => {
   const expired = await attempt({ lookup: { status: 404, body: PAYPAL_404 } })
-  assert.ok(expired.logs.some((l) => l.includes('order lookup HTTP 404 name=RESOURCE_NOT_FOUND issue=INVALID_RESOURCE_ID debug_id=f1e2d3c4b5a69 -> pass released')))
+  assert.ok(expired.logs.some((l) => l.includes('order lookup HTTP 404 name=RESOURCE_NOT_FOUND issue=INVALID_RESOURCE_ID debug_id=f1e2d3c4b5a69')))
+  assert.ok(expired.logs.some((l) => l.includes('expired order released after checks')))
   const auth = await attempt({ lookup: { status: 401, body: { error: 'invalid_token', error_description: 'Token signature verification failed' } } })
   assert.ok(auth.logs.some((l) => l.includes('order lookup HTTP 401 name=invalid_token')))
   assert.equal(auth.res.body.error, 'paypal_order_fetch_failed')
@@ -149,7 +141,7 @@ test('reprise : même tarif, même référence, même produit ; accès Formation
   assert.equal(order.purchase_units[0].reference_id, 'MEDIUMIA_CONFERENCE_PASS_SANDBOX')
   const reserve = supabase.calls.find((c) => c.rpc === 'reserve_conference_pass_checkout').args
   assert.deepEqual([reserve.p_amount_cents, reserve.p_currency, reserve.p_reference_id], [100, 'EUR', 'MEDIUMIA_CONFERENCE_PASS_SANDBOX'])
-  const rpcs = supabase.calls.map((c) => c.rpc)
+  const rpcs = supabase.calls.filter((c) => c.rpc).map((c) => c.rpc)
   assert.deepEqual(rpcs, ['validate_conference_pass', 'release_conference_pass_checkout', 'reserve_conference_pass_checkout'], 'aucun droit ni accès accordé à la création')
   assert.ok(!paypal.some((c) => c.url.includes('/capture')))
 })

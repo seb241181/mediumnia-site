@@ -15,6 +15,8 @@ const { needsButtonsRender, reconcileApprovedOrder } = await import('../src/lib/
 const { handleConferencePassPayPal } = await import('../lib/conferencePassPayPal.js')
 const page = fs.readFileSync(new URL('../src/components/ConferencePassPage.jsx', import.meta.url), 'utf8')
 
+import { fakeConferenceDb } from './helpers/conferencePassFakeDb.js'
+
 const ORDER = 'ORDERAPPROVED1234'
 const NEW = 'NEWORDER12345678B'
 
@@ -26,28 +28,8 @@ function withEnv(values, fn) {
   })
 }
 
-function fakeSupabase({ pass, event = { title: 'Conférence', pass_offer_amount_cents: 49900, pass_offer_currency: 'EUR', pass_offer_enabled: true, pass_normal_amount_cents: 59700 }, validate } = {}) {
-  const calls = []
-  return {
-    calls,
-    rpc(name, args) {
-      calls.push({ rpc: name, args })
-      if (name === 'validate_conference_pass') return Promise.resolve({ data: validate, error: null })
-      if (name === 'reserve_conference_pass_checkout' || name === 'release_conference_pass_checkout') return Promise.resolve({ data: { ok: true }, error: null })
-      return Promise.resolve({ data: null, error: { message: `rpc ${name} non simulée` } })
-    },
-    from(table) {
-      calls.push({ from: table })
-      const rows = { conference_passes: pass, conference_events: event }
-      const builder = {
-        select: () => builder, eq: () => builder, is: () => builder, in: () => builder, order: () => builder, limit: () => builder,
-        update: () => builder, insert: () => builder,
-        maybeSingle: () => Promise.resolve({ data: rows[table] ?? null, error: null }),
-        single: () => Promise.resolve({ data: rows[table] ?? null, error: null }),
-      }
-      return builder
-    },
-  }
+function fakeSupabase(options = {}) {
+  return fakeConferenceDb(options)
 }
 
 function fakeRes() {
@@ -111,20 +93,31 @@ test('réconciliation : capture incertaine -> jamais de boutons tant qu’un pai
   assert.equal((await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => ({ captured: true, redeemed: false }) })).outcome, 'uncertain', 'capture enregistrée sans accès')
   assert.equal((await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => { throw new Error('offline') } })).outcome, 'uncertain', 'serveur injoignable')
   assert.equal((await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => ({ passStatus: 'redeemed' }) })).outcome, 'uncertain')
-  const retry = await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => ({ passStatus: 'reserved', captured: false, redeemed: false }) })
-  assert.equal(retry.outcome, 'retry', 'aucune capture connue : nouvel essai, revérifié par le serveur')
+  assert.equal((await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => ({ passStatus: 'reserved', captured: false, redeemed: false }) })).outcome, 'uncertain', 'état PayPal absent : vérification')
+  for (const paypalStatus of ['COMPLETED', 'APPROVED', 'UNKNOWN']) {
+    assert.equal((await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => ({ passStatus: 'reserved', paypalStatus }) })).outcome, 'uncertain', `PayPal ${paypalStatus} : jamais de bouton`)
+  }
+  assert.equal((await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => ({ passStatus: 'reserved', paypalStatus: 'CREATED', paymentRecorded: true }) })).outcome, 'uncertain', 'encaissement enregistré chez nous')
+  for (const paypalStatus of ['CREATED', 'PAYER_ACTION_REQUIRED', 'VOIDED', 'NOT_FOUND']) {
+    const retry = await reconcileApprovedOrder(ORDER, { capture: failing, status: async () => ({ passStatus: 'reserved', captured: false, redeemed: false, paymentRecorded: false, paypalStatus }) })
+    assert.equal(retry.outcome, 'retry', `PayPal ${paypalStatus} et rien chez nous : nouvel essai, revérifié par le serveur`)
+  }
   let attempts = 0
   await reconcileApprovedOrder(ORDER, { capture: async () => { attempts += 1; throw new Error('x') }, status: async () => ({}) })
   assert.equal(attempts, 1, 'une seule confirmation par réconciliation')
 })
 
 test('page : la confirmation échouée passe par la réconciliation, jamais directement aux boutons', () => {
-  assert.match(page, /onApprove: async \(data\) => \{\s*setState\('payment'\)\s*try \{\s*await captureExistingOrder\(data\.orderID\)\s*\} catch \{\s*await settleApprovedOrder\(data\.orderID/)
+  assert.match(page, /onApprove: async \(data, actions\) => \{\s*setState\('payment'\)\s*try \{\s*await captureExistingOrder\(data\.orderID\)\s*\} catch \(err\) \{/)
+  assert.match(page, /err\?\.message === 'paypal_instrument_declined' && actions\?\.restart[\s\S]{0,80}return actions\.restart\(\)[\s\S]{0,40}\}\s*await settleApprovedOrder\(data\.orderID/)
+  assert.match(page, /if \(data\.completed\) \{[\s\S]{0,140}captureExistingOrder\(data\.id\)\.catch\(\(\) => settleApprovedOrder\(data\.id/, 'commande déjà payée : vérification si l’activation échoue')
+  assert.match(page, /err\?\.message === 'paypal_order_verification_required'[\s\S]{0,80}setState\('verification_required'\)/)
   assert.match(page, /if \(!needsButtonsRender\(renderedRef\.current, target\)\) return/)
   assert.match(page, /\[state, config, passToken, consentsOk, attempt\]/)
-  assert.match(page, /onError: \(err\) => \{[\s\S]{0,200}setAttempt\(\(value\) => value \+ 1\)/)
+  assert.match(page, /onError: \(err\) => \{[\s\S]{0,600}setAttempt\(\(value\) => value \+ 1\)/)
   assert.equal(page.match(/ref=\{paypalRef\}/g).length, 1, 'un seul conteneur PayPal')
-  const validBlock = page.slice(page.indexOf("{visibleState === 'valid' && ("))
+  const validBlock = page.slice(page.indexOf("{['valid', 'payment'].includes(visibleState) && ("))
+  assert.match(page, /className=\{visibleState === 'payment' \? 'hidden' : ''\}/, 'conteneur PayPal masqué mais monté pendant la confirmation')
   assert.ok(validBlock.includes('ref={paypalRef}'), 'conteneur PayPal uniquement dans l’état « valid »')
   const uncertain = page.slice(page.indexOf("{visibleState === 'uncertain' && ("), page.indexOf("{['success', 'already_provisioned']"))
   assert.ok(!uncertain.includes('paypalRef') && uncertain.includes('Vérifier mon paiement'))

@@ -4,6 +4,7 @@ import ConferencePassRequest from './ConferencePassRequest'
 import PayPalGuestNotice from './PayPalGuestNotice.jsx'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
 import { needsButtonsRender, reconcileApprovedOrder } from '../lib/conferencePassCheckout.js'
+import { forgetPassToken, takePassToken } from '../lib/conferencePassToken.js'
 
 const API = '/api/rdv-config?conferencePassAction='
 const PAYPAL_SCRIPT_ID = 'mediumia-paypal-sdk'
@@ -28,15 +29,8 @@ function timeLeftLabel(expiresAt) {
   return `${hours} h ${minutes} min`
 }
 
-function readPassToken() {
-  const hash = window.location.hash || ''
-  const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
-  const token = params.get('pass') || ''
-  if (token) window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`)
-  return token
-}
 
-function loadPayPalSdk(clientId) {
+function loadPayPalSdk(clientId, env) {
   if (window.paypal?.Buttons) return Promise.resolve()
   return new Promise((resolve, reject) => {
     const existing = document.getElementById(PAYPAL_SCRIPT_ID)
@@ -47,7 +41,9 @@ function loadPayPalSdk(clientId) {
     }
     const script = document.createElement('script')
     script.id = PAYPAL_SCRIPT_ID
-    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons,messages&enable-funding=paylater`
+    // Sandbox uniquement : pays acheteur France, pour afficher le paiement en plusieurs fois en test.
+    const sandboxCountry = env === 'sandbox' ? '&buyer-country=FR' : ''
+    script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture&components=buttons,messages&enable-funding=paylater${sandboxCountry}`
     script.async = true
     script.onload = resolve
     script.onerror = () => reject(new Error('paypal_sdk_load_failed'))
@@ -75,6 +71,7 @@ function messageForState(state, error) {
   if (state === 'already_redeemed') return 'Ce Pass a déjà été utilisé pour activer un accès MediumIA.'
   if (state === 'invalid') return 'Ce Pass est introuvable ou invalide.'
   if (state === 'offer_disabled') return 'L’offre spéciale conférence n’est pas encore configurée.'
+  if (state === 'verification_required') return 'Votre précédente tentative de paiement doit être vérifiée avant tout nouveau règlement. Aucun nouveau paiement n’a été demandé. Réessayez dans quelques minutes ; si le message persiste, contactez-nous.'
   if (state === 'uncertain') return 'Votre paiement est peut-être déjà enregistré par PayPal. Ne payez pas une seconde fois : vérifiez d’abord son état ci-dessous.'
   if (error) return `${userErrorMessage(error, 'Le paiement n’a pas abouti.')} Votre Pass reste valable : vous pouvez réessayer.`
   return ''
@@ -116,6 +113,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   const [pendingOrderId, setPendingOrderId] = useState('')
   const paypalRef = useRef(null)
   const renderedRef = useRef(null)
+  const buttonsRef = useRef(null)
   const messageRef = useRef(null)
   const consentsOk = termsAccepted && immediateAccessAccepted
 
@@ -127,6 +125,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
     })
     const result = await res.json().catch(() => ({}))
     if (!res.ok || result.access?.status !== 'provisioned') throw new Error(result.error || 'access_provision_failed')
+    forgetPassToken()
     setState(result.alreadyProvisioned ? 'already_provisioned' : 'success')
     return result
   }
@@ -137,7 +136,8 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
 
     ;(async () => {
       try {
-        let token = readPassToken()
+        // Lien du Pass ou jeton conservé dans l'onglet (annulation, rechargement, retour PayPal).
+        const token = takePassToken()
 
         if (cancelled) return
         setPassToken(token)
@@ -160,6 +160,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
       } catch (err) {
         if (cancelled) return
         const code = err.message || 'invalid_pass'
+        if (code === 'expired' || code === 'already_redeemed') forgetPassToken()
         setState(code === 'expired' || code === 'already_redeemed' || code === 'offer_disabled' ? code : 'invalid')
       }
     })()
@@ -181,7 +182,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
   useEffect(() => {
     if (state !== 'valid' || !config?.paypal?.clientId || !messageRef.current) return
     let cancelled = false
-    loadPayPalSdk(config.paypal.clientId)
+    loadPayPalSdk(config.paypal.clientId, config.paypal.env)
       .then(() => {
         if (cancelled || !window.paypal?.Messages || !messageRef.current) return
         messageRef.current.innerHTML = ''
@@ -204,12 +205,14 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
     if (!needsButtonsRender(renderedRef.current, target)) return
 
     let cancelled = false
+    try { buttonsRef.current?.close?.() } catch { /* ancienne instance déjà fermée */ }
+    buttonsRef.current = null
     paypalRef.current.innerHTML = ''
-    loadPayPalSdk(config.paypal.clientId)
+    loadPayPalSdk(config.paypal.clientId, config.paypal.env)
       .then(() => {
         if (cancelled || !window.paypal?.Buttons) return
         renderedRef.current = target
-        return window.paypal.Buttons({
+        const buttons = window.paypal.Buttons({
           style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' },
           createOrder: async () => {
             setError('')
@@ -221,16 +224,23 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
             const data = await res.json().catch(() => ({}))
             if (!res.ok || !data.id) throw new Error(data.error || 'paypal_create_order_failed')
             if (data.completed) {
-              await captureExistingOrder(data.id)
+              // Commande déjà payée : rapprochement, et vérification si l'activation échoue.
+              await captureExistingOrder(data.id).catch(() => settleApprovedOrder(data.id, { capture: captureExistingOrder, setState, setError, setPendingOrderId, setAttempt }))
               throw new Error('conference_pass_reconciled')
             }
             return data.id
           },
-          onApprove: async (data) => {
+          onApprove: async (data, actions) => {
             setState('payment')
             try {
               await captureExistingOrder(data.orderID)
-            } catch {
+            } catch (err) {
+              // Refus du moyen de paiement au moment de l'encaissement : PayPal fait
+              // choisir un autre moyen sur la même commande (aucun débit possible en double).
+              if (err?.message === 'paypal_instrument_declined' && actions?.restart) {
+                setState('valid')
+                return actions.restart()
+              }
               await settleApprovedOrder(data.orderID, { capture: captureExistingOrder, setState, setError, setPendingOrderId, setAttempt })
             }
           },
@@ -239,11 +249,18 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
           onCancel: () => setState('valid'),
           onError: (err) => {
             if (err?.message === 'conference_pass_reconciled') return
+            if (err?.message === 'paypal_order_verification_required') {
+              setError(err.message)
+              setState('verification_required')
+              return
+            }
             setError(err?.message || 'paypal_error')
             setState('valid')
             setAttempt((value) => value + 1)
           },
-        }).render(paypalRef.current)
+        })
+        buttonsRef.current = buttons
+        return buttons.render(paypalRef.current)
       })
       .catch((err) => {
         setError(err.message || 'paypal_sdk_load_failed')
@@ -325,6 +342,12 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
               )}
               {visibleState === 'payment' && <p className="mb-4 font-georgia text-sm text-mist">Paiement en cours de confirmation…</p>}
               {visibleState === 'reconciling' && <p className="mb-4 font-georgia text-sm text-mist">Vérification de votre paiement auprès de PayPal…</p>}
+              {visibleState === 'verification_required' && (
+                <div className="font-georgia text-sm leading-relaxed text-mist">
+                  <p className="text-deep">{notice}</p>
+                  <button type="button" onClick={() => { setError(''); setAttempt((value) => value + 1); setState('valid') }} className="mt-4 inline-flex rounded-lg border border-gold/45 px-5 py-2.5 font-semibold text-deep hover:bg-gold/10">Réessayer</button>
+                </div>
+              )}
               {visibleState === 'uncertain' && (
                 <div className="font-georgia text-sm leading-relaxed text-mist">
                   <p className="text-deep">{notice}</p>
@@ -338,8 +361,10 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   <a href={STUDENT_SPACE_URL} className="mt-5 inline-flex rounded-lg bg-gold px-6 py-3 font-bold text-deep">Accéder à mon espace élève →</a>
                 </div>
               )}
-              {visibleState === 'valid' && (
-                <>
+              {['valid', 'payment'].includes(visibleState) && (
+                // Pendant la confirmation, le bloc reste monté (boutons PayPal masqués) :
+                // l'instance PayPal survit, ce qui permet actions.restart() après un refus.
+                <div className={visibleState === 'payment' ? 'hidden' : ''} aria-hidden={visibleState === 'payment'}>
                   <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
                     Ce Pass n’est consommé qu’après paiement PayPal réussi et activation effective de l’accès. Un simple affichage de cette page ne l’utilise pas.
                   </p>
@@ -366,7 +391,7 @@ export default function ConferencePassPage({ onBack, onNavigate }) {
                   {consentsOk
                     ? <div ref={paypalRef} className="min-h-[52px]" />
                     : <p className="font-georgia text-xs text-mist">Cochez les deux cases ci-dessus pour afficher le paiement PayPal.</p>}
-                </>
+                </div>
               )}
             </div>
           </div>

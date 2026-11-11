@@ -358,7 +358,8 @@ export default function GlobalAccount() {
   }
 
   // Page de réservation : pas de bulle « Connexion » par-dessus le parcours.
-  const hideLauncher = pathname.startsWith('/rdv/')
+  // Espace client : la page gère elle-même la connexion.
+  const hideLauncher = pathname.startsWith('/rdv/') || pathname.startsWith('/mon-espace')
 
   return (
     <>
@@ -412,7 +413,10 @@ export default function GlobalAccount() {
             ) : (
               <>
                 <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Mon compte MediumIA</p>
-                <h2 className="mt-2 font-georgia text-2xl font-medium">Mon profil</h2>
+                <a href="/mon-espace" className="mt-3 block rounded-xl border-2 border-gold/45 bg-gold/[.08] px-4 py-3 text-center font-georgia text-sm font-bold text-deep hover:border-gold">
+                  Mes rendez-vous et mes règlements →
+                </a>
+                <h2 className="mt-5 font-georgia text-2xl font-medium">Mon profil</h2>
                 <p className="mt-1 font-georgia text-xs text-mist">{user.email}</p>
                 <p className="mt-4 rounded-xl border border-gold/25 bg-white/60 p-4 font-georgia text-xs leading-relaxed text-mist">
                   Les informations de naissance sont facultatives. Si vous choisissez de les enregistrer, elles servent à préremplir Chronosphère. Vous pouvez les modifier ou les effacer ici à tout moment.

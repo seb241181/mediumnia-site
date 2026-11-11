@@ -6,6 +6,7 @@ import ConferenceLivePage from './components/ConferenceLivePage.jsx'
 import ConferenceCockpitPage from './components/ConferenceCockpitPage.jsx'
 import ConferenceRehearsalTokenPage from './components/ConferenceRehearsalTokenPage.jsx'
 import GlobalAccount from './components/GlobalAccount.jsx'
+import AccountPage from './components/account/AccountPage.jsx'
 import AppErrorBoundary from './components/AppErrorBoundary.jsx'
 import { supabase } from './lib/supabase.js'
 import { installProOnboardingRedirect } from './lib/proOnboarding.js'
@@ -26,6 +27,8 @@ let page = <App />
 if (isConferenceLiveRoute) page = <ConferenceLivePage />
 if (isConferenceCockpitRoute) page = <ConferenceCockpitPage />
 if (isConferenceRehearsalRoute) page = <ConferenceRehearsalTokenPage />
+// Espace client : rendez-vous et règlements du compte connecté.
+if (pathname === '/mon-espace' || pathname.startsWith('/mon-espace/')) page = <AccountPage />
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

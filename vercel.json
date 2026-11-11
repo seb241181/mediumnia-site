@@ -125,6 +125,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/mon-espace",
+      "destination": "/index.html"
+    },
+    {
       "source": "/defi-intuition",
       "destination": "/index.html"
     },

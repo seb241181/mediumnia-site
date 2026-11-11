@@ -20,6 +20,7 @@ import { handleFormationPath } from '../lib/formationPath.js'
 import { handleDefi } from '../lib/defiIntuitionServer.js'
 import { handleCspReport } from '../lib/cspReport.js'
 import { handleEmailQuestions } from '../lib/emailQuestions.js'
+import { handleAccountApi } from '../lib/accountApiHandler.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -41,6 +42,10 @@ export default async function handler(req, res) {
 
   const questionAction = req.query?.questionAction
   if (questionAction) return handleEmailQuestions(req, res, questionAction)
+
+  // Espace client : rendez-vous et règlements du compte connecté.
+  const accountAction = req.query?.accountAction
+  if (accountAction) return handleAccountApi(req, res, accountAction)
 
   const rdvBalanceAction = req.query?.rdvBalanceAction
   if (rdvBalanceAction === 'cron') {

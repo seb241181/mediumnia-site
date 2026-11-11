@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../lib/useAuth.js'
 import { isSupabaseConfigured } from '../../lib/supabase.js'
 import EmailPreferences from './EmailPreferences.jsx'
+import ProfileForm from './ProfileForm.jsx'
 import {
   ACCOUNT_PATH,
   bookingCalendarLinks,
@@ -269,10 +270,10 @@ async function fetchOverview(token) {
   }
 }
 
-const TABS = [['rdv', 'Mes rendez-vous'], ['paiements', 'Mes paiements'], ['preferences', 'Mes préférences']]
+const TABS = [['rdv', 'Mes rendez-vous'], ['paiements', 'Mes paiements'], ['profil', 'Mon profil']]
 
 export default function AccountPage() {
-  const { session, user, loading, signOut, sendEmailCode, verifyEmailCode } = useAuth()
+  const { session, user, loading, signOut, sendEmailCode, verifyEmailCode, requestEmailChange } = useAuth()
   const [tab, setTab] = useState('rdv')
   const [state, setState] = useState({ status: 'idle', overview: null })
   const [attempt, setAttempt] = useState(0)
@@ -315,8 +316,13 @@ export default function AccountPage() {
         ))}
       </nav>
 
-      {tab === 'preferences' && <div className="mt-8"><EmailPreferences token={token} email={user.email} /></div>}
-      <div className="mt-8" hidden={tab === 'preferences'}>
+      {tab === 'profil' && (
+        <div className="mt-8">
+          <ProfileForm token={token} email={user.email} requestEmailChange={requestEmailChange} />
+          <div className="mt-10"><EmailPreferences token={token} email={user.email} /></div>
+        </div>
+      )}
+      <div className="mt-8" hidden={tab === 'profil'}>
         {(state.status === 'loading' || state.status === 'idle') && <p className="font-georgia text-sm text-mist" role="status">Chargement de vos rendez-vous…</p>}
         {state.status === 'unverified' && (
           <p className="rounded-2xl border border-gold/35 bg-gold/[.08] p-5 font-georgia text-sm leading-relaxed">

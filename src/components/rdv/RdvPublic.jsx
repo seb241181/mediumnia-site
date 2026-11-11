@@ -12,6 +12,7 @@ import { useAuth } from '../../lib/useAuth.js'
 import AccountInvite from '../account/AccountInvite.jsx'
 import { AccountChoice, MarketingConsentField, SignedInNotice, VideoChannelField } from './RdvContactChoices.jsx'
 import { validPhone } from '../../lib/rdvContact.js'
+import { bookingPrefill, fetchAccountProfile } from '../../lib/accountProfile.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -649,8 +650,8 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
 
 // ── Contact form ──────────────────────────────────────────────────────────────
 
-function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →', isVideo = false, accountEmail = null }) {
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: accountEmail || '', phone: '', message: '', videoChannel: '', wantsAccount: '', marketingOptIn: false })
+function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →', isVideo = false, accountEmail = null, prefill = null }) {
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: accountEmail || '', phone: '', message: '', videoChannel: '', wantsAccount: '', marketingOptIn: false, ...(prefill || {}) })
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -902,7 +903,15 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const [bookingResult, setBookingResult] = useState(null)
   const [paymentCustomer, setPaymentCustomer] = useState(null)
   // Espace personnel : compte connecté, et choix fait dans le formulaire.
-  const { user: accountUser } = useAuth()
+  const { user: accountUser, session: accountSession } = useAuth()
+  const accountToken = accountSession?.access_token || null
+  const [accountProfile, setAccountProfile] = useState(null)
+  useEffect(() => {
+    if (!accountToken) return undefined
+    let active = true
+    fetchAccountProfile(accountToken).then((data) => { if (active) setAccountProfile(data?.profile || null) })
+    return () => { active = false }
+  }, [accountToken])
   const [accountIntent, setAccountIntent] = useState({ wanted: false, email: '' })
   const [checkoutId, setCheckoutId] = useState(null)
   const [bookingLoading, setBookingLoading] = useState(false)
@@ -1402,7 +1411,8 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   <h2 className="font-georgia font-medium text-xl">Vos coordonnées</h2>
                 </div>
                 <ContactForm
-                  key={accountUser?.id || 'sans-compte'}
+                  key={`${accountUser?.id || 'sans-compte'}:${accountUser && accountProfile ? 'profil' : ''}`}
+                  prefill={accountUser ? bookingPrefill(accountProfile, selectedModality === 'video') : null}
                   isVideo={selectedModality === 'video'}
                   accountEmail={accountUser?.email || null}
                   onSubmit={handleConfirm}

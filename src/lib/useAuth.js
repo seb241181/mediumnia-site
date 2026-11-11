@@ -64,5 +64,12 @@ export function useAuth() {
     return supabase.auth.verifyOtp({ email, token: code, type: 'email' })
   }, [])
 
-  return { session, user: session?.user ?? null, loading, signUp, signIn, signOut, sendEmailCode, verifyEmailCode }
+  // Changement d'adresse : Supabase envoie un lien à la nouvelle adresse ;
+  // rien ne change tant qu'il n'a pas été cliqué.
+  const requestEmailChange = useCallback(async (email, { redirectTo } = {}) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.updateUser({ email: String(email || '').trim().toLowerCase() }, redirectTo ? { emailRedirectTo: redirectTo } : undefined)
+  }, [])
+
+  return { session, user: session?.user ?? null, loading, signUp, signIn, signOut, sendEmailCode, verifyEmailCode, requestEmailChange }
 }

@@ -15,9 +15,11 @@ function formatWhen(startsAt, timezone = 'Europe/Paris') {
 export default function RdvCancellation({ onBack }) {
   const [token] = useState(() => {
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-    const value = params.get('token') || ''
-    window.history.replaceState({}, '', window.location.pathname)
-    return value
+    // Do not clear the URL hash during React rendering. React can invoke
+    // state initializers more than once before committing a render; removing
+    // #token here makes a subsequent initialization see an empty token.
+    // Keeping it also allows the cancellation page to be reloaded safely.
+    return params.get('token') || ''
   })
   const [booking, setBooking] = useState(null)
   const [loading, setLoading] = useState(() => Boolean(token))

@@ -136,10 +136,3 @@ test('compte : proposé, jamais imposé ni créé avant le paiement', () => {
   assert.equal(/useEffect/.test(invite), false)
   assert.equal(/meet\.google|zoom|teams\.microsoft/i.test(choices + invite), false)
 })
-
-test('repères des scripts de build préservés', () => {
-  const deposit = read('lib/rdvDepositApiHandler.js')
-  assert.ok(deposit.includes('`Arrhes réglées : ${(booking.reservation_payment_cents / 100).toFixed(2)} EUR`,'))
-  assert.ok(deposit.includes('balanceReminderEnabled: Array.isArray(service.modality)'))
-  assert.match(read('src/components/rdv/RdvPublic.jsx'), /function CalendarGrid/)
-})

@@ -8,6 +8,10 @@ import VideoInterview from '../VideoInterview'
 import { nextCalendarMonth } from '../../lib/rdvCalendarAutoAdvance.js'
 import { trackMediumiaMetric } from '../../lib/mediumiaMetrics.js'
 import { getRdvEmailConfirmation } from '../../../lib/rdvEmailConfirmation.js'
+import { useAuth } from '../../lib/useAuth.js'
+import AccountInvite from '../account/AccountInvite.jsx'
+import { AccountChoice, SignedInNotice, VideoChannelField } from './RdvContactChoices.jsx'
+import { validPhone } from '../../lib/rdvContact.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -645,8 +649,8 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
 
 // ── Contact form ──────────────────────────────────────────────────────────────
 
-function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →' }) {
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', message: '' })
+function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →', isVideo = false, accountEmail = null }) {
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: accountEmail || '', phone: '', message: '', videoChannel: '', wantsAccount: '' })
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -655,6 +659,9 @@ function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la ré
     if (!form.firstName.trim()) e.firstName = 'Prénom requis'
     if (!form.lastName.trim())  e.lastName  = 'Nom requis'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email.trim())) e.email = 'Adresse e-mail à vérifier (ex. vous@exemple.fr)'
+    // À distance : Sébastien appelle le client, il lui faut le moyen et le numéro.
+    if (isVideo && !form.videoChannel) e.videoChannel = 'Choisissez WhatsApp ou FaceTime'
+    if (isVideo && !validPhone(form.phone)) e.phone = 'Numéro nécessaire pour que Sébastien vous contacte'
     return e
   }
 
@@ -694,13 +701,19 @@ function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la ré
         {errors.email && <p className="font-georgia text-xs text-red-500 mt-1">{errors.email}</p>}
       </div>
       <div>
-        <label htmlFor="rdv-phone" className={label}>Téléphone <span className="text-mist">(facultatif)</span></label>
-        <input id="rdv-phone" type="tel" autoComplete="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={input} placeholder="06 12 34 56 78" />
+        <label htmlFor="rdv-phone" className={label}>Téléphone {isVideo ? <span className="text-gold">*</span> : <span className="text-mist">(facultatif)</span>}</label>
+        <input id="rdv-phone" type="tel" autoComplete="tel" inputMode="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={input} placeholder="06 12 34 56 78" />
+        {isVideo && <p className="font-georgia text-[11px] text-mist/70 mt-1">Sébastien vous contactera à ce numéro le jour du rendez-vous.</p>}
+        {errors.phone && <p className="font-georgia text-xs text-red-500 mt-1">{errors.phone}</p>}
       </div>
+      {isVideo && <VideoChannelField value={form.videoChannel} onChange={v => set('videoChannel', v)} error={errors.videoChannel} />}
       <div>
         <label htmlFor="rdv-message" className={label}>Message <span className="text-mist">(facultatif)</span></label>
         <textarea id="rdv-message" rows={3} value={form.message} onChange={e => set('message', e.target.value)} className={input} placeholder="Un mot sur votre démarche..." />
       </div>
+      {accountEmail
+        ? <SignedInNotice email={accountEmail} />
+        : <AccountChoice value={form.wantsAccount} onChange={v => set('wantsAccount', v)} />}
       <button
         type="submit"
         disabled={loading}
@@ -887,6 +900,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const [time, setTime]           = useState(null)
   const [bookingResult, setBookingResult] = useState(null)
   const [paymentCustomer, setPaymentCustomer] = useState(null)
+  // Espace personnel : compte connecté, et choix fait dans le formulaire.
+  const { user: accountUser } = useAuth()
+  const [accountIntent, setAccountIntent] = useState({ wanted: false, email: '' })
   const [checkoutId, setCheckoutId] = useState(null)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError]     = useState(null)
@@ -1056,6 +1072,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
   }
 
   async function handleConfirm(contactForm) {
+    setAccountIntent({ wanted: contactForm.wantsAccount === 'yes', email: contactForm.email })
     if (requiresDeposit) {
       // This callback is reached after ContactForm validates the required fields.
       trackFunnel('rdv_funnel_contact')
@@ -1087,6 +1104,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
             email:     contactForm.email,
             phone:     contactForm.phone || null,
             message:   contactForm.message || null,
+            videoChannel: contactForm.videoChannel || null,
           },
         }),
       })
@@ -1227,6 +1245,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                 </div>
               )
             })()}
+            <AccountInvite email={accountIntent.email} wanted={accountIntent.wanted} />
             <button onClick={onBack} className="font-georgia text-sm text-mist hover:text-deep transition-colors">
               ← Retour à MediumIA
             </button>
@@ -1381,6 +1400,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   <h2 className="font-georgia font-medium text-xl">Vos coordonnées</h2>
                 </div>
                 <ContactForm
+                  key={accountUser?.id || 'sans-compte'}
+                  isVideo={selectedModality === 'video'}
+                  accountEmail={accountUser?.email || null}
                   onSubmit={handleConfirm}
                   loading={bookingLoading}
                   error={bookingError}

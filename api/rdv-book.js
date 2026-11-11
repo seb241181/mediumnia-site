@@ -41,6 +41,7 @@ import { getPublicSlotOffer } from '../lib/rdvSlotOffers.js'
 import { deleteBookingFromGoogleCalendar, syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
 import { isVideoOnly, visioLabel, visioContactNote, VISIO_PENDING_NOTE } from '../lib/visioChannel.js'
 import { accountSpaceEmailBlock, accountSpaceUrl, normalizeVideoChannel, saveBookingContactMode, singleModality } from '../lib/rdvContactMode.js'
+import { recordBookingConsent } from '../lib/marketingConsent.js'
 import {
   bookingCancellationUrl,
   cancellationCutoff,
@@ -873,6 +874,8 @@ export default async function handler(req, res) {
   // Mode de consultation : en présence, ou à distance par WhatsApp / FaceTime.
   const videoChannel = normalizeVideoChannel(customer.videoChannel)
   await saveBookingContactMode(supabase, instantBookingId, { modality: singleModality(service.modality), videoChannel })
+  // Consentement marketing (case facultative) : journalisé, ne bloque jamais la réservation.
+  await recordBookingConsent(supabase, { email: customer.email, optIn: customer.marketingOptIn, bookingId: instantBookingId })
 
   if (gift) {
     await supabase.from('bookings')

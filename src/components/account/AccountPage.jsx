@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../lib/useAuth.js'
 import { isSupabaseConfigured } from '../../lib/supabase.js'
+import EmailPreferences from './EmailPreferences.jsx'
 import {
   ACCOUNT_PATH,
   bookingCalendarLinks,
@@ -268,7 +269,7 @@ async function fetchOverview(token) {
   }
 }
 
-const TABS = [['rdv', 'Mes rendez-vous'], ['paiements', 'Mes paiements']]
+const TABS = [['rdv', 'Mes rendez-vous'], ['paiements', 'Mes paiements'], ['preferences', 'Mes préférences']]
 
 export default function AccountPage() {
   const { session, user, loading, signOut, sendEmailCode, verifyEmailCode } = useAuth()
@@ -308,13 +309,14 @@ export default function AccountPage() {
       <nav className="mt-6 flex gap-2" aria-label="Sections de mon espace">
         {TABS.map(([id, text]) => (
           <button key={id} type="button" onClick={() => setTab(id)} aria-current={tab === id ? 'page' : undefined}
-            className={`flex-1 rounded-xl px-4 py-3 font-georgia text-sm font-bold transition-colors ${tab === id ? 'bg-deep text-gold' : 'border border-gold/35 bg-white/60 text-deep hover:bg-gold/10'}`}>
+            className={`flex-1 rounded-xl px-2 py-3 font-georgia text-xs font-bold sm:px-4 sm:text-sm transition-colors ${tab === id ? 'bg-deep text-gold' : 'border border-gold/35 bg-white/60 text-deep hover:bg-gold/10'}`}>
             {text}
           </button>
         ))}
       </nav>
 
-      <div className="mt-8">
+      {tab === 'preferences' && <div className="mt-8"><EmailPreferences token={token} email={user.email} /></div>}
+      <div className="mt-8" hidden={tab === 'preferences'}>
         {(state.status === 'loading' || state.status === 'idle') && <p className="font-georgia text-sm text-mist" role="status">Chargement de vos rendez-vous…</p>}
         {state.status === 'unverified' && (
           <p className="rounded-2xl border border-gold/35 bg-gold/[.08] p-5 font-georgia text-sm leading-relaxed">

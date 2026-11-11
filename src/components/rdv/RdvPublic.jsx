@@ -10,7 +10,7 @@ import { trackMediumiaMetric } from '../../lib/mediumiaMetrics.js'
 import { getRdvEmailConfirmation } from '../../../lib/rdvEmailConfirmation.js'
 import { useAuth } from '../../lib/useAuth.js'
 import AccountInvite from '../account/AccountInvite.jsx'
-import { AccountChoice, SignedInNotice, VideoChannelField } from './RdvContactChoices.jsx'
+import { AccountChoice, MarketingConsentField, SignedInNotice, VideoChannelField } from './RdvContactChoices.jsx'
 import { validPhone } from '../../lib/rdvContact.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -650,7 +650,7 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
 // ── Contact form ──────────────────────────────────────────────────────────────
 
 function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →', isVideo = false, accountEmail = null }) {
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: accountEmail || '', phone: '', message: '', videoChannel: '', wantsAccount: '' })
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: accountEmail || '', phone: '', message: '', videoChannel: '', wantsAccount: '', marketingOptIn: false })
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -714,6 +714,7 @@ function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la ré
       {accountEmail
         ? <SignedInNotice email={accountEmail} />
         : <AccountChoice value={form.wantsAccount} onChange={v => set('wantsAccount', v)} />}
+      <MarketingConsentField checked={form.marketingOptIn} onChange={v => set('marketingOptIn', v)} />
       <button
         type="submit"
         disabled={loading}
@@ -1105,6 +1106,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
             phone:     contactForm.phone || null,
             message:   contactForm.message || null,
             videoChannel: contactForm.videoChannel || null,
+            marketingOptIn: contactForm.marketingOptIn === true,
           },
         }),
       })

@@ -4,6 +4,8 @@
 // Aucun de ces choix ne déclenche d'action avant le paiement : le créneau et
 // le règlement ne sont jamais retardés.
 
+import { MARKETING_CONSENT_HINT, MARKETING_CONSENT_TEXT } from '../../../lib/marketingConsentText.js'
+
 const CHANNELS = [
   ['whatsapp', 'WhatsApp'],
   ['facetime', 'FaceTime'],
@@ -64,5 +66,19 @@ export function SignedInNotice({ email }) {
     <p className="rounded-xl border border-gold/30 bg-gold/[.06] px-4 py-3 font-georgia text-sm leading-relaxed text-deep">
       Vous êtes connecté à votre espace MediumIA{email ? <> (<span className="break-all">{email}</span>)</> : null}. Ce rendez-vous y apparaîtra s’il est réservé avec cette adresse.
     </p>
+  )
+}
+
+// Actualités par e-mail : case décochée, facultative, distincte des conditions
+// de vente. Ne conditionne ni la réservation ni les e-mails de rendez-vous.
+export function MarketingConsentField({ checked, onChange }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gold/25 bg-white px-4 py-3">
+      <input type="checkbox" name="rdv-marketing-opt-in" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-[#C9A84C]" />
+      <span className="font-georgia text-sm leading-relaxed text-deep">
+        {MARKETING_CONSENT_TEXT}
+        <span className="mt-1 block text-[11px] text-mist/80">{MARKETING_CONSENT_HINT}</span>
+      </span>
+    </label>
   )
 }

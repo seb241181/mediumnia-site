@@ -359,7 +359,7 @@ export default function GlobalAccount() {
 
   // Page de réservation : pas de bulle « Connexion » par-dessus le parcours.
   // Espace client : la page gère elle-même la connexion.
-  const hideLauncher = pathname.startsWith('/rdv/') || pathname.startsWith('/mon-espace')
+  const hideLauncher = pathname.startsWith('/rdv/') || pathname.startsWith('/mon-espace') || pathname === '/preferences-email'
 
   return (
     <>

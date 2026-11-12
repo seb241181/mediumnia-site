@@ -38,7 +38,7 @@ export default function AccountInvite({ email, wanted = false }) {
       <div className={box}>
         <p className="font-georgia text-[11px] uppercase tracking-[0.16em] text-gold">Votre espace personnel MediumIA</p>
         <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
-          Vous pourrez retrouver ce rendez-vous, vos règlements et les informations pratiques à tout moment, sans rechercher vos e-mails. C’est gratuit et sans mot de passe.
+          Vous pourrez retrouver ce rendez-vous, vos règlements et les informations pratiques à tout moment, sans rechercher vos e-mails. C’est gratuit : vous vous connectez avec un mot de passe ou avec un code reçu par e-mail.
         </p>
         <a href={ACCOUNT_PATH} className="mt-3 inline-block font-georgia text-sm font-bold text-deep underline decoration-gold underline-offset-4">Ouvrir ou créer mon espace MediumIA</a>
       </div>

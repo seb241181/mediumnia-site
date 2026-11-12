@@ -100,3 +100,25 @@ test('bouton « Mon espace » : prénom si connecté, déconnexion disponible', 
   // Effacer le profil Chronosphère ne supprime plus les coordonnées de l'espace.
   assert.equal(/from\('mediumia_profiles'\)\.delete\(\)/.test(account), false)
 })
+
+test('en-tête : bouton « Mon espace » permanent, prénom, profil et déconnexion', () => {
+  const nav = read('src/components/SiteNav.jsx')
+  assert.match(nav, /Espace élèves\n {10}<\/a>\n {10}<SiteNavAccount \/>/)
+  const account = read('src/components/SiteNavAccount.jsx')
+  assert.match(account, /href="\/mon-espace" data-site-nav-account/)
+  assert.match(account, /accountButtonLabel\(\{ user, firstName \}\)/)
+  assert.match(account, /href="\/mon-espace#profil"/)
+  assert.match(account, /await signOut\(\)/)
+  // Visible à toutes les largeurs : aucune classe qui le masque.
+  assert.equal(/hidden|min-\[/.test(account.match(/const button = '([^']*)'/)[1]), false)
+  const css = read('src/styles/site-nav.css')
+  assert.match(css, /body:has\(\[data-site-nav-account\]\) \.global-account-launcher \{ display: none; \}/)
+  assert.match(read('src/components/GlobalAccount.jsx'), /addEventListener\('mediumia:open-account'/)
+  assert.match(read('src/components/account/AccountPage.jsx'), /window\.location\.hash === '#profil' \? 'profil' : 'rdv'/)
+})
+
+test('textes : les deux modes de connexion sont annoncés', () => {
+  const sources = [read('lib/rdvContactMode.js'), read('src/components/account/AccountInvite.jsx'), read('src/components/account/AccountPage.jsx')].join('\n')
+  assert.equal(/sans mot de passe|aucun mot de passe à retenir/i.test(sources), false)
+  assert.match(read('lib/rdvContactMode.js'), /votre mot de passe ou avec un code reçu par e-mail/)
+})

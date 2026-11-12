@@ -227,3 +227,8 @@ test('statuts et pages : libellés, lien d’e-mail sans action automatique', ()
   assert.ok(JSON.parse(read('vercel.json')).rewrites.some((r) => r.source === '/preferences-email' && r.destination === '/index.html'))
   assert.match(read('src/components/account/AccountPage.jsx'), /<EmailPreferences token=\{token\} email=\{user\.email\} \/>/)
 })
+
+test('texte validé de la case, versionné', () => {
+  assert.equal(MARKETING_CONSENT_TEXT, 'Je souhaite recevoir par e-mail les actualités, conseils et offres de MediumIA. Je pourrai me désinscrire à tout moment.')
+  assert.equal(MARKETING_CONSENT_VERSION, '2026-11-v2')
+})

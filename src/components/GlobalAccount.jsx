@@ -251,6 +251,13 @@ export default function GlobalAccount() {
     setAuthInfo('')
   }, [user])
 
+  // Menu « Mon espace » de l'en-tête : ouvre le profil de tirage.
+  useEffect(() => {
+    const handler = () => setOpen(true)
+    window.addEventListener('mediumia:open-account', handler)
+    return () => window.removeEventListener('mediumia:open-account', handler)
+  }, [])
+
   function openAuth(nextMode = 'signin') {
     setMode(user ? 'profile' : nextMode)
     setAuthError('')
@@ -372,7 +379,7 @@ export default function GlobalAccount() {
       <button
         type="button"
         onClick={() => (user ? openAuth('profile') : window.location.assign('/mon-espace'))}
-        className={`fixed bottom-4 left-4 sm:bottom-5 sm:left-5 z-[70] ${pathname === '/chronosphere' ? 'hidden sm:flex' : 'flex'} items-center gap-2 rounded-full border border-gold/45 bg-cream/95 py-2 pl-2 pr-3.5 sm:px-4 sm:py-3 font-georgia text-xs font-bold text-deep shadow-lg backdrop-blur-sm transition-colors hover:bg-white`}
+        className={`global-account-launcher fixed bottom-4 left-4 sm:bottom-5 sm:left-5 z-[70] ${pathname === '/chronosphere' ? 'hidden sm:flex' : 'flex'} items-center gap-2 rounded-full border border-gold/45 bg-cream/95 py-2 pl-2 pr-3.5 sm:px-4 sm:py-3 font-georgia text-xs font-bold text-deep shadow-lg backdrop-blur-sm transition-colors hover:bg-white`}
         aria-label={user ? 'Ouvrir mon espace MediumIA' : 'Mon espace MediumIA : se connecter'}
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-deep text-gold">◈</span>

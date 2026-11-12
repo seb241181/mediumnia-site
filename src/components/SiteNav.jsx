@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import '../styles/site-nav.css'
+import SiteNavAccount from './SiteNavAccount.jsx'
 
 // Navigation principale de la vitrine, identique sur l'accueil et les pages clés.
 // Ordre validé : Se former · Consulter · Tirages & ChronoSphère · Conférences · Boutique ·
 // Trouver un praticien. À droite : « Espace pro » (professionnels du Réseau,
-// /agents) puis « Espace élèves », hors de la liste des rubriques.
+// /agents) puis « Espace élèves », hors de la liste des rubriques, et enfin
+// « Mon espace » (espace client : rendez-vous, profil, déconnexion).
 // Sur téléphone : un vrai menu (bouton « Menu »), pas de barre latérale.
 
 export const SITE_NAV_ITEMS = [
@@ -65,10 +67,10 @@ export default function SiteNav({ current = 'home', onOpenFormation, onOpenConfe
 
   return (
     <header className="cosmic-nav site-nav fixed top-0 left-0 right-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-gold/20">
-      <div className="max-w-6xl mx-auto px-5 md:px-6 py-3 md:py-4 flex items-center justify-between gap-4">
+      <div className="site-nav__bar max-w-6xl mx-auto px-5 md:px-6 py-3 md:py-4 flex items-center justify-between gap-4">
         <a href="/" onClick={goHome} className="shrink-0 flex items-center gap-2.5" aria-label="MediumIA — accueil">
           <img src="/images/brand/MEDIUMIA_symbol_header.png" alt="MediumIA" className="h-9 md:h-11 w-auto" />
-          <span className="font-georgia text-deep tracking-[0.2em] text-base md:text-lg font-semibold">MEDIUMIA</span>
+          <span className="site-nav__brand-name font-georgia text-deep tracking-[0.2em] text-base md:text-lg font-semibold">MEDIUMIA</span>
         </a>
 
         <nav aria-label="Navigation principale" className="hidden min-[1041px]:flex items-center gap-6 font-georgia text-[15px] text-deep font-medium">
@@ -85,7 +87,7 @@ export default function SiteNav({ current = 'home', onOpenFormation, onOpenConfe
           ))}
         </nav>
 
-        <div className="shrink-0 flex items-center gap-2">
+        <div className="site-nav__actions shrink-0 flex items-center gap-2">
           <a
             href="/agents"
             className="site-nav__pro font-georgia text-xs md:text-sm tracking-wide px-3 py-2.5 md:px-4 rounded-lg border border-gold/60 text-deep font-bold whitespace-nowrap transition-colors"
@@ -98,12 +100,14 @@ export default function SiteNav({ current = 'home', onOpenFormation, onOpenConfe
           >
             Espace élèves
           </a>
+          <SiteNavAccount />
           <button
             ref={toggleRef}
             type="button"
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="site-nav-menu"
+            aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
             className="site-nav__toggle font-georgia text-xs md:text-sm font-bold px-3 py-2.5 rounded-lg bg-deep text-gold items-center gap-2"
           >
             <span aria-hidden="true" className="flex flex-col gap-[3px]">
@@ -111,7 +115,7 @@ export default function SiteNav({ current = 'home', onOpenFormation, onOpenConfe
               <span className={`block h-[1.5px] w-4 bg-current transition-opacity ${open ? 'opacity-0' : ''}`} />
               <span className={`block h-[1.5px] w-4 bg-current transition-transform ${open ? '-translate-y-[4.5px] -rotate-45' : ''}`} />
             </span>
-            {open ? 'Fermer' : 'Menu'}
+            <span className="site-nav__toggle-label">{open ? 'Fermer' : 'Menu'}</span>
           </button>
         </div>
       </div>

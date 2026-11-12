@@ -368,7 +368,7 @@ export default function AccountPage() {
   const { session, user, loading, signOut, signIn, sendEmailCode, verifyEmailCode, requestEmailChange, setPassword, requestPasswordReset } = useAuth()
   // Retour depuis l'e-mail « mot de passe oublié » : choisir le nouveau mot de passe.
   const [recovery, setRecovery] = useState(() => isPasswordRecoveryUrl(window.location.hash, window.location.search))
-  const [tab, setTab] = useState('rdv')
+  const [tab, setTab] = useState(() => (window.location.hash === '#profil' ? 'profil' : 'rdv'))
   const [state, setState] = useState({ status: 'idle', overview: null })
   const [attempt, setAttempt] = useState(0)
   const token = session?.access_token || null

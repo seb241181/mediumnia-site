@@ -39,6 +39,7 @@
     <div id="paidState" class="state hidden"><div class="symbol">✦</div><h2>Rendez-vous entièrement réglé</h2><p>Votre paiement est bien enregistré. Il ne reste plus aucun solde à régler.</p></div>
     <div id="expiredState" class="state hidden"><div class="symbol">◌</div><h2>Délai de règlement dépassé</h2><p>Le lien de paiement n’est plus actif, car l’échéance de 48 heures avant le rendez-vous est atteinte.</p></div>
     <div id="cancelledState" class="state hidden"><div class="symbol">◌</div><h2>Rendez-vous annulé</h2><p>Ce rendez-vous n’est plus actif et ne peut plus être réglé depuis ce lien.</p></div>
+    <div id="accountState" class="state hidden"><div class="symbol">◈</div><h2>Ouvrez ce règlement depuis votre espace</h2><p>Pour votre sécurité, le règlement du solde s’ouvre depuis votre espace MediumIA, une fois connecté.</p><p><a href="/mon-espace">Ouvrir mon espace MediumIA</a></p></div>
     <div id="invalidState" class="state hidden"><div class="symbol">◌</div><h2>Lien invalide ou expiré</h2><p>Ce lien de règlement ne peut pas être utilisé. Vérifiez que vous avez ouvert le lien reçu par e-mail.</p></div>
   </section>
   <a class="back" href="https://mediumia.fr">← Retour à MediumIA</a>
@@ -49,19 +50,32 @@
   const query = new URLSearchParams(window.location.search)
   const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
   const token = new URLSearchParams(rawHash).get('token') || ''
+  // Depuis l'espace client : #compte=<rendez-vous>. La session du compte est
+  // transmise par l'onglet (sessionStorage), jamais dans l'adresse.
+  const accountBookingId = new URLSearchParams(rawHash).get('compte') || ''
+  const ACCOUNT_HANDOFF = 'mediumia:rdv-solde-compte'
+  const accountAccess = (() => {
+    if (!accountBookingId) return null
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(ACCOUNT_HANDOFF) || 'null')
+      return saved && saved.bookingId === accountBookingId && saved.accessToken ? saved : null
+    } catch (_) { return null }
+  })()
   const isPayPalReturn = query.get('balance_return') === '1'
   const isPayPalCancel = query.get('balance_cancel') === '1'
   let current = null
 
   const money = cents => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
   const fmt = value => new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }).format(new Date(value))
-  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','invalidState'].forEach(id => $(id).classList.add('hidden'))
+  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','accountState','invalidState'].forEach(id => $(id).classList.add('hidden'))
   const show = id => { hideAll(); $(id).classList.remove('hidden') }
   const showError = text => { $('paymentNotice').textContent = text; $('paymentNotice').classList.remove('hidden') }
 
-  async function api(action, body) {
+  async function api(action, body, accessToken) {
+    const headers = {'Content-Type':'application/json'}
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`
     const response = await fetch(`/api/rdv-config?rdvBalanceAction=${encodeURIComponent(action)}`, {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body || {})
+      method:'POST', headers, body:JSON.stringify(body || {})
     })
     const data = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(data.error || 'balance_payment_unavailable')
@@ -120,7 +134,9 @@
       const storageKey = `mediumia:rdv-solde:${current.bookingId}`
       let checkoutId = sessionStorage.getItem(storageKey)
       if (!checkoutId) { checkoutId = crypto.randomUUID(); sessionStorage.setItem(storageKey, checkoutId) }
-      const data = await api('create', { token, client_checkout_id: checkoutId })
+      const data = accountAccess
+        ? await api('accountCreate', { bookingId: accountBookingId, client_checkout_id: checkoutId }, accountAccess.accessToken)
+        : await api('create', { token, client_checkout_id: checkoutId })
       if (data.status === 'PAID') {
         if (popup && !popup.closed) popup.close()
         show('paidState')
@@ -133,6 +149,7 @@
       else window.location.href = checkoutUrl
     } catch (error) {
       if (popup && !popup.closed) popup.close()
+      if (accountAccess && (error.message === 'unauthenticated' || error.message === 'email_not_verified')) { show('accountState'); return }
       showError(message(error.message))
       button.disabled = false
     }
@@ -140,10 +157,13 @@
 
   async function init() {
     if (await handlePayPalCallback()) return
-    if (!token || token.length < 32) { show('invalidState'); return }
-    history.replaceState(null, '', window.location.pathname + window.location.search)
+    if (accountBookingId && !accountAccess) { show('accountState'); return }
+    if (!accountAccess && (!token || token.length < 32)) { show('invalidState'); return }
+    if (!accountAccess) history.replaceState(null, '', window.location.pathname + window.location.search)
     try {
-      current = await api('status', { token })
+      current = accountAccess
+        ? await api('accountStatus', { bookingId: accountBookingId }, accountAccess.accessToken)
+        : await api('status', { token })
       if (current.status === 'PAID') { show('paidState'); return }
       if (current.status === 'CANCELLED') { show('cancelledState'); return }
       if (current.status === 'EXPIRED') { show('expiredState'); return }
@@ -164,6 +184,7 @@
       show('payable')
     } catch (error) {
       if (error.message === 'balance_payment_expired') show('expiredState')
+      else if (accountAccess && (error.message === 'unauthenticated' || error.message === 'email_not_verified')) show('accountState')
       else show('invalidState')
     }
   }

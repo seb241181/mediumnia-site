@@ -122,7 +122,7 @@ export function describeAmounts(booking = {}) {
   if (a.paymentPending) {
     note = 'Un paiement est en cours de validation : il n’est pas encore encaissé et n’est donc pas compté ci-dessus.'
   } else if (a.dueCents > 0 && booking.mode === 'video') {
-    note = 'Avant votre rendez-vous, vous recevez par e-mail un lien sécurisé pour régler ce solde.'
+    note = 'Vous pouvez régler ce solde ici, ou depuis le lien sécurisé que vous recevez par e-mail avant votre rendez-vous.'
   } else if (a.dueCents > 0 && booking.mode === 'in-person') {
     note = 'Ce solde se règle le jour du rendez-vous.'
   } else if (a.dueCents === 0 && a.priceCents != null && a.priceCents > 0) {
@@ -220,4 +220,25 @@ export function accountButtonLabel({ user, firstName, fullName } = {}) {
   if (!user) return 'Mon espace'
   const name = String(firstName || '').trim() || String(fullName || '').trim().split(/\s+/)[0]
   return name || 'Mon espace'
+}
+
+// ── Règlement du solde depuis l'espace ───────────────────────────────────────
+export const BALANCE_HANDOFF_KEY = 'mediumia:rdv-solde-compte'
+
+// Bouton proposé seulement pour un rendez-vous à distance confirmé, à venir,
+// avec un reste dû. Le serveur revérifie tout (échéance, montant, propriété).
+export function canPayBalanceFromAccount(booking, now = new Date()) {
+  if (!booking || booking.status !== 'confirmed' || booking.mode !== 'video') return false
+  if (!(Number(booking.amounts?.dueCents) > 0) || !(Number(booking.amounts?.paidCents) > 0)) return false
+  return new Date(booking.startsAt).getTime() > now.getTime()
+}
+
+export const balancePaymentPath = (bookingId) => `/rdv/solde#compte=${encodeURIComponent(bookingId)}`
+
+// La session passe par l'onglet (sessionStorage), jamais par l'adresse.
+export function openBalancePayment(booking, accessToken, { storage = globalThis.sessionStorage, navigate = (url) => globalThis.location.assign(url) } = {}) {
+  if (!booking?.id || !accessToken) return false
+  try { storage.setItem(BALANCE_HANDOFF_KEY, JSON.stringify({ bookingId: booking.id, accessToken })) } catch { return false }
+  navigate(balancePaymentPath(booking.id))
+  return true
 }

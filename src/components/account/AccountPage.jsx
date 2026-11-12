@@ -8,6 +8,9 @@ import ProfileForm from './ProfileForm.jsx'
 import {
   ACCOUNT_PATH,
   bookingCalendarLinks,
+  canPayBalanceFromAccount,
+  openBalancePayment,
+  formatEuros,
   describeAmounts,
   describeMode,
   describeStatus,
@@ -227,7 +230,7 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
 
 // ── Rendez-vous ──────────────────────────────────────────────────────────────
 
-function BookingCard({ booking, upcoming }) {
+function BookingCard({ booking, upcoming, token }) {
   const status = describeStatus(booking)
   const mode = describeMode(booking)
   const amounts = describeAmounts(booking)
@@ -260,6 +263,14 @@ function BookingCard({ booking, upcoming }) {
           ))}
         </dl>
         {amounts.note && <p className="mt-3 font-georgia text-sm leading-relaxed text-mist">{amounts.note}</p>}
+        {upcoming && token && canPayBalanceFromAccount(booking) && (
+          <>
+            <button type="button" onClick={() => openBalancePayment(booking, token)} className={`${primary} mt-3`}>
+              Régler mon solde ({formatEuros(booking.amounts.dueCents)})
+            </button>
+            <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">Paiement sécurisé par PayPal. Le montant est revérifié avant tout encaissement.</p>
+          </>
+        )}
       </div>
 
       {links && (
@@ -275,7 +286,7 @@ function BookingCard({ booking, upcoming }) {
   )
 }
 
-function Bookings({ overview }) {
+function Bookings({ overview, token }) {
   const { upcoming, past } = overview
   return (
     <div className="space-y-10">
@@ -287,7 +298,7 @@ function Bookings({ overview }) {
             <a href="/rdv/sebastien-seguin" className="mt-4 inline-block rounded-xl bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold">Prendre rendez-vous</a>
           </div>
         ) : (
-          <div className="mt-4 space-y-4">{upcoming.map((booking) => <BookingCard key={booking.id} booking={booking} upcoming />)}</div>
+          <div className="mt-4 space-y-4">{upcoming.map((booking) => <BookingCard key={booking.id} booking={booking} upcoming token={token} />)}</div>
         )}
       </section>
       <section aria-labelledby="rdv-passes">
@@ -451,7 +462,7 @@ export default function AccountPage() {
                 Cette adresse est déjà rattachée à un autre espace MediumIA. Écrivez-nous pour que nous regardions cela ensemble.
               </p>
             )}
-            {tab === 'rdv' ? <Bookings overview={overview} /> : <Payments overview={overview} />}
+            {tab === 'rdv' ? <Bookings overview={overview} token={token} /> : <Payments overview={overview} />}
             <p className="mt-10 rounded-2xl border border-gold/20 bg-white/50 p-5 font-georgia text-sm leading-relaxed text-mist">
               Un rendez-vous manque ? Il a peut-être été réservé avec une autre adresse e-mail. Seuls les rendez-vous pris avec <strong className="break-all text-deep">{user.email}</strong> apparaissent ici.
             </p>

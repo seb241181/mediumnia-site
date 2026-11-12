@@ -27,6 +27,9 @@ test('le bouton n’est proposé que pour un rendez-vous à distance confirmé, 
   assert.equal(canPayBalanceFromAccount(booking({ mode: 'cabinet' }), NOW), false)
   assert.equal(canPayBalanceFromAccount(booking({ status: 'cancelled' }), NOW), false)
   assert.equal(canPayBalanceFromAccount(booking({ startsAt: '2026-11-01T10:00:00Z' }), NOW), false)
+  // Moins de 48 h avant le rendez-vous : le bouton est masqué.
+  assert.equal(canPayBalanceFromAccount(booking({ startsAt: '2026-11-14T09:59:00Z' }), NOW), false)
+  assert.equal(canPayBalanceFromAccount(booking({ startsAt: '2026-11-14T10:01:00Z' }), NOW), true)
   assert.equal(canPayBalanceFromAccount(booking({ amounts: { dueCents: 0, paidCents: 9000 } }), NOW), false)
   assert.equal(canPayBalanceFromAccount(booking({ amounts: { dueCents: 9000, paidCents: 0 } }), NOW), false)
   assert.equal(canPayBalanceFromAccount(null, NOW), false)

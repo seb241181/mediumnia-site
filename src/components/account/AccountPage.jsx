@@ -313,7 +313,7 @@ function Bookings({ overview, token }) {
 
 // ── Règlements ───────────────────────────────────────────────────────────────
 
-function Payments({ overview }) {
+function Payments({ overview, token }) {
   const payments = useMemo(() => listAllPayments(overview), [overview])
   const due = overview.upcoming.filter((booking) => booking.amounts.dueCents > 0)
   return (
@@ -331,6 +331,11 @@ function Payments({ overview }) {
                     <strong className="shrink-0 text-lg">{amounts.lines.find((line) => line.key === 'due')?.value}</strong>
                   </div>
                   {amounts.note && <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">{amounts.note}</p>}
+                  {token && canPayBalanceFromAccount(booking) && (
+                    <button type="button" onClick={() => openBalancePayment(booking, token)} className={`${primary} mt-3`}>
+                      Régler mon solde ({formatEuros(booking.amounts.dueCents)})
+                    </button>
+                  )}
                 </li>
               )
             })}
@@ -462,7 +467,7 @@ export default function AccountPage() {
                 Cette adresse est déjà rattachée à un autre espace MediumIA. Écrivez-nous pour que nous regardions cela ensemble.
               </p>
             )}
-            {tab === 'rdv' ? <Bookings overview={overview} token={token} /> : <Payments overview={overview} />}
+            {tab === 'rdv' ? <Bookings overview={overview} token={token} /> : <Payments overview={overview} token={token} />}
             <p className="mt-10 rounded-2xl border border-gold/20 bg-white/50 p-5 font-georgia text-sm leading-relaxed text-mist">
               Un rendez-vous manque ? Il a peut-être été réservé avec une autre adresse e-mail. Seuls les rendez-vous pris avec <strong className="break-all text-deep">{user.email}</strong> apparaissent ici.
             </p>

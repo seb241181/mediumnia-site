@@ -225,12 +225,16 @@ export function accountButtonLabel({ user, firstName, fullName } = {}) {
 // ── Règlement du solde depuis l'espace ───────────────────────────────────────
 export const BALANCE_HANDOFF_KEY = 'mediumia:rdv-solde-compte'
 
-// Bouton proposé seulement pour un rendez-vous à distance confirmé, à venir,
-// avec un reste dû. Le serveur revérifie tout (échéance, montant, propriété).
+// Bouton proposé seulement pour un rendez-vous à distance confirmé, à plus de
+// 48 h, avec un reste dû. Le serveur revérifie tout (échéance, montant, propriété).
+export const BALANCE_DEADLINE_HOURS = 48
+
 export function canPayBalanceFromAccount(booking, now = new Date()) {
   if (!booking || booking.status !== 'confirmed' || booking.mode !== 'video') return false
   if (!(Number(booking.amounts?.dueCents) > 0) || !(Number(booking.amounts?.paidCents) > 0)) return false
-  return new Date(booking.startsAt).getTime() > now.getTime()
+  // Passé 48 h avant le rendez-vous, le solde n'est plus payable en ligne :
+  // le bouton disparaît (la règle et l'annulation restent celles du serveur).
+  return new Date(booking.startsAt).getTime() - BALANCE_DEADLINE_HOURS * 3_600_000 > now.getTime()
 }
 
 export const balancePaymentPath = (bookingId) => `/rdv/solde#compte=${encodeURIComponent(bookingId)}`

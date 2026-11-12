@@ -132,5 +132,5 @@ test('changement d’e-mail : confirmé par lien, jamais appliqué directement',
   const profile = read('src/components/account/ProfileForm.jsx')
   assert.match(profile, /Le changement ne sera effectif qu’après votre clic/)
   assert.equal(/mediumia_account_emails|customer_email/.test(profile + read('src/lib/accountProfile.js')), false)
-  assert.match(read('src/components/account/AccountPage.jsx'), /<ProfileForm token=\{token\} email=\{user\.email\} requestEmailChange=\{requestEmailChange\} \/>/)
+  assert.match(read('src/components/account/AccountPage.jsx'), /<ProfileForm token=\{token\} email=\{user\.email\} requestEmailChange=\{requestEmailChange\} setPassword=\{setPassword\} \/>/)
 })

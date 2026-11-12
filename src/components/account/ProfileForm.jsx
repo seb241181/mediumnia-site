@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchAccountProfile, profileErrorMessage, saveAccountProfile } from '../../lib/accountProfile.js'
 import { ACCOUNT_PATH, emailCodeErrorMessage } from '../../lib/accountView.js'
+import { PasswordSection } from './PasswordForms.jsx'
 
 // Mon profil : coordonnées préremplies lors des prochaines réservations,
 // et changement de l'adresse e-mail de connexion.
@@ -125,7 +126,7 @@ function EmailChange({ email, requestEmailChange }) {
   )
 }
 
-export default function ProfileForm({ token, email, requestEmailChange }) {
+export default function ProfileForm({ token, email, requestEmailChange, setPassword }) {
   return (
     <>
       <section aria-labelledby="profile-title">
@@ -136,6 +137,7 @@ export default function ProfileForm({ token, email, requestEmailChange }) {
         <h2 id="profile-email-title" className="font-georgia text-xl font-medium">Mon adresse e-mail</h2>
         <EmailChange email={email} requestEmailChange={requestEmailChange} />
       </section>
+      <PasswordSection setPassword={setPassword} />
     </>
   )
 }

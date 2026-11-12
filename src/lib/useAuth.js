@@ -71,5 +71,18 @@ export function useAuth() {
     return supabase.auth.updateUser({ email: String(email || '').trim().toLowerCase() }, redirectTo ? { emailRedirectTo: redirectTo } : undefined)
   }, [])
 
-  return { session, user: session?.user ?? null, loading, signUp, signIn, signOut, sendEmailCode, verifyEmailCode, requestEmailChange }
+  // Mot de passe : défini ou changé sur le compte connecté (même compte,
+  // mêmes rendez-vous). Supabase Auth le stocke haché ; il ne transite
+  // jamais par notre base ni par le stockage du navigateur.
+  const setPassword = useCallback(async (password) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.updateUser({ password })
+  }, [])
+
+  const requestPasswordReset = useCallback(async (email, { redirectTo } = {}) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.resetPasswordForEmail(String(email || '').trim().toLowerCase(), redirectTo ? { redirectTo } : undefined)
+  }, [])
+
+  return { session, user: session?.user ?? null, loading, signUp, signIn, signOut, sendEmailCode, verifyEmailCode, requestEmailChange, setPassword, requestPasswordReset }
 }

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
+import { accountButtonLabel } from '../lib/accountView.js'
 
 const EMPTY_PROFILE = {
   full_name: '',
@@ -131,10 +132,9 @@ export default function GlobalAccount() {
   const [recommendTarget, setRecommendTarget] = useState(null)
 
   const profileComplete = Boolean(profile.full_name && profile.birth_date && profile.birth_time && profile.birth_place)
-  const accountLabel = useMemo(() => {
-    if (!user) return 'Connexion'
-    return profile.full_name?.trim().split(/\s+/)[0] || 'Mon compte'
-  }, [user, profile.full_name])
+  // Bouton permanent « Mon espace » : prénom de la personne connectée.
+  const [firstName, setFirstName] = useState('')
+  const accountLabel = useMemo(() => accountButtonLabel({ user, firstName, fullName: profile.full_name }), [user, firstName, profile.full_name])
 
   useEffect(() => {
     const root = document.getElementById('root')
@@ -161,10 +161,11 @@ export default function GlobalAccount() {
     setProfileStatus('loading')
     supabase
       .from('mediumia_profiles')
-      .select('full_name, birth_date, birth_time, birth_place')
+      .select('*')
       .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data, error }) => {
+        setFirstName(data?.first_name || '')
         if (!active) return
         if (error) {
           setProfileStatus('error')
@@ -326,7 +327,11 @@ export default function GlobalAccount() {
     if (!user || !supabase) return
     setProfileStatus('saving')
     setProfileError('')
-    const { error } = await supabase.from('mediumia_profiles').delete().eq('user_id', user.id)
+    // On vide le profil Chronosphère sans supprimer la ligne : elle porte aussi
+    // les coordonnées de l'espace client (prénom, téléphone…).
+    const { error } = await supabase.from('mediumia_profiles')
+      .update({ full_name: null, birth_date: null, birth_time: null, birth_place: null })
+      .eq('user_id', user.id)
     if (error) {
       setProfileStatus('error')
       setProfileError('Impossible d’effacer les informations enregistrées.')
@@ -366,12 +371,12 @@ export default function GlobalAccount() {
       {!hideLauncher && (
       <button
         type="button"
-        onClick={() => openAuth(user ? 'profile' : 'signin')}
-        className={`fixed bottom-4 left-4 sm:bottom-5 sm:left-5 z-[70] ${pathname === '/chronosphere' ? 'hidden sm:flex' : 'flex'} items-center gap-2 rounded-full border border-gold/45 bg-cream/95 p-2 sm:px-4 sm:py-3 font-georgia text-xs font-bold text-deep shadow-lg backdrop-blur-sm transition-colors hover:bg-white`}
-        aria-label={user ? 'Ouvrir mon compte MediumIA' : 'Se connecter à MediumIA'}
+        onClick={() => (user ? openAuth('profile') : window.location.assign('/mon-espace'))}
+        className={`fixed bottom-4 left-4 sm:bottom-5 sm:left-5 z-[70] ${pathname === '/chronosphere' ? 'hidden sm:flex' : 'flex'} items-center gap-2 rounded-full border border-gold/45 bg-cream/95 py-2 pl-2 pr-3.5 sm:px-4 sm:py-3 font-georgia text-xs font-bold text-deep shadow-lg backdrop-blur-sm transition-colors hover:bg-white`}
+        aria-label={user ? 'Ouvrir mon espace MediumIA' : 'Mon espace MediumIA : se connecter'}
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-deep text-gold">◈</span>
-        <span className="hidden sm:inline">{authLoading ? 'Compte…' : accountLabel}</span>
+        <span className="max-w-[9rem] truncate">{authLoading ? 'Mon espace' : accountLabel}</span>
       </button>
       )}
 

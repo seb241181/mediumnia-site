@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../lib/useAuth.js'
-import { isSupabaseConfigured } from '../../lib/supabase.js'
+import { isSupabaseConfigured, supabase } from '../../lib/supabase.js'
+import { setRememberMe } from '../../lib/authStorage.js'
+import { NewPasswordForm } from './PasswordForms.jsx'
 import EmailPreferences from './EmailPreferences.jsx'
 import ProfileForm from './ProfileForm.jsx'
 import {
@@ -12,8 +14,10 @@ import {
   emailCodeErrorMessage,
   formatBookingDate,
   formatBookingTime,
+  isPasswordRecoveryUrl,
   isUnknownAccountError,
   listAllPayments,
+  passwordErrorMessage,
 } from '../../lib/accountView.js'
 
 // Mon espace client MediumIA : rendez-vous à venir, historique et règlements.
@@ -40,18 +44,57 @@ function Shell({ children, right }) {
 
 // ── Connexion par code reçu par e-mail ───────────────────────────────────────
 
-function SignIn({ sendEmailCode, verifyEmailCode }) {
+function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }) {
   const [email, setEmail] = useState('')
+  const [mode, setMode] = useState('password') // password | code | forgot
+  const [password, setPasswordValue] = useState('')
+  const [remember, setRemember] = useState(true)
+  const [resetSentTo, setResetSentTo] = useState('')
+
+  const validAddress = () => {
+    const address = email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) { setError('Indiquez une adresse e-mail valide.'); return null }
+    return address
+  }
+  const switchMode = (next) => { setMode(next); setError(''); setResetSentTo('') }
+
+  async function submitPassword(event) {
+    event.preventDefault()
+    const address = validAddress()
+    if (!address) return
+    if (!password) { setError('Saisissez votre mot de passe.'); return }
+    setBusy(true)
+    setError('')
+    setRememberMe(remember)
+    const { error: signInError } = await signIn(address, password)
+    setBusy(false)
+    if (signInError) { setError(passwordErrorMessage(signInError)); return }
+    setPasswordValue('')
+  }
+
+  async function submitForgot(event) {
+    event.preventDefault()
+    const address = validAddress()
+    if (!address) return
+    setBusy(true)
+    setError('')
+    const { error: resetError } = await requestPasswordReset(address, { redirectTo: `${window.location.origin}${ACCOUNT_PATH}` })
+    setBusy(false)
+    // Même message que l'adresse ait un espace ou non.
+    if (resetError && /rate limit|too many|security purposes|seconds|fetch|network|failed to/i.test(String(resetError.message || ''))) { setError(passwordErrorMessage(resetError)); return }
+    setResetSentTo(address)
+  }
   const [code, setCode] = useState('')
   const [stage, setStage] = useState('email') // email | code
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   async function requestCode(createAccount) {
-    const address = email.trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) { setError('Indiquez une adresse e-mail valide.'); return }
+    const address = validAddress()
+    if (!address) return
     setBusy(true)
     setError('')
+    setRememberMe(remember)
     const { error: sendError } = await sendEmailCode(address, {
       createAccount,
       redirectTo: `${window.location.origin}${ACCOUNT_PATH}`,
@@ -114,16 +157,65 @@ function SignIn({ sendEmailCode, verifyEmailCode }) {
       <p className="text-center font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Votre espace personnel MediumIA</p>
       <h1 className="mt-2 text-center font-georgia text-2xl font-medium leading-snug">Retrouvez vos rendez-vous et vos règlements</h1>
       <p className="mt-3 text-center font-georgia text-sm leading-relaxed text-mist">
-        Indiquez l’adresse e-mail utilisée pour vos réservations. Nous vous envoyons un code : aucun mot de passe à retenir.
+        {mode === 'forgot'
+          ? 'Indiquez votre adresse e-mail : nous vous envoyons un lien pour choisir un nouveau mot de passe.'
+          : 'Indiquez l’adresse e-mail utilisée pour vos réservations.'}
       </p>
-      <form onSubmit={(event) => { event.preventDefault(); requestCode(false) }} className="mt-6 space-y-4" noValidate>
+      {mode !== 'forgot' && (
+        <div className="mt-5 flex gap-2" role="tablist" aria-label="Moyen de connexion">
+          {[['password', 'Mot de passe'], ['code', 'Code par e-mail']].map(([id, text]) => (
+            <button key={id} type="button" role="tab" aria-selected={mode === id} onClick={() => switchMode(id)}
+              className={`flex-1 rounded-xl px-3 py-2.5 font-georgia text-sm font-bold transition-colors ${mode === id ? 'bg-deep text-gold' : 'border border-gold/35 bg-white/60 text-deep hover:bg-gold/10'}`}>
+              {text}
+            </button>
+          ))}
+        </div>
+      )}
+      <form
+        onSubmit={mode === 'password' ? submitPassword : mode === 'forgot' ? submitForgot : (event) => { event.preventDefault(); requestCode(false) }}
+        className="mt-5 space-y-4" noValidate
+      >
         <label className="block">
           <span className={label}>Votre adresse e-mail</span>
           <input type="email" autoComplete="email" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} className={input} placeholder="vous@exemple.fr" />
         </label>
+        {mode === 'password' && (
+          <label className="block">
+            <span className={label}>Votre mot de passe</span>
+            <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPasswordValue(event.target.value)} className={input} />
+          </label>
+        )}
+        {mode !== 'forgot' && (
+          <label className="flex cursor-pointer items-center gap-2 font-georgia text-sm text-deep">
+            <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} className="h-4 w-4 accent-[#C9A84C]" />
+            Rester connecté sur cet appareil
+          </label>
+        )}
         {error && <p role="alert" className="font-georgia text-sm text-red-700">{error}</p>}
-        <button type="submit" disabled={busy} className={primary}>{busy ? 'Un instant…' : 'Recevoir mon code de connexion'}</button>
-        <button type="button" disabled={busy} onClick={() => requestCode(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>
+        {resetSentTo && (
+          <p role="status" className="rounded-xl bg-gold/[.08] px-4 py-3 font-georgia text-sm leading-relaxed text-deep">
+            Si un espace MediumIA correspond à <strong className="break-all">{resetSentTo}</strong>, un e-mail vient d’y être envoyé. Ouvrez le lien qu’il contient pour choisir votre nouveau mot de passe.
+          </p>
+        )}
+        {mode === 'password' && (
+          <>
+            <button type="submit" disabled={busy} className={primary}>{busy ? 'Un instant…' : 'Me connecter'}</button>
+            <button type="button" disabled={busy} onClick={() => switchMode('forgot')} className="w-full py-1 font-georgia text-sm text-mist underline hover:text-deep">Mot de passe oublié ?</button>
+            <p className="font-georgia text-xs leading-relaxed text-mist">Pas encore de mot de passe ? Connectez-vous avec un code par e-mail, puis définissez-le dans « Mon profil ».</p>
+          </>
+        )}
+        {mode === 'code' && (
+          <>
+            <button type="submit" disabled={busy} className={primary}>{busy ? 'Un instant…' : 'Recevoir mon code de connexion'}</button>
+            <button type="button" disabled={busy} onClick={() => requestCode(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>
+          </>
+        )}
+        {mode === 'forgot' && (
+          <>
+            <button type="submit" disabled={busy} className={primary}>{busy ? 'Un instant…' : 'Recevoir le lien de réinitialisation'}</button>
+            <button type="button" disabled={busy} onClick={() => switchMode('password')} className="w-full py-1 font-georgia text-sm text-mist underline hover:text-deep">Retour à la connexion</button>
+          </>
+        )}
       </form>
       <p className="mt-5 text-center font-georgia text-xs leading-relaxed text-mist">
         Gratuit et facultatif : vous pouvez toujours réserver sans compte. Vos données sont traitées selon notre{' '}
@@ -273,7 +365,9 @@ async function fetchOverview(token) {
 const TABS = [['rdv', 'Mes rendez-vous'], ['paiements', 'Mes paiements'], ['profil', 'Mon profil']]
 
 export default function AccountPage() {
-  const { session, user, loading, signOut, sendEmailCode, verifyEmailCode, requestEmailChange } = useAuth()
+  const { session, user, loading, signOut, signIn, sendEmailCode, verifyEmailCode, requestEmailChange, setPassword, requestPasswordReset } = useAuth()
+  // Retour depuis l'e-mail « mot de passe oublié » : choisir le nouveau mot de passe.
+  const [recovery, setRecovery] = useState(() => isPasswordRecoveryUrl(window.location.hash, window.location.search))
   const [tab, setTab] = useState('rdv')
   const [state, setState] = useState({ status: 'idle', overview: null })
   const [attempt, setAttempt] = useState(0)
@@ -288,6 +382,9 @@ export default function AccountPage() {
 
   useEffect(() => {
     document.title = 'Mon espace client — MediumIA'
+    if (!supabase) return undefined
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => { if (event === 'PASSWORD_RECOVERY') setRecovery(true) })
+    return () => listener?.subscription?.unsubscribe?.()
   }, [])
 
   if (!isSupabaseConfigured()) {
@@ -297,7 +394,19 @@ export default function AccountPage() {
     return <Shell><p className="text-center font-georgia text-sm text-mist" role="status">Chargement…</p></Shell>
   }
   if (!user) {
-    return <Shell><SignIn sendEmailCode={sendEmailCode} verifyEmailCode={verifyEmailCode} /></Shell>
+    return <Shell><SignIn sendEmailCode={sendEmailCode} verifyEmailCode={verifyEmailCode} signIn={signIn} requestPasswordReset={requestPasswordReset} /></Shell>
+  }
+  if (recovery) {
+    return (
+      <Shell>
+        <section className="mx-auto max-w-md rounded-3xl border-2 border-gold/25 bg-white/70 p-6 shadow-sm sm:p-8">
+          <h1 className="text-center font-georgia text-2xl font-medium">Choisissez votre nouveau mot de passe</h1>
+          <p className="mb-5 mt-2 break-all text-center font-georgia text-sm text-mist">{user.email}</p>
+          <NewPasswordForm setPassword={setPassword} onDone={() => setRecovery(false)} idPrefix="recovery-password" />
+          <button type="button" onClick={() => setRecovery(false)} className="mt-3 w-full py-2 font-georgia text-sm text-mist underline hover:text-deep">Plus tard, ouvrir mon espace</button>
+        </section>
+      </Shell>
+    )
   }
 
   const overview = state.overview
@@ -318,7 +427,7 @@ export default function AccountPage() {
 
       {tab === 'profil' && (
         <div className="mt-8">
-          <ProfileForm token={token} email={user.email} requestEmailChange={requestEmailChange} />
+          <ProfileForm token={token} email={user.email} requestEmailChange={requestEmailChange} setPassword={setPassword} />
           <div className="mt-10"><EmailPreferences token={token} email={user.email} /></div>
         </div>
       )}

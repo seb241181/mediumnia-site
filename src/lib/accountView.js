@@ -187,3 +187,37 @@ export function emailCodeErrorMessage(error) {
 export function isUnknownAccountError(error) {
   return /signups not allowed|user not found/i.test(String(error?.message || ''))
 }
+
+// ── Mot de passe ─────────────────────────────────────────────────────────────
+export const PASSWORD_MIN_LENGTH = 8
+
+export function passwordProblem(password, confirmation) {
+  if (String(password || '').length < PASSWORD_MIN_LENGTH) return `Choisissez un mot de passe d’au moins ${PASSWORD_MIN_LENGTH} caractères.`
+  if (confirmation !== undefined && password !== confirmation) return 'Les deux mots de passe ne sont pas identiques.'
+  return null
+}
+
+export function passwordErrorMessage(error) {
+  const raw = String(error?.message || error || '').toLowerCase()
+  // Même message que l'adresse existe ou non : on ne révèle pas qui a un compte.
+  if (/invalid login credentials|invalid_credentials/.test(raw)) return 'Adresse e-mail ou mot de passe incorrect. Vous pouvez aussi recevoir un code par e-mail.'
+  if (/email not confirmed/.test(raw)) return 'Votre adresse e-mail n’est pas encore confirmée. Connectez-vous avec un code reçu par e-mail.'
+  if (/reauthentication|reauth/.test(raw)) return 'Pour votre sécurité, déconnectez-vous puis reconnectez-vous avec un code reçu par e-mail avant de changer le mot de passe.'
+  if (/different from the old|same_password/.test(raw)) return 'Ce mot de passe est déjà le vôtre. Choisissez-en un autre.'
+  if (/weak|at least|should contain|pwned|password/.test(raw)) return 'Ce mot de passe n’est pas assez sûr. Choisissez-en un plus long, avec des lettres et des chiffres.'
+  if (/rate limit|too many|security purposes|seconds/.test(raw)) return 'Trop de tentatives. Patientez une minute, puis réessayez.'
+  if (/fetch|network|failed to/.test(raw)) return 'Connexion impossible pour le moment. Vérifiez votre accès à Internet et réessayez.'
+  return 'Une erreur est survenue. Réessayez dans un instant.'
+}
+
+// Retour depuis l'e-mail « mot de passe oublié ».
+export function isPasswordRecoveryUrl(hash = '', search = '') {
+  return /(^|[#&?])type=recovery(&|$)/.test(String(hash)) || /(^|[#&?])type=recovery(&|$)/.test(String(search))
+}
+
+// Prénom affiché sur le bouton « Mon espace ».
+export function accountButtonLabel({ user, firstName, fullName } = {}) {
+  if (!user) return 'Mon espace'
+  const name = String(firstName || '').trim() || String(fullName || '').trim().split(/\s+/)[0]
+  return name || 'Mon espace'
+}

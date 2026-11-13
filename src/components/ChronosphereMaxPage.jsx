@@ -4,6 +4,7 @@ import GiftChronosphereRedeem from './GiftChronosphereRedeem'
 import { chronosphereMaxDemoProfile, chronosphereMaxDemoTimeline, chronosphereMaxDemoTimelines } from '../data/chronosphereMaxDemo.js'
 import { getSolarTemperament } from '../../lib/chronosphereSolarTemperament.js'
 import { summarizeChronosphereLine } from '../../lib/chronosphereMaxCompare.js'
+import { getChronosphereReading } from '../../lib/chronosphereReading.js'
 import { useAuth } from '../lib/useAuth.js'
 import PublicPageNav from './PublicPageNav'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
@@ -20,7 +21,7 @@ function shortDate(value) {
   const day = String(value).slice(0, 10)
   const date = /^\d{4}-\d{2}-\d{2}$/.test(day) ? new Date(`${day}T00:00:00`) : new Date(NaN)
   if (Number.isNaN(date.getTime())) return String(value)
-  return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(date)
+  return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
 }
 
 function loadPayPalSdk(clientId) {
@@ -64,6 +65,7 @@ function normalizeLiveTimeline(value) {
     sequenceNumber: entry.sequenceNumber,
     readAt: entry.readAt,
     snapshot: entry.snapshot,
+    fullReading: entry.fullReading || null,
   }))
   const last = value.entries?.at?.(-1) || value.entries?.[value.entries.length - 1]
   return {
@@ -209,7 +211,62 @@ function TimelineCard({ timeline, selected, onSelect }) {
   )
 }
 
+// Lecture complète : les neuf sections rédigées, telles qu'enregistrées.
+function FullReading({ reading }) {
+  if (!reading?.sections?.length) return null
+  return (
+    <div className="mt-6 space-y-4">
+      {reading.direction?.label && (
+        <div className="rounded-2xl border border-gold/40 bg-white/80 p-4 md:p-5">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">La tendance du tirage</p>
+          <p className="mt-2 font-georgia text-lg font-medium text-deep">{reading.direction.label}</p>
+          {reading.direction.content && <p className="mt-2 whitespace-pre-line font-georgia text-sm leading-relaxed text-deep/80 md:text-base">{reading.direction.content}</p>}
+        </div>
+      )}
+      {reading.closure && (
+        <div className="rounded-2xl border border-gold/25 bg-white/80 p-4 md:p-5">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Ce qui doit se terminer avant la suite</p>
+          <dl className="mt-2 grid gap-2 font-georgia text-sm leading-relaxed text-deep/80 md:text-base">
+            {reading.closure.stillOpen && <div><dt className="font-medium text-deep">Ce qui reste ouvert</dt><dd>{reading.closure.stillOpen}</dd></div>}
+            {reading.closure.mainLock && <div><dt className="font-medium text-deep">Le verrou principal</dt><dd>{reading.closure.mainLock}</dd></div>}
+            {reading.closure.opensAfterClosure && <div><dt className="font-medium text-deep">Ce que la clôture peut ouvrir</dt><dd>{reading.closure.opensAfterClosure}</dd></div>}
+          </dl>
+        </div>
+      )}
+      {reading.sections.map((section) => (
+        <article key={section.id} className="rounded-2xl border border-gold/25 bg-white/80 p-4 md:p-6">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">{section.number} / {reading.sections.length}</p>
+          <h3 className="mt-1 font-georgia text-xl font-medium leading-snug text-deep md:text-2xl">{section.title}</h3>
+          <p className="mt-3 whitespace-pre-line break-words font-georgia text-[15px] leading-relaxed text-deep/85 md:text-base">{section.content}</p>
+          {section.id === 'birth_sky_context' && reading.whyNow?.length > 0 && (
+            <div className="mt-4 rounded-xl bg-gold/[.08] p-4">
+              <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Pourquoi maintenant ?</p>
+              <ul className="mt-2 grid gap-3">
+                {reading.whyNow.map((item) => (
+                  <li key={item.calculated} className="font-georgia text-sm leading-relaxed text-deep/80">
+                    <span className="block font-medium text-deep">{item.calculated}</span>
+                    {item.interpretation}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </article>
+      ))}
+      {reading.realignmentAct && (
+        <div className="rounded-2xl border border-deep bg-deep p-4 text-cream md:p-6">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Acte de réalignement</p>
+          {reading.realignmentAct.gesture && <p className="mt-2 whitespace-pre-line font-georgia text-sm leading-relaxed text-cream/85 md:text-base">{reading.realignmentAct.gesture}</p>}
+          {reading.realignmentAct.decree && <p className="mt-3 whitespace-pre-line font-georgia text-base italic leading-relaxed text-gold md:text-lg">{reading.realignmentAct.decree}</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SequenceRail({ entries }) {
+  const [openId, setOpenId] = useState(null)
+  const opened = entries.find((entry) => entry.id === openId && entry.fullReading?.reading?.sections?.length > 0) || null
   return (
     <section className="rounded-3xl border border-gold/25 bg-white/75 p-5 md:p-7">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -219,9 +276,14 @@ function SequenceRail({ entries }) {
         </div>
         <p className="font-georgia text-xs text-mist">L’essentiel de chaque lecture, conservé pour comparer.</p>
       </div>
-      <div className="mt-6 grid gap-3 md:grid-cols-3">
+      {entries.some((entry) => entry.fullReading?.reading?.sections?.length > 0) && (
+        <p className="mt-4 font-georgia text-sm leading-relaxed text-deep/80 md:text-base">
+          Chaque étape contient une lecture complète. Sélectionnez une lecture pour découvrir son interprétation détaillée.
+        </p>
+      )}
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {entries.map((entry) => (
-          <article key={entry.id} className="rounded-2xl border border-gold/20 bg-cream/75 p-4">
+          <article key={entry.id} className={`flex min-w-0 flex-col rounded-2xl border p-4 ${opened?.id === entry.id ? 'border-gold bg-gold/[.08]' : 'border-gold/20 bg-cream/75'}`}>
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Lecture {entry.sequenceNumber}</p>
             <p className="mt-1 font-georgia text-sm text-mist">{formatDate(entry.readAt)}</p>
             <h3 className="mt-3 font-georgia text-lg font-medium text-deep">{entry.snapshot.mainCard?.name}</h3>
@@ -229,9 +291,36 @@ function SequenceRail({ entries }) {
             <p className="mt-3 font-georgia text-xs text-gold">
               Fenêtre : du {shortDate(entry.snapshot.timing?.primary?.start)} au {shortDate(entry.snapshot.timing?.primary?.end)}
             </p>
+            {entry.fullReading?.reading?.sections?.length > 0 && (
+              <div className="mt-auto pt-4">
+                <button
+                  type="button"
+                  aria-expanded={opened?.id === entry.id}
+                  onClick={() => setOpenId(opened?.id === entry.id ? null : entry.id)}
+                  className="min-h-[48px] w-full rounded-xl bg-deep px-4 py-3 text-center font-georgia text-base font-bold leading-snug text-gold shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                >
+                  {opened?.id === entry.id ? 'Refermer ma lecture' : 'Découvrir ma lecture complète'}
+                </button>
+                <p className="mt-2 text-center font-georgia text-xs leading-relaxed text-deep/70">
+                  9 sections approfondies · astrologie · trajectoire · leviers concrets
+                </p>
+              </div>
+            )}
           </article>
         ))}
       </div>
+      {opened && (
+        <div className="mt-5 rounded-2xl border border-gold/30 bg-cream/60 p-4 md:p-6">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Lecture {opened.sequenceNumber} · {formatDate(opened.readAt)}</p>
+          {opened.fullReading.cards?.length > 0 && (
+            <p className="mt-2 font-georgia text-sm text-deep/75">
+              Nombres choisis : {opened.fullReading.cards.map((card) => `N°${card.number} ${card.name}`).join(' · ')}
+            </p>
+          )}
+          {opened.fullReading.reading.summary30s && <p className="mt-3 whitespace-pre-line font-georgia text-base leading-relaxed text-deep/80">{opened.fullReading.reading.summary30s}</p>}
+          <FullReading reading={opened.fullReading.reading} />
+        </div>
+      )}
     </section>
   )
 }
@@ -289,6 +378,25 @@ function FinalSynthesis({ timeline }) {
           <p className="mt-2 font-georgia text-sm text-cream/78">{synthesis.entriesCount} lectures comparées</p>
         </div>
       </div>
+      {synthesis.recurringNumbers?.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-gold/25 p-4">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Nombres qui reviennent</p>
+          <ul className="mt-2 grid gap-1 font-georgia text-sm text-cream/78">
+            {synthesis.recurringNumbers.map((item) => (
+              <li key={item.number}>N°{item.number} · {item.name} — lectures {item.readings.join(', ')}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {synthesis.redThread && (
+        <div className="mt-4 rounded-2xl border border-gold bg-gold/10 p-4">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Votre carte fil rouge</p>
+          <p className="mt-2 font-georgia text-lg text-cream">N°{synthesis.redThread.number} · {synthesis.redThread.name}</p>
+          <p className="mt-1 font-georgia text-sm leading-relaxed text-cream/78">
+            Vous l’avez choisie aux lectures {synthesis.redThread.readings.join(', ')}. C’est un repère symbolique tiré de vos propres choix, pas une annonce.
+          </p>
+        </div>
+      )}
     </section>
   )
 }
@@ -784,7 +892,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
                 <p className="font-georgia text-xs font-semibold text-deep">Vos 3 nombres · de 1 à 58</p>
                 <div className="mt-2 grid grid-cols-3 gap-3">
                   {['number1', 'number2', 'number3'].map((key, index) => (
-                    <input key={key} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} inputMode="numeric" min="1" max="58" type="number" placeholder={String(index + 1)} className="rounded-xl border border-gold/30 bg-cream px-4 py-3 text-center font-georgia text-lg outline-none focus:border-gold" />
+                    <input key={key} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} inputMode="numeric" min="1" max="58" type="number" placeholder={String(index + 1)} onWheel={(e) => e.currentTarget.blur()} className="rounded-xl border border-gold/30 bg-cream px-4 py-3 text-center font-georgia text-lg outline-none focus:border-gold" />
                   ))}
                 </div>
               </div>
@@ -812,6 +920,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
               ))}
             </div>
             {lastResult.sky?.timing?.primary && <p className="mt-5 font-georgia text-sm text-deep/75">Fenêtre prioritaire : {shortDate(lastResult.sky.timing.primary.start)} → {shortDate(lastResult.sky.timing.primary.end)} · pic {shortDate(lastResult.sky.timing.primary.peak)}</p>}
+            <FullReading reading={getChronosphereReading(lastResult)} />
           </section>
         )}
 

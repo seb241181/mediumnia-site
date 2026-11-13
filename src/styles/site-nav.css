@@ -28,3 +28,41 @@
 .cosmic-nav nav > a.site-nav__link.site-nav__link { color: rgba(16, 25, 56, 0.78); }
 .cosmic-nav nav > a.site-nav__link.site-nav__link[aria-current="page"],
 .cosmic-nav nav > a.site-nav__link.site-nav__link:hover { color: #9b640b; }
+
+/* « Mon espace » est dans l'en-tête : la bulle flottante du compte ferait doublon. */
+body:has([data-site-nav-account]) .global-account-launcher { display: none; }
+
+/* Téléphone : quatre boutons dans la barre. On resserre, et le nom du site
+   laisse la place sous 520px (le symbole reste). */
+@media (max-width: 1040px) {
+  .cosmic-nav .site-nav__pro,
+  .cosmic-nav .site-nav__students,
+  .cosmic-nav .site-nav__account,
+  .cosmic-nav .site-nav__toggle { padding-left: 0.55rem; padding-right: 0.55rem; }
+}
+@media (max-width: 519px) {
+  .cosmic-nav .site-nav__brand-name { display: none; }
+  .cosmic-nav .site-nav__bar { gap: 0.4rem; padding-left: 0.6rem; padding-right: 0.6rem; }
+  .cosmic-nav .site-nav__actions { gap: 0.3rem; }
+  .cosmic-nav .site-nav__pro,
+  .cosmic-nav .site-nav__students,
+  .cosmic-nav .site-nav__account,
+  .cosmic-nav .site-nav__toggle { font-size: 11px; padding-left: 0.45rem; padding-right: 0.45rem; }
+  /* Le bouton du menu garde ses trois traits ; « Mon espace » garde son libellé. */
+  .cosmic-nav .site-nav__toggle-label,
+  .cosmic-nav .site-nav__account-icon { display: none; }
+}
+/* Très petits écrans : « Mon espace » se réduit à son symbole. */
+@media (max-width: 359px) {
+  .cosmic-nav .site-nav__account-icon { display: inline; }
+  .cosmic-nav .site-nav__account-label { display: none; }
+}
+
+/* Ordinateur, fenêtre étroite : la barre accueille un bouton de plus. */
+@media (min-width: 1041px) and (max-width: 1319px) {
+  .cosmic-nav nav[aria-label="Navigation principale"] { gap: 0.9rem; }
+  .cosmic-nav .site-nav__pro,
+  .cosmic-nav .site-nav__students,
+  .cosmic-nav .site-nav__account { padding-left: 0.6rem; padding-right: 0.6rem; }
+  .cosmic-nav .site-nav__account-label { display: none; }
+}

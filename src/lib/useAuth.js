@@ -48,5 +48,41 @@ export function useAuth() {
     return supabase.auth.signOut()
   }, [])
 
-  return { session, user: session?.user ?? null, loading, signUp, signIn, signOut }
+  // Connexion sans mot de passe : un code (et un lien) envoyé par e-mail.
+  // createAccount = true uniquement quand la personne a choisi de créer son
+  // espace : aucun compte n'est jamais créé automatiquement.
+  const sendEmailCode = useCallback(async (email, { createAccount = false, redirectTo } = {}) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: createAccount, ...(redirectTo ? { emailRedirectTo: redirectTo } : {}) },
+    })
+  }, [])
+
+  const verifyEmailCode = useCallback(async (email, code) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.verifyOtp({ email, token: code, type: 'email' })
+  }, [])
+
+  // Changement d'adresse : Supabase envoie un lien à la nouvelle adresse ;
+  // rien ne change tant qu'il n'a pas été cliqué.
+  const requestEmailChange = useCallback(async (email, { redirectTo } = {}) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.updateUser({ email: String(email || '').trim().toLowerCase() }, redirectTo ? { emailRedirectTo: redirectTo } : undefined)
+  }, [])
+
+  // Mot de passe : défini ou changé sur le compte connecté (même compte,
+  // mêmes rendez-vous). Supabase Auth le stocke haché ; il ne transite
+  // jamais par notre base ni par le stockage du navigateur.
+  const setPassword = useCallback(async (password) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.updateUser({ password })
+  }, [])
+
+  const requestPasswordReset = useCallback(async (email, { redirectTo } = {}) => {
+    if (!supabase) return { data: null, error: new Error('Supabase non configuré') }
+    return supabase.auth.resetPasswordForEmail(String(email || '').trim().toLowerCase(), redirectTo ? { redirectTo } : undefined)
+  }, [])
+
+  return { session, user: session?.user ?? null, loading, signUp, signIn, signOut, sendEmailCode, verifyEmailCode, requestEmailChange, setPassword, requestPasswordReset }
 }

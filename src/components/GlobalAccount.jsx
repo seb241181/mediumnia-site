@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../lib/useAuth.js'
 import { userErrorMessage } from '../lib/userErrorMessage.js'
+import { accountButtonLabel } from '../lib/accountView.js'
 
 const EMPTY_PROFILE = {
   full_name: '',
@@ -131,10 +132,9 @@ export default function GlobalAccount() {
   const [recommendTarget, setRecommendTarget] = useState(null)
 
   const profileComplete = Boolean(profile.full_name && profile.birth_date && profile.birth_time && profile.birth_place)
-  const accountLabel = useMemo(() => {
-    if (!user) return 'Connexion'
-    return profile.full_name?.trim().split(/\s+/)[0] || 'Mon compte'
-  }, [user, profile.full_name])
+  // Bouton permanent « Mon espace » : prénom de la personne connectée.
+  const [firstName, setFirstName] = useState('')
+  const accountLabel = useMemo(() => accountButtonLabel({ user, firstName, fullName: profile.full_name }), [user, firstName, profile.full_name])
 
   useEffect(() => {
     const root = document.getElementById('root')
@@ -161,10 +161,11 @@ export default function GlobalAccount() {
     setProfileStatus('loading')
     supabase
       .from('mediumia_profiles')
-      .select('full_name, birth_date, birth_time, birth_place')
+      .select('*')
       .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data, error }) => {
+        setFirstName(data?.first_name || '')
         if (!active) return
         if (error) {
           setProfileStatus('error')
@@ -250,6 +251,13 @@ export default function GlobalAccount() {
     setAuthInfo('')
   }, [user])
 
+  // Menu « Mon espace » de l'en-tête : ouvre le profil de tirage.
+  useEffect(() => {
+    const handler = () => setOpen(true)
+    window.addEventListener('mediumia:open-account', handler)
+    return () => window.removeEventListener('mediumia:open-account', handler)
+  }, [])
+
   function openAuth(nextMode = 'signin') {
     setMode(user ? 'profile' : nextMode)
     setAuthError('')
@@ -326,7 +334,11 @@ export default function GlobalAccount() {
     if (!user || !supabase) return
     setProfileStatus('saving')
     setProfileError('')
-    const { error } = await supabase.from('mediumia_profiles').delete().eq('user_id', user.id)
+    // On vide le profil Chronosphère sans supprimer la ligne : elle porte aussi
+    // les coordonnées de l'espace client (prénom, téléphone…).
+    const { error } = await supabase.from('mediumia_profiles')
+      .update({ full_name: null, birth_date: null, birth_time: null, birth_place: null })
+      .eq('user_id', user.id)
     if (error) {
       setProfileStatus('error')
       setProfileError('Impossible d’effacer les informations enregistrées.')
@@ -358,19 +370,20 @@ export default function GlobalAccount() {
   }
 
   // Page de réservation : pas de bulle « Connexion » par-dessus le parcours.
-  const hideLauncher = pathname.startsWith('/rdv/')
+  // Espace client : la page gère elle-même la connexion.
+  const hideLauncher = pathname.startsWith('/rdv/') || pathname.startsWith('/mon-espace') || pathname === '/preferences-email'
 
   return (
     <>
       {!hideLauncher && (
       <button
         type="button"
-        onClick={() => openAuth(user ? 'profile' : 'signin')}
-        className={`fixed bottom-4 left-4 sm:bottom-5 sm:left-5 z-[70] ${pathname === '/chronosphere' ? 'hidden sm:flex' : 'flex'} items-center gap-2 rounded-full border border-gold/45 bg-cream/95 p-2 sm:px-4 sm:py-3 font-georgia text-xs font-bold text-deep shadow-lg backdrop-blur-sm transition-colors hover:bg-white`}
-        aria-label={user ? 'Ouvrir mon compte MediumIA' : 'Se connecter à MediumIA'}
+        onClick={() => (user ? openAuth('profile') : window.location.assign('/mon-espace'))}
+        className={`global-account-launcher fixed bottom-4 left-4 sm:bottom-5 sm:left-5 z-[70] ${pathname === '/chronosphere' ? 'hidden sm:flex' : 'flex'} items-center gap-2 rounded-full border border-gold/45 bg-cream/95 py-2 pl-2 pr-3.5 sm:px-4 sm:py-3 font-georgia text-xs font-bold text-deep shadow-lg backdrop-blur-sm transition-colors hover:bg-white`}
+        aria-label={user ? 'Ouvrir mon espace MediumIA' : 'Mon espace MediumIA : se connecter'}
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-deep text-gold">◈</span>
-        <span className="hidden sm:inline">{authLoading ? 'Compte…' : accountLabel}</span>
+        <span className="max-w-[9rem] truncate">{authLoading ? 'Mon espace' : accountLabel}</span>
       </button>
       )}
 
@@ -412,7 +425,10 @@ export default function GlobalAccount() {
             ) : (
               <>
                 <p className="font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Mon compte MediumIA</p>
-                <h2 className="mt-2 font-georgia text-2xl font-medium">Mon profil</h2>
+                <a href="/mon-espace" className="mt-3 block rounded-xl border-2 border-gold/45 bg-gold/[.08] px-4 py-3 text-center font-georgia text-sm font-bold text-deep hover:border-gold">
+                  Mes rendez-vous et mes règlements →
+                </a>
+                <h2 className="mt-5 font-georgia text-2xl font-medium">Mon profil</h2>
                 <p className="mt-1 font-georgia text-xs text-mist">{user.email}</p>
                 <p className="mt-4 rounded-xl border border-gold/25 bg-white/60 p-4 font-georgia text-xs leading-relaxed text-mist">
                   Les informations de naissance sont facultatives. Si vous choisissez de les enregistrer, elles servent à préremplir Chronosphère. Vous pouvez les modifier ou les effacer ici à tout moment.

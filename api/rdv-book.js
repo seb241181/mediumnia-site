@@ -39,7 +39,9 @@ import { findUsableGiftCard, recordGiftRedemption, reserveGiftBalance, restoreGi
 import { escapeHtml, sendEmail } from '../lib/transactionalEmail.js'
 import { getPublicSlotOffer } from '../lib/rdvSlotOffers.js'
 import { deleteBookingFromGoogleCalendar, syncBookingToGoogleCalendar } from '../lib/googleCalendarEvents.js'
-import { isVideoOnly, visioLabel, VISIO_PENDING_NOTE } from '../lib/visioChannel.js'
+import { isVideoOnly, visioLabel, visioContactNote, VISIO_PENDING_NOTE } from '../lib/visioChannel.js'
+import { accountSpaceEmailBlock, accountSpaceUrl, normalizeVideoChannel, saveBookingContactMode, singleModality } from '../lib/rdvContactMode.js'
+import { recordBookingConsent } from '../lib/marketingConsent.js'
 import {
   bookingCancellationUrl,
   cancellationCutoff,
@@ -222,11 +224,13 @@ function paymentInstructions(modality = []) {
   return null
 }
 
-function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl }) {
+function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl, videoChannel = null, phone = null, accountUrl = null }) {
   const { dateText, timeText } = formatBookingDate(startsAt, timezone)
   const payment = paymentInstructions(modality)
-  // Visio = WhatsApp ou FaceTime, jamais Google Meet : canal à confirmer.
-  const visio = isVideoOnly(modality) ? visioLabel('a_preciser') : null
+  // Visio = WhatsApp ou FaceTime, jamais Google Meet : canal choisi, sinon à confirmer.
+  const visio = isVideoOnly(modality) ? visioLabel(videoChannel || 'a_preciser') : null
+  const contactNote = visioContactNote(visio, phone)
+  const account = accountSpaceEmailBlock(accountUrl)
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rendez-vous confirmé</title></head>
 <body style="margin:0;padding:0;background:#FAFAF7;font-family:Georgia,serif;color:#1A1535;">
 <div style="max-width:560px;margin:0 auto;padding:40px 24px;">
@@ -239,8 +243,9 @@ function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone,
     <p style="margin:4px 0 0;font-size:14px;color:#4A3F6B;"><strong>Heure :</strong> ${escapeHtml(timeText)}</p>
     ${visio ? `<p style="margin:4px 0 0;font-size:14px;color:#4A3F6B;"><strong>Modalité :</strong> ${escapeHtml(visio)}</p>` : ''}
   </div>
-  ${visio ? `<p style="font-size:14px;line-height:1.7;color:#4A3F6B;">${escapeHtml(VISIO_PENDING_NOTE)}</p>` : ''}
+  ${visio ? `<p style="font-size:14px;line-height:1.7;color:#4A3F6B;">${escapeHtml(contactNote || VISIO_PENDING_NOTE)}</p>` : ''}
   ${payment ? `<p style="font-size:14px;line-height:1.7;color:#4A3F6B;">${escapeHtml(payment)}</p>` : ''}
+  ${account.html}
   <p style="font-size:14px;line-height:1.7;color:#4A3F6B;margin-top:24px;">Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous.</p>
   <p style="margin:22px 0 30px;"><a href="${escapeHtml(cancelUrl)}" style="display:inline-block;background:#1A1535;color:#C9A84C;text-decoration:none;padding:13px 20px;border-radius:9px;font-weight:bold;">Annuler mon rendez-vous</a></p>
   <p style="font-size:12px;line-height:1.6;color:#756B89;">À moins de 48 heures, l’annulation automatique est bloquée. Contactez directement Sébastien.</p>
@@ -248,15 +253,18 @@ function buildInstantConfirmationHtml({ firstName, svcTitle, startsAt, timezone,
 </div></body></html>`
 }
 
-function buildInstantConfirmationText({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl }) {
+function buildInstantConfirmationText({ firstName, svcTitle, startsAt, timezone, modality, cancelUrl, videoChannel = null, phone = null, accountUrl = null }) {
   const { dateText, timeText } = formatBookingDate(startsAt, timezone)
   const payment = paymentInstructions(modality)
-  const visio = isVideoOnly(modality) ? visioLabel('a_preciser') : null
+  const visio = isVideoOnly(modality) ? visioLabel(videoChannel || 'a_preciser') : null
+  const contactNote = visioContactNote(visio, phone)
+  const account = accountSpaceEmailBlock(accountUrl)
   return [
     `Bonjour ${firstName},`, '', 'Votre rendez-vous est confirmé.', '',
     `Prestation : ${svcTitle}`, `Date : ${dateText}`, `Heure : ${timeText}`,
-    ...(visio ? [`Modalité : ${visio}`, VISIO_PENDING_NOTE] : []),
+    ...(visio ? [`Modalité : ${visio}`, contactNote || VISIO_PENDING_NOTE] : []),
     ...(payment ? ['', payment] : []), '',
+    ...account.text,
     'Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous :', cancelUrl, '',
     'À moins de 48 heures, contactez directement Sébastien.', '',
     'À bientôt,', 'Sébastien', 'MediumIA',
@@ -863,6 +871,12 @@ export default async function handler(req, res) {
 
   const instantBookingId = rpcResult.booking_id
 
+  // Mode de consultation : en présence, ou à distance par WhatsApp / FaceTime.
+  const videoChannel = normalizeVideoChannel(customer.videoChannel)
+  await saveBookingContactMode(supabase, instantBookingId, { modality: singleModality(service.modality), videoChannel })
+  // Consentement marketing (case facultative) : journalisé, ne bloque jamais la réservation.
+  await recordBookingConsent(supabase, { email: customer.email, optIn: customer.marketingOptIn, bookingId: instantBookingId })
+
   if (gift) {
     await supabase.from('bookings')
       .update({ booked_price_cents: service.price_cents, reservation_payment_cents: gift.appliedCents })
@@ -906,7 +920,7 @@ export default async function handler(req, res) {
         `Téléphone : ${customer.phone?.trim() || 'Non renseigné'}`,
         `Email : ${customer.email.trim()}`,
         `Prestation : ${service.title}`,
-        ...(isVideoOnly(service.modality) ? [visioLabel('a_preciser')] : []),
+        ...(isVideoOnly(service.modality) ? [visioLabel(videoChannel || 'a_preciser')] : []),
         `Identifiant MediumIA : ${instantBookingId}`,
       ].join('\n'),
     },
@@ -930,6 +944,9 @@ export default async function handler(req, res) {
         timezone: practitioner.timezone || 'Europe/Paris',
         modality: service.modality || [],
         cancelUrl,
+        videoChannel,
+        phone: customer.phone?.trim() || null,
+        accountUrl: accountSpaceUrl(),
       }),
       text: buildInstantConfirmationText({
         firstName: customer.firstName.trim(),
@@ -938,6 +955,9 @@ export default async function handler(req, res) {
         timezone: practitioner.timezone || 'Europe/Paris',
         modality: service.modality || [],
         cancelUrl,
+        videoChannel,
+        phone: customer.phone?.trim() || null,
+        accountUrl: accountSpaceUrl(),
       }),
       idempotencyKey: `booking-confirmation-client/${instantBookingId}`,
     })

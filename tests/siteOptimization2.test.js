@@ -44,7 +44,8 @@ test('home hero has no dock anymore and offers booking directly', () => {
 
 test('floating account button stays compact on phones', () => {
   const account = read('src/components/GlobalAccount.jsx')
-  assert.match(account, /<span className="hidden sm:inline">/)
+  // Libellé « Mon espace » visible aussi sur téléphone, mais court et tronqué.
+  assert.match(account, /<span className="max-w-\[9rem\] truncate">/)
   assert.match(read('src/index.css'), /#root:not\(:empty\)::after \{ content: ''; display: block; height: 84px; \}/)
 })
 

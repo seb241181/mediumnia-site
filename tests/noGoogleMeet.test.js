@@ -108,11 +108,11 @@ test('balance paid confirmation: visio channel, never an old Meet link', () => {
 
 test('paid booking finalization and instant booking: no conference request, visio channel instead', () => {
   const deposit = stripComments(read('lib/rdvDepositApiHandler.js'))
-  assert.match(deposit, /const visio = isVideo \? visioLabel\('a_preciser'\) : null/)
+  assert.match(deposit, /const visio = isVideo \? visioLabel\(contactMode\.videoChannel \|\| 'a_preciser'\) : null/)
   assert.match(deposit, /hold:rdv_booking_holds\(selected_modality\)/)
   assert.match(deposit, /\.\.\.\(visio \? \[visio\] : \[\]\),\s+`Identifiant MediumIA : \$\{booking\.id\}`/)
   const book = stripComments(read('api/rdv-book.js'))
-  assert.match(book, /\.\.\.\(isVideoOnly\(service\.modality\) \? \[visioLabel\('a_preciser'\)\] : \[\]\)/)
+  assert.match(book, /\.\.\.\(isVideoOnly\(service\.modality\) \? \[visioLabel\(videoChannel \|\| 'a_preciser'\)\] : \[\]\)/)
 })
 
 function codeFiles(dir) {

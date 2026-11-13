@@ -870,7 +870,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
                 <p className="font-georgia text-xs font-semibold text-deep">Vos 3 nombres · de 1 à 58</p>
                 <div className="mt-2 grid grid-cols-3 gap-3">
                   {['number1', 'number2', 'number3'].map((key, index) => (
-                    <input key={key} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} inputMode="numeric" min="1" max="58" type="number" placeholder={String(index + 1)} className="rounded-xl border border-gold/30 bg-cream px-4 py-3 text-center font-georgia text-lg outline-none focus:border-gold" />
+                    <input key={key} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} inputMode="numeric" min="1" max="58" type="number" placeholder={String(index + 1)} onWheel={(e) => e.currentTarget.blur()} className="rounded-xl border border-gold/30 bg-cream px-4 py-3 text-center font-georgia text-lg outline-none focus:border-gold" />
                   ))}
                 </div>
               </div>

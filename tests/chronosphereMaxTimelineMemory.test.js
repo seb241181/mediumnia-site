@@ -107,3 +107,16 @@ test('moteur : mémoire limitée au compte, au pack et au consentement', async (
   assert.match(loader, /\.eq\('timeline_id', timeline\.id\)\s*\.eq\('user_id', maxUser\.id\)/)
   assert.match(source, /const maxMemory = maxPack \? await loadChronosphereMaxMemory/)
 })
+
+test('page MAX : lecture complète affichée, relecture réservée au propriétaire consentant', async () => {
+  const page = await readFile(new URL('../src/components/ChronosphereMaxPage.jsx', import.meta.url), 'utf8')
+  assert.match(page, /<FullReading reading=\{getChronosphereReading\(lastResult\)\} \/>/)
+  assert.match(page, /Relire la lecture complète/)
+  assert.match(page, /reading\.sections\.map/)
+  assert.match(page, /month: 'short', year: 'numeric'/)
+  const api = await readFile(new URL('../lib/chronospherePayPal.js', import.meta.url), 'utf8')
+  const block = api.slice(api.indexOf('const fullReadings = new Map()'), api.indexOf('maxTimeline = {'))
+  assert.match(block, /timeline\.memory_consent_at && drawIds\.length/)
+  assert.match(block, /\.eq\('pack_id', pack\.id\)\.eq\('status', 'completed'\)\.in\('id', drawIds\)/)
+  assert.doesNotMatch(block, /profile|birth/i)
+})

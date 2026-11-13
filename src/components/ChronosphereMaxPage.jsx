@@ -289,6 +289,25 @@ function FinalSynthesis({ timeline }) {
           <p className="mt-2 font-georgia text-sm text-cream/78">{synthesis.entriesCount} lectures comparées</p>
         </div>
       </div>
+      {synthesis.recurringNumbers?.length > 0 && (
+        <div className="mt-4 rounded-2xl border border-gold/25 p-4">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Nombres qui reviennent</p>
+          <ul className="mt-2 grid gap-1 font-georgia text-sm text-cream/78">
+            {synthesis.recurringNumbers.map((item) => (
+              <li key={item.number}>N°{item.number} · {item.name} — lectures {item.readings.join(', ')}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {synthesis.redThread && (
+        <div className="mt-4 rounded-2xl border border-gold bg-gold/10 p-4">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Votre carte fil rouge</p>
+          <p className="mt-2 font-georgia text-lg text-cream">N°{synthesis.redThread.number} · {synthesis.redThread.name}</p>
+          <p className="mt-1 font-georgia text-sm leading-relaxed text-cream/78">
+            Vous l’avez choisie aux lectures {synthesis.redThread.readings.join(', ')}. C’est un repère symbolique tiré de vos propres choix, pas une annonce.
+          </p>
+        </div>
+      )}
     </section>
   )
 }

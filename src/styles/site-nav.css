@@ -58,11 +58,22 @@ body:has([data-site-nav-account]) .global-account-launcher { display: none; }
   .cosmic-nav .site-nav__account-label { display: none; }
 }
 
-/* Ordinateur, fenêtre étroite : la barre accueille un bouton de plus. */
+/* Ordinateur, fenêtre étroite : « Mon espace » reste écrit en toutes lettres,
+   à côté d'« Espace pro » et d'« Espace élèves ». On resserre la barre et le
+   nom du site laisse la place (le symbole reste). Le sélecteur « #top » est
+   nécessaire sur l'accueil, dont le style fixe déjà l'espacement des liens. */
 @media (min-width: 1041px) and (max-width: 1319px) {
-  .cosmic-nav nav[aria-label="Navigation principale"] { gap: 0.9rem; }
+  .cosmic-nav .site-nav__bar { gap: 0.6rem; }
+  .cosmic-nav .site-nav__actions { gap: 0.3rem; }
   .cosmic-nav .site-nav__pro,
   .cosmic-nav .site-nav__students,
-  .cosmic-nav .site-nav__account { padding-left: 0.6rem; padding-right: 0.6rem; }
-  .cosmic-nav .site-nav__account-label { display: none; }
+  .cosmic-nav .site-nav__account { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .cosmic-nav .site-nav__account-icon { display: none; }
+}
+@media (min-width: 1041px) and (max-width: 1279px) {
+  .cosmic-nav .site-nav__brand-name { display: none; }
+}
+@media (min-width: 1041px) and (max-width: 1119px) {
+  .cosmic-nav.site-nav nav[aria-label="Navigation principale"],
+  #top > header.site-nav nav[aria-label="Navigation principale"] { gap: 0.6rem !important; }
 }

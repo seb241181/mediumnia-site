@@ -295,6 +295,16 @@ function FinalSynthesis({ timeline }) {
 
 export default function ChronosphereMaxPage({ onBack, onNavigate }) {
   const { session, user, loading: authLoading, signIn, signUp } = useAuth()
+  // Supabase renouvelle la session (retour sur l'onglet, jeton rafraîchi) : l'objet
+  // change, pas la personne. Les effets ne dépendent donc que de l'identifiant, et
+  // le jeton le plus récent est lu au moment de l'appel. Sans cela, les boutons
+  // PayPal étaient reconstruits pendant le paiement et la capture n'avait pas lieu.
+  const userId = user?.id || null
+  const userEmail = user?.email || ''
+  const signedIn = Boolean(session?.access_token && userId)
+  const accessTokenRef = useRef(null)
+  accessTokenRef.current = session?.access_token || null
+  const resumedOrderRef = useRef(null)
   const [selectedId, setSelectedId] = useState(chronosphereMaxDemoTimeline.id)
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
@@ -349,23 +359,25 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
   }, [])
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setPackToken('')
       setCreditState(null)
       setLiveTimeline(null)
       return
     }
-    setForm((current) => ({ ...current, deliveryEmail: current.deliveryEmail || user.email || '' }))
-    const key = maxTokenKey(user.id)
+    setForm((current) => ({ ...current, deliveryEmail: current.deliveryEmail || userEmail }))
+    const key = maxTokenKey(userId)
     const stored = key ? localStorage.getItem(key) || '' : ''
     setPackToken(stored)
     try {
-      const raw = localStorage.getItem(maxPendingKey(user.id))
-      setPendingPayment(raw ? JSON.parse(raw) : null)
+      const raw = localStorage.getItem(maxPendingKey(userId))
+      const pending = raw ? JSON.parse(raw) : null
+      pendingPaymentRef.current = pending
+      setPendingPayment(pending)
     } catch {
       setPendingPayment(null)
     }
-  }, [user])
+  }, [userId, userEmail])
 
   async function refreshMaxStatus(token = packToken, allowAccountFallback = true) {
     if (!session?.access_token) return null
@@ -440,18 +452,19 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     }
   }
 
-async function captureMaxOrder(orderId, token) {
-    if (!session?.access_token || !user) throw new Error('auth_required')
+  async function captureMaxOrder(orderId, token) {
+    const accessToken = accessTokenRef.current
+    if (!accessToken || !userId) throw new Error('auth_required')
     const res = await fetch('/api/rdv-config?chronospherePayPalAction=capture', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ orderId }),
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok || data.product !== 'max3') throw new Error(data.error || 'capture_failed')
     try {
-      localStorage.setItem(maxTokenKey(user.id), token)
-      localStorage.removeItem(maxPendingKey(user.id))
+      localStorage.setItem(maxTokenKey(userId), token)
+      localStorage.removeItem(maxPendingKey(userId))
     } catch {}
     pendingPaymentRef.current = null
     setPendingPayment(null)
@@ -477,15 +490,30 @@ async function captureMaxOrder(orderId, token) {
     }
   }
 
+  // Reprise automatique : une commande approuvée chez PayPal mais dont le retour a
+  // été interrompu (onglet fermé, réseau, téléphone) est encaissée au retour sur la
+  // page, une seule fois par commande. Une commande jamais approuvée est refusée
+  // par PayPal : rien n'est débité et le bouton « Vérifier mon paiement » reste.
   useEffect(() => {
-    const offer = paypalConfig?.products?.max3
-    if (!user || !session?.access_token || !paypalConfig?.clientId || !offer || hasMaxAccess || !consentAccepted) return
+    const pending = pendingPayment
+    if (!signedIn || hasMaxAccess || !pending?.orderId || !pending?.packToken) return
+    if (resumedOrderRef.current === pending.orderId) return
+    resumedOrderRef.current = pending.orderId
+    captureMaxOrder(pending.orderId, pending.packToken).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn, hasMaxAccess, pendingPayment])
+
+  const maxOfferAvailable = Boolean(paypalConfig?.clientId && paypalConfig?.products?.max3)
+  const paypalClientId = paypalConfig?.clientId || ''
+
+  useEffect(() => {
+    if (!signedIn || !maxOfferAvailable || hasMaxAccess || !consentAccepted) return
     const node = paypalContainerRef.current
     if (!node) return
 
     let cancelled = false
     node.innerHTML = ''
-    loadPayPalSdk(paypalConfig.clientId)
+    loadPayPalSdk(paypalClientId)
       .then(() => {
         if (cancelled || !window.paypal?.Buttons) return null
         return window.paypal.Buttons({
@@ -494,15 +522,18 @@ async function captureMaxOrder(orderId, token) {
             setPaymentError('')
             const res = await fetch('/api/rdv-config?chronospherePayPalAction=create', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessTokenRef.current}` },
               body: JSON.stringify({ product: 'max3', consentAccepted: true }),
             })
             const data = await res.json().catch(() => ({}))
             if (!res.ok || data.product !== 'max3' || !data.id || !data.packToken) throw new Error(data.error || 'paypal_create_order_failed')
             const pending = { orderId: data.id, packToken: data.packToken }
             pendingPaymentRef.current = pending
+            // Cette commande suit le parcours normal : la reprise automatique ne
+            // la concerne que si la page est rechargée.
+            resumedOrderRef.current = data.id
             setPendingPayment(pending)
-            try { localStorage.setItem(maxPendingKey(user.id), JSON.stringify(pending)) } catch {}
+            try { localStorage.setItem(maxPendingKey(userId), JSON.stringify(pending)) } catch {}
             return data.id
           },
           onApprove: async (data) => {
@@ -525,7 +556,8 @@ async function captureMaxOrder(orderId, token) {
       cancelled = true
       if (node) node.innerHTML = ''
     }
-  }, [paypalConfig, user, session?.access_token, hasMaxAccess, consentAccepted])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paypalClientId, maxOfferAvailable, signedIn, userId, hasMaxAccess, consentAccepted])
 
   async function submitMaxReading(event) {
     event.preventDefault()

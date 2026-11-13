@@ -296,10 +296,6 @@ function SequenceRail({ entries }) {
                 {opened?.id === entry.id ? 'Refermer la lecture' : 'Relire la lecture complète'}
               </button>
             )}
-                {entry.fullReading.reading.summary30s && <p className="mt-3 whitespace-pre-line font-georgia text-sm leading-relaxed text-deep/80 md:text-base">{entry.fullReading.reading.summary30s}</p>}
-                <FullReading reading={entry.fullReading.reading} />
-              </details>
-            )}
           </article>
         ))}
       </div>

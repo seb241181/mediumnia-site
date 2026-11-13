@@ -265,6 +265,8 @@ function FullReading({ reading }) {
 }
 
 function SequenceRail({ entries }) {
+  const [openId, setOpenId] = useState(null)
+  const opened = entries.find((entry) => entry.id === openId && entry.fullReading?.reading?.sections?.length > 0) || null
   return (
     <section className="rounded-3xl border border-gold/25 bg-white/75 p-5 md:p-7">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -274,9 +276,9 @@ function SequenceRail({ entries }) {
         </div>
         <p className="font-georgia text-xs text-mist">L’essentiel de chaque lecture, conservé pour comparer.</p>
       </div>
-      <div className="mt-6 grid gap-3 md:grid-cols-3 md:items-start">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {entries.map((entry) => (
-          <article key={entry.id} className="rounded-2xl border border-gold/20 bg-cream/75 p-4 md:[&:has(details[open])]:col-span-3">
+          <article key={entry.id} className={`min-w-0 rounded-2xl border p-4 ${opened?.id === entry.id ? 'border-gold bg-gold/[.08]' : 'border-gold/20 bg-cream/75'}`}>
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Lecture {entry.sequenceNumber}</p>
             <p className="mt-1 font-georgia text-sm text-mist">{formatDate(entry.readAt)}</p>
             <h3 className="mt-3 font-georgia text-lg font-medium text-deep">{entry.snapshot.mainCard?.name}</h3>
@@ -285,13 +287,15 @@ function SequenceRail({ entries }) {
               Fenêtre : du {shortDate(entry.snapshot.timing?.primary?.start)} au {shortDate(entry.snapshot.timing?.primary?.end)}
             </p>
             {entry.fullReading?.reading?.sections?.length > 0 && (
-              <details className="mt-4 border-t border-gold/20 pt-3">
-                <summary className="cursor-pointer font-georgia text-sm font-medium text-deep underline decoration-gold underline-offset-4">Relire la lecture complète</summary>
-                {entry.fullReading.cards?.length > 0 && (
-                  <p className="mt-3 font-georgia text-xs text-mist">
-                    Nombres choisis : {entry.fullReading.cards.map((card) => `N°${card.number} ${card.name}`).join(' · ')}
-                  </p>
-                )}
+              <button
+                type="button"
+                aria-expanded={opened?.id === entry.id}
+                onClick={() => setOpenId(opened?.id === entry.id ? null : entry.id)}
+                className="mt-4 w-full rounded-xl border border-gold/40 bg-white/80 px-4 py-2.5 font-georgia text-sm font-medium text-deep"
+              >
+                {opened?.id === entry.id ? 'Refermer la lecture' : 'Relire la lecture complète'}
+              </button>
+            )}
                 {entry.fullReading.reading.summary30s && <p className="mt-3 whitespace-pre-line font-georgia text-sm leading-relaxed text-deep/80 md:text-base">{entry.fullReading.reading.summary30s}</p>}
                 <FullReading reading={entry.fullReading.reading} />
               </details>
@@ -299,6 +303,18 @@ function SequenceRail({ entries }) {
           </article>
         ))}
       </div>
+      {opened && (
+        <div className="mt-5 rounded-2xl border border-gold/30 bg-cream/60 p-4 md:p-6">
+          <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Lecture {opened.sequenceNumber} · {formatDate(opened.readAt)}</p>
+          {opened.fullReading.cards?.length > 0 && (
+            <p className="mt-2 font-georgia text-sm text-deep/75">
+              Nombres choisis : {opened.fullReading.cards.map((card) => `N°${card.number} ${card.name}`).join(' · ')}
+            </p>
+          )}
+          {opened.fullReading.reading.summary30s && <p className="mt-3 whitespace-pre-line font-georgia text-base leading-relaxed text-deep/80">{opened.fullReading.reading.summary30s}</p>}
+          <FullReading reading={opened.fullReading.reading} />
+        </div>
+      )}
     </section>
   )
 }

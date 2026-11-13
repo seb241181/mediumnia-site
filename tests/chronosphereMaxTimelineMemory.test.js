@@ -120,3 +120,11 @@ test('page MAX : lecture complète affichée, relecture réservée au propriéta
   assert.match(block, /\.eq\('pack_id', pack\.id\)\.eq\('status', 'completed'\)\.in\('id', drawIds\)/)
   assert.doesNotMatch(block, /profile|birth/i)
 })
+
+test('consignes : évolution du tirage distincte du vécu, années toujours écrites', async () => {
+  const text = maxMemoryPromptContext(buildMaxMemoryForReading([entry(1, [1, 2, 3])], [card(4), card(5), card(6)]))
+  assert.match(text, /DISTINGUE TOUJOURS l'évolution du TIRAGE de l'expérience VECUE/)
+  assert.match(text, /N'affirme aucune transformation personnelle/)
+  const engine = await readFile(new URL('../lib/oracleTimeline.js', import.meta.url), 'utf8')
+  assert.match(engine, /du 31 décembre 2026 au 6 janvier 2027/)
+})

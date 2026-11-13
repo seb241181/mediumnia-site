@@ -276,9 +276,14 @@ function SequenceRail({ entries }) {
         </div>
         <p className="font-georgia text-xs text-mist">L’essentiel de chaque lecture, conservé pour comparer.</p>
       </div>
+      {entries.some((entry) => entry.fullReading?.reading?.sections?.length > 0) && (
+        <p className="mt-4 font-georgia text-sm leading-relaxed text-deep/80 md:text-base">
+          Chaque étape contient une lecture complète. Sélectionnez une lecture pour découvrir son interprétation détaillée.
+        </p>
+      )}
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {entries.map((entry) => (
-          <article key={entry.id} className={`min-w-0 rounded-2xl border p-4 ${opened?.id === entry.id ? 'border-gold bg-gold/[.08]' : 'border-gold/20 bg-cream/75'}`}>
+          <article key={entry.id} className={`flex min-w-0 flex-col rounded-2xl border p-4 ${opened?.id === entry.id ? 'border-gold bg-gold/[.08]' : 'border-gold/20 bg-cream/75'}`}>
             <p className="font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">Lecture {entry.sequenceNumber}</p>
             <p className="mt-1 font-georgia text-sm text-mist">{formatDate(entry.readAt)}</p>
             <h3 className="mt-3 font-georgia text-lg font-medium text-deep">{entry.snapshot.mainCard?.name}</h3>
@@ -287,14 +292,19 @@ function SequenceRail({ entries }) {
               Fenêtre : du {shortDate(entry.snapshot.timing?.primary?.start)} au {shortDate(entry.snapshot.timing?.primary?.end)}
             </p>
             {entry.fullReading?.reading?.sections?.length > 0 && (
-              <button
-                type="button"
-                aria-expanded={opened?.id === entry.id}
-                onClick={() => setOpenId(opened?.id === entry.id ? null : entry.id)}
-                className="mt-4 w-full rounded-xl border border-gold/40 bg-white/80 px-4 py-2.5 font-georgia text-sm font-medium text-deep"
-              >
-                {opened?.id === entry.id ? 'Refermer la lecture' : 'Relire la lecture complète'}
-              </button>
+              <div className="mt-auto pt-4">
+                <button
+                  type="button"
+                  aria-expanded={opened?.id === entry.id}
+                  onClick={() => setOpenId(opened?.id === entry.id ? null : entry.id)}
+                  className="min-h-[48px] w-full rounded-xl bg-deep px-4 py-3 text-center font-georgia text-base font-bold leading-snug text-gold shadow-sm transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                >
+                  {opened?.id === entry.id ? 'Refermer ma lecture' : 'Découvrir ma lecture complète'}
+                </button>
+                <p className="mt-2 text-center font-georgia text-xs leading-relaxed text-deep/70">
+                  9 sections approfondies · astrologie · trajectoire · leviers concrets
+                </p>
+              </div>
             )}
           </article>
         ))}

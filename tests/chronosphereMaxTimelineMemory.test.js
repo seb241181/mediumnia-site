@@ -111,7 +111,9 @@ test('moteur : mémoire limitée au compte, au pack et au consentement', async (
 test('page MAX : lecture complète affichée, relecture réservée au propriétaire consentant', async () => {
   const page = await readFile(new URL('../src/components/ChronosphereMaxPage.jsx', import.meta.url), 'utf8')
   assert.match(page, /<FullReading reading=\{getChronosphereReading\(lastResult\)\} \/>/)
-  assert.match(page, /Relire la lecture complète/)
+  assert.match(page, /Découvrir ma lecture complète/)
+  assert.match(page, /9 sections approfondies · astrologie · trajectoire · leviers concrets/)
+  assert.match(page, /Chaque étape contient une lecture complète\. Sélectionnez une lecture/)
   assert.match(page, /reading\.sections\.map/)
   assert.match(page, /month: 'short', year: 'numeric'/)
   const api = await readFile(new URL('../lib/chronospherePayPal.js', import.meta.url), 'utf8')

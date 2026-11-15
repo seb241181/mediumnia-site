@@ -7,6 +7,7 @@ const days = [{ date: '2026-12-05', status: 'free_slots', exceptionType: 'modifi
 test('projection is transparent, client-free and distinguishes exceptional/closed', () => {
   const out = availabilityProjection({ days })
   assert.equal(out.length, 2); assert.equal(out[0].summary, 'Disponibilité exceptionnelle'); assert.equal(out[1].summary, 'Jour fermé — MediumIA')
+  assert.equal(out[0].colorId, '3'); assert.equal(out[1].colorId, '8')
   assert.ok(out.every((e) => !JSON.stringify(e).match(/client|email|phone/i)))
   const calls = []
   const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
@@ -18,6 +19,12 @@ test('projection is transparent, client-free and distinguishes exceptional/close
         assert.equal(body.transparency, 'transparent')
       }
     })
+})
+
+test('regular bookable slots also use violet while exceptional closures stay gray', () => {
+  const [slot] = availabilityProjection({ days: [{ date: '2027-01-05', status: 'free_slots', slots: [{ start: Date.parse('2027-01-05T08:30:00Z'), end: Date.parse('2027-01-05T09:30:00Z'), available: true }] }] })
+  assert.equal(slot.summary, 'Disponible')
+  assert.equal(slot.colorId, '3')
 })
 
 test('sync is idempotent and cannot target seb', async () => {
@@ -45,7 +52,7 @@ test('sync patches its own event when the visual projection changes', async () =
   const existing = { id: desired[0].id, summary: 'Disponible', colorId: '10', transparency: 'transparent', visibility: 'private', extendedProperties: { private: { mediumia_source: AVAILABILITY_SOURCE } } }
   const calls = []
   const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
-  const r = await syncAvailabilityCalendar({ targetCalendarId: 'availability-test', sourceCalendarId: 'seb', desired: [{ ...desired[0], colorId: '6' }], existing: [existing], accessToken: 'x', fetchImpl: fake })
+  const r = await syncAvailabilityCalendar({ targetCalendarId: 'availability-test', sourceCalendarId: 'seb', desired, existing: [existing], accessToken: 'x', fetchImpl: fake })
   assert.equal(r.updated, 1); assert.equal(calls[0].init.method, 'PATCH'); assert.match(calls[0].init.body, /"colorId":"6"/)
 })
 

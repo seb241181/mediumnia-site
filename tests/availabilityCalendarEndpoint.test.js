@@ -2,7 +2,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { availabilityCalendarSyncInternals, handleAvailabilityCalendarSync } from '../lib/availabilityCalendarSyncHandler.js'
-import { executeAvailabilityCalendarSync } from '../lib/availabilityCalendarExecutor.js'
+import { executeAvailabilityCalendarSync, projectionDates } from '../lib/availabilityCalendarExecutor.js'
 import fs from 'node:fs'
 
 function response(statuses) {
@@ -86,4 +86,14 @@ test('executor rejects a TEST configuration from a Production runtime before dat
 test('Production configuration contains no availability-calendar Cron', () => {
   const config = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
   assert.equal((config.crons || []).some((cron) => /availability-calendar/.test(cron.path)), false)
+})
+
+
+test('availability calendar horizon supports 90 days but rejects larger requests', () => {
+  const now = new Date('2026-11-15T19:00:00.000Z')
+  const projected = projectionDates({ now, days: 90 })
+  assert.equal(projected.length, 90)
+  assert.equal(projected[0], '2026-11-15')
+  assert.equal(new Set(projected).size, 90)
+  assert.throws(() => projectionDates({ now, days: 91 }), /invalid_projection_horizon/)
 })

@@ -47,7 +47,7 @@ test('politique : toutes les règles métier centralisées', () => {
 })
 
 test('capacité Google : réponse affirmative limitée au calcul via MediumIA, sans lecture pour une question de capacité', () => {
-  assert.equal(LUMIA_POLICY_VERSION, '2026-10-06.1')
+  assert.equal(LUMIA_POLICY_VERSION, '2026-11-15.2')
   assert.match(policy, /Tu peux utiliser Google Agenda via le moteur MediumIA pour calculer les disponibilités en lecture seule/)
   assert.match(policy, /Si Sébastien demande si tu as accès à son agenda Google, réponds oui en précisant les limites actuelles/)
   assert.match(policy, /déterminer si un créneau est libre ou occupé via MediumIA, en lecture seule/)
@@ -69,7 +69,7 @@ test('capacité Google : lecture des disponibilités et seule suppression de pro
   assert.match(capabilityRule, /en lecture seule/)
   assert.match(capabilityRule, /les titres et contenus privés des événements ne sont pas exposés au modèle/)
   assert.match(capabilityRule, /suppression Google n’est autorisée que comme synchronisation serveur/)
-  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel'])
+  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel', 'mediumia.booking_request.import'])
   for (const action of ['calendar_create', 'calendar_update', 'calendar_move', 'calendar_delete', 'google.event.create', 'google.event.update', 'google.event.cancel']) {
     assert.deepEqual(authorizeLumiaAction(action, { validatedBy: 'owner', idempotencyKey: 'capability:1', maxPerRun: 1 }),
       { allowed: false, reason: 'action_not_allowed' })
@@ -87,7 +87,7 @@ test('politique : aucun secret, coordonnée bancaire, numéro ni e-mail', () => 
 })
 
 test('actions : seule annulation MediumIA activée ; validation, idempotence et plafond restent obligatoires', () => {
-  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel'])
+  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel', 'mediumia.booking_request.import'])
   assert.ok(Object.isFrozen(LUMIA_ALLOWED_ACTIONS))
   assert.deepEqual(LUMIA_ACTION_REQUIREMENTS, { humanValidation: true, idempotencyKey: true, maxPerRun: true })
   assert.equal(authorizeLumiaAction('mediumia.booking.cancel', { idempotencyKey: 'conv:abc:1', maxPerRun: 1 }).reason, 'validation_required')

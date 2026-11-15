@@ -7,7 +7,7 @@ Messages Mac ─ bridge local ─┬─ tous les entrants texte ─→ lumia-mes
                              └─ « probable » seulement ──→ lumia-rdv-intake (inchangé) ─→ booking_requests
 ```
 
-Phase actuelle : **lecture seule**. Lumia ne répond pas, ne supprime rien, ne modifie pas Messages, n'envoie aucun e-mail, ne touche ni à Google Agenda, ni aux bookings, ni aux paiements. Elle peut seulement proposer un brouillon de réponse.
+Phase actuelle : **lecture seule**, avec une exception validée par Sébastien : l'ajout des demandes détectées à « Demandes de RDV à traiter » (voir `docs/lumia-request-import.md`). Lumia ne répond pas, ne supprime rien, ne modifie pas Messages, n'envoie aucun e-mail, ne touche ni à Google Agenda, ni aux bookings, ni aux paiements. Elle peut seulement proposer un brouillon de réponse.
 
 ## Table `lumia_message_inbox`
 

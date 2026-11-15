@@ -100,3 +100,7 @@ Un client n'est pas une demande : `mediumia_customers` est distinct de `booking_
 - **Parcours** : SMS entrant → téléphone → `mediumia_customers` → fiche → historique MediumIA (`customer_history` : nombre de rendez-vous, dernier rendez-vous) → nouvelle `booking_request`.
 - **Lien** : `customer_id` n'est posé que pour une fiche unique, non ambiguë, trouvée par téléphone ou e-mail exacts.
 - **Nom et prénom seuls** : simple suggestion (`customer_suggestion_id`), jamais un lien ni une complétion. Avec des homonymes, il n'y a aucune suggestion.
+
+## Ajout depuis la console Lumia
+
+Les demandes repérées dans la boîte de réception peuvent aussi être ajoutées depuis la console Lumia, après une liste proposée et un GO de Sébastien : voir `docs/lumia-request-import.md`. Elles passent par la même fonction `lumia_upsert_booking_request` (mêmes règles de rapprochement et d'idempotence). Le canal `rcs` est accepté.

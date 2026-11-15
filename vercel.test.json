@@ -1,0 +1,3 @@
+{
+  "buildCommand": "vite build && node scripts/verify-chronosphere-v2-bundle.mjs && node scripts/prerender-route-meta.mjs"
+}

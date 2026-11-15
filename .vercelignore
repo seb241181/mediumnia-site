@@ -1,4 +1,0 @@
-# Preview dedicated to the availability-calendar executor.  Keep the application
-# static and publish only its authenticated TEST trigger (Hobby: 12 functions).
-api/**
-!api/availability-calendar-sync-test.js

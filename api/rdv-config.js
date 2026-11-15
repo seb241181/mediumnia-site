@@ -22,6 +22,7 @@ import { handleDefi } from '../lib/defiIntuitionServer.js'
 import { handleCspReport } from '../lib/cspReport.js'
 import { handleEmailQuestions } from '../lib/emailQuestions.js'
 import { handleAccountApi } from '../lib/accountApiHandler.js'
+import { handleAvailabilityCalendarSync } from '../lib/availabilityCalendarSyncHandler.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -47,6 +48,12 @@ export default async function handler(req, res) {
   // Espace client : rendez-vous et règlements du compte connecté.
   const accountAction = req.query?.accountAction
   if (accountAction) return handleAccountApi(req, res, accountAction)
+
+  // Désactivé par défaut : ce chemin ne peut appeler Google qu'après
+  // configuration explicite du calendrier secondaire Production.
+  if (req.query?.availabilityCalendarAction === 'sync') {
+    return handleAvailabilityCalendarSync(req, res)
+  }
 
   // Consentement marketing : confirmation, désinscription, préférences.
   const marketingAction = req.query?.marketingAction

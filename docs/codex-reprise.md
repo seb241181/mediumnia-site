@@ -1,5 +1,20 @@
 # Reprise Codex - MediumIA
 
+## Calendrier « Disponibilités MediumIA » — intégration Production préparée (15 novembre 2026)
+
+- Branche d'intégration : `codex/availability-calendar-production-prep`, créée
+  depuis `origin/main` incluant la PR Lumia #212. Les commits TEST ont été
+  repris sans conflit, puis l'endpoint a été intégré à `api/rdv-config.js` pour
+  ne pas ajouter de fonction Vercel. Le `.vercelignore` exclusivement destiné à
+  la Preview TEST a été retiré : il aurait exclu les API de Production.
+- Aucun Cron de disponibilités n'est présent et
+  `AVAILABILITY_CALENDAR_SYNC_ENABLED` doit rester absent ou différent de
+  `true`. Ainsi, le code déployé répond 404 avant tout accès Supabase ou Google.
+- Le protocole de mise en route, les variables nécessaires, les vérifications
+  post-déploiement et le retour arrière sont documentés dans
+  `docs/availability-calendar-production-runbook.md`. L'activation Google
+  Production reste soumise à un GO distinct.
+
 ## Calendrier « Disponibilités MediumIA — TEST » (15 novembre 2026)
 
 - Branche locale isolée : `codex/availability-calendar-test-final`, commit

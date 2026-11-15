@@ -1,3 +1,0 @@
-{
-  "buildCommand": "vite build && node scripts/verify-chronosphere-v2-bundle.mjs"
-}

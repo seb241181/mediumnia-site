@@ -8,6 +8,16 @@ test('projection is transparent, client-free and distinguishes exceptional/close
   const out = availabilityProjection({ days })
   assert.equal(out.length, 2); assert.equal(out[0].summary, 'Disponibilité exceptionnelle'); assert.equal(out[1].summary, 'Jour fermé — MediumIA')
   assert.ok(out.every((e) => !JSON.stringify(e).match(/client|email|phone/i)))
+  const calls = []
+  const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
+  return syncAvailabilityCalendar({ targetCalendarId: 'availability-secondary', sourceCalendarId: 'seb', desired: out, existing: [], accessToken: 'x', fetchImpl: fake })
+    .then(() => {
+      for (const call of calls) {
+        const body = JSON.parse(call.init.body)
+        assert.equal(body.visibility, 'private')
+        assert.equal(body.transparency, 'transparent')
+      }
+    })
 })
 
 test('sync is idempotent and cannot target seb', async () => {
@@ -15,6 +25,7 @@ test('sync is idempotent and cannot target seb', async () => {
   const calls = []
   const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
   await assert.rejects(() => syncAvailabilityCalendar({ targetCalendarId: 'seb', sourceCalendarId: 'seb', desired, accessToken: 'x', fetchImpl: fake }), /dedicated_target/)
+  await assert.rejects(() => syncAvailabilityCalendar({ targetCalendarId: 'primary', sourceCalendarId: 'seb', desired, accessToken: 'x', fetchImpl: fake }), /dedicated_target/)
   const existing = desired.map((d) => ({ id: d.id, extendedProperties: { private: { mediumia_source: AVAILABILITY_SOURCE } } }))
   const res = await syncAvailabilityCalendar({ targetCalendarId: 'test', sourceCalendarId: 'seb', desired, existing, accessToken: 'x', fetchImpl: fake })
   assert.deepEqual(res, { created: 0, updated: 0, unchanged: 2, deleted: 0, errors: [] }); assert.equal(calls.length, 0)

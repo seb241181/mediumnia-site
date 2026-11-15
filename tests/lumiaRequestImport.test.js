@@ -395,6 +395,7 @@ test('rapprochement : types, rendez-vous lié, client sur deux canaux, relance s
   assert.match(text, /1\. Annulation · À vérifier · \+33600000201/)
   assert.match(text, /Rendez-vous concerné : .* — il ne sera pas modifié/)
   assert.match(text, /même client aussi sur iMessage : un seul dossier/)
+  assert.doesNotMatch(text, /rendez-vous déjà prévu/, 'pas de doublon d’information avec « Rendez-vous concerné »')
   assert.match(text, /nouveau message \(relance \/ suivi\) : à lire dans la demande existante, rien n’est créé en double/)
 })
 

@@ -53,7 +53,7 @@ test('sync patches its own event when the visual projection changes', async () =
   const calls = []
   const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
   const r = await syncAvailabilityCalendar({ targetCalendarId: 'availability-test', sourceCalendarId: 'seb', desired, existing: [existing], accessToken: 'x', fetchImpl: fake })
-  assert.equal(r.updated, 1); assert.equal(calls[0].init.method, 'PATCH'); assert.match(calls[0].init.body, /"colorId":"6"/)
+  assert.equal(r.updated, 1); assert.equal(calls[0].init.method, 'PATCH'); assert.equal(JSON.parse(calls[0].init.body).colorId, '3')
 })
 
 test('a failed creation never deletes a previously published availability', async () => {

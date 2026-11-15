@@ -12,6 +12,7 @@ import { loadLumiaInboxContext, lumiaInboxLogDetail } from '../lib/lumiaMessageI
 import { LUMIA_AVAILABILITY_UNAVAILABLE, loadLumiaAvailabilityContext, lumiaAvailabilityLogDetail } from '../lib/lumiaAvailabilityContext.js'
 import { buildLumiaPolicyInstructions, redactForLog } from '../lib/lumiaPolicy.js'
 import { maybeHandleLumiaBookingCancelChat } from '../lib/lumiaBookingCancelChat.js'
+import { maybeHandleLumiaRequestImportChat } from '../lib/lumiaRequestImport.js'
 import { answerFicheVisitor, getFicheAssistantInfo } from '../lib/publicAssistant.js'
 
 const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
@@ -368,7 +369,14 @@ export default async function handler(req, res) {
   // session propriétaire authentifiée de cette conversation privée.
   if (agent.metadata?.purpose === 'lumia_rdv_assistant' && !auth.rehearsal) {
     try {
-      const actionResult = await maybeHandleLumiaBookingCancelChat({
+      // Ajout de demandes depuis les messages (preview → GO), puis annulation.
+      const importResult = await maybeHandleLumiaRequestImportChat({
+        db,
+        userId: auth.userId,
+        conversationId,
+        message: cleanMessage,
+      })
+      const actionResult = importResult?.handled ? importResult : await maybeHandleLumiaBookingCancelChat({
         db,
         userId: auth.userId,
         conversationId,

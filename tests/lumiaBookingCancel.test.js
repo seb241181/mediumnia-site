@@ -127,7 +127,7 @@ test('Phase 3B : reprise après claim, échecs durables et snapshot updated_at s
 })
 
 test('Activation : API authentifiée n’autorise que mediumia.booking.cancel', () => {
-  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel'])
+  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel', 'mediumia.booking_request.import'])
   assert.match(api, /if \(!LUMIA_ALLOWED_ACTIONS\.includes\(LUMIA_BOOKING_CANCEL_ACTION\)\) return disabled\(\)/)
   assert.match(api, /ownedConversation\(db, userId/i)
   assert.match(api, /LUMIA_RDV_AGENT_ID = 'fcd33963-3e5f-4726-abec-b9c5c5ee4fe2'/)

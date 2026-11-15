@@ -5,7 +5,7 @@ préparatoire et l'exemple de Cron Vercel historique ci-dessous.
 
 - Source de lecture : calendrier professionnel `seb` (rendez-vous automatiques **et manuels**)
 - Cible d'écriture : calendrier distinct `Disponibilités MediumIA` (pas TEST)
-- Moteur : `/api/rdv-config?availabilityCalendarAction=sync&days=31`
+- Moteur : `/api/rdv-config?availabilityCalendarAction=sync&days=90`
 - Variables Vercel Production : `MEDIUMIA_ENV=production`,
   `AVAILABILITY_CALENDAR_SYNC_ENABLED=true` et secret manuel sensible
   `AVAILABILITY_CALENDAR_SYNC_MANUAL_SECRET`
@@ -20,6 +20,13 @@ préparatoire et l'exemple de Cron Vercel historique ci-dessous.
 **Ne pas ajouter le Cron Vercel proposé plus bas tant que cette tâche
 Supabase est active**, sinon deux planificateurs appelleraient le même moteur
 (qui dispose néanmoins d'un verrou de concurrence).
+
+### Horizon de visibilité
+
+Le moteur accepte jusqu'à **90 jours glissants** de disponibilités projetées. Les
+règles horaires, fermetures, rendez-vous manuels de `seb` et réservations MediumIA
+restent les seules sources de vérité. La tâche Supabase `pg_cron` doit utiliser
+`days=90` (elle utilisait initialement `days=31`). Ne pas ajouter de second Cron.
 
 ### Contrôles réalisés
 

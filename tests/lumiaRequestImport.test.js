@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
-  LUMIA_REQUEST_IMPORT_ACTION, buildImportItem, classifyImportCandidates, formatExecutionReply, formatScanReply,
+  LUMIA_REQUEST_IMPORT_ACTION, detectRequestKind, matchRelatedBooking, buildImportItem, classifyImportCandidates, formatExecutionReply, formatScanReply,
   guessModality, guessServiceHint, importCriteria, maybeHandleLumiaRequestImportChat, parseRequestImportCommand, requestImportEnabled,
 } from '../lib/lumiaRequestImport.js'
 import { LUMIA_ALLOWED_ACTIONS } from '../lib/lumiaPolicy.js'
@@ -120,7 +120,7 @@ test('réponses : proposition numérotée avec code GO ; résultat sans promesse
     scanned: 1, conversations: 1, result: { proposed: [candidate], existing: [] }, intent: { short_code: '#ABC123' }, names: new Map(), truncated: false,
   })
   assert.match(text, /— depuis le 1er novembre 2026 ·/)
-  assert.match(text, /1\. \+33600000001 · SMS · probable ·/)
+  assert.match(text, /1\. Nouvelle demande · À vérifier · \+33600000001 · SMS · probable ·/)
   assert.doesNotMatch(text, /rendez_vous|reserver/)
   assert.match(text, /GO #ABC123/)
   assert.doesNotMatch(text, /GO #ABC123 1,3/, 'un seul dossier : pas d’exemple de sélection')
@@ -129,7 +129,7 @@ test('réponses : proposition numérotée avec code GO ; résultat sans promesse
     scanned: 2, conversations: 2, result: { proposed: [candidate, { ...candidate, key: 'd' }], existing: [] }, intent: { short_code: '#ABC123' }, names: new Map(), truncated: false,
   })
   assert.match(two, /GO #ABC123 1,3/)
-  assert.match(text, /aucun rendez-vous confirmé, aucun message envoyé/)
+  assert.match(text, /aucun rendez-vous confirmé, modifié ou annulé, aucun message envoyé/)
   assert.match(formatExecutionReply({ status: 'succeeded', created: 1, items: [{ n: 1, outcome: 'created' }, { n: 2, outcome: 'already_open' }] }), /1 demande ajoutée[\s\S]*n°2 \(une demande ouverte existe déjà\)/)
   assert.match(formatExecutionReply({ status: 'failed', reason: 'preview_expired' }), /Aucune demande n’a été créée/)
 })
@@ -337,4 +337,98 @@ test('réponse sans IA : chaque commande citée est bien reconnue par le serveur
   assert.equal(parseRequestImportCommand(cited[0]).kind, 'scan')
   assert.deepEqual(parseRequestImportCommand(cited[1]), { kind: 'scan', check: true })
   for (const go of cited.slice(2)) assert.equal(parseRequestImportCommand(go.replace('#CODE', '#ABC123')).kind, 'approve', go)
+})
+
+
+// ── Types d'action : nouvelle demande, déplacement, annulation, relance ──
+test('types : détection sans IA des quatre actions, priorité annulation > déplacement > relance > demande', () => {
+  assert.equal(detectRequestKind('Bonjour, je souhaiterais prendre rendez-vous pour une guidance'), 'new')
+  assert.equal(detectRequestKind('Pourrais-je déplacer mon rendez-vous de jeudi à vendredi ?'), 'reschedule')
+  assert.equal(detectRequestKind('Je dois annuler mon rendez-vous de mardi, désolée'), 'cancel')
+  assert.equal(detectRequestKind(['Je voudrais un rdv', 'Finalement je dois annuler']), 'cancel')
+  assert.equal(detectRequestKind('Je me permets de vous relancer, je n’ai pas eu de réponse pour ma séance'), 'followup')
+  assert.equal(detectRequestKind('Avez-vous bien reçu mon message ?'), 'followup')
+  assert.equal(detectRequestKind('Avez-vous des disponibilités jeudi ?'), 'new')
+  assert.equal(detectRequestKind('Avez-vous des disponibilités jeudi ?', { hasHistory: true }), 'new')
+  assert.equal(detectRequestKind('C’est noté pour la suite', { hasHistory: true }), 'followup')
+})
+
+const bk = (id, starts) => ({ id: `00000000-0000-4000-8000-${String(id).padStart(12, '0')}`, starts_at: starts, customer_phone: '+33600000201' })
+test('rendez-vous concerné : trouvé, plusieurs, aucun ; affiné par le jour ou la date cités', () => {
+  const one = [bk(1, '2026-11-19T09:00:00Z')] // jeudi 19 novembre 10:00 Paris
+  const many = [bk(1, '2026-11-19T09:00:00Z'), bk(2, '2026-11-24T09:00:00Z'), bk(3, '2026-11-26T09:00:00Z')] // jeudi, mardi, jeudi
+  assert.equal(matchRelatedBooking('Je dois annuler mon rendez-vous', one).match, 'found')
+  assert.equal(matchRelatedBooking('Je dois annuler mon rendez-vous', many).match, 'multiple')
+  assert.equal(matchRelatedBooking('Je dois annuler mon rendez-vous de mardi', many).booking.id, bk(2).id)
+  assert.equal(matchRelatedBooking('Je dois annuler mon rendez-vous de jeudi', many).match, 'multiple')
+  assert.equal(matchRelatedBooking('Je dois déplacer le rdv du 26 novembre', many).booking.id, bk(3).id)
+  assert.equal(matchRelatedBooking('Annulation du rdv du 26/11 svp', many).booking.id, bk(3).id)
+  assert.equal(matchRelatedBooking('Je dois annuler mon rendez-vous de samedi', many).match, 'not_found')
+  assert.equal(matchRelatedBooking('Je dois annuler', []).match, 'not_found')
+})
+
+test('rapprochement : types, rendez-vous lié, client sur deux canaux, relance sur demande ouverte', () => {
+  const r = (id, conv, text, extra = {}) => row(id, conv, '2026-11-10T09:00:00Z', { message_text: text, counterpart: '+33600000201', sender: '+33600000201', ...extra })
+  const result = classifyImportCandidates({
+    conversations: [
+      conv('c-cancel', [r(1, 'c-cancel', 'Je dois annuler mon rendez-vous de jeudi')]),
+      conv('c-cancel-imsg', [r(2, 'c-cancel-imsg', 'Je confirme, je dois annuler jeudi', { source_channel: 'imessage' })], { channel: 'imessage' }),
+      conv('c-follow-open', [r(3, 'c-follow-open', 'Je me permets de vous relancer pour mon rendez-vous', { counterpart: '+33600000101', sender: '+33600000101' })]),
+    ],
+    requests: [{ id: 'r-open', status: 'pending', source_channel: 'sms', source_conversation_id: 'c-follow-open', created_at: '2026-11-03T10:00:00Z', source_message_at: '2026-11-03T09:00:00Z' }],
+    upcoming: new Map([['+33600000201', [bk(1, '2026-11-19T09:00:00Z')]]]),
+  })
+  assert.equal(result.proposed.length, 1, 'un seul dossier pour le même client sur SMS et iMessage')
+  const [cancel] = result.proposed
+  assert.equal(cancel.kind, 'cancel')
+  assert.equal(cancel.related.match, 'found')
+  assert.deepEqual(cancel.merged.map((m) => m.channel), ['imessage'])
+  const item = buildImportItem(cancel, 1)
+  assert.equal(item.kind, 'cancel')
+  assert.equal(item.related_booking_id, bk(1).id)
+  assert.equal(item.related_booking_match, 'found')
+  // Relance sur une demande déjà ouverte : signalée, jamais une seconde demande.
+  const follow = result.existing.find((c) => c.key === 'c-follow-open')
+  assert.equal(follow.reason, 'pending')
+  assert.equal(follow.new_message_kind, 'followup')
+  const text = formatScanReply({ criteria: { label: 'hier', channel: null, defaulted: false }, scanned: 3, conversations: 3, result, intent: { short_code: '#ABC123' }, names: new Map(), truncated: false })
+  assert.match(text, /1\. Annulation · À vérifier · \+33600000201/)
+  assert.match(text, /Rendez-vous concerné : .* — il ne sera pas modifié/)
+  assert.match(text, /même client aussi sur iMessage : un seul dossier/)
+  assert.match(text, /nouveau message \(relance \/ suivi\) : à lire dans la demande existante, rien n’est créé en double/)
+})
+
+test('SQL types : seule la demande tout juste créée reçoit son type ; le rendez-vous lié est revérifié, jamais modifié', () => {
+  const sql = read('supabase/migrations/20261115140000_lumia_request_kinds.sql')
+  const fn = sql.slice(sql.indexOf('FUNCTION public.lumia_execute_booking_request_import'), sql.indexOf('REVOKE ALL ON FUNCTION'))
+  assert.match(sql, /request_kind IN \('new', 'reschedule', 'cancel', 'followup'\)/)
+  assert.match(sql, /related_booking_id UUID REFERENCES public\.bookings\(id\) ON DELETE SET NULL/)
+  // Une seule mise à jour de demande : celle créée par cet appel (id + message + pending).
+  assert.equal((fn.match(/UPDATE public\.booking_requests/g) || []).length, 1)
+  assert.match(fn, /WHERE id = v_created_id AND status = 'pending' AND intake_agent = 'lumia'\n {10}AND source_channel = v_anchor\.source_channel AND source_message_id = v_anchor\.source_message_id/)
+  // Aucun accès en écriture aux rendez-vous, à Google ou aux messages.
+  assert.doesNotMatch(fn, /UPDATE public\.bookings|INSERT INTO public\.bookings|DELETE FROM|confirm_booking_request|calendar_sync|google_event/i)
+  assert.match(fn, /b\.status = 'confirmed' AND b\.starts_at > clock_timestamp\(\)/)
+  assert.match(fn, /public\.lumia_normalize_phone\(b\.customer_phone\) = v_phone/)
+  assert.match(fn, /'booking_modified', false/)
+})
+
+test('tableau de bord : type « À vérifier » et rendez-vous concerné affichés par le patch de build, sans action', () => {
+  const patch = read('scripts/apply-lumia-request-kinds.mjs')
+  assert.match(patch, /Nouvelle demande[\s\S]*Déplacement \/ modification[\s\S]*Annulation[\s\S]*Relance \/ suivi/)
+  assert.match(patch, /· À vérifier/)
+  assert.match(patch, /Lumia ne l’a pas modifié/)
+  assert.doesNotMatch(patch, /onClick|fetch\(|apiFetch|updateStatus/)
+  const pkg = JSON.parse(read('package.json'))
+  for (const script of ['predev', 'pretest', 'prebuild']) assert.match(pkg.scripts[script], /apply-home-growth-path\.mjs && node scripts\/apply-lumia-request-kinds\.mjs/, script)
+  const dashboard = read('src/components/rdv/RdvDashboard.jsx')
+  // Après npm test (pretest), le patch est appliqué une seule fois.
+  if (dashboard.includes('LUMIA_REQUEST_KIND_LABELS')) assert.equal(dashboard.split('const LUMIA_REQUEST_KIND_LABELS').length, 2)
+})
+
+test('contexte Lumia : le type d’action et le rendez-vous signalé sont transmis, sans identifiant de rendez-vous', () => {
+  const src = read('lib/lumiaAssistantContext.js')
+  assert.match(src, /request_kind, related_booking_match, created_at'\)/)
+  assert.match(src, /request_kind: cleanText\(request\.request_kind, 20\) \|\| null/)
+  assert.doesNotMatch(src, /related_booking_id/)
 })

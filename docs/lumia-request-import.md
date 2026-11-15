@@ -30,6 +30,33 @@ Sébastien : « GO #A1B2C3 »  (ou « GO #A1B2C3 1,3 »)
 4. **Signalements** (informatifs) : rendez-vous confirmé à venir pour le même numéro, réponse visible de Sébastien, dossier précédent.
 5. **Plafond** : 25 dossiers par proposition (les plus probables, puis les plus récents) ; la troncature est annoncée.
 
+## Types d'action (toujours « À vérifier »)
+
+| Type | `request_kind` | Détection (sans IA, sur les nouveaux messages du dossier) |
+|---|---|---|
+| Nouvelle demande | `new` | rendez-vous, séance, réservation, créneau… |
+| Déplacement / modification | `reschedule` | déplacer, décaler, reporter, changer la date |
+| Annulation | `cancel` | annuler, annulation |
+| Relance / suivi | `followup` | relance, « pas eu de réponse », « avez-vous reçu mon message », ou message sans demande explicite d'un client déjà connu |
+
+Priorité en cas de mélange : annulation, puis déplacement, puis relance, puis nouvelle demande.
+
+**Rendez-vous concerné** (annulation et déplacement) :
+- recherche : rendez-vous confirmés à venir du même client (téléphone normalisé), sur tous les profils du propriétaire ;
+- affinage par le jour ou la date cités (« mardi », « 26 novembre », « 26/11 ») ;
+- résultat : `found` (un seul, relié par `related_booking_id`), `multiple` (à identifier), `not_found` ;
+- l'exécuteur revérifie le rendez-vous avant de le relier ;
+- **il n'est jamais annulé, déplacé ni modifié**, et Google Agenda n'est pas touché.
+
+**Même client, plusieurs messages** :
+- plusieurs messages d'une conversation forment un seul dossier ;
+- un même numéro sur plusieurs canaux donne un seul dossier proposé, avec la mention « même client aussi sur… » ;
+- un nouveau message (relance, annulation…) dans une conversation qui a déjà une demande ouverte est signalé dans « Déjà dans MediumIA » : rien n'est créé en double et la demande existante n'est pas modifiée.
+
+**Affichage** : badge « Annulation · À vérifier » (ou autre type) et ligne « Rendez-vous concerné » dans « Demandes de RDV à traiter » (`scripts/apply-lumia-request-kinds.mjs`). Ce sont des informations seulement, sans aucun bouton.
+
+**Migration** : `20261115140000_lumia_request_kinds.sql`. Colonnes nullables : les demandes existantes ne changent pas.
+
 ## Validation et exécution
 
 - La proposition est un **preview immuable** (`lumia_action_intents`, action `mediumia.booking_request.import`), valable 30 minutes.
@@ -50,6 +77,17 @@ Sébastien : « GO #A1B2C3 »  (ou « GO #A1B2C3 1,3 »)
 - écriture Google Agenda ;
 - envoi de SMS, iMessage, RCS ou e-mail ;
 - paiement.
+
+## Désactivation immédiate (Production)
+
+1. **Sans redéploiement, en quelques secondes :** retirer à `service_role` le droit d'exécuter l'exécuteur. Tout GO échoue alors sans écrire (« L'ajout n'a pas pu être exécuté ») ; l'analyse et les propositions restent possibles, sans effet.
+   ```sql
+   REVOKE EXECUTE ON FUNCTION public.lumia_execute_booking_request_import(UUID, UUID, UUID, INTEGER[]) FROM service_role;
+   ```
+   Pour réactiver : `GRANT EXECUTE … TO service_role;`
+2. **Complète :** mettre `LUMIA_REQUEST_IMPORT_ENABLED=false` (ou supprimer la variable) dans Vercel Production, puis redéployer. Lumia répond alors que l'ajout n'est pas activé.
+
+Les demandes déjà créées restent dans la liste : une désactivation ne supprime rien.
 
 ## Sécurité et journal
 

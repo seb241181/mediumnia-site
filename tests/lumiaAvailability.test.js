@@ -621,7 +621,7 @@ test('lecture seule : aucune écriture en base ni dans Google ; seul le renouvel
 
 test('politique : disponibilité déterministe, jamais inventée, Google indisponible, lecture seule', () => {
   const policy = buildLumiaPolicyInstructions()
-  assert.equal(LUMIA_POLICY_VERSION, '2026-11-15.1')
+  assert.equal(LUMIA_POLICY_VERSION, '2026-11-15.2')
   for (const re of [
     /résultat déterministe du moteur MediumIA \+ Google Agenda/,
     /N'invente jamais un créneau/,

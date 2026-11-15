@@ -1,4 +1,5 @@
--- Operational state for the TEST-only informational availability calendar.
+-- Operational state for the informational availability calendar. The runtime
+-- stays disabled until a separately approved environment configuration exists.
 alter table public.availability_calendar_sync_config
   add column if not exists last_success_at timestamptz,
   add column if not exists last_error_at timestamptz,

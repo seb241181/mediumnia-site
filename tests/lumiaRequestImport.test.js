@@ -118,9 +118,16 @@ test('réponses : proposition numérotée avec code GO ; résultat sans promesse
     criteria: { label: 'depuis le 2026-11-01', channel: null, defaulted: false },
     scanned: 1, conversations: 1, result: { proposed: [candidate], existing: [] }, intent: { short_code: '#ABC123' }, names: new Map(), truncated: false,
   })
-  assert.match(text, /1\. \+33600000001 · SMS · probable/)
+  assert.match(text, /— depuis le 1er novembre 2026 ·/)
+  assert.match(text, /1\. \+33600000001 · SMS · probable ·/)
+  assert.doesNotMatch(text, /rendez_vous|reserver/)
   assert.match(text, /GO #ABC123/)
-  assert.match(text, /GO #ABC123 1,3/)
+  assert.doesNotMatch(text, /GO #ABC123 1,3/, 'un seul dossier : pas d’exemple de sélection')
+  const two = formatScanReply({
+    criteria: { label: 'hier', channel: 'sms', defaulted: false },
+    scanned: 2, conversations: 2, result: { proposed: [candidate, { ...candidate, key: 'd' }], existing: [] }, intent: { short_code: '#ABC123' }, names: new Map(), truncated: false,
+  })
+  assert.match(two, /GO #ABC123 1,3/)
   assert.match(text, /aucun rendez-vous confirmé, aucun message envoyé/)
   assert.match(formatExecutionReply({ status: 'succeeded', created: 1, items: [{ n: 1, outcome: 'created' }, { n: 2, outcome: 'already_open' }] }), /1 demande ajoutée[\s\S]*n°2 \(une demande ouverte existe déjà\)/)
   assert.match(formatExecutionReply({ status: 'failed', reason: 'preview_expired' }), /Aucune demande n’a été créée/)

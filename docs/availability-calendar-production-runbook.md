@@ -1,3 +1,60 @@
+# État réel Production — 15 novembre 2026
+
+**Le calendrier secondaire est activé.** Cette section remplace la procédure
+préparatoire et l'exemple de Cron Vercel historique ci-dessous.
+
+- Source de lecture : calendrier professionnel `seb` (rendez-vous automatiques **et manuels**)
+- Cible d'écriture : calendrier distinct `Disponibilités MediumIA` (pas TEST)
+- Moteur : `/api/rdv-config?availabilityCalendarAction=sync&days=31`
+- Variables Vercel Production : `MEDIUMIA_ENV=production`,
+  `AVAILABILITY_CALENDAR_SYNC_ENABLED=true` et secret manuel sensible
+  `AVAILABILITY_CALENDAR_SYNC_MANUAL_SECRET`
+- Configuration Supabase Production : `availability_calendar_sync_config`,
+  `environment=production`, `enabled=true` avec deux identifiants Google différents
+- Planificateur **actuel : Supabase `pg_cron`**, tâche
+  `mediumia-availability-calendar-prod` (job ID 3), cadence `*/15 * * * *`
+- Secret de l'appel périodique conservé chiffré dans Supabase Vault ;
+  `pg_net` appelle l'API avec un en-tête privé. Ne jamais inscrire la valeur
+  du secret dans les migrations, le code ou les journaux
+
+**Ne pas ajouter le Cron Vercel proposé plus bas tant que cette tâche
+Supabase est active**, sinon deux planificateurs appelleraient le même moteur
+(qui dispose néanmoins d'un verrou de concurrence).
+
+### Contrôles réalisés
+
+- Première synchronisation sur 31 jours : 37 événements créés, aucun échec
+- Second passage identique : 37 inchangés, 0 nouveau, 0 supprimé
+- Dans Google, 37 événements privés et transparents ; FreeBusy de la cible vide
+- Aucun chevauchement détecté avec les événements occupés du calendrier `seb`
+- Aucune modification des réservations, ni de l'agenda source
+- Les tables et les RPC internes ont RLS / privilèges limités au service
+  (les droits EXECUTE de `anon` et `authenticated` sur les fonctions de verrouillage
+  ont été révoqués explicitement)
+
+### Contrôle et suspension
+
+Contrôler `cron.job` (nom, état, cadence), `cron.job_run_details`,
+`availability_calendar_sync_runs` (succès/erreurs) et
+`availability_calendar_sync_config.last_success_at` / `last_error_code`.
+
+Pour **suspendre rapidement** la planification, depuis un accès administrateur
+Supabase Production :
+
+```sql
+select cron.unschedule('mediumia-availability-calendar-prod');
+update public.availability_calendar_sync_config
+set enabled = false, updated_at = now()
+where environment = 'production';
+```
+
+Ne pas supprimer automatiquement les événements Google : ils sont
+informatifs et reconnaissables à `mediumia_source=mediumia-availability-v1`.
+Pour relancer, revalider les IDs source/cible, remettre `enabled=true`
+et recréer un seul planificateur après contrôle.
+
+---
+
 # Calendrier secondaire « Disponibilités MediumIA » — mise en route Production
 
 ## État après livraison du code

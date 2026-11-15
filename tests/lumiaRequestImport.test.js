@@ -177,3 +177,94 @@ test('agent-chat : import traité avant l’annulation, sur la seule conversatio
   assert.doesNotMatch(lib, /\.from\('bookings'\)\s*\.(insert|update|upsert|delete)/)
   assert.doesNotMatch(lib, /sendEmail|sendSms|googleapis|syncBookingToGoogleCalendar/)
 })
+
+// ── Régression #46FC77 : la recherche Inbox ne sélectionnait pas source_message_id ──
+// Base factice qui, comme PostgREST, ne renvoie QUE les colonnes demandées.
+function projectingDb(tables, { dropColumns = [] } = {}) {
+  const rpcs = []
+  class Q {
+    constructor(t) { this.t = t; this.f = []; this.cols = null; this.op = 'select' }
+    select(c) { if (this.op === 'select') this.cols = c; return this }
+    eq(c, v) { this.f.push((r) => r[c] === v); return this }
+    neq(c, v) { this.f.push((r) => r[c] !== v); return this }
+    in(c, v) { this.f.push((r) => v.includes(r[c])); return this }
+    gte(c, v) { this.f.push((r) => r[c] != null && r[c] >= v); return this }
+    gt(c, v) { this.f.push((r) => r[c] != null && r[c] > v); return this }
+    lt(c, v) { this.f.push((r) => r[c] != null && r[c] < v); return this }
+    is(c, v) { this.f.push((r) => (r[c] ?? null) === v); return this }
+    not(c, _op, v) { this.f.push((r) => (r[c] ?? null) !== v); return this }
+    order() { return this }
+    limit() { return this }
+    update() { this.op = 'update'; return this }
+    insert() { this.op = 'insert'; return this }
+    then(res) {
+      if (this.op !== 'select') return res({ data: [], error: null })
+      const keep = !this.cols || this.cols.trim() === '*' ? null : this.cols.split(',').map((c) => c.trim()).filter((c) => !dropColumns.includes(c))
+      const rows = (tables[this.t] || []).filter((r) => this.f.every((fn) => fn(r)))
+        .map((r) => (keep ? Object.fromEntries(keep.map((c) => [c, r[c]])) : r))
+      return res({ data: rows, error: null })
+    }
+  }
+  return {
+    rpcs,
+    from: (t) => new Q(t),
+    rpc: async (name, args) => { rpcs.push({ name, args }); return { data: { short_code: '#46FC77', status: 'preview' }, error: null } },
+  }
+}
+
+const OWNER = '2b6cdd7b-a552-49c6-b9b1-76be26b9c745'
+const inboxTables = () => ({
+  booking_practitioners: [{ id: '7dcf2820-edb2-412b-b418-2a67fbf824ea', slug: 'sebastien-seguin', owner_id: OWNER }],
+  lumia_message_inbox: [
+    // Le message réel de la proposition #46FC77.
+    { id: 'b3bc5e5c-3c57-4d3f-91ec-376fc3696985', owner_id: OWNER, source_channel: 'rcs', source_message_id: 'demo-msg-e1', source_conversation_id: 'demo-conv-e',
+      sender: '+33600000105', counterpart: '+33600000105', message_text: '[TEST] Bonjour, je dois annuler mon rendez-vous de mardi, désolée.',
+      message_sent_at: '2026-11-08T07:40:00+00:00', received_at: '2026-11-15T08:50:48+00:00', is_from_me: false, classification: 'probable' },
+    // Déjà importé dans un dossier archivé : ne doit jamais être reproposé.
+    { id: 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa', owner_id: OWNER, source_channel: 'sms', source_message_id: 'demo-msg-z1', source_conversation_id: 'demo-conv-z',
+      sender: '+33600000109', counterpart: '+33600000109', message_text: '[TEST] Je voudrais une guidance', message_sent_at: '2026-11-09T07:40:00+00:00',
+      received_at: '2026-11-15T08:50:48+00:00', is_from_me: false, classification: 'probable' },
+  ],
+  booking_requests: [{ id: 'r-z', practitioner_id: '7dcf2820-edb2-412b-b418-2a67fbf824ea', intake_agent: 'lumia', status: 'handled', source_channel: 'sms',
+    source_conversation_id: 'demo-conv-z', source_message_at: null, created_at: '2026-11-10T00:00:00+00:00', confirmed_booking_id: null, customer_phone: '+33600000109' }],
+  booking_request_intake_events: [{ request_id: 'r-z', source_channel: 'sms', source_message_id: 'demo-msg-z1' }],
+  bookings: [], mediumia_customers: [], lumia_action_intents: [], lumia_action_attempts: [],
+})
+const SCAN = 'Analyse mes SMS, iMessages et RCS depuis le 1er novembre 2026, puis intègre les demandes détectées dans ma liste « Demandes de RDV à traiter »'
+const TEST_ENV = { SUPABASE_URL: 'https://wnbwhnqiulsdjcvkuwos.supabase.co', VERCEL_ENV: 'preview' }
+
+test('régression #46FC77 : la proposition porte le vrai source_message_id, retrouvable par l’exécuteur', async () => {
+  const { COLUMNS } = await import('../lib/lumiaMessageInbox.js')
+  assert.match(COLUMNS, /\bsource_message_id\b/)
+  const tables = inboxTables()
+  const db = projectingDb(tables)
+  const out = await maybeHandleLumiaRequestImportChat({ db, userId: OWNER, conversationId: 'c', message: SCAN, env: TEST_ENV, now: NOW })
+  const create = db.rpcs.find((c) => c.name === 'lumia_create_action_intent')
+  assert.ok(create, out.reply)
+  const items = create.args.p_canonical_payload.items
+  // Un seul dossier : demo-msg-z1 est déjà importé (contrôle par identifiant, pas seulement par conversation).
+  assert.deepEqual(items.map((i) => [i.channel, i.source_message_id]), [['rcs', 'demo-msg-e1']])
+  // Même recherche que lumia_execute_booking_request_import : canal + identifiant, reçu, classé RDV.
+  for (const item of items) {
+    const anchor = tables.lumia_message_inbox.find((m) => m.owner_id === OWNER && m.source_channel === item.channel
+      && m.source_message_id === item.source_message_id && m.is_from_me === false && ['probable', 'incertain'].includes(m.classification))
+    assert.ok(anchor, `source_unavailable pour n°${item.n}`)
+    assert.ok(item.message_ids.includes(anchor.id))
+  }
+})
+
+test('régression #46FC77 : sans identifiant source, aucune proposition n’est créée (échec fermé)', async () => {
+  const db = projectingDb(inboxTables(), { dropColumns: ['source_message_id'] })
+  const out = await maybeHandleLumiaRequestImportChat({ db, userId: OWNER, conversationId: 'c', message: SCAN, env: TEST_ENV, now: NOW })
+  assert.equal(db.rpcs.length, 0, 'aucune intention créée')
+  assert.match(out.reply, /sans identifiant source fiable/)
+  assert.throws(() => buildImportItem({ fresh: [{ id: 'b3bc5e5c-3c57-4d3f-91ec-376fc3696985', source_channel: 'rcs', message_text: 'x' }] }, 1), /import_item_without_source_id/)
+})
+
+test('source_message_id n’entre jamais dans le contexte transmis au modèle', async () => {
+  const { buildLumiaInboxContext } = await import('../lib/lumiaMessageInbox.js')
+  const row = { ...inboxTables().lumia_message_inbox[0], intents: [] }
+  const text = buildLumiaInboxContext({ recent: [row], search: null, names: new Map(), nameLookup: null, coverageFrom: row.message_sent_at, outgoingCoverageFrom: null, generatedAt: NOW.toISOString() })
+  assert.ok(text.includes('je dois annuler'))
+  assert.ok(!text.includes('demo-msg-e1'))
+})

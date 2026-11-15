@@ -19,6 +19,10 @@ create table if not exists public.availability_calendar_sync_runs (
   deleted_count integer not null default 0,
   error_code text
 );
+-- Existing TEST databases may already have this table: ensure the column exists.
+alter table public.availability_calendar_sync_runs
+  add column if not exists updated_count integer not null default 0;
+
 create index if not exists availability_calendar_sync_runs_recent
   on public.availability_calendar_sync_runs (practitioner_id, started_at desc);
 alter table public.availability_calendar_sync_runs enable row level security;

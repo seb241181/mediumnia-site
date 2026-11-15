@@ -1,3 +1,4 @@
+/* global process */
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { availabilityCalendarSyncInternals, handleAvailabilityCalendarSync } from '../lib/availabilityCalendarSyncHandler.js'

@@ -1,2 +1,3 @@
-alter table public.availability_calendar_sync_runs
-  add column if not exists updated_count integer not null default 0;
+-- Kept as a historical placeholder because the original timestamp precedes
+-- creation of availability_calendar_sync_runs. The column is added safely by
+-- 20261115101000_availability_calendar_sync_runs.sql after the table exists.

@@ -12,7 +12,13 @@ import { loadLumiaInboxContext, lumiaInboxLogDetail } from '../lib/lumiaMessageI
 import { LUMIA_AVAILABILITY_UNAVAILABLE, loadLumiaAvailabilityContext, lumiaAvailabilityLogDetail } from '../lib/lumiaAvailabilityContext.js'
 import { buildLumiaPolicyInstructions, redactForLog } from '../lib/lumiaPolicy.js'
 import { maybeHandleLumiaBookingCancelChat } from '../lib/lumiaBookingCancelChat.js'
-import { maybeHandleLumiaRequestImportChat } from '../lib/lumiaRequestImport.js'
+import { LUMIA_NO_PROVIDER_REPLY, maybeHandleLumiaRequestImportChat } from '../lib/lumiaRequestImport.js'
+
+function lumiaProviderConfigured(provider) {
+  return provider === 'openai'
+    ? Boolean(process.env.OPENAI_API_KEY || process.env.CLE_API_OPENAI)
+    : Boolean(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || process.env.CLE_API_ANTHROPIC)
+}
 import { answerFicheVisitor, getFicheAssistantInfo } from '../lib/publicAssistant.js'
 
 const CONFERENCE_COPILOT_AGENT_ID = '2f5dcd1d-fb05-4623-80d6-8779aa5f561d'
@@ -502,6 +508,18 @@ export default async function handler(req, res) {
   // aux instructions système uniquement. Le parseur ne reçoit que cleanMessage.
   if (isLumiaRdv) instructions += `\n\n${buildLumiaPolicyInstructions()}`
   const providerHistory = buildProviderHistory(history, knowledge.sources.length)
+
+  // Lumia sans fournisseur IA configuré (ex. préversion TEST) : réponse déterministe
+  // qui rappelle les commandes serveur utilisables sans IA, au lieu d'une erreur.
+  if (isLumiaRdv && !auth.rehearsal && !lumiaProviderConfigured(provider)) {
+    const reply = LUMIA_NO_PROVIDER_REPLY
+    const { error: fallbackError } = await db.from('agent_messages').insert({
+      conversation_id: conversationId, agent_id: agent.id, owner_id: auth.userId, role: 'assistant', content: reply, sources: [],
+    })
+    if (fallbackError) return res.status(500).json({ error: 'Réponse non enregistrée', requestId, conversationId })
+    technicalLog(requestId, 'chat', 'degraded', startedAt, 'lumia_provider_not_configured')
+    return res.status(200).json({ conversationId, reply, sources: [], requestId, actionHandled: false, providerUnavailable: true })
+  }
 
   let result
   try {

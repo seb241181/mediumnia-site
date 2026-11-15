@@ -6,6 +6,7 @@ import {
   guessModality, guessServiceHint, importCriteria, maybeHandleLumiaRequestImportChat, parseRequestImportCommand, requestImportEnabled,
 } from '../lib/lumiaRequestImport.js'
 import { LUMIA_ALLOWED_ACTIONS } from '../lib/lumiaPolicy.js'
+import { LUMIA_NO_PROVIDER_REPLY } from '../lib/lumiaRequestImport.js'
 import { parseInboxQuestion } from '../lib/lumiaMessageInbox.js'
 
 const NOW = new Date('2026-11-15T10:00:00Z')
@@ -168,7 +169,7 @@ test('SQL : l’exécuteur ne crée que des demandes, ne modifie rien d’exista
 
 test('agent-chat : import traité avant l’annulation, sur la seule conversation Lumia authentifiée', () => {
   const src = read('api/agent-chat.js')
-  assert.match(src, /import \{ maybeHandleLumiaRequestImportChat \} from '\.\.\/lib\/lumiaRequestImport\.js'/)
+  assert.match(src, /import \{ LUMIA_NO_PROVIDER_REPLY, maybeHandleLumiaRequestImportChat \} from '\.\.\/lib\/lumiaRequestImport\.js'/)
   const i = src.indexOf('maybeHandleLumiaRequestImportChat({')
   assert.ok(i > src.indexOf("agent.metadata?.purpose === 'lumia_rdv_assistant' && !auth.rehearsal"))
   assert.ok(i < src.indexOf('maybeHandleLumiaBookingCancelChat({'))
@@ -267,4 +268,72 @@ test('source_message_id n’entre jamais dans le contexte transmis au modèle', 
   const text = buildLumiaInboxContext({ recent: [row], search: null, names: new Map(), nameLookup: null, coverageFrom: row.message_sent_at, outgoingCoverageFrom: null, generatedAt: NOW.toISOString() })
   assert.ok(text.includes('je dois annuler'))
   assert.ok(!text.includes('demo-msg-e1'))
+})
+
+// ── Régression 10 h 26 : contrôle des doublons non reconnu → modèle IA non configuré ──
+const RECHECK = 'Analyse à nouveau mes messages depuis le 1er novembre 2026 et vérifie qu\'aucune demande n\'est ajoutée deux fois'
+
+test('régression : la phrase exacte de contrôle des doublons est une commande serveur', () => {
+  assert.deepEqual(parseRequestImportCommand(RECHECK), { kind: 'scan', check: true })
+  for (const q of [
+    'Vérifie qu’il n’y a pas de doublons dans ma liste à traiter',
+    'Relance l’analyse de mes messages pour les demandes de rdv',
+    'Réanalyse mes SMS depuis le 1er novembre et contrôle les doublons',
+    'Peux-tu refaire l’analyse des SMS de la semaine et ajouter les nouvelles demandes ?',
+    'Est-ce qu’une demande de mes messages a été ajoutée en double ?',
+  ]) assert.equal(parseRequestImportCommand(q).kind, 'scan', q)
+  // Lecture seule : restent des questions pour le modèle.
+  for (const q of ['Quelles demandes de rendez-vous ai-je reçues ?', 'La cliente veut reporter son rdv, d’après ses messages', 'Résume mes SMS de la semaine', 'Qui m’a écrit hier ?']) {
+    assert.equal(parseRequestImportCommand(q).kind, 'none', q)
+  }
+})
+
+const recheckTables = () => {
+  const t = inboxTables()
+  // État TEST après #782629 : demo-msg-e1 importé dans une demande ouverte.
+  t.lumia_message_inbox = t.lumia_message_inbox.filter((m) => m.source_message_id === 'demo-msg-e1')
+  t.booking_requests = [{ id: '43637a28-0c52-48d3-a59b-96d8df7f2fc9', practitioner_id: '7dcf2820-edb2-412b-b418-2a67fbf824ea', intake_agent: 'lumia', status: 'pending',
+    source_channel: 'rcs', source_conversation_id: 'demo-conv-e', source_message_at: '2026-11-08T07:40:00+00:00', created_at: '2026-11-15T09:24:48+00:00', confirmed_booking_id: null, customer_phone: '+33600000105' }]
+  t.booking_request_intake_events = [{ request_id: '43637a28-0c52-48d3-a59b-96d8df7f2fc9', source_channel: 'rcs', source_message_id: 'demo-msg-e1' }]
+  return t
+}
+
+test('régression : contrôle des doublons sans IA, aucune proposition ni écriture quand tout est déjà importé', async () => {
+  const db = projectingDb(recheckTables())
+  const out = await maybeHandleLumiaRequestImportChat({ db, userId: OWNER, conversationId: 'c', message: RECHECK, env: TEST_ENV, now: NOW })
+  assert.equal(out.handled, true)
+  assert.equal(db.rpcs.length, 0, 'aucune intention, aucune exécution')
+  assert.match(out.reply, /Contrôle des doublons \(base MediumIA, sans IA\)/)
+  assert.match(out.reply, /1 message de la période déjà importé, chacun une seule fois \(1 demande\)/)
+  assert.match(out.reply, /Aucune demande en double/)
+  assert.match(out.reply, /Aucun nouveau dossier à ajouter/)
+})
+
+test('contrôle des doublons : deux demandes ouvertes pour une conversation ou un numéro sont signalées, jamais modifiées', async () => {
+  const t = recheckTables()
+  t.booking_requests.push({ ...t.booking_requests[0], id: 'dup-2', created_at: '2026-11-15T09:30:00+00:00' })
+  const db = projectingDb(t)
+  const out = await maybeHandleLumiaRequestImportChat({ db, userId: OWNER, conversationId: 'c', message: RECHECK, env: TEST_ENV, now: NOW })
+  assert.match(out.reply, /⚠︎ 2 demandes ouvertes pour la conversation RCS · demo-conv-e/)
+  assert.match(out.reply, /⚠︎ 2 demandes ouvertes pour le numéro \+33600000105/)
+  assert.match(out.reply, /Rien n’a été modifié ni supprimé/)
+  assert.equal(db.rpcs.length, 0)
+})
+
+test('agent-chat : sans fournisseur IA, Lumia répond par les commandes sans IA au lieu d’une erreur', () => {
+  const src = read('api/agent-chat.js')
+  const fallback = src.indexOf('!lumiaProviderConfigured(provider)')
+  assert.ok(fallback > src.indexOf('const providerHistory = buildProviderHistory'))
+  assert.ok(fallback < src.indexOf("if (provider === 'anthropic') {"))
+  assert.match(src, /isLumiaRdv && !auth\.rehearsal && !lumiaProviderConfigured\(provider\)/)
+  // Le bloc d'erreur générique, ancre d'un correctif de build, est inchangé.
+  assert.match(src, /return res\.status\(502\)\.json\(\{ error: 'Le copilote est momentanément indisponible\.', requestId, messageSaved: true, conversationId \}\)\n {2}\}\n\n {2}if \(result\.error\) \{/)
+})
+
+test('réponse sans IA : chaque commande citée est bien reconnue par le serveur', () => {
+  const cited = [...LUMIA_NO_PROVIDER_REPLY.matchAll(/« ([^»]+) »/g)].map((m) => m[1].trim())
+  assert.equal(cited.length, 4)
+  assert.equal(parseRequestImportCommand(cited[0]).kind, 'scan')
+  assert.deepEqual(parseRequestImportCommand(cited[1]), { kind: 'scan', check: true })
+  for (const go of cited.slice(2)) assert.equal(parseRequestImportCommand(go.replace('#CODE', '#ABC123')).kind, 'approve', go)
 })

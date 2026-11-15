@@ -1,5 +1,56 @@
 # Reprise Codex - MediumIA
 
+## Calendrier « Disponibilités MediumIA » — intégration Production préparée (15 novembre 2026)
+
+- Branche d'intégration : `codex/availability-calendar-production-prep`, créée
+  depuis `origin/main` incluant la PR Lumia #212. Les commits TEST ont été
+  repris sans conflit, puis l'endpoint a été intégré à `api/rdv-config.js` pour
+  ne pas ajouter de fonction Vercel. Le `.vercelignore` exclusivement destiné à
+  la Preview TEST a été retiré : il aurait exclu les API de Production.
+- Aucun Cron de disponibilités n'est présent et
+  `AVAILABILITY_CALENDAR_SYNC_ENABLED` doit rester absent ou différent de
+  `true`. Ainsi, le code déployé répond 404 avant tout accès Supabase ou Google.
+- Le protocole de mise en route, les variables nécessaires, les vérifications
+  post-déploiement et le retour arrière sont documentés dans
+  `docs/availability-calendar-production-runbook.md`. L'activation Google
+  Production reste soumise à un GO distinct.
+
+## Calendrier « Disponibilités MediumIA — TEST » (15 novembre 2026)
+
+- Branche locale isolée : `codex/availability-calendar-test-final`, commit
+  `a92b8a2730e2c848590d955b9f37857f6e4c9f76`. Aucun push, merge ou changement
+  de `main`.
+- Migrations appliquées uniquement à Supabase TEST : configuration du calendrier,
+  journal d'exécution, verrou à durée limitée et statut de fraîcheur. RLS actif,
+  aucun droit `anon`/`authenticated`; seul le rôle serveur peut les utiliser.
+- Preview Vercel TEST active et protégée :
+  `dpl_9izABUaQ2kWGj88viTPim8UDi5ge` est `READY`. Le paquet de Preview exclut les
+  API hors périmètre pour rester sous la limite Hobby; il n'utilise ni `--prod`
+  ni le projet Production. Les variables sont limitées à Preview TEST.
+- Exécuteur : lecture des règles, exceptions, réservations confirmées ou en attente
+  et blocages Google du calendrier source TEST; écriture exclusivement dans le
+  calendrier secondaire TEST. Les événements sont privés, transparents, sans donnée
+  client, colorés et porteurs d'une clé interne. Toute erreur Google empêche les
+  suppressions restantes. Les tombstones Google sont réconciliés pour permettre le
+  retour d'un créneau après annulation sans doublon.
+- Preuves réelles : synchronisation initiale 27 créneaux; second passage 27
+  inchangés; une réservation fictive TEST a retiré 2 créneaux (buffers compris);
+  son annulation les a recréés (27 au total). Deux appels concurrents : un succès
+  idempotent (27 inchangés), un `skipped_concurrent`. Google FreeBusy du calendrier
+  secondaire est resté vide.
+- Validation : 7/7 tests ciblés et suite complète finale `npm test` : 1 136/1 136,
+  0 échec, 0 skip. Aucun événement de `seb`, aucune donnée Production ni rendez-vous
+  réel n'a été modifié.
+- Limite assumée : les Cron Vercel ne s'exécutent pas sur les Previews. En TEST,
+  le déclencheur POST reste volontairement manuel, protégé par Vercel et un secret
+  serveur. Avant une éventuelle Production, choisir le planificateur et brancher les
+  déclencheurs post-réservation/annulation, puis obtenir un GO Production distinct.
+- Une réservation purement fictive, déjà annulée, reste dans TEST : sa suppression
+  définitive a demandé une confirmation Supabase qui a expiré. Elle ne bloque aucun
+  créneau et ne contient aucune donnée client réelle.
+- Production : NO-GO. `mediumia.fr`, Supabase Production et le calendrier `seb`
+  restent intacts.
+
 ## Résultats concurrence TEST reçus (20 octobre 2026)
 
 - Rapport transmis par le propriétaire : les deux scénarios sur `rdv_admin_reschedule_booking` sont PASS. Clés différentes : A réussit, B retourne `booking_changed`; 70 observations de `pg_blocking_pids(B)` montrent A comme bloqueur et `wait_event_type=Lock`. Clé identique : A réussit et B retourne `idempotent:true`, avec le même blocage observé. Le rapport indique trois PID indépendants, jobs terminés, aucun double historique et nettoyage complet. Codex n’a pas rejoué le protocole.

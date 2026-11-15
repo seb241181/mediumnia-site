@@ -61,8 +61,16 @@ test('calendar sync never asks Google for a conference, even if an old caller st
     assert.equal(sent.length, 1)
     assert.doesNotMatch(sent[0].url, /conferenceDataVersion/)
     assert.equal('conferenceData' in sent[0].body, false)
+    assert.equal(sent[0].body.colorId, '10') // vert basilic sur visio
     // Même si Google renvoyait un lien, il n'est ni enregistré ni renvoyé.
     assert.deepEqual(updates, [{ table: 'bookings', values: { google_event_id: 'evt1' } }])
+  })
+})
+
+test('in-person booking keeps its original calendar color', async () => {
+  await withGoogle(() => new Response(JSON.stringify({ id: 'evt-inperson' }), { status: 200 }), async ({ sent, supabase }) => {
+    await syncBookingToGoogleCalendar({ supabase, practitionerId: 'p1', bookingId: '11111111-0000-4000-8000-000000000003', currentGoogleEventId: null, event: { ...EVENT, title: 'Guidance — En présence — Test' } })
+    assert.equal('colorId' in sent[0].body, false)
   })
 })
 

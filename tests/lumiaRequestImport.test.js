@@ -326,8 +326,9 @@ test('agent-chat : sans fournisseur IA, Lumia répond par les commandes sans IA 
   assert.ok(fallback > src.indexOf('const providerHistory = buildProviderHistory'))
   assert.ok(fallback < src.indexOf("if (provider === 'anthropic') {"))
   assert.match(src, /isLumiaRdv && !auth\.rehearsal && !lumiaProviderConfigured\(provider\)/)
-  // Le bloc d'erreur générique, ancre d'un correctif de build, est inchangé.
-  assert.match(src, /return res\.status\(502\)\.json\(\{ error: 'Le copilote est momentanément indisponible\.', requestId, messageSaved: true, conversationId \}\)\n {2}\}\n\n {2}if \(result\.error\) \{/)
+  // La ligne d'erreur générique, ancre d'un correctif de build, est conservée
+  // (le test tourne avant ou après ce correctif : on vérifie la ligne seule).
+  assert.match(src, /return res\.status\(502\)\.json\(\{ error: 'Le copilote est momentanément indisponible\.', requestId, messageSaved: true, conversationId \}\)/)
 })
 
 test('réponse sans IA : chaque commande citée est bien reconnue par le serveur', () => {

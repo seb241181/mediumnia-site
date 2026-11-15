@@ -17,7 +17,7 @@ test('sync is idempotent and cannot target seb', async () => {
   await assert.rejects(() => syncAvailabilityCalendar({ targetCalendarId: 'seb', sourceCalendarId: 'seb', desired, accessToken: 'x', fetchImpl: fake }), /dedicated_target/)
   const existing = desired.map((d) => ({ id: d.id, extendedProperties: { private: { mediumia_source: AVAILABILITY_SOURCE } } }))
   const res = await syncAvailabilityCalendar({ targetCalendarId: 'test', sourceCalendarId: 'seb', desired, existing, accessToken: 'x', fetchImpl: fake })
-  assert.deepEqual(res, { created: 0, unchanged: 2, deleted: 0, errors: [] }); assert.equal(calls.length, 0)
+  assert.deepEqual(res, { created: 0, updated: 0, unchanged: 2, deleted: 0, errors: [] }); assert.equal(calls.length, 0)
 })
 
 test('sync creates only the dedicated target events and removes stale owned events', async () => {
@@ -27,4 +27,32 @@ test('sync creates only the dedicated target events and removes stale owned even
   const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
   const r = await syncAvailabilityCalendar({ targetCalendarId: 'availability-test', sourceCalendarId: 'seb', desired, existing: [stale], accessToken: 'x', fetchImpl: fake })
   assert.equal(r.created, 1); assert.equal(r.deleted, 1); assert.equal(calls[0].init.method, 'POST'); assert.match(calls[0].init.body, /transparent/)
+})
+
+test('sync patches its own event when the visual projection changes', async () => {
+  const desired = availabilityProjection({ days }).slice(0, 1)
+  const existing = { id: desired[0].id, summary: 'Disponible', colorId: '10', transparency: 'transparent', visibility: 'private', extendedProperties: { private: { mediumia_source: AVAILABILITY_SOURCE } } }
+  const calls = []
+  const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
+  const r = await syncAvailabilityCalendar({ targetCalendarId: 'availability-test', sourceCalendarId: 'seb', desired: [{ ...desired[0], colorId: '6' }], existing: [existing], accessToken: 'x', fetchImpl: fake })
+  assert.equal(r.updated, 1); assert.equal(calls[0].init.method, 'PATCH'); assert.match(calls[0].init.body, /"colorId":"6"/)
+})
+
+test('a failed creation never deletes a previously published availability', async () => {
+  const desired = availabilityProjection({ days }).slice(0, 1)
+  const stale = { id: 'old', extendedProperties: { private: { mediumia_source: AVAILABILITY_SOURCE } } }
+  const calls = []
+  const fake = async (url, init) => { calls.push({ url, init }); return { ok: false, status: 503 } }
+  const r = await syncAvailabilityCalendar({ targetCalendarId: 'availability-test', sourceCalendarId: 'seb', desired, existing: [stale], accessToken: 'x', fetchImpl: fake })
+  assert.equal(r.deleted, 0); assert.equal(r.errors.length, 1); assert.equal(calls.length, 1)
+})
+
+test('a cancelled Google tombstone is reinserted with a new Google id but the same source key', async () => {
+  const desired = availabilityProjection({ days }).slice(0, 1)
+  const tombstone = { id: desired[0].id, status: 'cancelled', extendedProperties: { private: { mediumia_source: AVAILABILITY_SOURCE, mediumia_key: desired[0].key } } }
+  const calls = []
+  const fake = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200 } }
+  const r = await syncAvailabilityCalendar({ targetCalendarId: 'availability-test', sourceCalendarId: 'seb', desired, existing: [tombstone], accessToken: 'x', fetchImpl: fake })
+  const body = JSON.parse(calls[0].init.body)
+  assert.equal(r.created, 1); assert.equal(calls[0].init.method, 'POST'); assert.equal(body.id, undefined); assert.equal(body.extendedProperties.private.mediumia_key, desired[0].key)
 })

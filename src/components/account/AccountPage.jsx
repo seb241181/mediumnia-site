@@ -146,7 +146,11 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
           <p className="font-georgia text-sm leading-relaxed text-mist">
             Rien reçu au bout de quelques minutes ? Vérifiez vos courriers indésirables. Si vous n’avez pas encore d’espace MediumIA, créez-le gratuitement :
           </p>
+          <button type="button" disabled={busy} onClick={() => requestCode(false)} className={secondary}>Renvoyer mon code</button>
           <button type="button" disabled={busy} onClick={() => requestCode(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>
+          <p className="font-georgia text-xs leading-relaxed text-mist" role="status">
+            Si aucun message n'arrive, votre adresse peut être temporairement refusée par le service de messagerie. Vous pouvez essayer une autre adresse ou contacter MediumIA. Votre rendez-vous reste enregistré même sans espace client.
+          </p>
           <button type="button" disabled={busy} onClick={() => { setStage('email'); setError('') }} className="w-full py-2 font-georgia text-sm text-mist underline hover:text-deep">
             Utiliser une autre adresse
           </button>

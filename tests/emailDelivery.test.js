@@ -254,7 +254,10 @@ test('structure : webhook avant toute lecture du corps ; identité toujours vér
   const router = read('api/rdv-config.js')
   const handler = router.slice(router.indexOf('export default async function handler'))
   assert.match(handler, /^export default async function handler\(req, res\) \{\n(\s*\/\/.*\n)*\s*if \(req\.query\?\.emailWebhook === 'resend'\) return handleResendWebhook\(req, res\)/)
-  assert.match(read('vercel.json'), /"source": "\/api\/resend-webhook",\s*"destination": "\/api\/rdv-config\?emailWebhook=resend"/)
+  // vercel.json peut être réécrit (compacté) pendant le build Vercel : on lit
+  // le JSON plutôt que sa mise en forme.
+  const rewrites = JSON.parse(read('vercel.json')).rewrites || []
+  assert.ok(rewrites.some((r) => r.source === '/api/resend-webhook' && r.destination === '/api/rdv-config?emailWebhook=resend'), 'réécriture du webhook Resend')
   const account = read('lib/accountApiHandler.js')
   assert.match(account, /if \(!user\.email \|\| !user\.email_confirmed_at\) return \{ status: 403, error: 'email_not_verified' \}/)
   assert.match(account, /if \(action === 'email-check'\) return handleEmailCheck/)

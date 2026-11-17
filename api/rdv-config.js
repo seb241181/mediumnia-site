@@ -1,4 +1,3 @@
-import { handleResendWebhook } from '../lib/emailDelivery.js'
 import { handleConferencePassPayPal } from '../lib/conferencePassPayPal.js'
 /**
  * GET /api/rdv-config?practitioner=<slug>
@@ -37,9 +36,6 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 })
 
 export default async function handler(req, res) {
-  // Webhook Resend signé (#219) : en premier, avant toute lecture du corps,
-  // pour vérifier la signature sur les octets bruts.
-  if (req.query?.emailWebhook === 'resend') return handleResendWebhook(req, res)
   if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res, req.query.conferencePassAction)
   res.setHeader('Cache-Control', 'no-store')
 

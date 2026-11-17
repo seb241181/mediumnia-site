@@ -8,6 +8,7 @@ import {
   buildDeliveryAlert, handleEmailCheck, handleEmailDeliveryAdmin, handleResendWebhook,
   parseResendEvent, redactSubject, verifySvixSignature,
 } from '../lib/emailDelivery.js'
+import { config as resendWebhookConfig, createResendWebhookHandler } from '../api/resend-webhook.js'
 import { checkEmailDelivery } from '../src/lib/emailDeliveryCheck.js'
 import { deliveryProblemMessage, emailCodeErrorMessage, EMAIL_SEND_FAILED_MESSAGE } from '../src/lib/accountView.js'
 
@@ -109,6 +110,58 @@ test('webhook : signature invalide ou absente → 401, aucune écriture', async 
   const res3 = fakeRes()
   await handleResendWebhook(fakeReq('', {}, 'GET'), res3, { db, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
   assert.equal(res3.statusCode, 405)
+})
+
+test('route dédiée : le JSON formaté est vérifié sur ses octets bruts', async () => {
+  const body = `{
+  "data": {
+    "to": ["client.test@example.org"],
+    "subject": "Votre code MediumIA : 482915",
+    "email_id": "em_formatted",
+    "bounce": { "message": "Synthetic", "type": "Permanent" }
+  },
+  "type": "email.bounced",
+  "created_at": "2026-11-17T09:59:00.000Z"
+}`
+  const headers = { 'svix-id': 'msg_formatted', 'svix-timestamp': TS, 'svix-signature': sign(body, { id: 'msg_formatted' }) }
+  const db = fakeDb()
+  const request = fakeReq(body, headers)
+  // Représente le corps JSON que Vercel aurait produit si le parseur avait été
+  // actif ; le gestionnaire doit malgré tout utiliser le flux brut signé.
+  request.body = JSON.parse(body)
+  const testRoute = (database, env = { RESEND_WEBHOOK_SECRET: SECRET }) => createResendWebhookHandler(
+    (req, res) => handleResendWebhook(req, res, { db: database, env, now: NOW }),
+  )
+  const valid = fakeRes()
+  await testRoute(db)(request, valid)
+  assert.deepEqual(resendWebhookConfig, { api: { bodyParser: false } })
+  assert.equal(valid.statusCode, 200)
+  assert.equal(db.calls.filter((call) => call.name === 'record_email_delivery_event').length, 1)
+
+  const wrongBytes = fakeRes()
+  await testRoute(fakeDb())(fakeReq(JSON.stringify(request.body), headers), wrongBytes)
+  assert.equal(wrongBytes.statusCode, 401)
+
+  const invalid = fakeRes()
+  const invalidDb = fakeDb()
+  await testRoute(invalidDb)(fakeReq(body, { ...headers, 'svix-signature': 'v1,AAAA' }), invalid)
+  assert.equal(invalid.statusCode, 401)
+  assert.equal(invalidDb.calls.length, 0)
+
+  const missing = fakeRes()
+  const missingDb = fakeDb()
+  await testRoute(missingDb)(fakeReq(body), missing)
+  assert.equal(missing.statusCode, 401)
+  assert.equal(missingDb.calls.length, 0)
+
+  const duplicate = fakeRes()
+  await testRoute(fakeDb({ record: { recorded: false, duplicate: true } }))(fakeReq(body, headers), duplicate)
+  assert.equal(duplicate.statusCode, 200)
+  assert.equal(duplicate.body.results[0].duplicate, true)
+
+  const databaseError = fakeRes()
+  await testRoute(fakeDb({ recordError: { code: '42P01' } }))(fakeReq(body, headers), databaseError)
+  assert.equal(databaseError.statusCode, 500)
 })
 
 test('webhook : rejet signé → enregistré caviardé, une seule alerte à Sébastien, sans code', async () => {
@@ -250,14 +303,17 @@ test('administration : réservée au propriétaire ; résoudre ne touche pas à 
 
 // ── Garde-fous de structure ──────────────────────────────────────────────────
 
-test('structure : webhook avant toute lecture du corps ; identité toujours vérifiée ; pré-contrôle avant envoi', () => {
+test('structure : route webhook brute dédiée ; identité toujours vérifiée ; pré-contrôle avant envoi', () => {
   const router = read('api/rdv-config.js')
-  const handler = router.slice(router.indexOf('export default async function handler'))
-  assert.match(handler, /^export default async function handler\(req, res\) \{\n(\s*\/\/.*\n)*\s*if \(req\.query\?\.emailWebhook === 'resend'\) return handleResendWebhook\(req, res\)/)
-  // vercel.json peut être réécrit (compacté) pendant le build Vercel : on lit
-  // le JSON plutôt que sa mise en forme.
+  assert.doesNotMatch(router, /emailWebhook|handleResendWebhook/)
+  // La route du webhook est une fonction dédiée : le parseur JSON Vercel y est
+  // désactivé afin de conserver exactement les octets couverts par Svix.
+  const webhookRoute = read('api/resend-webhook.js')
+  assert.match(webhookRoute, /import \{ handleResendWebhook \} from '..\/lib\/emailDelivery\.js'/)
+  assert.match(webhookRoute, /bodyParser:\s*false/)
+  assert.match(webhookRoute, /return handle\(req, res\)/)
   const rewrites = JSON.parse(read('vercel.json')).rewrites || []
-  assert.ok(rewrites.some((r) => r.source === '/api/resend-webhook' && r.destination === '/api/rdv-config?emailWebhook=resend'), 'réécriture du webhook Resend')
+  assert.ok(!rewrites.some((r) => r.source === '/api/resend-webhook'), 'aucune réécriture ne doit consommer le corps avant la route dédiée')
   // Relais TEST (Supabase) : même gestionnaire, verrouillé sur le projet TEST.
   const relay = read('supabase/functions/resend-webhook-test/index.ts')
   assert.match(relay, /import \{ handleResendWebhook \} from "\.\.\/\.\.\/\.\.\/lib\/emailDelivery\.js"/)

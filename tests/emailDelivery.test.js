@@ -4,10 +4,12 @@ import { Buffer } from 'node:buffer'
 import { createHmac } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { readFileSync } from 'node:fs'
+import process from 'node:process'
 import {
   buildDeliveryAlert, handleEmailCheck, handleEmailDeliveryAdmin, handleResendWebhook,
-  parseResendEvent, redactSubject, verifySvixSignature,
+  isMediumiaResendEvent, parseResendEvent, redactSubject, verifySvixSignature,
 } from '../lib/emailDelivery.js'
+import { buildMediumiaResendTags, sendEmail } from '../lib/transactionalEmail.js'
 import { checkEmailDelivery } from '../src/lib/emailDeliveryCheck.js'
 import { deliveryProblemMessage, emailCodeErrorMessage, EMAIL_SEND_FAILED_MESSAGE } from '../src/lib/accountView.js'
 
@@ -16,6 +18,12 @@ const KEY = Buffer.from('mediumia-test-webhook-secret-32-bytes!!').toString('bas
 const SECRET = `whsec_${KEY}`
 const NOW = Date.parse('2026-11-17T10:00:00Z')
 const TS = String(Math.floor(NOW / 1000))
+const WEBHOOK_ENV = {
+  RESEND_WEBHOOK_SECRET: SECRET,
+  RESEND_WEBHOOK_ALLOWED_FROM: 'rendezvous@mediumia.fr,conference@mail.mediumia.fr',
+  RESEND_WEBHOOK_ENVIRONMENT: 'test',
+  RESEND_WEBHOOK_ALLOWED_TYPES: 'transactional,conference_confirmation',
+}
 
 function sign(body, { id = 'msg_1', ts = TS, key = KEY } = {}) {
   return `v1,${createHmac('sha256', Buffer.from(key, 'base64')).update(`${id}.${ts}.${body}`).digest('base64')}`
@@ -37,11 +45,11 @@ function fakeReq(body, headers = {}, method = 'POST') {
   return req
 }
 
-const bounced = (to = 'Client.Test@Example.org') => JSON.stringify({
+const bounced = (to = 'Client.Test@Example.org', { from = 'MediumIA <rendezvous@mediumia.fr>', tags = { mediumia_app: 'mediumia', mediumia_env: 'test', mediumia_type: 'transactional' } } = {}) => JSON.stringify({
   type: 'email.bounced',
   created_at: '2026-11-17T09:59:00.000Z',
   data: {
-    email_id: 'em_123', to: [to], subject: 'Votre code MediumIA : 482915',
+    email_id: 'em_123', from, tags, to: [to], subject: 'Votre code MediumIA : 482915',
     created_at: '2026-11-17T09:58:58.000Z',
     bounce: { type: 'Permanent', subType: 'General', message: '550 5.1.1 <client.test@example.org> user unknown' },
   },
@@ -89,6 +97,40 @@ test('caviardage : ni code OTP, ni lien, ni jeton dans ce qui est stocké ou env
   assert.equal(entry.bounce_type, 'Permanent')
 })
 
+test('envoi Resend : tags MediumIA techniques, sans donnée personnelle', async () => {
+  const previous = {
+    key: process.env.RESEND_API_KEY,
+    from: process.env.RESEND_FROM_EMAIL,
+    environment: process.env.RESEND_EMAIL_ENVIRONMENT,
+  }
+  const originalFetch = globalThis.fetch
+  let payload = null
+  process.env.RESEND_API_KEY = 'test-key'
+  process.env.RESEND_FROM_EMAIL = 'MediumIA <rendezvous@mediumia.fr>'
+  process.env.RESEND_EMAIL_ENVIRONMENT = 'test'
+  globalThis.fetch = async (_url, init) => {
+    payload = JSON.parse(init.body)
+    return { ok: true, json: async () => ({ id: 'email_test' }) }
+  }
+  try {
+    assert.deepEqual(buildMediumiaResendTags({ environment: 'test', messageType: 'appointment_confirmation' }), [
+      { name: 'mediumia_app', value: 'mediumia' },
+      { name: 'mediumia_env', value: 'test' },
+      { name: 'mediumia_type', value: 'appointment_confirmation' },
+    ])
+    assert.deepEqual(buildMediumiaResendTags({ environment: 'test!', messageType: 'x' }), [])
+    assert.equal((await sendEmail({ to: 'client@example.org', subject: 'Test', html: '<p>Test</p>', text: 'Test', messageType: 'appointment_confirmation' })).status, 'sent')
+    assert.deepEqual(payload.tags, buildMediumiaResendTags({ environment: 'test', messageType: 'appointment_confirmation' }))
+    assert.doesNotMatch(JSON.stringify(payload.tags), /client@example\.org|Test/)
+  } finally {
+    globalThis.fetch = originalFetch
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[`RESEND_${key === 'key' ? 'API_KEY' : key === 'from' ? 'FROM_EMAIL' : 'EMAIL_ENVIRONMENT'}`]
+      else process.env[`RESEND_${key === 'key' ? 'API_KEY' : key === 'from' ? 'FROM_EMAIL' : 'EMAIL_ENVIRONMENT'}`] = value
+    }
+  }
+})
+
 // ── Webhook ──────────────────────────────────────────────────────────────────
 
 test('webhook : sans secret configuré, rien n’est accepté (503)', async () => {
@@ -100,15 +142,34 @@ test('webhook : sans secret configuré, rien n’est accepté (503)', async () =
 test('webhook : signature invalide ou absente → 401, aucune écriture', async () => {
   const db = fakeDb()
   const res = fakeRes()
-  await handleResendWebhook(fakeReq(bounced(), { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': 'v1,AAAA' }), res, { db, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq(bounced(), { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': 'v1,AAAA' }), res, { db, env: WEBHOOK_ENV, now: NOW })
   assert.equal(res.statusCode, 401)
   const res2 = fakeRes()
-  await handleResendWebhook(fakeReq(bounced(), {}), res2, { db, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq(bounced(), {}), res2, { db, env: WEBHOOK_ENV, now: NOW })
   assert.equal(res2.statusCode, 401)
   assert.equal(db.calls.length, 0)
   const res3 = fakeRes()
-  await handleResendWebhook(fakeReq('', {}, 'GET'), res3, { db, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq('', {}, 'GET'), res3, { db, env: WEBHOOK_ENV, now: NOW })
   assert.equal(res3.statusCode, 405)
+})
+
+test('webhook : un événement Resend signé mais hors MediumIA est ignoré sans écriture', async () => {
+  const cases = [
+    bounced('client.test@example.org', { from: 'Other <sender@other.example>' }),
+    bounced('client.test@example.org', { tags: {} }),
+    bounced('client.test@example.org', { tags: { mediumia_app: 'mediumia', mediumia_env: 'production', mediumia_type: 'transactional' } }),
+    JSON.stringify({ type: 'suppression.added', data: { email: 'client.test@example.org' } }),
+  ]
+  for (const [index, body] of cases.entries()) {
+    const db = fakeDb()
+    const res = fakeRes()
+    const id = `msg_unrelated_${index}`
+    await handleResendWebhook(fakeReq(body, { 'svix-id': id, 'svix-timestamp': TS, 'svix-signature': sign(body, { id }) }), res, { db, env: WEBHOOK_ENV, now: NOW })
+    assert.deepEqual(res.body, { received: true, ignored: true })
+    assert.equal(db.calls.length, 0)
+  }
+  assert.equal(isMediumiaResendEvent(JSON.parse(bounced()), WEBHOOK_ENV), true)
+  assert.equal(isMediumiaResendEvent(JSON.parse(bounced('client.test@example.org', { tags: { mediumia_app: 'mediumia', mediumia_env: 'test', mediumia_type: 'other_app' } })), WEBHOOK_ENV), false)
 })
 
 test('webhook : le JSON formaté est vérifié sur ses octets bruts', async () => {
@@ -117,6 +178,8 @@ test('webhook : le JSON formaté est vérifié sur ses octets bruts', async () =
     "to": ["client.test@example.org"],
     "subject": "Votre code MediumIA : 482915",
     "email_id": "em_formatted",
+    "from": "MediumIA <rendezvous@mediumia.fr>",
+    "tags": { "mediumia_type": "transactional", "mediumia_env": "test", "mediumia_app": "mediumia" },
     "bounce": { "message": "Synthetic", "type": "Permanent" }
   },
   "type": "email.bounced",
@@ -126,33 +189,33 @@ test('webhook : le JSON formaté est vérifié sur ses octets bruts', async () =
   const db = fakeDb()
   const request = fakeReq(body, headers)
   const valid = fakeRes()
-  await handleResendWebhook(request, valid, { db, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(request, valid, { db, env: WEBHOOK_ENV, now: NOW })
   assert.equal(valid.statusCode, 200)
   assert.equal(db.calls.filter((call) => call.name === 'record_email_delivery_event').length, 1)
 
   const wrongBytes = fakeRes()
-  await handleResendWebhook(fakeReq(JSON.stringify(JSON.parse(body)), headers), wrongBytes, { db: fakeDb(), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq(JSON.stringify(JSON.parse(body)), headers), wrongBytes, { db: fakeDb(), env: WEBHOOK_ENV, now: NOW })
   assert.equal(wrongBytes.statusCode, 401)
 
   const invalid = fakeRes()
   const invalidDb = fakeDb()
-  await handleResendWebhook(fakeReq(body, { ...headers, 'svix-signature': 'v1,AAAA' }), invalid, { db: invalidDb, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq(body, { ...headers, 'svix-signature': 'v1,AAAA' }), invalid, { db: invalidDb, env: WEBHOOK_ENV, now: NOW })
   assert.equal(invalid.statusCode, 401)
   assert.equal(invalidDb.calls.length, 0)
 
   const missing = fakeRes()
   const missingDb = fakeDb()
-  await handleResendWebhook(fakeReq(body), missing, { db: missingDb, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq(body), missing, { db: missingDb, env: WEBHOOK_ENV, now: NOW })
   assert.equal(missing.statusCode, 401)
   assert.equal(missingDb.calls.length, 0)
 
   const duplicate = fakeRes()
-  await handleResendWebhook(fakeReq(body, headers), duplicate, { db: fakeDb({ record: { recorded: false, duplicate: true } }), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq(body, headers), duplicate, { db: fakeDb({ record: { recorded: false, duplicate: true } }), env: WEBHOOK_ENV, now: NOW })
   assert.equal(duplicate.statusCode, 200)
   assert.equal(duplicate.body.results[0].duplicate, true)
 
   const databaseError = fakeRes()
-  await handleResendWebhook(fakeReq(body, headers), databaseError, { db: fakeDb({ recordError: { code: '42P01' } }), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
+  await handleResendWebhook(fakeReq(body, headers), databaseError, { db: fakeDb({ recordError: { code: '42P01' } }), env: WEBHOOK_ENV, now: NOW })
   assert.equal(databaseError.statusCode, 500)
 })
 
@@ -162,7 +225,7 @@ test('webhook : rejet signé → enregistré caviardé, une seule alerte à Séb
   const sent = []
   const res = fakeRes()
   await handleResendWebhook(fakeReq(body, { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': sign(body) }), res, {
-    db, env: { RESEND_WEBHOOK_SECRET: SECRET, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW,
+    db, env: { ...WEBHOOK_ENV, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW,
     send: async (message) => { sent.push(message); return { status: 'sent' } },
   })
   assert.equal(res.statusCode, 200)
@@ -186,7 +249,7 @@ test('webhook : événement en double (retry Resend) → aucune seconde alerte',
   const sent = []
   const res = fakeRes()
   await handleResendWebhook(fakeReq(body, { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': sign(body) }), res, {
-    db, env: { RESEND_WEBHOOK_SECRET: SECRET, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW, send: async (m) => { sent.push(m); return { status: 'sent' } },
+    db, env: { ...WEBHOOK_ENV, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW, send: async (m) => { sent.push(m); return { status: 'sent' } },
   })
   assert.equal(res.statusCode, 200)
   assert.equal(res.body.results[0].duplicate, true)
@@ -196,7 +259,7 @@ test('webhook : événement en double (retry Resend) → aucune seconde alerte',
 
 test('webhook : alerte déjà réservée par un autre appel → pas d’envoi ; échec d’envoi → réservation libérée', async () => {
   const body = bounced()
-  const env = { RESEND_WEBHOOK_SECRET: SECRET, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }
+  const env = { ...WEBHOOK_ENV, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }
   const headers = { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': sign(body) }
   const raced = fakeDb({ claim: false })
   const sent = []
@@ -213,13 +276,13 @@ test('webhook : panne base → 500 pour que Resend renvoie (idempotent) ; évén
   const body = bounced()
   const res = fakeRes()
   await handleResendWebhook(fakeReq(body, { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': sign(body) }), res, {
-    db: fakeDb({ recordError: { code: '42P01' } }), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW,
+    db: fakeDb({ recordError: { code: '42P01' } }), env: WEBHOOK_ENV, now: NOW,
   })
   assert.equal(res.statusCode, 500)
   const other = JSON.stringify({ type: 'domain.updated', data: {} })
   const res2 = fakeRes()
   await handleResendWebhook(fakeReq(other, { 'svix-id': 'msg_9', 'svix-timestamp': TS, 'svix-signature': sign(other, { id: 'msg_9' }) }), res2, {
-    db: fakeDb(), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW,
+    db: fakeDb(), env: WEBHOOK_ENV, now: NOW,
   })
   assert.equal(res2.body.ignored, true)
 })
@@ -307,6 +370,17 @@ test('structure : webhook Edge brut isolé ; identité toujours vérifiée ; pr�
   assert.match(adapter, /request\.arrayBuffer\(\)/)
   assert.match(adapter, /url\.hostname === `\$\{expectedProjectRef\}\.supabase\.co`/)
   assert.match(adapter, /handleResendWebhook/)
+  const transactional = read('lib/transactionalEmail.js')
+  assert.match(transactional, /mediumia_app/)
+  assert.match(transactional, /RESEND_EMAIL_ENVIRONMENT/)
+  assert.match(transactional, /messageType = 'transactional'/)
+  const conference = read('supabase/functions/conference-public/index.ts')
+  assert.match(conference, /mediumia_type/, 'la voie Resend hors helper est également taguée')
+  assert.match(conference, /conference_confirmation/)
+  const delivery = read('lib/emailDelivery.js')
+  assert.match(delivery, /isMediumiaResendEvent/)
+  assert.match(delivery, /RESEND_WEBHOOK_ALLOWED_FROM/)
+  assert.match(delivery, /suppressions globales[\s\S]*corrélables/i)
   const relay = read('supabase/functions/resend-webhook-test/index.ts')
   assert.match(relay, /createResendWebhookEdgeHandler/)
   assert.match(relay, /const TEST_PROJECT_REF = "wnbwhnqiulsdjcvkuwos"/)

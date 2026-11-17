@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/resend-webhook",
+      "destination": "/api/rdv-config?emailWebhook=resend"
+    },
+    {
       "source": "/api/rdv-balance-cron",
       "destination": "/api/rdv-config?rdvBalanceAction=cron"
     },

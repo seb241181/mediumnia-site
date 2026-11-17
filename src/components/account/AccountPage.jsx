@@ -5,6 +5,7 @@ import { setRememberMe } from '../../lib/authStorage.js'
 import { NewPasswordForm } from './PasswordForms.jsx'
 import EmailPreferences from './EmailPreferences.jsx'
 import ProfileForm from './ProfileForm.jsx'
+import { DELIVERY_RECHECK_DELAYS, checkEmailDelivery } from '../../lib/emailDeliveryCheck.js'
 import {
   ACCOUNT_PATH,
   bookingCalendarLinks,
@@ -14,6 +15,8 @@ import {
   describeAmounts,
   describeMode,
   describeStatus,
+  deliveryProblemMessage,
+  MEDIUMIA_CONTACT_EMAIL,
   emailCodeErrorMessage,
   formatBookingDate,
   formatBookingTime,
@@ -46,6 +49,9 @@ function Shell({ children, right }) {
 }
 
 // ── Connexion par code reçu par e-mail ───────────────────────────────────────
+
+// Horloge lue seulement dans les gestionnaires et les minuteries (jamais au rendu).
+const currentTime = () => Date.now()
 
 function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }) {
   const [email, setEmail] = useState('')
@@ -81,6 +87,13 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
     if (!address) return
     setBusy(true)
     setError('')
+    // Adresse refusée par la messagerie : on le dit, au lieu d'annoncer un lien
+    // qui n'arrivera jamais (#219).
+    if (await checkEmailDelivery(address) === 'blocked') {
+      setBusy(false)
+      setError(deliveryProblemMessage('blocked', address))
+      return
+    }
     const { error: resetError } = await requestPasswordReset(address, { redirectTo: `${window.location.origin}${ACCOUNT_PATH}` })
     setBusy(false)
     // Même message que l'adresse ait un espace ou non.
@@ -91,13 +104,40 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
   const [stage, setStage] = useState('email') // email | code
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Délivrabilité (#219) : envoi en cours, problème signalé après l'envoi,
+  // délai avant un nouvel envoi (Supabase limite à un code par minute).
+  const [sentAt, setSentAt] = useState(0)
+  const [createdOnSend, setCreatedOnSend] = useState(false)
+  const [deliveryIssue, setDeliveryIssue] = useState('')
+  const [nowTick, setNowTick] = useState(0)
+  const resendIn = !sentAt ? 0 : nowTick < sentAt ? 60 : Math.max(0, 60 - Math.floor((nowTick - sentAt) / 1000))
+
+  useEffect(() => {
+    if (stage !== 'code' || !sentAt) return undefined
+    let cancelled = false
+    const timers = DELIVERY_RECHECK_DELAYS.map((seconds) => setTimeout(async () => {
+      const delivery = await checkEmailDelivery(email)
+      if (!cancelled && (delivery === 'blocked' || delivery === 'temporary')) setDeliveryIssue(delivery)
+    }, seconds * 1000))
+    const tick = setInterval(() => setNowTick(currentTime()), 1000)
+    return () => { cancelled = true; timers.forEach(clearTimeout); clearInterval(tick) }
+  }, [stage, sentAt, email])
 
   async function requestCode(createAccount) {
     const address = validAddress()
     if (!address) return
     setBusy(true)
     setError('')
+    setDeliveryIssue('')
     setRememberMe(remember)
+    // Adresse refusée par la messagerie : aucun code n'est demandé, la personne
+    // voit pourquoi et peut corriger son adresse (#219).
+    if (await checkEmailDelivery(address) === 'blocked') {
+      setBusy(false)
+      setStage('email')
+      setError(deliveryProblemMessage('blocked', address))
+      return
+    }
     const { error: sendError } = await sendEmailCode(address, {
       createAccount,
       redirectTo: `${window.location.origin}${ACCOUNT_PATH}`,
@@ -107,6 +147,10 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
     if (sendError && !isUnknownAccountError(sendError)) { setError(emailCodeErrorMessage(sendError)); return }
     setEmail(address)
     setCode('')
+    setCreatedOnSend(createAccount)
+    const stamp = currentTime()
+    setSentAt(stamp)
+    setNowTick(stamp)
     setStage('code')
   }
 
@@ -130,6 +174,20 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
           Si un espace MediumIA correspond à <strong className="text-deep">{email}</strong>, nous venons d’y envoyer un code.
           Saisissez-le ci-dessous, ou cliquez sur le lien contenu dans l’e-mail.
         </p>
+        {!createdOnSend && (
+          <p className="mt-2 text-center font-georgia text-xs leading-relaxed text-mist">
+            Première visite, même si vous avez déjà réservé ? Aucun code n’est envoyé tant que votre espace n’est pas créé : utilisez « Créer mon espace MediumIA » ci-dessous.
+          </p>
+        )}
+        {deliveryIssue && (
+          <div role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 font-georgia text-sm leading-relaxed text-red-800">
+            <p className="font-semibold">{deliveryIssue === 'blocked' ? 'Le code n’a pas pu être remis à cette adresse.' : 'Le code n’a peut-être pas été remis.'}</p>
+            <p className="mt-1">{deliveryProblemMessage(deliveryIssue, email)}</p>
+            <button type="button" onClick={() => { setStage('email'); setError(''); setDeliveryIssue('') }} className="mt-2 font-semibold underline">
+              Corriger mon adresse
+            </button>
+          </div>
+        )}
         <form onSubmit={submitCode} className="mt-6 space-y-4" noValidate>
           <label className="block">
             <span className={label}>Code reçu par e-mail</span>
@@ -146,12 +204,16 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
           <p className="font-georgia text-sm leading-relaxed text-mist">
             Rien reçu au bout de quelques minutes ? Vérifiez vos courriers indésirables. Si vous n’avez pas encore d’espace MediumIA, créez-le gratuitement :
           </p>
-          <button type="button" disabled={busy} onClick={() => requestCode(false)} className={secondary}>Renvoyer mon code</button>
-          <button type="button" disabled={busy} onClick={() => requestCode(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>
+          <button type="button" disabled={busy || resendIn > 0} onClick={() => requestCode(createdOnSend)} className={secondary}>
+            {resendIn > 0 ? `Renvoyer mon code (dans ${resendIn} s)` : 'Renvoyer mon code'}
+          </button>
+          {!createdOnSend && (
+            <button type="button" disabled={busy} onClick={() => requestCode(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>
+          )}
           <p className="font-georgia text-xs leading-relaxed text-mist" role="status">
-            Si aucun message n'arrive, votre adresse peut être temporairement refusée par le service de messagerie. Vous pouvez essayer une autre adresse ou contacter MediumIA. Votre rendez-vous reste enregistré même sans espace client.
+            Toujours rien ? Vérifiez l’orthographe de votre adresse. Si elle est correcte, écrivez-nous à <a className="underline" href={`mailto:${MEDIUMIA_CONTACT_EMAIL}`}>{MEDIUMIA_CONTACT_EMAIL}</a>. Votre rendez-vous reste enregistré même sans espace client.
           </p>
-          <button type="button" disabled={busy} onClick={() => { setStage('email'); setError('') }} className="w-full py-2 font-georgia text-sm text-mist underline hover:text-deep">
+          <button type="button" disabled={busy} onClick={() => { setStage('email'); setError(''); setDeliveryIssue('') }} className="w-full py-2 font-georgia text-sm text-mist underline hover:text-deep">
             Utiliser une autre adresse
           </button>
         </div>

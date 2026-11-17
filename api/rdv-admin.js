@@ -9,6 +9,7 @@ import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
 import { handleLumiaInboxApi } from '../lib/lumiaMessageInbox.js'
 import { handleLumiaBookingCancelApi } from '../lib/lumiaBookingCancelApi.js'
 import { handleEmailQuestionsAdmin } from '../lib/emailQuestions.js'
+import { handleEmailDeliveryAdmin } from '../lib/emailDelivery.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 import { abandonBalanceRestoration, dismissGoogleResync, listBalanceWatch, restoreBalanceBooking, resumeBalanceRestoration, retryGoogleResync, rotateBalanceLink, renewConfirmedBalanceLink, setBalanceDecision } from '../lib/rdvBalanceReviewAdmin.js'
@@ -219,8 +220,17 @@ async function handleAttention(req, res, supabase, userId) {
   if (emailResult.error || rdvResults.some(r => r.error)) {
     return res.status(503).json({ error: 'attention_counts_unavailable' })
   }
+  // Clients qui ne reçoivent pas les e-mails (#219). Une panne de ce compteur
+  // ne masque jamais les autres : il vaut alors null.
+  let deliveryIssues = null
+  if (hasEmailAccess) {
+    const delivery = await supabase.from('email_delivery_issues')
+      .select('recipient', { count: 'exact', head: true }).is('resolved_at', null)
+    deliveryIssues = delivery.error ? null : Number(delivery.count || 0)
+  }
 
   return res.status(200).json({
+    email_delivery_issues: deliveryIssues,
     email_pending: hasEmailAccess ? Number(emailResult.count || 0) : null,
     rdv_pending: Object.fromEntries(practitioners.map((p, i) => [p.id, Number(rdvResults[i].count || 0)])),
   })
@@ -1001,6 +1011,11 @@ export default async function handler(req, res) {
       else if (req.method === 'POST' && input.op === 'transfer') result = await transferBookingDeposit({ supabase, userId, input })
       else if (req.method === 'POST' && input.op === 'retain') result = await retainBookingDeposit({ supabase, userId, input })
       else result = { status: 400, body: { error: 'invalid_request' } }
+      return res.status(result.status).json(result.body)
+    }
+    case 'email-delivery': {
+      // Clients qui ne reçoivent pas les e-mails (webhook Resend, #219).
+      const result = await handleEmailDeliveryAdmin({ db: supabase, userId, method: req.method, input: req.body || {} })
       return res.status(result.status).json(result.body)
     }
     case 'email-questions': {

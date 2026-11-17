@@ -277,3 +277,12 @@ test('SQL : idempotence, plainte jamais résolue automatiquement, aucun débloca
   }
   assert.doesNotMatch(sql, /message_text|html|otp_code|token_hash/i)
 })
+
+test('revérification après envoi : jamais d’envoi de code (seulement email-check)', () => {
+  const hook = read('src/lib/emailDeliveryCheck.js')
+  assert.doesNotMatch(hook, /sendEmailCode|signInWithOtp|signUp|resetPasswordForEmail/)
+  assert.match(hook, /export function useDeliveryRecheck/)
+  const invite = read('src/components/account/AccountInvite.jsx')
+  assert.match(invite, /useDeliveryRecheck\(stage === 'code', address, setDeliveryIssue\)/)
+  assert.equal(/useEffect/.test(invite), false, 'invariant existant : aucun envoi automatique')
+})

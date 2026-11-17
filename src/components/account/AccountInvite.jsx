@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../../lib/useAuth.js'
 import { isSupabaseConfigured } from '../../lib/supabase.js'
 import { ACCOUNT_PATH, deliveryProblemMessage, emailCodeErrorMessage } from '../../lib/accountView.js'
-import { DELIVERY_RECHECK_DELAYS, checkEmailDelivery } from '../../lib/emailDeliveryCheck.js'
+import { checkEmailDelivery, useDeliveryRecheck } from '../../lib/emailDeliveryCheck.js'
 
 // Après la confirmation d'un rendez-vous : rappel de l'espace personnel.
 // - déjà connecté : simple lien ;
@@ -22,16 +22,8 @@ export default function AccountInvite({ email, wanted = false }) {
   const address = String(email || '').trim().toLowerCase()
 
   // Après l'envoi : un rejet de la messagerie arrive quelques secondes plus tard
-  // (webhook Resend, #219). On le montre au lieu de laisser attendre.
-  useEffect(() => {
-    if (stage !== 'code' || !address) return undefined
-    let cancelled = false
-    const timers = DELIVERY_RECHECK_DELAYS.map((seconds) => setTimeout(async () => {
-      const delivery = await checkEmailDelivery(address)
-      if (!cancelled && (delivery === 'blocked' || delivery === 'temporary')) setDeliveryIssue(delivery)
-    }, seconds * 1000))
-    return () => { cancelled = true; timers.forEach(clearTimeout) }
-  }, [stage, address])
+  // (webhook Resend, #219). Simple revérification : aucun code n'est envoyé.
+  useDeliveryRecheck(stage === 'code', address, setDeliveryIssue)
 
   if (!isSupabaseConfigured()) return null
 

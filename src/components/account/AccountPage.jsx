@@ -5,7 +5,7 @@ import { setRememberMe } from '../../lib/authStorage.js'
 import { NewPasswordForm } from './PasswordForms.jsx'
 import EmailPreferences from './EmailPreferences.jsx'
 import ProfileForm from './ProfileForm.jsx'
-import { DELIVERY_RECHECK_DELAYS, checkEmailDelivery } from '../../lib/emailDeliveryCheck.js'
+import { checkEmailDelivery, useDeliveryRecheck } from '../../lib/emailDeliveryCheck.js'
 import {
   ACCOUNT_PATH,
   bookingCalendarLinks,
@@ -112,16 +112,12 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
   const [nowTick, setNowTick] = useState(0)
   const resendIn = !sentAt ? 0 : nowTick < sentAt ? 60 : Math.max(0, 60 - Math.floor((nowTick - sentAt) / 1000))
 
+  useDeliveryRecheck(stage === 'code' && sentAt > 0, email, setDeliveryIssue)
   useEffect(() => {
     if (stage !== 'code' || !sentAt) return undefined
-    let cancelled = false
-    const timers = DELIVERY_RECHECK_DELAYS.map((seconds) => setTimeout(async () => {
-      const delivery = await checkEmailDelivery(email)
-      if (!cancelled && (delivery === 'blocked' || delivery === 'temporary')) setDeliveryIssue(delivery)
-    }, seconds * 1000))
     const tick = setInterval(() => setNowTick(currentTime()), 1000)
-    return () => { cancelled = true; timers.forEach(clearTimeout); clearInterval(tick) }
-  }, [stage, sentAt, email])
+    return () => clearInterval(tick)
+  }, [stage, sentAt])
 
   async function requestCode(createAccount) {
     const address = validAddress()

@@ -82,18 +82,15 @@ Suivi : #219. Branche isolée `fix/mediumia-resend-otp-delivery` (PR #220).
   - résolution manuelle puis réouverture ;
   - aucun droit `anon` ou `authenticated`.
 
-## Activation (à faire par Sébastien)
+## Activation future (à faire par Sébastien, après accord séparé)
 1. **Resend → Webhooks → Add endpoint**
-   - TEST : URL de la préversion TEST suivie de `/api/resend-webhook`.
-   - Production : `https://mediumia.fr/api/resend-webhook`, après accord.
-   - Événements : bounced, failed, suppressed, complained, delivered, ainsi que `suppression.added` s'il est proposé.
-2. Copier le **Signing secret** (`whsec_…`) dans Vercel : `RESEND_WEBHOOK_SECRET` (Preview pour TEST, Production ensuite).
-3. Facultatif : `EMAIL_DELIVERY_ALERT_EMAIL`, sinon `RDV_BALANCE_ALERT_EMAIL` est utilisé.
-4. Appliquer la migration `20261117100000_email_delivery_tracking.sql` en Production avant le déploiement du code. Elle est additive.
-5. Redéployer.
-6. Tester avec `bounced@resend.dev` :
-   - une alerte arrive ;
-   - l'espace client affiche le message de rejet.
+   - TEST : `https://wnbwhnqiulsdjcvkuwos.supabase.co/functions/v1/resend-webhook-test`.
+   - Production : l'Edge Function Supabase `resend-webhook` du projet Production, jamais une URL Vercel.
+   - Événements : bounced, failed, suppressed, complained, delivered. Les suppressions globales (`suppression.added`) sont volontairement ignorées : elles ne portent pas une preuve suffisante d'appartenance à MediumIA.
+2. Copier le **Signing secret** (`whsec_…`) dans les secrets de l'Edge Function concernée : `RESEND_WEBHOOK_SECRET`. Le secret TEST est distinct du secret Production.
+3. Configurer aussi `RESEND_WEBHOOK_ALLOWED_FROM`, `RESEND_WEBHOOK_ENVIRONMENT` et `RESEND_WEBHOOK_ALLOWED_TYPES`. Ces trois preuves techniques doivent correspondre à l'expéditeur et aux tags applicatifs.
+4. Les alertes sont désactivées par défaut. Pour les activer après validation, définir explicitement `RESEND_WEBHOOK_ALERTS_ENABLED=true` et une adresse `EMAIL_DELIVERY_ALERT_EMAIL` dans le même environnement.
+5. Appliquer la migration `20261117100000_email_delivery_tracking.sql` avant de déployer la fonction. Elle est additive.
 
 ## Validation sur TEST : relais Supabase
 La préversion Vercel TEST est protégée par Vercel Authentication. L'exception « Protection Bypass for Automation » ouvre **toute** la préversion à quiconque détient la clé : elle ne peut pas être limitée à une route. Elle n'est donc pas utilisée.
@@ -106,14 +103,13 @@ La préversion Vercel TEST est protégée par Vercel Authentication. L'exception
   - sans secret → 503.
 - Elle refuse de fonctionner hors du projet TEST : 503 `test_only`.
 - `verify_jwt` est désactivé, car Resend n'envoie pas de jeton Supabase. L'authentification repose sur la signature Svix.
-- Secrets à définir dans Supabase TEST (Edge Functions → Secrets) :
-  - `RESEND_WEBHOOK_SECRET` ;
-  - `RESEND_API_KEY` ;
-  - `RESEND_FROM_EMAIL` ;
-  - `EMAIL_DELIVERY_ALERT_EMAIL`.
+- Secrets et configuration à définir dans Supabase TEST (Edge Functions → Secrets) :
+  - webhook : `RESEND_WEBHOOK_SECRET`, `RESEND_WEBHOOK_ALLOWED_FROM`, `RESEND_WEBHOOK_ENVIRONMENT`, `RESEND_WEBHOOK_ALLOWED_TYPES` ;
+  - alertes : `RESEND_WEBHOOK_ALERTS_ENABLED` et `EMAIL_DELIVERY_ALERT_EMAIL` (désactivées pendant les essais synthétiques) ;
+  - systèmes d'envoi : `RESEND_API_KEY` et `RESEND_FROM_EMAIL` (inutiles tant que les alertes restent désactivées).
   - `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont fournis automatiquement.
 - **Retrait** après validation : désactiver le webhook dans Resend, puis supprimer la fonction (`supabase functions delete resend-webhook-test`).
-- En Production, le webhook pointe sur `https://mediumia.fr/api/resend-webhook` : le domaine de production n'est pas protégé, aucun relais n'est nécessaire.
+- En Production, le webhook pointera vers l'Edge Function `resend-webhook` du projet Supabase Production, après une autorisation distincte.
 
 ## Retour arrière
 - Le code est sans effet tant que `RESEND_WEBHOOK_SECRET` est absent : le webhook répond 503 et la vérification répond `ok` ou `unknown`.

@@ -225,7 +225,7 @@ test('webhook : rejet signé → enregistré caviardé, une seule alerte à Séb
   const sent = []
   const res = fakeRes()
   await handleResendWebhook(fakeReq(body, { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': sign(body) }), res, {
-    db, env: { ...WEBHOOK_ENV, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW,
+    db, env: { ...WEBHOOK_ENV, RESEND_WEBHOOK_ALERTS_ENABLED: 'true', RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW,
     send: async (message) => { sent.push(message); return { status: 'sent' } },
   })
   assert.equal(res.statusCode, 200)
@@ -249,7 +249,7 @@ test('webhook : événement en double (retry Resend) → aucune seconde alerte',
   const sent = []
   const res = fakeRes()
   await handleResendWebhook(fakeReq(body, { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': sign(body) }), res, {
-    db, env: { ...WEBHOOK_ENV, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW, send: async (m) => { sent.push(m); return { status: 'sent' } },
+    db, env: { ...WEBHOOK_ENV, RESEND_WEBHOOK_ALERTS_ENABLED: 'true', RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW, send: async (m) => { sent.push(m); return { status: 'sent' } },
   })
   assert.equal(res.statusCode, 200)
   assert.equal(res.body.results[0].duplicate, true)
@@ -259,7 +259,7 @@ test('webhook : événement en double (retry Resend) → aucune seconde alerte',
 
 test('webhook : alerte déjà réservée par un autre appel → pas d’envoi ; échec d’envoi → réservation libérée', async () => {
   const body = bounced()
-  const env = { ...WEBHOOK_ENV, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }
+  const env = { ...WEBHOOK_ENV, RESEND_WEBHOOK_ALERTS_ENABLED: 'true', RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }
   const headers = { 'svix-id': 'msg_1', 'svix-timestamp': TS, 'svix-signature': sign(body) }
   const raced = fakeDb({ claim: false })
   const sent = []
@@ -270,6 +270,21 @@ test('webhook : alerte déjà réservée par un autre appel → pas d’envoi ; 
   await handleResendWebhook(fakeReq(body, headers), res, { db: failing, env, now: NOW, send: async () => ({ status: 'error' }) })
   assert.equal(res.body.results[0].alert, 'alert_failed')
   assert.ok(failing.calls.some((c) => c.name === 'release_email_delivery_alert'))
+})
+
+test('webhook : alertes désactivées par défaut, même si une adresse de secours existe', async () => {
+  const body = bounced()
+  const db = fakeDb()
+  const sent = []
+  const res = fakeRes()
+  await handleResendWebhook(fakeReq(body, { 'svix-id': 'msg_no_alert', 'svix-timestamp': TS, 'svix-signature': sign(body, { id: 'msg_no_alert' }) }), res, {
+    db, env: { ...WEBHOOK_ENV, RDV_BALANCE_ALERT_EMAIL: 'seb@example.org' }, now: NOW,
+    send: async (message) => { sent.push(message); return { status: 'sent' } },
+  })
+  assert.equal(res.statusCode, 200)
+  assert.equal(res.body.results[0].alert, 'disabled')
+  assert.equal(sent.length, 0)
+  assert.equal(db.calls.some((call) => call.name === 'claim_email_delivery_alert'), false)
 })
 
 test('webhook : panne base → 500 pour que Resend renvoie (idempotent) ; événement non suivi → 200 ignoré', async () => {

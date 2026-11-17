@@ -258,6 +258,12 @@ test('structure : webhook avant toute lecture du corps ; identité toujours vér
   // le JSON plutôt que sa mise en forme.
   const rewrites = JSON.parse(read('vercel.json')).rewrites || []
   assert.ok(rewrites.some((r) => r.source === '/api/resend-webhook' && r.destination === '/api/rdv-config?emailWebhook=resend'), 'réécriture du webhook Resend')
+  // Relais TEST (Supabase) : même gestionnaire, verrouillé sur le projet TEST.
+  const relay = read('supabase/functions/resend-webhook-test/index.ts')
+  assert.match(relay, /import \{ handleResendWebhook \} from "\.\.\/\.\.\/\.\.\/lib\/emailDelivery\.js"/)
+  assert.match(relay, /const TEST_PROJECT_REF = "wnbwhnqiulsdjcvkuwos"/)
+  assert.ok(relay.indexOf('test_only') < relay.indexOf('handleResendWebhook(req, res'), 'garde TEST avant tout traitement')
+  assert.doesNotMatch(relay, /uotkpygeqqnekpolezts/)
   const account = read('lib/accountApiHandler.js')
   assert.match(account, /if \(!user\.email \|\| !user\.email_confirmed_at\) return \{ status: 403, error: 'email_not_verified' \}/)
   assert.match(account, /if \(action === 'email-check'\) return handleEmailCheck/)

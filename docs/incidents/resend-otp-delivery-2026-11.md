@@ -64,7 +64,7 @@ Suivi : #219. Branche isolée `fix/mediumia-resend-otp-delivery` (PR #220).
 - Réservations et paiements : aucun fichier touché.
 
 ## Tests
-- `tests/emailDelivery.test.js` (14 tests) :
+- `tests/emailDelivery.test.js` (15 tests) :
   - signature valide, falsifiée, périmée, rotation de clé, secret absent ;
   - caviardage OTP ;
   - rejet → alerte unique ; doublon → pas d'alerte ; alerte concurrente ; échec d'envoi → libération ;
@@ -94,6 +94,26 @@ Suivi : #219. Branche isolée `fix/mediumia-resend-otp-delivery` (PR #220).
 6. Tester avec `bounced@resend.dev` :
    - une alerte arrive ;
    - l'espace client affiche le message de rejet.
+
+## Validation sur TEST : relais Supabase
+La préversion Vercel TEST est protégée par Vercel Authentication. L'exception « Protection Bypass for Automation » ouvre **toute** la préversion à quiconque détient la clé : elle ne peut pas être limitée à une route. Elle n'est donc pas utilisée.
+
+À la place, la fonction Supabase **TEST** `resend-webhook-test` (`supabase/functions/resend-webhook-test/`) exécute exactement le même gestionnaire (`lib/emailDelivery.js`).
+- Adresse : `https://wnbwhnqiulsdjcvkuwos.supabase.co/functions/v1/resend-webhook-test`.
+- Une seule route : POST signé uniquement.
+  - GET → 405 ;
+  - sans signature → 401 ;
+  - sans secret → 503.
+- Elle refuse de fonctionner hors du projet TEST : 503 `test_only`.
+- `verify_jwt` est désactivé, car Resend n'envoie pas de jeton Supabase. L'authentification repose sur la signature Svix.
+- Secrets à définir dans Supabase TEST (Edge Functions → Secrets) :
+  - `RESEND_WEBHOOK_SECRET` ;
+  - `RESEND_API_KEY` ;
+  - `RESEND_FROM_EMAIL` ;
+  - `EMAIL_DELIVERY_ALERT_EMAIL`.
+  - `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont fournis automatiquement.
+- **Retrait** après validation : désactiver le webhook dans Resend, puis supprimer la fonction (`supabase functions delete resend-webhook-test`).
+- En Production, le webhook pointe sur `https://mediumia.fr/api/resend-webhook` : le domaine de production n'est pas protégé, aucun relais n'est nécessaire.
 
 ## Retour arrière
 - Le code est sans effet tant que `RESEND_WEBHOOK_SECRET` est absent : le webhook répond 503 et la vérification répond `ok` ou `unknown`.

@@ -8,7 +8,6 @@ import {
   buildDeliveryAlert, handleEmailCheck, handleEmailDeliveryAdmin, handleResendWebhook,
   parseResendEvent, redactSubject, verifySvixSignature,
 } from '../lib/emailDelivery.js'
-import { config as resendWebhookConfig, createResendWebhookHandler } from '../api/resend-webhook.js'
 import { checkEmailDelivery } from '../src/lib/emailDeliveryCheck.js'
 import { deliveryProblemMessage, emailCodeErrorMessage, EMAIL_SEND_FAILED_MESSAGE } from '../src/lib/accountView.js'
 
@@ -112,7 +111,7 @@ test('webhook : signature invalide ou absente → 401, aucune écriture', async 
   assert.equal(res3.statusCode, 405)
 })
 
-test('route dédiée : le JSON formaté est vérifié sur ses octets bruts', async () => {
+test('webhook : le JSON formaté est vérifié sur ses octets bruts', async () => {
   const body = `{
   "data": {
     "to": ["client.test@example.org"],
@@ -126,41 +125,34 @@ test('route dédiée : le JSON formaté est vérifié sur ses octets bruts', asy
   const headers = { 'svix-id': 'msg_formatted', 'svix-timestamp': TS, 'svix-signature': sign(body, { id: 'msg_formatted' }) }
   const db = fakeDb()
   const request = fakeReq(body, headers)
-  // Représente le corps JSON que Vercel aurait produit si le parseur avait été
-  // actif ; le gestionnaire doit malgré tout utiliser le flux brut signé.
-  request.body = JSON.parse(body)
-  const testRoute = (database, env = { RESEND_WEBHOOK_SECRET: SECRET }) => createResendWebhookHandler(
-    (req, res) => handleResendWebhook(req, res, { db: database, env, now: NOW }),
-  )
   const valid = fakeRes()
-  await testRoute(db)(request, valid)
-  assert.deepEqual(resendWebhookConfig, { api: { bodyParser: false } })
+  await handleResendWebhook(request, valid, { db, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
   assert.equal(valid.statusCode, 200)
   assert.equal(db.calls.filter((call) => call.name === 'record_email_delivery_event').length, 1)
 
   const wrongBytes = fakeRes()
-  await testRoute(fakeDb())(fakeReq(JSON.stringify(request.body), headers), wrongBytes)
+  await handleResendWebhook(fakeReq(JSON.stringify(JSON.parse(body)), headers), wrongBytes, { db: fakeDb(), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
   assert.equal(wrongBytes.statusCode, 401)
 
   const invalid = fakeRes()
   const invalidDb = fakeDb()
-  await testRoute(invalidDb)(fakeReq(body, { ...headers, 'svix-signature': 'v1,AAAA' }), invalid)
+  await handleResendWebhook(fakeReq(body, { ...headers, 'svix-signature': 'v1,AAAA' }), invalid, { db: invalidDb, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
   assert.equal(invalid.statusCode, 401)
   assert.equal(invalidDb.calls.length, 0)
 
   const missing = fakeRes()
   const missingDb = fakeDb()
-  await testRoute(missingDb)(fakeReq(body), missing)
+  await handleResendWebhook(fakeReq(body), missing, { db: missingDb, env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
   assert.equal(missing.statusCode, 401)
   assert.equal(missingDb.calls.length, 0)
 
   const duplicate = fakeRes()
-  await testRoute(fakeDb({ record: { recorded: false, duplicate: true } }))(fakeReq(body, headers), duplicate)
+  await handleResendWebhook(fakeReq(body, headers), duplicate, { db: fakeDb({ record: { recorded: false, duplicate: true } }), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
   assert.equal(duplicate.statusCode, 200)
   assert.equal(duplicate.body.results[0].duplicate, true)
 
   const databaseError = fakeRes()
-  await testRoute(fakeDb({ recordError: { code: '42P01' } }))(fakeReq(body, headers), databaseError)
+  await handleResendWebhook(fakeReq(body, headers), databaseError, { db: fakeDb({ recordError: { code: '42P01' } }), env: { RESEND_WEBHOOK_SECRET: SECRET }, now: NOW })
   assert.equal(databaseError.statusCode, 500)
 })
 
@@ -303,23 +295,28 @@ test('administration : réservée au propriétaire ; résoudre ne touche pas à 
 
 // ── Garde-fous de structure ──────────────────────────────────────────────────
 
-test('structure : route webhook brute dédiée ; identité toujours vérifiée ; pré-contrôle avant envoi', () => {
+test('structure : webhook Edge brut isolé ; identité toujours vérifiée ; pré-contrôle avant envoi', () => {
   const router = read('api/rdv-config.js')
   assert.doesNotMatch(router, /emailWebhook|handleResendWebhook/)
-  // La route du webhook est une fonction dédiée : le parseur JSON Vercel y est
-  // désactivé afin de conserver exactement les octets couverts par Svix.
-  const webhookRoute = read('api/resend-webhook.js')
-  assert.match(webhookRoute, /import \{ handleResendWebhook \} from '..\/lib\/emailDelivery\.js'/)
-  assert.match(webhookRoute, /bodyParser:\s*false/)
-  assert.match(webhookRoute, /return handle\(req, res\)/)
+  assert.doesNotMatch(read('vercel.json'), /resend-webhook/)
   const rewrites = JSON.parse(read('vercel.json')).rewrites || []
   assert.ok(!rewrites.some((r) => r.source === '/api/resend-webhook'), 'aucune réécriture ne doit consommer le corps avant la route dédiée')
-  // Relais TEST (Supabase) : même gestionnaire, verrouillé sur le projet TEST.
+  // Les deux Edge Functions gardent les octets originaux et refusent un projet
+  // Supabase inattendu avant toute signature ou écriture.
+  const adapter = read('supabase/functions/_shared/resendWebhook.ts')
+  assert.match(adapter, /request\.arrayBuffer\(\)/)
+  assert.match(adapter, /url\.hostname === `\$\{expectedProjectRef\}\.supabase\.co`/)
+  assert.match(adapter, /handleResendWebhook/)
   const relay = read('supabase/functions/resend-webhook-test/index.ts')
-  assert.match(relay, /import \{ handleResendWebhook \} from "\.\.\/\.\.\/\.\.\/lib\/emailDelivery\.js"/)
+  assert.match(relay, /createResendWebhookEdgeHandler/)
   assert.match(relay, /const TEST_PROJECT_REF = "wnbwhnqiulsdjcvkuwos"/)
-  assert.ok(relay.indexOf('test_only') < relay.indexOf('handleResendWebhook(req, res'), 'garde TEST avant tout traitement')
+  const production = read('supabase/functions/resend-webhook/index.ts')
+  assert.match(production, /const PRODUCTION_PROJECT_REF = "uotkpygeqqnekpolezts"/)
   assert.doesNotMatch(relay, /uotkpygeqqnekpolezts/)
+  assert.doesNotMatch(production, /wnbwhnqiulsdjcvkuwos/)
+  const config = read('supabase/config.toml')
+  assert.match(config, /\[functions\.resend-webhook\]\s+verify_jwt = false/)
+  assert.match(config, /\[functions\.resend-webhook-test\]\s+verify_jwt = false/)
   const account = read('lib/accountApiHandler.js')
   assert.match(account, /if \(!user\.email \|\| !user\.email_confirmed_at\) return \{ status: 403, error: 'email_not_verified' \}/)
   assert.match(account, /if \(action === 'email-check'\) return handleEmailCheck/)

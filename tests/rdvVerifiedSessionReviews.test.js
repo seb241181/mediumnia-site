@@ -45,7 +45,7 @@ function dbForReview(initial, { changedBeforeClaim = false } = {}) {
           return Promise.resolve({ data: eligible ? [{ ...row }] : [], error: null })
         },
         in() {
-          if (table === 'booking_practitioners') return Promise.resolve({ data: [{ id: ownerId, slug: 'seb' }], error: null })
+          if (table === 'booking_practitioners') return Promise.resolve({ data: [{ id: ownerId, slug: 'sebastien-seguin' }], error: null })
           return Promise.resolve({ data: [{ id: 'service-1', title: 'Désenvoûtement' }], error: null })
         },
         maybeSingle() {

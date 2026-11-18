@@ -55,7 +55,8 @@ const currentTime = () => Date.now()
 
 function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }) {
   const [email, setEmail] = useState('')
-  const [mode, setMode] = useState('password') // password | code | forgot
+  const [mode, setMode] = useState('welcome') // welcome | password | code | forgot
+  const [codePurpose, setCodePurpose] = useState('signin') // signin | create
   const [password, setPasswordValue] = useState('')
   const [remember, setRemember] = useState(true)
   const [resetSentTo, setResetSentTo] = useState('')
@@ -66,6 +67,11 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
     return address
   }
   const switchMode = (next) => { setMode(next); setError(''); setResetSentTo('') }
+  const startCodeFlow = (createAccount) => {
+    setCodePurpose(createAccount ? 'create' : 'signin')
+    setStage('email')
+    switchMode('code')
+  }
 
   async function submitPassword(event) {
     event.preventDefault()
@@ -167,8 +173,9 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
         <p className="text-center text-3xl text-gold">◈</p>
         <h1 className="mt-2 text-center font-georgia text-2xl font-medium">Consultez vos e-mails</h1>
         <p className="mt-3 text-center font-georgia text-sm leading-relaxed text-mist">
-          Si un espace MediumIA correspond à <strong className="text-deep">{email}</strong>, nous venons d’y envoyer un code.
-          Saisissez-le ci-dessous, ou cliquez sur le lien contenu dans l’e-mail.
+          {codePurpose === 'create'
+            ? <>Un code vient d’être envoyé à <strong className="text-deep">{email}</strong>. Saisissez-le pour confirmer votre adresse et ouvrir gratuitement votre espace personnel.</>
+            : <>Si un espace MediumIA correspond à <strong className="text-deep">{email}</strong>, nous venons d’y envoyer un code. Saisissez-le ci-dessous, ou cliquez sur le lien contenu dans l’e-mail.</>}
         </p>
         {!createdOnSend && (
           <p className="mt-2 text-center font-georgia text-xs leading-relaxed text-mist">
@@ -217,6 +224,27 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
     )
   }
 
+  if (mode === 'welcome') {
+    return (
+      <section className="mx-auto max-w-md rounded-3xl border-2 border-gold/25 bg-white/70 p-6 shadow-sm sm:p-8">
+        <p className="text-center font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Votre espace personnel MediumIA</p>
+        <h1 className="mt-2 text-center font-georgia text-2xl font-medium leading-snug">Bienvenue dans votre espace</h1>
+        <p className="mt-3 text-center font-georgia text-sm leading-relaxed text-mist">
+          Créez gratuitement votre espace pour retrouver vos rendez-vous, vos règlements et vos coordonnées. Aucune réservation préalable n’est nécessaire.
+        </p>
+        <div className="mt-6 space-y-3">
+          <button type="button" onClick={() => startCodeFlow(true)} className={primary}>Créer mon espace gratuit</button>
+          <button type="button" onClick={() => startCodeFlow(false)} className={secondary}>Me connecter avec un code par e-mail</button>
+          <button type="button" onClick={() => switchMode('password')} className={secondary}>Me connecter avec mon mot de passe</button>
+        </div>
+        <p className="mt-5 text-center font-georgia text-xs leading-relaxed text-mist">
+          Gratuit et facultatif : vous pouvez toujours réserver sans compte. Vos données sont traitées selon notre{' '}
+          <a href="/confidentialite" className="text-gold underline">politique de confidentialité</a>.
+        </p>
+      </section>
+    )
+  }
+
   return (
     <section className="mx-auto max-w-md rounded-3xl border-2 border-gold/25 bg-white/70 p-6 shadow-sm sm:p-8">
       <p className="text-center font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Votre espace personnel MediumIA</p>
@@ -224,12 +252,14 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
       <p className="mt-3 text-center font-georgia text-sm leading-relaxed text-mist">
         {mode === 'forgot'
           ? 'Indiquez votre adresse e-mail : nous vous envoyons un lien pour choisir un nouveau mot de passe.'
-          : 'Indiquez l’adresse e-mail utilisée pour vos réservations.'}
+          : codePurpose === 'create' && mode === 'code'
+            ? 'Indiquez votre adresse e-mail : nous vous enverrons un code pour confirmer la création de votre espace gratuit.'
+            : 'Indiquez l’adresse e-mail utilisée pour vos réservations.'}
       </p>
       {mode !== 'forgot' && (
         <div className="mt-5 flex gap-2" role="tablist" aria-label="Moyen de connexion">
           {[['password', 'Mot de passe'], ['code', 'Code par e-mail']].map(([id, text]) => (
-            <button key={id} type="button" role="tab" aria-selected={mode === id} onClick={() => switchMode(id)}
+            <button key={id} type="button" role="tab" aria-selected={mode === id} onClick={() => { if (id === 'code') setCodePurpose('signin'); switchMode(id) }}
               className={`flex-1 rounded-xl px-3 py-2.5 font-georgia text-sm font-bold transition-colors ${mode === id ? 'bg-deep text-gold' : 'border border-gold/35 bg-white/60 text-deep hover:bg-gold/10'}`}>
               {text}
             </button>
@@ -237,7 +267,7 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
         </div>
       )}
       <form
-        onSubmit={mode === 'password' ? submitPassword : mode === 'forgot' ? submitForgot : (event) => { event.preventDefault(); requestCode(false) }}
+        onSubmit={mode === 'password' ? submitPassword : mode === 'forgot' ? submitForgot : (event) => { event.preventDefault(); requestCode(codePurpose === 'create') }}
         className="mt-5 space-y-4" noValidate
       >
         <label className="block">
@@ -271,8 +301,8 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
         )}
         {mode === 'code' && (
           <>
-            <button type="submit" disabled={busy} className={primary}>{busy ? 'Un instant…' : 'Recevoir mon code de connexion'}</button>
-            <button type="button" disabled={busy} onClick={() => requestCode(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>
+            <button type="submit" disabled={busy} className={primary}>{busy ? 'Un instant…' : codePurpose === 'create' ? 'Recevoir mon code de création' : 'Recevoir mon code de connexion'}</button>
+            {codePurpose !== 'create' && <button type="button" disabled={busy} onClick={() => startCodeFlow(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>}
           </>
         )}
         {mode === 'forgot' && (

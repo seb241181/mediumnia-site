@@ -141,8 +141,11 @@ test('la page est branchée, sans création automatique de compte', () => {
   assert.match(page, /Me connecter avec mon mot de passe/)
   assert.match(page, /startCodeFlow\(true\)/)
   assert.match(page, /startCodeFlow\(false\)/)
+  assert.match(page, /returnToChoices/)
   assert.match(page, /createAccount,/)
   assert.match(page, /requestCode\(codePurpose === 'create'\)/)
+  assert.match(page, /codePurpose !== 'create'/)
+  assert.doesNotMatch(page, /Créer mon espace MediumIA gratuitement/)
   assert.match(page, /accountAction=overview/)
   assert.match(page, /Authorization: `Bearer \$\{token\}`/)
   assert.match(read('src/main.jsx'), /pathname === '\/mon-espace'/)
@@ -160,4 +163,5 @@ test('création d’espace : même connexion par code, sans réserver ni révél
   // À la création, on ne dévoile pas si l’adresse avait déjà un compte.
   assert.match(page, /confirmer votre adresse et ouvrir gratuitement votre espace personnel/)
   assert.match(page, /isUnknownAccountError\(sendError\)/)
+  assert.match(page, /Créez votre espace gratuit/)
 })

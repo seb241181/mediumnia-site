@@ -72,6 +72,14 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
     setStage('email')
     switchMode('code')
   }
+  const returnToChoices = () => {
+    setStage('email')
+    setCodePurpose('signin')
+    setCode('')
+    setError('')
+    setDeliveryIssue('')
+    switchMode('welcome')
+  }
 
   async function submitPassword(event) {
     event.preventDefault()
@@ -177,11 +185,6 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
             ? <>Un code vient d’être envoyé à <strong className="text-deep">{email}</strong>. Saisissez-le pour confirmer votre adresse et ouvrir gratuitement votre espace personnel.</>
             : <>Si un espace MediumIA correspond à <strong className="text-deep">{email}</strong>, nous venons d’y envoyer un code. Saisissez-le ci-dessous, ou cliquez sur le lien contenu dans l’e-mail.</>}
         </p>
-        {!createdOnSend && (
-          <p className="mt-2 text-center font-georgia text-xs leading-relaxed text-mist">
-            Première visite, même si vous avez déjà réservé ? Aucun code n’est envoyé tant que votre espace n’est pas créé : utilisez « Créer mon espace MediumIA » ci-dessous.
-          </p>
-        )}
         {deliveryIssue && (
           <div role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 px-4 py-3 font-georgia text-sm leading-relaxed text-red-800">
             <p className="font-semibold">{deliveryIssue === 'blocked' ? 'Le code n’a pas pu être remis à cette adresse.' : 'Le code n’a peut-être pas été remis.'}</p>
@@ -205,19 +208,19 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
         </form>
         <div className="mt-6 space-y-3 border-t border-gold/20 pt-5">
           <p className="font-georgia text-sm leading-relaxed text-mist">
-            Rien reçu au bout de quelques minutes ? Vérifiez vos courriers indésirables. Si vous n’avez pas encore d’espace MediumIA, créez-le gratuitement :
+            Rien reçu au bout de quelques minutes ? Vérifiez vos courriers indésirables.
           </p>
           <button type="button" disabled={busy || resendIn > 0} onClick={() => requestCode(createdOnSend)} className={secondary}>
             {resendIn > 0 ? `Renvoyer mon code (dans ${resendIn} s)` : 'Renvoyer mon code'}
           </button>
-          {!createdOnSend && (
-            <button type="button" disabled={busy} onClick={() => requestCode(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>
-          )}
           <p className="font-georgia text-xs leading-relaxed text-mist" role="status">
             Toujours rien ? Vérifiez l’orthographe de votre adresse. Si elle est correcte, écrivez-nous à <a className="underline" href={`mailto:${MEDIUMIA_CONTACT_EMAIL}`}>{MEDIUMIA_CONTACT_EMAIL}</a>. Votre rendez-vous reste enregistré même sans espace client.
           </p>
           <button type="button" disabled={busy} onClick={() => { setStage('email'); setError(''); setDeliveryIssue('') }} className="w-full py-2 font-georgia text-sm text-mist underline hover:text-deep">
             Utiliser une autre adresse
+          </button>
+          <button type="button" disabled={busy} onClick={returnToChoices} className="w-full py-1 font-georgia text-xs text-mist underline hover:text-deep">
+            Retour aux choix
           </button>
         </div>
       </section>
@@ -248,7 +251,9 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
   return (
     <section className="mx-auto max-w-md rounded-3xl border-2 border-gold/25 bg-white/70 p-6 shadow-sm sm:p-8">
       <p className="text-center font-georgia text-[11px] uppercase tracking-[0.2em] text-gold">Votre espace personnel MediumIA</p>
-      <h1 className="mt-2 text-center font-georgia text-2xl font-medium leading-snug">Retrouvez vos rendez-vous et vos règlements</h1>
+      <h1 className="mt-2 text-center font-georgia text-2xl font-medium leading-snug">
+        {codePurpose === 'create' && mode === 'code' ? 'Créez votre espace gratuit' : 'Connectez-vous à votre espace'}
+      </h1>
       <p className="mt-3 text-center font-georgia text-sm leading-relaxed text-mist">
         {mode === 'forgot'
           ? 'Indiquez votre adresse e-mail : nous vous envoyons un lien pour choisir un nouveau mot de passe.'
@@ -256,7 +261,7 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
             ? 'Indiquez votre adresse e-mail : nous vous enverrons un code pour confirmer la création de votre espace gratuit.'
             : 'Indiquez l’adresse e-mail utilisée pour vos réservations.'}
       </p>
-      {mode !== 'forgot' && (
+      {mode !== 'forgot' && codePurpose !== 'create' && (
         <div className="mt-5 flex gap-2" role="tablist" aria-label="Moyen de connexion">
           {[['password', 'Mot de passe'], ['code', 'Code par e-mail']].map(([id, text]) => (
             <button key={id} type="button" role="tab" aria-selected={mode === id} onClick={() => { if (id === 'code') setCodePurpose('signin'); switchMode(id) }}
@@ -280,7 +285,7 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
             <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPasswordValue(event.target.value)} className={input} />
           </label>
         )}
-        {mode !== 'forgot' && (
+        {mode !== 'forgot' && codePurpose !== 'create' && (
           <label className="flex cursor-pointer items-center gap-2 font-georgia text-sm text-deep">
             <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} className="h-4 w-4 accent-[#C9A84C]" />
             Rester connecté sur cet appareil
@@ -302,7 +307,6 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
         {mode === 'code' && (
           <>
             <button type="submit" disabled={busy} className={primary}>{busy ? 'Un instant…' : codePurpose === 'create' ? 'Recevoir mon code de création' : 'Recevoir mon code de connexion'}</button>
-            {codePurpose !== 'create' && <button type="button" disabled={busy} onClick={() => startCodeFlow(true)} className={secondary}>Créer mon espace MediumIA gratuitement</button>}
           </>
         )}
         {mode === 'forgot' && (
@@ -312,6 +316,9 @@ function SignIn({ sendEmailCode, verifyEmailCode, signIn, requestPasswordReset }
           </>
         )}
       </form>
+      <button type="button" disabled={busy} onClick={returnToChoices} className="mt-4 w-full py-1 font-georgia text-xs text-mist underline hover:text-deep">
+        Retour aux choix
+      </button>
       <p className="mt-5 text-center font-georgia text-xs leading-relaxed text-mist">
         Gratuit et facultatif : vous pouvez toujours réserver sans compte. Vos données sont traitées selon notre{' '}
         <a href="/confidentialite" className="text-gold underline">politique de confidentialité</a>.

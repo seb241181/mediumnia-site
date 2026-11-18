@@ -172,8 +172,14 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
         }
         throw new Error(messages[data.error] || 'Mise à jour indisponible.')
       }
+      const reviewAlreadyProcessed = Boolean(selected.review_request_sent_at)
+      const reviewWindowClosed = Date.now() - new Date(selected.end).getTime() > 4 * 86400000
       setActionMessage(outcome === 'completed'
-        ? 'Séance confirmée comme effectuée. Le prochain traitement pourra envoyer une demande d’avis.'
+        ? reviewAlreadyProcessed
+          ? 'Séance confirmée comme effectuée. Une demande d’avis avait déjà été traitée ; aucun nouvel envoi autorisé.'
+          : reviewWindowClosed
+            ? 'Séance confirmée comme effectuée. Plus de quatre jours se sont écoulés : aucune demande d’avis tardive ne sera envoyée.'
+            : 'Séance confirmée comme effectuée. Le prochain traitement pourra envoyer une demande d’avis.'
         : outcome === 'to_reschedule'
           ? 'Séance à reporter. Aucun remerciement autorisé ; paiement inchangé. Déplacez le rendez-vous une fois la nouvelle date fixée.'
           : 'Séance replacée en attente de vérification. Aucun e-mail envoyé.')
@@ -300,7 +306,7 @@ export default function UnifiedAgenda({ practitionerId, session, onOpenLumia }) 
         {selected.payment ? <><dl><dt>Montant</dt><dd>{money(selected.payment.total_cents)}</dd><dt>Enregistré net</dt><dd>{money(selected.payment.paid_cents)}</dd>{selected.status === 'no_show' ? <><dt>Solde non encaissé</dt><dd>{money(selected.payment.remaining_cents)}</dd></> : <><dt>Reste à régler</dt><dd>{money(selected.payment.remaining_cents)}</dd></>}</dl><p>Registre MediumIA. Non vérifié auprès du prestataire dans cet agenda.</p></> : <p>{selected.source === 'google' ? 'Aucun paiement MediumIA associé.' : 'Montants inconnus.'}</p>}
         {selected.source === 'mediumia' && selected.status === 'no_show' && <p className="agenda-action-status">Client non présenté. Le solde non encaissé n’est pas facturé automatiquement ; les arrhes déjà versées restent inscrites à leur date d’encaissement.</p>}
         {selected.source === 'mediumia' && selected.status === 'confirmed' && <>
-          {new Date(selected.end).getTime() <= Date.now() && selected.session_outcome === 'pending' && <button className="agenda-secondary-action" type="button" disabled={actionBusy} onClick={() => setSessionOutcome('completed')}>Séance effectuée — autoriser le remerciement</button>}
+          {new Date(selected.end).getTime() <= Date.now() && selected.session_outcome === 'pending' && <button className="agenda-secondary-action" type="button" disabled={actionBusy} onClick={() => setSessionOutcome('completed')}>{Date.now() - new Date(selected.end).getTime() > 4 * 86400000 ? 'Séance effectuée — sans demande tardive' : 'Séance effectuée — autoriser le remerciement'}</button>}
           {selected.session_outcome === 'pending' && <button className="agenda-secondary-action" type="button" disabled={actionBusy} onClick={() => setSessionOutcome('to_reschedule')}>À reporter — bloquer le remerciement</button>}
           {selected.session_outcome !== 'pending' && <button className="agenda-secondary-action" type="button" disabled={actionBusy} onClick={() => setSessionOutcome('pending')}>Corriger : revenir à non vérifiée</button>}
           {new Date(selected.end).getTime() <= Date.now() && selected.session_outcome === 'pending' && <button

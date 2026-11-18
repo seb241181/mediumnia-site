@@ -4,8 +4,8 @@ const appPath = new URL('../src/App.jsx', import.meta.url)
 const chronospherePath = new URL('../src/components/ChronospherePage.jsx', import.meta.url)
 const oraclePath = new URL('../src/components/OraclePage.jsx', import.meta.url)
 
-function replaceRequired(source, before, after, label) {
-  if (source.includes(after)) return source
+function replaceRequired(source, before, after, label, laterTransforms = []) {
+  if ([after, ...laterTransforms].some((variant) => source.includes(variant))) return source
   if (!source.includes(before)) throw new Error(`MediumIA ecosystem patch drift: ${label}`)
   return source.replace(before, after)
 }
@@ -26,6 +26,7 @@ app = replaceRequired(
   `  if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} />{guardian}</>`,
   `  if (view === 'oracle')       return <><OraclePage onBack={backHome} onNavigate={legalNav} onOpenChronosphere={openChronosphere} onOpenFormation={openFormation} onOpenReseau={openReseauDir} />{guardian}</>`,
   'Oracle route callbacks',
+  [`  if (view === 'oracle')       return <DeferredRoute><OraclePage onBack={backHome} onNavigate={legalNav} onOpenChronosphere={openChronosphere} onOpenFormation={openFormation} onOpenReseau={openReseauDir} />{guardian}</DeferredRoute>`],
 )
 
 app = replaceRequired(
@@ -33,6 +34,7 @@ app = replaceRequired(
   `  if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} />{guardian}</>`,
   `  if (view === 'chronosphere') return <><ChronospherePage onBack={backHome} onNavigate={legalNav} onOpenOracle={openOracle} onOpenFormation={openFormation} onOpenReseau={openReseauDir} />{guardian}</>`,
   'Chronosphere route callbacks',
+  [`  if (view === 'chronosphere') return <DeferredRoute><ChronospherePage onBack={backHome} onNavigate={legalNav} onOpenOracle={openOracle} onOpenFormation={openFormation} onOpenReseau={openReseauDir} />{guardian}</DeferredRoute>`],
 )
 
 await writeFile(appPath, app)

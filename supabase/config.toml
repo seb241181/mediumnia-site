@@ -1,0 +1,6 @@
+# Webhooks externes : pas de JWT Supabase, preuve Svix obligatoire dans le code.
+[functions.resend-webhook]
+verify_jwt = false
+
+[functions.resend-webhook-test]
+verify_jwt = false

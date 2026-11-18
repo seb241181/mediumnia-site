@@ -6,6 +6,17 @@ const ALLOWED_ORIGINS = new Set(["https://mediumia.fr", "https://www.mediumia.fr
 const EVENT_SLUG = "premiere-conference-mediumia";
 const FROM_EMAIL = "MediumIA <conference@mail.mediumia.fr>";
 const PREPARATION_BUCKET = "conference-preparation";
+const TECHNICAL_TAG_RE = /^[a-z0-9_-]{1,60}$/;
+
+function resendTags() {
+  const environment = String(Deno.env.get("RESEND_EMAIL_ENVIRONMENT") || "").trim().toLowerCase();
+  if (!TECHNICAL_TAG_RE.test(environment)) return [];
+  return [
+    { name: "mediumia_app", value: "mediumia" },
+    { name: "mediumia_env", value: environment },
+    { name: "mediumia_type", value: "conference_confirmation" },
+  ];
+}
 
 function clean(value: unknown, max = 200) {
   return String(value ?? "").trim().slice(0, max);
@@ -183,6 +194,9 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
   const html = `<!doctype html><html><body style="margin:0;background:#f5f0e6;font-family:Georgia,serif"><table width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#fff"><tr><td style="background:#1a1535;padding:32px;color:#fffaf0"><p style="margin:0;color:#c9a84c;font-size:12px;letter-spacing:2px">MEDIUMIA · CONFÉRENCE OFFERTE</p><h1 style="margin:14px 0 0;font-size:28px">Votre place est réservée.</h1></td></tr><tr><td style="padding:32px;color:#514b62;font-size:16px;line-height:1.6"><p>Bonjour ${safeName},</p><p>Votre inscription à la première conférence publique MediumIA est bien enregistrée.</p><p style="font-size:20px;color:#1a1535"><strong>« Et si la médiumnité devenait accessible ? »</strong></p><p><strong>${escapeHtml(dateLabel)}</strong><br>En direct · durée prévue : ${duration}</p>${raffleBlock}${liveBlock}${preparationBlock}${zoomBlock}<p style="background:#f5f0e6;padding:18px;color:#1a1535">Gardez cet e-mail : il contient vos accès à la conférence.</p><p>À très bientôt,<br><strong>Sébastien · MediumIA</strong></p></td></tr></table></td></tr></table></body></html>`;
 
   try {
+    const payload: Record<string, unknown> = { from: FROM_EMAIL, to: [email], subject, html, text };
+    const tags = resendTags();
+    if (tags.length) payload.tags = tags;
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -190,7 +204,7 @@ async function sendConfirmation(supabase: any, firstName: string, email: string,
         "Content-Type": "application/json",
         "Idempotency-Key": `conference-confirmation-${registrationId}`,
       },
-      body: JSON.stringify({ from: FROM_EMAIL, to: [email], subject, html, text }),
+      body: JSON.stringify(payload),
     });
     if (!response.ok) {
       console.error("conference_confirmation_failed", response.status);

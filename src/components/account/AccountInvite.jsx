@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../../lib/useAuth.js'
 import { isSupabaseConfigured } from '../../lib/supabase.js'
-import { ACCOUNT_PATH, emailCodeErrorMessage } from '../../lib/accountView.js'
+import { ACCOUNT_PATH, deliveryProblemMessage, emailCodeErrorMessage } from '../../lib/accountView.js'
+import { checkEmailDelivery, useDeliveryRecheck } from '../../lib/emailDeliveryCheck.js'
 
 // Après la confirmation d'un rendez-vous : rappel de l'espace personnel.
 // - déjà connecté : simple lien ;
@@ -17,7 +18,12 @@ export default function AccountInvite({ email, wanted = false }) {
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [deliveryIssue, setDeliveryIssue] = useState('')
   const address = String(email || '').trim().toLowerCase()
+
+  // Après l'envoi : un rejet de la messagerie arrive quelques secondes plus tard
+  // (webhook Resend, #219). Simple revérification : aucun code n'est envoyé.
+  useDeliveryRecheck(stage === 'code', address, setDeliveryIssue)
 
   if (!isSupabaseConfigured()) return null
 
@@ -48,6 +54,12 @@ export default function AccountInvite({ email, wanted = false }) {
   async function send() {
     setBusy(true)
     setError('')
+    setDeliveryIssue('')
+    if (await checkEmailDelivery(address) === 'blocked') {
+      setBusy(false)
+      setDeliveryIssue('blocked')
+      return
+    }
     const { error: sendError } = await sendEmailCode(address, { createAccount: true, redirectTo: `${window.location.origin}${ACCOUNT_PATH}` })
     setBusy(false)
     if (sendError) { setError(emailCodeErrorMessage(sendError)); return }
@@ -74,6 +86,7 @@ export default function AccountInvite({ email, wanted = false }) {
             Vous avez choisi de créer votre espace. Dernière étape : recevez un code à l’adresse <strong className="break-all">{address}</strong>. Votre rendez-vous est déjà confirmé, rien ne presse.
           </p>
           {error && <p role="alert" className="mt-2 font-georgia text-sm text-red-700">{error}</p>}
+          {deliveryIssue && <DeliveryNotice delivery={deliveryIssue} address={address} />}
           <button type="button" disabled={busy} onClick={send} className={`${button} mt-3`}>{busy ? 'Un instant…' : 'Recevoir mon code par e-mail'}</button>
         </>
       ) : (
@@ -87,10 +100,22 @@ export default function AccountInvite({ email, wanted = false }) {
             className="mt-3 w-full rounded-xl border-2 border-gold/25 bg-white px-4 py-3 text-center font-georgia text-2xl tracking-[0.3em] text-deep outline-none focus:border-gold/70" placeholder="• • • • • •"
           />
           {error && <p role="alert" className="mt-2 font-georgia text-sm text-red-700">{error}</p>}
+          {deliveryIssue && <DeliveryNotice delivery={deliveryIssue} address={address} />}
           <button type="submit" disabled={busy} className={`${button} mt-3`}>{busy ? 'Un instant…' : 'Ouvrir mon espace'}</button>
           <button type="button" disabled={busy} onClick={send} className="mt-2 w-full py-2 font-georgia text-xs text-mist underline hover:text-deep">Renvoyer un code</button>
         </form>
       )}
+    </div>
+  )
+}
+
+// Adresse de la réservation refusée par la messagerie : explication et autre
+// adresse possible dans « Mon espace » (le rendez-vous reste confirmé).
+function DeliveryNotice({ delivery, address }) {
+  return (
+    <div role="alert" className="mt-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 font-georgia text-sm leading-relaxed text-red-800">
+      <p>{deliveryProblemMessage(delivery, address)}</p>
+      <a href={ACCOUNT_PATH} className="mt-1 inline-block font-semibold underline">Créer mon espace avec une autre adresse</a>
     </div>
   )
 }

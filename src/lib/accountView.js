@@ -176,10 +176,29 @@ export function bookingCalendarLinks(booking = {}, now = new Date()) {
 // Message compréhensible pour une erreur de connexion par code.
 export function emailCodeErrorMessage(error) {
   const raw = String(error?.message || error || '').toLowerCase()
+  // Supabase n'a pas pu remettre l'e-mail au service d'envoi (SMTP refusé).
+  if (/error sending|sending (magic link|confirmation|recovery|email)|smtp|mail delivery/.test(raw)) return EMAIL_SEND_FAILED_MESSAGE
   if (/rate limit|too many|security purposes|seconds/.test(raw)) return 'Vous avez demandé plusieurs codes à la suite. Patientez une minute, puis réessayez.'
   if (/expired|invalid|otp|token/.test(raw)) return 'Ce code n’est pas valable ou a expiré. Vérifiez les chiffres ou demandez un nouveau code.'
   if (/fetch|network|failed to/.test(raw)) return 'Connexion impossible pour le moment. Vérifiez votre accès à Internet et réessayez.'
   return 'Une erreur est survenue. Réessayez dans un instant.'
+}
+
+// ── Délivrabilité (#219) ─────────────────────────────────────────────────────
+// Messages honnêtes quand un e-mail ne peut pas être remis. Ils ne disent
+// jamais si un espace existe : seulement que la messagerie refuse nos envois.
+export const MEDIUMIA_CONTACT_EMAIL = 'contact@mediumia.fr'
+export const EMAIL_SEND_FAILED_MESSAGE = `L’e-mail n’a pas pu partir vers cette adresse. Vérifiez-la ou utilisez-en une autre. Si le problème continue, écrivez-nous à ${MEDIUMIA_CONTACT_EMAIL}.`
+
+export function deliveryProblemMessage(delivery, email = '') {
+  const who = email ? ` (${email})` : ''
+  if (delivery === 'blocked') {
+    return `Nous ne pouvons plus envoyer d’e-mail à cette adresse${who} : sa messagerie a refusé nos précédents messages. Vérifiez l’orthographe ou utilisez une autre adresse. Si elle est correcte, écrivez-nous à ${MEDIUMIA_CONTACT_EMAIL} : nous rétablirons l’envoi après vérification. Vos rendez-vous restent enregistrés.`
+  }
+  if (delivery === 'temporary') {
+    return `Nos derniers e-mails vers cette adresse${who} n’ont pas pu être remis. Vérifiez qu’elle est correcte ; si oui, réessayez dans quelques minutes.`
+  }
+  return ''
 }
 
 // Supabase refuse d'envoyer un code à une adresse sans compte quand on ne

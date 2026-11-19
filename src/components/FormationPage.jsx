@@ -131,7 +131,7 @@ const HERO_APPORTS = [
 
 const FORMATION_SECTIONS = [
   { id: 'programme', label: 'Programme' },
-  { id: 'temoignages-formation', label: 'Avis élèves' }
+  { id: 'temoignages-formation', label: 'Avis élèves' },
   { id: 'formation-apercu-reel', label: 'Aperçu' },
   { id: 'offre', label: 'Tarif' },
   { id: 'rencontres', label: 'Visios 2027' },

@@ -43,6 +43,15 @@ const completedOrder = (amount = '20.00') => ({
 })
 const declined = (issue) => ({ status: 422, body: { name: 'UNPROCESSABLE_ENTITY', details: [{ issue }] } })
 
+test('un tiers peut régler 80 EUR sans remplacer le rattachement au bénéficiaire', () => {
+  const data = { ...completedOrder('80.00'), payer: { email_address: 'payeur@example.invalid' } }
+  const cfg = { referenceId: 'MEDIUMIA_RDV_ARRHES_SANDBOX' }
+  const verify = (holdId, amountCents) => verifyRdvDepositPayPalPayment({ cfg, data, holdId, amountCents, currency: 'EUR' })
+  assert.equal(verify('hold-1', 8000).captureId, 'CAP-1')
+  assert.throws(() => verify('other-hold', 8000), /paypal_custom_id_mismatch/)
+  assert.throws(() => verify('hold-1', 2000), /paypal_amount_mismatch/)
+})
+
 test.beforeEach(() => {
   delete process.env.VERCEL_ENV
   process.env.PAYPAL_CLIENT_ID = 'client'

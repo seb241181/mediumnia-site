@@ -177,11 +177,12 @@ test('inventaire : tout accès Supabase du serveur passe par la garde', () => {
   assert.deepEqual(directRest, [], 'aucun appel REST Supabase direct')
 })
 
-test('inventaire : chaque module de paiement (hors ChronoSphère) applique la garde', () => {
-  for (const file of ['lib/rdvDepositPayPal.js', 'lib/rdvBalancePayPal.js', 'lib/paypalSandbox.js', 'lib/emailQuestions.js', 'lib/formationPath.js', 'lib/conferencePassPayPal.js', 'lib/giftCards.js']) {
+test('inventaire : les modules de paiement appliquent la garde', () => {
+  for (const file of ['lib/rdvDepositPayPal.js', 'lib/rdvBalancePayPal.js', 'lib/paypalSandbox.js', 'lib/emailQuestions.js', 'lib/formationPath.js', 'lib/conferencePassPayPal.js', 'lib/giftCards.js', 'lib/chronospherePayPal.js']) {
     assert.match(read(file), /from '\.\/environmentGuard\.js'/, file)
   }
-  assert.doesNotMatch(read('lib/chronospherePayPal.js'), /environmentGuard/, 'fichier ChronoSphère non modifié (chantier Codex)')
+  assert.match(read('lib/giftCards.js'), /checkPaymentEnvironment\(env\)\.ok/)
+  assert.match(read('src/lib/conferenceApi.js'), /VITE_MEDIUMIA_DEPLOY_TIER === 'production'/)
 })
 
 test('migration SQL : additive, ChronoSphère exclue, retour arrière confirmé explicitement', () => {

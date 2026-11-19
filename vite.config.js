@@ -1,6 +1,7 @@
 /* global process */
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { checkDatabaseAccess, deploymentTier } from './lib/environmentGuard.js'
 
 // Preview fail-closed: a missing client configuration must never inherit
 // MediumIA Production Supabase. Build continues with the client disabled.
@@ -23,22 +24,17 @@ if (process.env.MEDIUMIA_ISOLATED_TEST === 'true') {
 
 // Séparation TEST / PRODUCTION : niveau du déploiement figé au build, lu par
 // src/lib/supabase.js pour refuser une base incompatible côté navigateur.
-function deployTier(env) {
-  if (env.MEDIUMIA_ISOLATED_TEST === 'true') return 'isolated_test'
-  if (env.VERCEL_ENV === 'production') return 'production'
-  if (env.VERCEL_ENV === 'preview') return 'preview'
-  if (env.VERCEL_ENV === 'development') return 'development'
-  return 'local'
-}
-const PRODUCTION_SUPABASE_HOST = 'uotkpygeqqnekpolezts.supabase.co'
-if (deployTier(process.env) !== 'production' && String(process.env.VITE_SUPABASE_URL || '').includes(PRODUCTION_SUPABASE_HOST)) {
-  console.warn('[vite] base de Production désignée hors Production : client Supabase désactivé dans ce build')
+if (deploymentTier(process.env) === 'preview') {
+  for (const key of ['SUPABASE_URL', 'VITE_SUPABASE_URL']) {
+    const url = process.env[key]
+    if (url && !checkDatabaseAccess(process.env, url).ok) throw new Error('preview_supabase_target_mismatch')
+  }
 }
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   define: {
-    'import.meta.env.VITE_MEDIUMIA_DEPLOY_TIER': JSON.stringify(deployTier(process.env)),
+    'import.meta.env.VITE_MEDIUMIA_DEPLOY_TIER': JSON.stringify(deploymentTier(process.env)),
   },
 })

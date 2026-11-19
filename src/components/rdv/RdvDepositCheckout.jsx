@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import GiftCardRedeem from './GiftCardRedeem.jsx'
 import PayPalGuestNotice from '../PayPalGuestNotice.jsx'
 import RdvBookingHelp from './RdvBookingHelp.jsx'
-import { createCheckoutOrderGate } from '../../lib/rdvCheckoutRetry.js'
+import { assertCurrentCheckout, createCheckoutOrderGate } from '../../lib/rdvCheckoutRetry.js'
 
 // PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
 const PAY_LATER_MIN_CENTS = 3000
@@ -82,6 +82,7 @@ export default function RdvDepositCheckout({
   // Référence (et non état) : changer d'identifiant pendant qu'une fenêtre PayPal est
   // ouverte ne doit pas redessiner les boutons.
   const checkoutIdRef = useRef(checkoutId)
+  const choiceRef = useRef(paymentChoice)
   const orderGate = useRef(null)
   if (!orderGate.current) orderGate.current = createCheckoutOrderGate()
   function renewCheckoutId() {
@@ -119,8 +120,10 @@ export default function RdvDepositCheckout({
   const consentsReady = termsAccepted && earlyPerformance
 
   useEffect(() => {
-    if (fullPaymentRequired && paymentChoice !== 'full_payment') setPaymentChoice('full_payment')
-    else if (!fullOnlineAllowed && paymentChoice !== 'arrhes') setPaymentChoice('arrhes')
+    const next = fullPaymentRequired ? 'full_payment' : !fullOnlineAllowed ? 'arrhes' : paymentChoice
+    if (next !== paymentChoice) choosePayment(next)
+    // The same transition is used for a click and a change in eligibility.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullOnlineAllowed, fullPaymentRequired, paymentChoice])
 
   function choosePayment(nextChoice) {
@@ -128,6 +131,7 @@ export default function RdvDepositCheckout({
       ? 'full_payment'
       : nextChoice === 'full_payment' && fullOnlineAllowed ? 'full_payment' : 'arrhes'
     if (normalized === paymentChoice) return
+    choiceRef.current = normalized
     setPaymentChoice(normalized)
     renewCheckoutId()
     setHoldUntil(null)
@@ -165,23 +169,35 @@ export default function RdvDepositCheckout({
     let disposed = false
     const container = containerRef.current
 
-    const createOrder = () => orderGate.current(submitOrder)
+    let approvedContext
+    const createOrder = async () => {
+      const id = checkoutIdRef.current
+      const active = () => !disposed && choiceRef.current === paymentChoice && checkoutIdRef.current === id
+      assertCurrentCheckout(active)
+      const orderId = await orderGate.current(id, paymentChoice, () => submitOrder(id, active))
+      assertCurrentCheckout(active)
+      approvedContext = { orderId, active, id }
+      return orderId
+    }
 
-    async function submitOrder() {
+    async function submitOrder(id, active) {
+      assertCurrentCheckout(active)
       setNotice('')
       const action = paymentChoice === 'full_payment' ? 'createFull' : 'create'
       const requestOrder = async () => {
         const response = await fetch(`/api/rdv-config?rdvDepositAction=${action}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, client_checkout_id: checkoutIdRef.current }),
+          body: JSON.stringify({ ...payload, client_checkout_id: id }),
         })
         return { response, result: await response.json().catch(() => ({})) }
       }
       const { response, result } = await requestOrder().catch(() => {
+        assertCurrentCheckout(active)
         reportClientEvent('create_network_error')
         throw new Error('paypal_create_order_failed')
       })
+      assertCurrentCheckout(active)
       // Un nouveau clic explicite est nécessaire après expiration.
       if (!response.ok && result.error === 'checkout_expired') {
         renewCheckoutId()
@@ -204,11 +220,11 @@ export default function RdvDepositCheckout({
       return result.id
     }
 
-    async function pollStatus(attempts = 8, delayMs = 2000) {
+    async function pollStatus(id, attempts = 8, delayMs = 2000) {
       for (let attempt = 0; attempt < attempts; attempt += 1) {
         if (disposed) return false
         await new Promise(resolve => setTimeout(resolve, delayMs))
-        const response = await fetch(`/api/rdv-config?rdvDepositAction=status&checkout_id=${encodeURIComponent(checkoutIdRef.current)}`).catch(() => null)
+        const response = await fetch(`/api/rdv-config?rdvDepositAction=status&checkout_id=${encodeURIComponent(id)}`).catch(() => null)
         const status = await response?.json().catch(() => ({})) || {}
         if (status.bookingId) {
           onComplete?.({
@@ -233,6 +249,8 @@ export default function RdvDepositCheckout({
           style: { layout: 'vertical', shape: 'rect', label: 'paypal' },
           createOrder,
           onApprove: async (data, actions) => {
+            if (approvedContext?.orderId !== data.orderID || !approvedContext.active()) return
+            const context = approvedContext
             setNotice('')
             let result
             try {
@@ -252,20 +270,21 @@ export default function RdvDepositCheckout({
               return
             }
             // Carte refusée : PayPal rouvre sa fenêtre pour choisir un autre moyen.
-            if (result.restartable && typeof actions?.restart === 'function') {
+            if (context.active() && result.restartable && typeof actions?.restart === 'function') {
               reportClientEvent('paypal_restart')
               setNotice(paymentMessage(result.error))
               return actions.restart()
             }
             if (['CAPTURE_IN_PROGRESS', 'CAPTURED_PENDING_RECONCILIATION', 'CAPTURE_UNCERTAIN'].includes(result.status)) {
-              if (await pollStatus()) return
+              if (await pollStatus(context.id)) return
               // Issue inconnue : le statut ne modifie jamais le paiement. On attend
               // une éventuelle finalisation par l'opérateur sans relancer la capture.
               setNotice(paymentMessage(result.error || 'paypal_capture_uncertain'))
-              void pollStatus(24, 30_000)
+              void pollStatus(context.id, 24, 30_000)
               return
             }
             // Refus définitif sans prélèvement : la prochaine tentative repart à zéro.
+            if (!context.active()) return
             if (['checkout_expired', 'paypal_order_voided', 'paypal_capture_declined', 'paypal_transaction_refused', 'paypal_instrument_declined', 'paypal_auth_failed'].includes(result.error)) renewCheckoutId()
             setNotice(paymentMessage(result.error || 'paypal_capture_uncertain'))
           },
@@ -277,7 +296,7 @@ export default function RdvDepositCheckout({
               : 'Paiement annulé. Votre rendez-vous n’est pas confirmé tant que les arrhes ne sont pas réglées.')
           },
           onError: error => {
-            if (error?.message === 'already_converted') return
+            if (disposed || choiceRef.current !== paymentChoice || ['already_converted', 'checkout_context_changed'].includes(error?.message)) return
             emitOnce('rdv_funnel_paypal_error')
             // Les refus du serveur sont déjà journalisés côté serveur.
             if (!SERVER_CODES.has(error?.message)) reportClientEvent('paypal_onerror')

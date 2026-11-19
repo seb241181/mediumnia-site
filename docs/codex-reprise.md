@@ -312,4 +312,5 @@ Ne pas reutiliser les credentials ni relancer une transaction Sandbox reelle.
 - Branche `codex/rdv-checkout-retry`. Les créations simultanées côté navigateur partagent une requête. Après expiration, le nouvel identifiant n’est utilisé qu’au prochain clic. Après échec, une pause est imposée dans le formulaire actif. Les seuils serveur restent à 10/h et 30/j.
 - Les 429 distinguent les fenêtres dans le journal technique et proposent une attente conservatrice via `Retry-After`. Les erreurs réseau de création sont signalées par un code fixe. Aucun changement de capture, de rapprochement ni de base.
 - Un compteur agrégé ne permet pas d’attribuer les appels à une personne ni de prouver la cause du premier échec. Contrôler les étapes et codes anonymisés lors d’une prochaine occurrence.
+- Revue PR #224 : le partage est désormais limité à la paire identifiant de checkout / choix de paiement. Une réponse obsolète ne met pas à jour le formulaire et une approbation obsolète ne déclenche pas de capture. Les délais de sécurité restent partagés entre les choix.
 

@@ -101,12 +101,12 @@
   function noteStep(step, ref) {
     issueStep = step
     if (ref && /^[A-Za-z0-9-]{8,64}$/.test(ref)) issueRef = ref
-    try { localStorage.setItem(ATTEMPT_KEY, JSON.stringify({ journey: 'rdv_balance', step: issueStep, attemptRef: issueRef, at: new Date().toISOString() })) } catch (_) {}
+    try { sessionStorage.setItem(ATTEMPT_KEY, JSON.stringify({ journey: 'rdv_balance', step: issueStep, attemptRef: issueRef, at: new Date().toISOString() })) } catch (_) {}
   }
   function setupIssueForm() {
     const openedAt = Date.now()
     try {
-      const saved = JSON.parse(localStorage.getItem(ATTEMPT_KEY) || 'null')
+      const saved = JSON.parse(sessionStorage.getItem(ATTEMPT_KEY) || 'null')
       if (saved && saved.journey === 'rdv_balance' && Date.now() - new Date(saved.at).getTime() < 48 * 3600000) { issueStep = saved.step || issueStep; issueRef = saved.attemptRef || null }
     } catch (_) {}
     $('issueToggle').addEventListener('click', () => {

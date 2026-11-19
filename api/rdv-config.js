@@ -1,3 +1,4 @@
+/* global process */
 import { handleConferencePassPayPal } from '../lib/conferencePassPayPal.js'
 /**
  * GET /api/rdv-config?practitioner=<slug>
@@ -23,6 +24,7 @@ import { handleCspReport } from '../lib/cspReport.js'
 import { handleEmailQuestions } from '../lib/emailQuestions.js'
 import { handleAccountApi } from '../lib/accountApiHandler.js'
 import { handleAvailabilityCalendarSync } from '../lib/availabilityCalendarSyncHandler.js'
+import { environmentReport } from '../lib/environmentGuard.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -41,6 +43,14 @@ export default async function handler(req, res) {
 
   // Rapports CSP (en-tête Content-Security-Policy-Report-Only, vercel.json)
   if (req.query?.cspReport) return handleCspReport(req, res)
+
+  // Séparation TEST / PRODUCTION : diagnostic sans secret (niveau, base visée,
+  // PayPal attendu, cohérence). Sert à contrôler un déploiement avant de le
+  // promouvoir. Lecture seule, aucune requête à Supabase ni à PayPal.
+  if (req.query?.environmentCheck) {
+    if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+    return res.status(200).json(environmentReport(process.env))
+  }
 
   const questionAction = req.query?.questionAction
   if (questionAction) return handleEmailQuestions(req, res, questionAction)

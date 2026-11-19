@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import GiftCardRedeem from './GiftCardRedeem.jsx'
 import PayPalGuestNotice from '../PayPalGuestNotice.jsx'
 import RdvBookingHelp from './RdvBookingHelp.jsx'
+import { createCheckoutOrderGate } from '../../lib/rdvCheckoutRetry.js'
 
 // PayPal « Paiement en 4X » (France) is offered from 30 € of purchase.
 const PAY_LATER_MIN_CENTS = 3000
@@ -12,13 +13,13 @@ function money(cents) {
 
 function paymentMessage(code) {
   const messages = {
-    rate_limit_exceeded: 'Trop de tentatives ont été effectuées. Réessayez un peu plus tard.',
+    rate_limit_exceeded: 'La limite de tentatives est atteinte. Pour réserver plus tôt, contactez MediumIA ci-dessous.',
     slot_unavailable: 'Ce créneau vient d’être réservé. Choisissez un autre horaire.',
     daily_limit_reached: 'La capacité de rendez-vous de cette journée est atteinte.',
     google_calendar_unavailable: 'Impossible de confirmer le créneau avec Google Agenda pour le moment.',
     paypal_not_configured: 'Le paiement sécurisé est momentanément indisponible.',
     paypal_auth_failed: 'Le paiement sécurisé est momentanément indisponible.',
-    paypal_create_order_failed: 'PayPal n’a pas pu préparer le paiement. Réessayez.',
+    paypal_create_order_failed: 'PayPal n’a pas pu préparer le paiement. Patientez au moins 15 secondes, puis réessayez une fois. Si le problème persiste, contactez MediumIA ci-dessous.',
     paypal_create_order_in_progress: 'Le paiement est déjà en cours de préparation. Réessayez dans quelques instants.',
     paypal_capture_failed: 'Nous vérifions votre paiement auprès de PayPal. Ne repayez pas : vous recevrez un e-mail de confirmation dès qu’il est validé.',
     paypal_capture_uncertain: 'L’issue de votre paiement nécessite une vérification. Ne repayez pas : votre créneau reste protégé. Contactez l’assistance si vous ne recevez pas de confirmation.',
@@ -81,6 +82,8 @@ export default function RdvDepositCheckout({
   // Référence (et non état) : changer d'identifiant pendant qu'une fenêtre PayPal est
   // ouverte ne doit pas redessiner les boutons.
   const checkoutIdRef = useRef(checkoutId)
+  const orderGate = useRef(null)
+  if (!orderGate.current) orderGate.current = createCheckoutOrderGate()
   function renewCheckoutId() {
     const id = globalThis.crypto?.randomUUID?.() || checkoutIdRef.current
     checkoutIdRef.current = id
@@ -162,7 +165,9 @@ export default function RdvDepositCheckout({
     let disposed = false
     const container = containerRef.current
 
-    async function createOrder() {
+    const createOrder = () => orderGate.current(submitOrder)
+
+    async function submitOrder() {
       setNotice('')
       const action = paymentChoice === 'full_payment' ? 'createFull' : 'create'
       const requestOrder = async () => {
@@ -173,15 +178,21 @@ export default function RdvDepositCheckout({
         })
         return { response, result: await response.json().catch(() => ({})) }
       }
-      let { response, result } = await requestOrder()
-      // Tentative précédente expirée ou remplacée : on repart aussitôt d'un nouvel identifiant.
+      const { response, result } = await requestOrder().catch(() => {
+        reportClientEvent('create_network_error')
+        throw new Error('paypal_create_order_failed')
+      })
+      // Un nouveau clic explicite est nécessaire après expiration.
       if (!response.ok && result.error === 'checkout_expired') {
         renewCheckoutId()
-        ;({ response, result } = await requestOrder())
       }
       if (!response.ok) {
         if (['slot_unavailable', 'slot_held', 'daily_limit_reached'].includes(result.error)) onUnavailable?.({ code: result.error, retryAt: result.retryAt || null })
-        throw new Error(result.error || 'paypal_create_order_failed')
+        const error = new Error(result.error || 'paypal_create_order_failed')
+        if (response.status === 429) {
+          error.retryAfterSeconds = Number(response.headers.get('Retry-After')) || 3600
+        }
+        throw error
       }
       if (result.status === 'converted' && result.bookingId) {
         onComplete?.({ status: 'COMPLETED', bookingId: result.bookingId, amountCents: paymentCents, servicePriceCents: priceCents, balanceCents })
@@ -189,6 +200,7 @@ export default function RdvDepositCheckout({
       }
       if (result.expiresAt) setHoldUntil(result.expiresAt)
       if (result.id) emitOnce(paymentChoice === 'full_payment' ? 'rdv_funnel_full_order' : 'rdv_funnel_arrhes_order')
+      if (!result.id) throw new Error('paypal_create_order_failed')
       return result.id
     }
 
@@ -269,7 +281,12 @@ export default function RdvDepositCheckout({
             emitOnce('rdv_funnel_paypal_error')
             // Les refus du serveur sont déjà journalisés côté serveur.
             if (!SERVER_CODES.has(error?.message)) reportClientEvent('paypal_onerror')
-            setNotice(paymentMessage(error?.message || 'paypal_capture_uncertain'))
+            if (error?.message === 'rate_limit_exceeded') {
+              const wait = error.retryAfterSeconds >= 86400 ? '24 heures' : 'une heure'
+              setNotice(`La limite de tentatives est atteinte. Réessayez dans ${wait}. Pour réserver plus tôt, contactez MediumIA ci-dessous.`)
+            } else {
+              setNotice(paymentMessage(error?.message || 'paypal_capture_uncertain'))
+            }
           },
         })
         await buttons.render(container)
@@ -374,6 +391,7 @@ export default function RdvDepositCheckout({
       <div className="rounded-2xl border border-gold/30 bg-white/70 p-5">
         <p className="font-georgia text-sm text-mist leading-relaxed mb-4">Votre créneau est bloqué pendant 15 minutes à partir de la création du paiement.</p>
         <PayPalGuestNotice className="mb-4" />
+        {paymentChoice === 'full_payment' && <p className="mb-4 text-sm text-mist">Une autre personne peut régler ce rendez-vous. Conservez les coordonnées du bénéficiaire dans la réservation et utilisez le moyen de paiement du payeur dans PayPal.</p>}
         <div className="mb-4 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 font-georgia text-xs leading-relaxed text-deep">
           <p className="font-semibold">Comment payer ?</p>
           <ul className="mt-1.5 space-y-1 text-mist">

@@ -307,3 +307,9 @@ Ne pas reutiliser les credentials ni relancer une transaction Sandbox reelle.
   solution B executee sans relais public. Ne pas reprendre les etapes historiques
   indiquant encore le contraire dans d'anciens rapports.
 - Checkpoint historique complet et rapports Sandbox : /private/tmp/mediumia-pr156/docs/.
+# Paiement des rendez-vous — reprise des tentatives
+
+- Branche `codex/rdv-checkout-retry`. Les créations simultanées côté navigateur partagent une requête. Après expiration, le nouvel identifiant n’est utilisé qu’au prochain clic. Après échec, une pause est imposée dans le formulaire actif. Les seuils serveur restent à 10/h et 30/j.
+- Les 429 distinguent les fenêtres dans le journal technique et proposent une attente conservatrice via `Retry-After`. Les erreurs réseau de création sont signalées par un code fixe. Aucun changement de capture, de rapprochement ni de base.
+- Un compteur agrégé ne permet pas d’attribuer les appels à une personne ni de prouver la cause du premier échec. Contrôler les étapes et codes anonymisés lors d’une prochaine occurrence.
+

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../lib/useAuth'
 import EmailQuestionsPanel from './EmailQuestionsPanel'
+import PaymentIssuesPanel from './PaymentIssuesPanel.jsx'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
 import UnifiedAgenda from './UnifiedAgenda.jsx'
@@ -1628,7 +1629,7 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                       </span>
                     </div>
                   </div>
-                  <nav aria-label="Rubriques de votre espace professionnel" className="grid gap-2 sm:grid-cols-3">
+                  <nav aria-label="Rubriques de votre espace professionnel" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                       {
                         id: 'rdv',
@@ -1643,11 +1644,16 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                         badgeCount: attention.email_pending,
                       },
                       {
+                        id: 'incidents',
+                        title: 'Incidents de paiement',
+                        detail: 'Problèmes signalés par les clients',
+                      },
+                      {
                         id: 'config',
                         title: 'Organisation',
                         detail: 'Agenda, horaires et prestations',
                       },
-                    ].filter(item => item.id !== 'email' || activePractitioner.slug === 'sebastien-seguin').map(item => (
+                    ].filter(item => !['email', 'incidents'].includes(item.id) || activePractitioner.slug === 'sebastien-seguin').map(item => (
                       <button
                         key={item.id}
                         type="button"
@@ -1679,6 +1685,10 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                   <div className="md:col-span-2 space-y-5 min-w-0" style={activePanel === 'config' ? undefined : { gridColumn: '1 / -1' }}>
                     {activePanel === 'email' && activePractitioner.slug === 'sebastien-seguin' && (
                       <EmailQuestionsPanel session={session} onChanged={() => loadAttention(session)} />
+                    )}
+
+                    {activePanel === 'incidents' && activePractitioner.slug === 'sebastien-seguin' && (
+                      <PaymentIssuesPanel session={session} />
                     )}
 
                     {activePanel === 'config' && (

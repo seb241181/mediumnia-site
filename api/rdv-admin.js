@@ -11,6 +11,7 @@ import { handleLumiaInboxApi } from '../lib/lumiaMessageInbox.js'
 import { handleLumiaBookingCancelApi } from '../lib/lumiaBookingCancelApi.js'
 import { handleEmailQuestionsAdmin } from '../lib/emailQuestions.js'
 import { handleEmailDeliveryAdmin } from '../lib/emailDelivery.js'
+import { handlePaymentIssuesAdmin } from '../lib/paymentIssues.js'
 import { VIDEO_CHANNELS, requestCalendarSync, requestLocation } from '../lib/requestCalendarEvent.js'
 import { inviteProMember, isPlatformAdmin as isProPlatformAdmin, listProMembers, revokeProInvitation } from '../lib/proWorkspace.js'
 import { abandonBalanceRestoration, dismissGoogleResync, listBalanceWatch, restoreBalanceBooking, resumeBalanceRestoration, retryGoogleResync, rotateBalanceLink, renewConfirmedBalanceLink, setBalanceDecision } from '../lib/rdvBalanceReviewAdmin.js'
@@ -1018,6 +1019,11 @@ export default async function handler(req, res) {
     case 'email-delivery': {
       // Clients qui ne reçoivent pas les e-mails (webhook Resend, #219).
       const result = await handleEmailDeliveryAdmin({ db: supabase, userId, method: req.method, input: req.body || {} })
+      return res.status(result.status).json(result.body)
+    }
+    case 'payment-issues': {
+      // Problèmes de paiement signalés par les clients (administration).
+      const result = await handlePaymentIssuesAdmin({ supabase, userId, method: req.method, query: req.query || {}, input: req.body || {} })
       return res.status(result.status).json(result.body)
     }
     case 'email-questions': {

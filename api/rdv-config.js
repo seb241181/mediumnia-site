@@ -25,6 +25,7 @@ import { handleEmailQuestions } from '../lib/emailQuestions.js'
 import { handleAccountApi } from '../lib/accountApiHandler.js'
 import { handleAvailabilityCalendarSync } from '../lib/availabilityCalendarSyncHandler.js'
 import { environmentReport } from '../lib/environmentGuard.js'
+import { handlePaymentIssuePublic } from '../lib/paymentIssues.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,60}[a-z0-9]$/
 
@@ -52,6 +53,9 @@ export default async function handler(req, res) {
     return res.status(200).json(environmentReport(process.env))
   }
 
+  // « Signaler un problème de paiement » : public, sans connexion, sans appel PayPal.
+  const paymentIssueAction = req.query?.paymentIssueAction
+  if (paymentIssueAction) return handlePaymentIssuePublic(req, res, paymentIssueAction)
   const questionAction = req.query?.questionAction
   if (questionAction) return handleEmailQuestions(req, res, questionAction)
 

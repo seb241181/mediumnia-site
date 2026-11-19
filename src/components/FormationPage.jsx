@@ -8,6 +8,7 @@ import { formationCheckoutHeaders } from '../lib/formationCredit.js'
 import TrialChat from './TrialChat'
 import SiteNav from './SiteNav'
 import PageRail from './PageRail'
+import { FormationReviewsBlock } from './ReviewsPage'
 import { RENCONTRES_CYCLE_1 } from '../../lib/formationRencontres.js'
 import '../styles/formation-page.css'
 
@@ -130,6 +131,7 @@ const HERO_APPORTS = [
 
 const FORMATION_SECTIONS = [
   { id: 'programme', label: 'Programme' },
+  { id: 'temoignages-formation', label: 'Avis élèves' },
   { id: 'formation-apercu-reel', label: 'Aperçu' },
   { id: 'offre', label: 'Tarif' },
   { id: 'rencontres', label: 'Visios 2027' },
@@ -522,6 +524,9 @@ export default function FormationPage({ onBack, onNavigate }) {
 
           </div>
         </details>
+
+        {/* Avis authentiques des élèves, après présentation du programme. */}
+        <FormationReviewsBlock />
 
         <details id="formation-apercu-reel" className="group mx-auto max-w-5xl scroll-mt-40 px-6 py-2">
           <summary className="flex cursor-pointer list-none items-center gap-4 rounded-2xl border-2 border-gold/25 bg-white/70 px-5 py-5 shadow-[0_8px_24px_rgba(26,21,53,.04)] hover:border-gold/45 [&::-webkit-details-marker]:hidden">

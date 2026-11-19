@@ -153,6 +153,7 @@ export default function ManualPaymentModal({ practitionerId, session, services =
           montant_superieur_au_solde: `Le montant dépasse le solde restant${body.remaining_cents != null ? ` (${money(body.remaining_cents)})` : ''}.`,
           booking_deja_regle: 'Ce rendez-vous est déjà entièrement réglé.',
           booking_non_confirmed: "Ce rendez-vous n'est plus confirmé.",
+          paiement_paypal_en_cours: 'Un paiement PayPal du solde est en cours de confirmation : vérifiez-le avant d’encaisser.',
         }
         throw new Error(labels[body.error] || body.error || 'encaissement_impossible')
       }

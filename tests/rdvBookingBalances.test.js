@@ -32,7 +32,8 @@ test('agenda rows use the reconciled status and every payment refreshes the othe
   assert.match(script, /import BookingPaymentStatus from '\.\/BookingPaymentStatus\.jsx'/)
   const status = read('src/components/rdv/BookingPaymentStatus.jsx')
   assert.match(status, /action: 'booking-balances'/)
-  assert.match(status, /\{!settled && \(/)
+  // « Encaisser sur place » n'apparaît que s'il reste un solde à régler (ni réglé, ni annoncé, ni à vérifier).
+  assert.match(status, /\{state === 'due' && !panel && \(/)
   assert.match(status, /Encaisser sur place/)
   assert.match(read('src/components/rdv/ManualPaymentModal.jsx'), /new CustomEvent\('mediumia:finance-saved'\)/)
   assert.match(read('src/components/rdv/DailyPayments.jsx'), /addEventListener\('mediumia:finance-saved', load\)/)

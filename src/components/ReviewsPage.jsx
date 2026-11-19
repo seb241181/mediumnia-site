@@ -172,9 +172,50 @@ export function ReviewsHighlight() {
   )
 }
 
+// Dedicated formation testimonials, drawn only from already-approved site reviews.
+// Never substitute consultation reviews or unpublished student messages.
+export function FormationReviewsBlock() {
+  const { loading, available, reviews } = useApprovedReviews()
+  const studentReviews = reviews.filter((review) => review.offering === 'formation')
+
+  return (
+    <section id="temoignages-formation" aria-labelledby="temoignages-formation-title" className="mx-auto max-w-5xl scroll-mt-40 px-6 py-12 md:py-16">
+      <div className="rounded-3xl border border-gold/30 bg-white/75 px-5 py-8 shadow-[0_8px_24px_rgba(26,21,53,.04)] md:px-10 md:py-10">
+        <div className="mx-auto mb-7 max-w-2xl text-center">
+          <p className="mb-3 font-georgia text-xs uppercase tracking-[0.24em] text-gold">La parole aux élèves</p>
+          <h2 id="temoignages-formation-title" className="font-georgia text-3xl font-medium leading-tight text-deep md:text-4xl">Ils découvrent MediumIA, à leur rythme</h2>
+          <p className="mt-3 font-georgia text-sm leading-relaxed text-mist">Des retours authentiques sur les modules, les exercices et la manière d’apprendre.</p>
+        </div>
+
+        {studentReviews.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {studentReviews.slice(0, 3).map((review) => <ReviewCard key={review.id} review={review} />)}
+          </div>
+        )}
+        {!loading && available && studentReviews.length === 0 && (
+          <p className="mx-auto max-w-xl text-center font-georgia text-sm leading-relaxed text-mist">
+            Les premiers témoignages des élèves apparaîtront ici après leur envoi et leur validation.
+          </p>
+        )}
+
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <a href="/avis?prestation=formation" className="inline-flex items-center justify-center rounded-full bg-deep px-6 py-3 font-georgia text-sm font-bold text-gold transition-opacity hover:opacity-90">
+            Partager mon avis sur la formation
+          </a>
+          {studentReviews.length > 3 && (
+            <a href="/avis" className="inline-flex items-center justify-center rounded-full border border-gold/40 bg-white px-6 py-3 font-georgia text-sm font-bold text-deep hover:bg-cream">
+              Consulter tous les avis MediumIA
+            </a>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function ReviewForm() {
   const startedAt = useRef(Date.now())
-  const [form, setForm] = useState({ displayName: '', email: '', offering: '', rating: 0, body: '', experienceMonth: '', consentPublication: false, _hp: '' })
+  const [form, setForm] = useState(() => ({ displayName: '', email: '', offering: new URLSearchParams(window.location.search).get('prestation') === 'formation' ? 'formation' : '', rating: 0, body: '', experienceMonth: '', consentPublication: false, _hp: '' }))
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))

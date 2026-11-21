@@ -1265,6 +1265,9 @@ export default function RdvPublic({ onBack, onNavigate }) {
                 : 'Votre réservation est confirmée.'}
             </p>
             <p className="font-georgia text-mist text-sm mb-8" role="status" aria-live="polite">{emailConfirmation.message}</p>
+            <p className="font-georgia text-mist text-xs mb-6">
+              Vous ne voyez pas notre e-mail ? Consultez aussi vos spams ou courriers indésirables.
+            </p>
             <div className="rounded-2xl border border-gold/25 bg-white/60 px-6 py-5 mb-8 text-left space-y-2.5">
               {practitioner && <p className="font-georgia text-sm"><span className="text-mist">Praticien :</span> <strong>{practitioner.name}</strong></p>}
               <p className="font-georgia text-sm"><span className="text-mist">Prestation :</span> <strong>{service.displayTitle || service.title}</strong></p>
@@ -1469,6 +1472,10 @@ export default function RdvPublic({ onBack, onNavigate }) {
                       : `Continuer vers le paiement des ${service.reservationPaymentLabel} d’arrhes →`)
                     : 'Confirmer la réservation →'}
                 />
+                <p className="mt-4 rounded-xl border border-gold/20 bg-white/65 px-4 py-3 font-georgia text-sm leading-relaxed text-mist">
+                  Après votre demande, pensez à vérifier la boîte de réception et les courriers indésirables
+                  (spams) : les e-mails de MediumIA peuvent parfois y être classés.
+                </p>
               </div>
             )}
 

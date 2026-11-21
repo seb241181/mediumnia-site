@@ -16,6 +16,7 @@ import { handleRdvBalanceApi } from '../lib/rdvBalanceApiHandler.js'
 import { handleMarketingApi } from '../lib/marketingConsent.js'
 import { handleRdvBalanceDailyCron } from '../lib/rdvBalanceCronHandler.js'
 import { handleCustomerReviews } from '../lib/customerReviews.js'
+import { handleGoogleBusinessAction } from '../lib/googleBusinessProfile.js'
 import { handleGiftCards } from '../lib/giftCards.js'
 import { handleFormationPath } from '../lib/formationPath.js'
 import { handleDefi } from '../lib/defiIntuitionServer.js'
@@ -102,6 +103,12 @@ export default async function handler(req, res) {
   const reviewsAction = req.query?.reviewsAction
   if (reviewsAction) {
     return handleCustomerReviews(req, res, reviewsAction)
+  }
+
+  // Connexion Google Business Profile (avis) — distincte de Google Agenda.
+  const googleBusinessAction = req.query?.googleBusinessAction
+  if (googleBusinessAction) {
+    return handleGoogleBusinessAction(req, res, googleBusinessAction)
   }
 
   const chronospherePayPalAction = req.query?.chronospherePayPalAction

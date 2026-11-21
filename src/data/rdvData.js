@@ -18,7 +18,7 @@ export const rdvPractitioners = {
     role: 'Médium professionnel',
     photo: '/sebastien.jpg',
     tagline: 'Médiumnité & guidance intuitive',
-    intro: 'Je vous accompagne avec une présence attentive pour vous éclairer sur ce que vous traversez et explorer les différentes lignes de temps qui peuvent s’ouvrir à vous. Si vous êtes dans la découverte de votre médiumnité, je peux également vous aider à mieux comprendre vos ressentis, vos perceptions et votre fonctionnement, afin d’avancer avec davantage de repères et de confiance. Selon votre besoin, je propose aussi des séances de désenvoûtement et de dégagement énergétique de lieux, dans une approche claire et bienveillante.',
+    intro: 'Je vous accompagne avec une présence attentive pour vous éclairer sur ce que vous traversez et explorer les différentes lignes de temps qui peuvent s’ouvrir à vous. Si vous êtes dans la découverte de votre médiumnité, je peux également vous aider à mieux comprendre vos ressentis, vos perceptions et votre fonctionnement, afin d’avancer avec davantage de repères et de confiance. Selon votre besoin, je propose également des séances de libération énergétique — pour aborder les blocages émotionnels, les schémas répétitifs, les liens karmiques et les ressentis d’influences spirituelles — ainsi que des dégagements énergétiques de lieux, dans une approche claire et bienveillante.',
     services: [
       {
         id: 'consultation-mediumnite',

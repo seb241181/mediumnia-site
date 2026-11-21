@@ -1141,6 +1141,13 @@ export default function RdvPublic({ onBack, onNavigate }) {
     }
   }
 
+  function handleBankPending(result) {
+    // Le virement n’est pas encore encaissé : aucun indicateur « payé ».
+    clearCheckoutId(checkoutStorageKey)
+    setBookingResult(result)
+    setStep('bank-pending')
+  }
+
   function handlePaidComplete(result) {
     // Includes gift-card confirmations; PayPal orders are separately counted.
     trackFunnel('rdv_funnel_confirmed')
@@ -1157,6 +1164,44 @@ export default function RdvPublic({ onBack, onNavigate }) {
       balanceCents: result.balanceCents ?? Math.max(0, service.price_cents - service.reservationPaymentCents),
     })
     setStep(4)
+  }
+
+  if (step === 'bank-pending' && bookingResult?.pending) {
+    const deadline = new Intl.DateTimeFormat('fr-FR', {
+      dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Paris',
+    }).format(new Date(bookingResult.expiresAt))
+    return (
+      <main className="cosmic-page cosmic-page--rdv min-h-screen bg-cream px-5 py-16 text-deep">
+        <div className="mx-auto max-w-xl rounded-3xl border border-gold/30 bg-white/80 p-6 sm:p-10">
+          <p className="font-georgia text-xs uppercase tracking-[.16em] text-gold">Virement bancaire</p>
+          <h1 className="mt-3 font-georgia text-2xl font-semibold">Créneau bloqué provisoirement</h1>
+          <p className="mt-4 font-georgia text-sm leading-relaxed text-mist">
+            Votre rendez-vous n’est <strong>pas encore confirmé</strong>. Sébastien confirmera la réservation
+            après avoir vérifié la réception du virement sur son compte.
+          </p>
+          <div className="mt-5 space-y-2 rounded-xl border border-gold/20 bg-cream/70 p-5 text-sm">
+            <p><strong>Prestation :</strong> {service?.displayTitle || service?.title}</p>
+            <p><strong>Date :</strong> {fmt(date)} à {time}</p>
+            <p><strong>Montant à virer :</strong> {(bookingResult.amountCents/100).toFixed(2).replace('.',',')} €</p>
+            <p><strong>Titulaire :</strong> {bookingResult.holder}</p>
+            <p className="break-all"><strong>IBAN :</strong> {bookingResult.iban}</p>
+            {bookingResult.bic && <p><strong>BIC :</strong> {bookingResult.bic}</p>}
+            <p className="break-all"><strong>Motif obligatoire :</strong> {bookingResult.reference}</p>
+          </div>
+          <p className="mt-5 font-georgia text-sm leading-relaxed">
+            <strong>Date limite de réception et validation : {deadline}.</strong> Passé ce délai,
+            le créneau est automatiquement remis à disposition.
+          </p>
+          <p className="mt-4 font-georgia text-sm leading-relaxed text-mist">
+            Le détail du virement a également été envoyé par e-mail. Vérifiez votre boîte de réception
+            et les courriers indésirables (spams). Si vous avez déjà effectué ce virement,
+            ne le faites pas une seconde fois.
+          </p>
+          <button type="button" className="mt-7 rounded-lg border border-gold/35 px-5 py-3 text-sm"
+            onClick={onBack}>Retour à MediumIA</button>
+        </div>
+      </main>
+    )
   }
 
   // ── Demande envoyée (step request-sent) ────────────────────────────────────
@@ -1445,6 +1490,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   offerToken={offer?.token || null}
                   onMetric={trackFunnel}
                   onComplete={handlePaidComplete}
+                  onBankPending={handleBankPending}
                   onCheckoutIdChange={(id) => { writeCheckoutId(checkoutStorageKey, id); setCheckoutId(id) }}
                   onUnavailable={(info) => {
                     setBookingError(info?.code === 'slot_held'

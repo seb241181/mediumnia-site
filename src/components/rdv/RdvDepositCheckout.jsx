@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import GiftCardRedeem from './GiftCardRedeem.jsx'
 import PayPalGuestNotice from '../PayPalGuestNotice.jsx'
+import BankTransferOption from './BankTransferOption.jsx'
 import RdvBookingHelp from './RdvBookingHelp.jsx'
 import { assertCurrentCheckout, createCheckoutOrderGate } from '../../lib/rdvCheckoutRetry.js'
 
@@ -63,6 +64,7 @@ export default function RdvDepositCheckout({
   onComplete,
   onUnavailable,
   onCheckoutIdChange,
+  onBankPending,
   offerToken = null,
 }) {
   const containerRef = useRef(null)
@@ -432,6 +434,20 @@ export default function RdvDepositCheckout({
           <div ref={containerRef}>{!config && !notice && <p className="font-georgia text-sm text-mist">Chargement du paiement sécurisé…</p>}</div>
         )}
       </div>
+      <BankTransferOption
+        practitionerSlug={practitionerSlug}
+        service={service}
+        dateStr={dateStr}
+        time={time}
+        customer={customer}
+        selectedModality={selectedModality}
+        checkoutId={checkoutId}
+        paymentChoice={paymentChoice}
+        consentsReady={consentsReady}
+        offerToken={offerToken}
+        onBankPending={onBankPending}
+        onUnavailable={onUnavailable}
+      />
     </div>
   )
 }

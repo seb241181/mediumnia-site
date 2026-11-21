@@ -1,4 +1,5 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
+import { handleBankBookingAdmin } from '../lib/rdvBankBooking.js'
 import { markAgendaNoShow } from '../lib/rdvNoShow.js'
 import { setAgendaSessionOutcome } from '../lib/rdvSessionOutcomes.js'
 import { getPilotageConferenceStats } from '../lib/pilotageConference.js'
@@ -965,6 +966,10 @@ export default async function handler(req, res) {
     case 'booking-balances': {
       if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
       const result = await getBookingBalances({ supabase, userId, practitionerId: req.query.practitioner_id, ids: req.query.ids })
+      return res.status(result.status).json(result.body)
+    }
+    case 'bank-bookings': {
+      const result = await handleBankBookingAdmin({supabase,userId,method:req.method,query:req.query||{},input:req.body||{}})
       return res.status(result.status).json(result.body)
     }
     case 'day-payments': {

@@ -278,7 +278,9 @@ test('Google Calendar code and credentials are untouched, and the Vercel functio
   assert.doesNotMatch(lib, /GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET|GOOGLE_REDIRECT_URI|refreshGoogleToken|booking_calendar_connections/)
   const files = fs.readdirSync(new URL('../api', import.meta.url), { recursive: true }).filter((f) => String(f).endsWith('.js'))
   assert.ok(files.length <= 12, `${files.length} Vercel functions`)
-  assert.match(read('vercel.json'), /"source": "\/api\/google-business\/callback",\s*"destination": "\/api\/rdv-config\?googleBusinessAction=callback"/)
+  // vercel.json est compacté pendant le build Vercel : on lit le JSON, pas sa mise en forme.
+  const rewrites = JSON.parse(read('vercel.json')).rewrites || []
+  assert.ok(rewrites.some((r) => r.source === '/api/google-business/callback' && r.destination === '/api/rdv-config?googleBusinessAction=callback'))
   assert.match(read('api/rdv-config.js'), /handleGoogleBusinessAction\(req, res, googleBusinessAction\)/)
 })
 

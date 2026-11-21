@@ -67,7 +67,7 @@ function fakeDb({ record = { recorded: true, issue_opened: true, alert_due: true
     },
     from: () => ({
       select() { return this }, ilike() { return this }, order() { return this }, limit() { return this },
-      then(resolve) { resolve({ data: [{ starts_at: '2026-11-20T09:00:00Z', customer_phone: '+33600000001', status: 'confirmed' }], error: null }) },
+      then(resolve) { resolve({ data: [{ starts_at: new Date(Date.now() + 7 * 86_400_000).toISOString(), customer_phone: '+33600000001', status: 'confirmed' }], error: null }) },
     }),
   }
 }

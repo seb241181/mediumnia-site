@@ -1,0 +1,2750 @@
+{
+ "drawDate": "2026-11-21T12:00:00.000Z",
+ "results": [
+  {
+   "input": {
+    "profile": {
+     "fullName": "Test Paris",
+     "birthDate": "1985-03-21",
+     "birthTime": "06:45",
+     "birthPlace": "Paris"
+    },
+    "location": {
+     "latitude": 48.8566,
+     "longitude": 2.3522,
+     "timeZone": "Europe/Paris"
+    },
+    "theme": "travail"
+   },
+   "output": {
+    "birthUtc": "1985-03-21T05:45:00.000Z",
+    "drawUtc": "2026-11-21T12:00:00.000Z",
+    "location": {
+     "latitude": 48.8566,
+     "longitude": 2.3522,
+     "timeZone": "Europe/Paris"
+    },
+    "geometry": {
+     "houseSystem": "placidus",
+     "ascendant": {
+      "longitude": 354.151,
+      "sign": "Poissons",
+      "degree": 24,
+      "minute": 9,
+      "label": "24°09 Poissons"
+     },
+     "mc": {
+      "longitude": 267.5159,
+      "sign": "Sagittaire",
+      "degree": 27,
+      "minute": 30,
+      "label": "27°30 Sagittaire"
+     },
+     "cusps": [
+      {
+       "house": 1,
+       "longitude": 354.151,
+       "sign": "Poissons",
+       "degree": 24,
+       "minute": 9,
+       "label": "24°09 Poissons"
+      },
+      {
+       "house": 2,
+       "longitude": 42.0248,
+       "sign": "Taureau",
+       "degree": 12,
+       "minute": 1,
+       "label": "12°01 Taureau"
+      },
+      {
+       "house": 3,
+       "longitude": 68.0665,
+       "sign": "Gémeaux",
+       "degree": 8,
+       "minute": 3,
+       "label": "8°03 Gémeaux"
+      },
+      {
+       "house": 4,
+       "longitude": 87.5159,
+       "sign": "Gémeaux",
+       "degree": 27,
+       "minute": 30,
+       "label": "27°30 Gémeaux"
+      },
+      {
+       "house": 5,
+       "longitude": 106.5044,
+       "sign": "Cancer",
+       "degree": 16,
+       "minute": 30,
+       "label": "16°30 Cancer"
+      },
+      {
+       "house": 6,
+       "longitude": 130.6838,
+       "sign": "Lion",
+       "degree": 10,
+       "minute": 41,
+       "label": "10°41 Lion"
+      },
+      {
+       "house": 7,
+       "longitude": 174.151,
+       "sign": "Vierge",
+       "degree": 24,
+       "minute": 9,
+       "label": "24°09 Vierge"
+      },
+      {
+       "house": 8,
+       "longitude": 222.0248,
+       "sign": "Scorpion",
+       "degree": 12,
+       "minute": 1,
+       "label": "12°01 Scorpion"
+      },
+      {
+       "house": 9,
+       "longitude": 248.0665,
+       "sign": "Sagittaire",
+       "degree": 8,
+       "minute": 3,
+       "label": "8°03 Sagittaire"
+      },
+      {
+       "house": 10,
+       "longitude": 267.5159,
+       "sign": "Sagittaire",
+       "degree": 27,
+       "minute": 30,
+       "label": "27°30 Sagittaire"
+      },
+      {
+       "house": 11,
+       "longitude": 286.5044,
+       "sign": "Capricorne",
+       "degree": 16,
+       "minute": 30,
+       "label": "16°30 Capricorne"
+      },
+      {
+       "house": 12,
+       "longitude": 310.6838,
+       "sign": "Verseau",
+       "degree": 10,
+       "minute": 41,
+       "label": "10°41 Verseau"
+      }
+     ]
+    },
+    "natal": [
+     {
+      "planet": "Soleil",
+      "longitude": 0.5596,
+      "sign": "Bélier",
+      "degree": 0,
+      "minute": 33,
+      "label": "0°33 Bélier",
+      "retrograde": false,
+      "house": 1
+     },
+     {
+      "planet": "Lune",
+      "longitude": 357.7151,
+      "sign": "Poissons",
+      "degree": 27,
+      "minute": 42,
+      "label": "27°42 Poissons",
+      "retrograde": false,
+      "house": 1
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 17.8273,
+      "sign": "Bélier",
+      "degree": 17,
+      "minute": 49,
+      "label": "17°49 Bélier",
+      "retrograde": false,
+      "house": 1
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 21.1505,
+      "sign": "Bélier",
+      "degree": 21,
+      "minute": 9,
+      "label": "21°09 Bélier",
+      "retrograde": true,
+      "house": 1
+     },
+     {
+      "planet": "Mars",
+      "longitude": 34.3689,
+      "sign": "Taureau",
+      "degree": 4,
+      "minute": 22,
+      "label": "4°22 Taureau",
+      "retrograde": false,
+      "house": 1
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 309.0207,
+      "sign": "Verseau",
+      "degree": 9,
+      "minute": 1,
+      "label": "9°01 Verseau",
+      "retrograde": false,
+      "house": 11
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 237.9688,
+      "sign": "Scorpion",
+      "degree": 27,
+      "minute": 58,
+      "label": "27°58 Scorpion",
+      "retrograde": true,
+      "house": 8
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 257.9835,
+      "sign": "Sagittaire",
+      "degree": 17,
+      "minute": 59,
+      "label": "17°59 Sagittaire",
+      "retrograde": false,
+      "house": 9
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 273.5531,
+      "sign": "Capricorne",
+      "degree": 3,
+      "minute": 33,
+      "label": "3°33 Capricorne",
+      "retrograde": false,
+      "house": 10
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 214.2342,
+      "sign": "Scorpion",
+      "degree": 4,
+      "minute": 14,
+      "label": "4°14 Scorpion",
+      "retrograde": true,
+      "house": 7
+     }
+    ],
+    "transits": [
+     {
+      "planet": "Soleil",
+      "longitude": 239.1843,
+      "sign": "Scorpion",
+      "degree": 29,
+      "minute": 11,
+      "label": "29°11 Scorpion",
+      "retrograde": false,
+      "natalHouse": 8
+     },
+     {
+      "planet": "Lune",
+      "longitude": 17.0023,
+      "sign": "Bélier",
+      "degree": 17,
+      "minute": 0,
+      "label": "17°00 Bélier",
+      "retrograde": false,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 219.7095,
+      "sign": "Scorpion",
+      "degree": 9,
+      "minute": 42,
+      "label": "9°42 Scorpion",
+      "retrograde": false,
+      "natalHouse": 7
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 203.9381,
+      "sign": "Balance",
+      "degree": 23,
+      "minute": 56,
+      "label": "23°56 Balance",
+      "retrograde": false,
+      "natalHouse": 7
+     },
+     {
+      "planet": "Mars",
+      "longitude": 148.1589,
+      "sign": "Lion",
+      "degree": 28,
+      "minute": 9,
+      "label": "28°09 Lion",
+      "retrograde": false,
+      "natalHouse": 6
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 146.2811,
+      "sign": "Lion",
+      "degree": 26,
+      "minute": 16,
+      "label": "26°16 Lion",
+      "retrograde": false,
+      "natalHouse": 6
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 8.2682,
+      "sign": "Bélier",
+      "degree": 8,
+      "minute": 16,
+      "label": "8°16 Bélier",
+      "retrograde": true,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 63.8616,
+      "sign": "Gémeaux",
+      "degree": 3,
+      "minute": 51,
+      "label": "3°51 Gémeaux",
+      "retrograde": true,
+      "natalHouse": 2
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 1.7459,
+      "sign": "Bélier",
+      "degree": 1,
+      "minute": 44,
+      "label": "1°44 Bélier",
+      "retrograde": true,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 303.3798,
+      "sign": "Verseau",
+      "degree": 3,
+      "minute": 22,
+      "label": "3°22 Verseau",
+      "retrograde": false,
+      "natalHouse": 11
+     }
+    ],
+    "aspects": [
+     {
+      "transitPlanet": "Mars",
+      "aspect": "carré",
+      "natalPlanet": "Saturne",
+      "orb": 0.19
+     },
+     {
+      "transitPlanet": "Mercure",
+      "aspect": "carré",
+      "natalPlanet": "Jupiter",
+      "orb": 0.69
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "sextile",
+      "natalPlanet": "Jupiter",
+      "orb": 0.75
+     },
+     {
+      "transitPlanet": "Lune",
+      "aspect": "conjonction",
+      "natalPlanet": "Mercure",
+      "orb": 0.83
+     },
+     {
+      "transitPlanet": "Pluton",
+      "aspect": "carré",
+      "natalPlanet": "Pluton",
+      "orb": 0.85
+     },
+     {
+      "transitPlanet": "Lune",
+      "aspect": "trigone",
+      "natalPlanet": "Uranus",
+      "orb": 0.98
+     },
+     {
+      "transitPlanet": "Pluton",
+      "aspect": "carré",
+      "natalPlanet": "Mars",
+      "orb": 0.99
+     },
+     {
+      "transitPlanet": "Neptune",
+      "aspect": "conjonction",
+      "natalPlanet": "Soleil",
+      "orb": 1.19
+     },
+     {
+      "transitPlanet": "Soleil",
+      "aspect": "conjonction",
+      "natalPlanet": "Saturne",
+      "orb": 1.22
+     },
+     {
+      "transitPlanet": "Soleil",
+      "aspect": "trigone",
+      "natalPlanet": "Soleil",
+      "orb": 1.38
+     },
+     {
+      "transitPlanet": "Soleil",
+      "aspect": "trigone",
+      "natalPlanet": "Lune",
+      "orb": 1.47
+     },
+     {
+      "transitPlanet": "Jupiter",
+      "aspect": "carré",
+      "natalPlanet": "Saturne",
+      "orb": 1.69
+     }
+    ],
+    "timing": {
+     "horizonDays": 120,
+     "basis": "transits-majeurs-vers-natal-sans-lune",
+     "quality": "porteuse",
+     "primary": {
+      "start": "2027-03-18",
+      "peak": "2027-03-21",
+      "end": "2027-03-24",
+      "aspects": [
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "trigone",
+        "natalPlanet": "Mercure",
+        "orb": 0.03
+       },
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "trigone",
+        "natalPlanet": "Uranus",
+        "orb": 0.19
+       },
+       {
+        "transitPlanet": "Mars",
+        "aspect": "trigone",
+        "natalPlanet": "Vénus",
+        "orb": 0.55
+       },
+       {
+        "transitPlanet": "Mercure",
+        "aspect": "trigone",
+        "natalPlanet": "Pluton",
+        "orb": 0.81
+       }
+      ]
+     },
+     "alternatives": [
+      {
+       "start": "2027-02-10",
+       "peak": "2027-02-13",
+       "end": "2027-02-16",
+       "aspects": [
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "trigone",
+         "natalPlanet": "Vénus",
+         "orb": 0.56
+        },
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "trigone",
+         "natalPlanet": "Pluton",
+         "orb": 0.49
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "trigone",
+         "natalPlanet": "Mars",
+         "orb": 1.18
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "trigone",
+         "natalPlanet": "Neptune",
+         "orb": 0.36
+        }
+       ]
+      },
+      {
+       "start": "2027-02-26",
+       "peak": "2027-03-01",
+       "end": "2027-03-04",
+       "aspects": [
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "trigone",
+         "natalPlanet": "Vénus",
+         "orb": 1.46
+        },
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "sextile",
+         "natalPlanet": "Vénus",
+         "orb": 0
+        },
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "trigone",
+         "natalPlanet": "Mercure",
+         "orb": 1.86
+        },
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "trigone",
+         "natalPlanet": "Uranus",
+         "orb": 1.71
+        }
+       ]
+      }
+     ],
+     "caution": {
+      "start": "2026-12-19",
+      "peak": "2026-12-22",
+      "end": "2026-12-25",
+      "aspects": [
+       {
+        "transitPlanet": "Soleil",
+        "aspect": "carré",
+        "natalPlanet": "Soleil",
+        "orb": 0.08
+       },
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "carré",
+        "natalPlanet": "Saturne",
+        "orb": 1.09
+       },
+       {
+        "transitPlanet": "Saturne",
+        "aspect": "sextile",
+        "natalPlanet": "Jupiter",
+        "orb": 0.97
+       },
+       {
+        "transitPlanet": "Pluton",
+        "aspect": "carré",
+        "natalPlanet": "Mars",
+        "orb": 0.29
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "input": {
+    "profile": {
+     "fullName": "Test Montreal",
+     "birthDate": "1972-11-02",
+     "birthTime": "23:10",
+     "birthPlace": "Montréal"
+    },
+    "location": {
+     "latitude": 45.5019,
+     "longitude": -73.5674,
+     "timeZone": "America/Toronto"
+    },
+    "theme": "amour"
+   },
+   "output": {
+    "birthUtc": "1972-11-03T04:10:00.000Z",
+    "drawUtc": "2026-11-21T12:00:00.000Z",
+    "location": {
+     "latitude": 45.5019,
+     "longitude": -73.5674,
+     "timeZone": "America/Toronto"
+    },
+    "geometry": {
+     "houseSystem": "placidus",
+     "ascendant": {
+      "longitude": 136.0077,
+      "sign": "Lion",
+      "degree": 16,
+      "minute": 0,
+      "label": "16°00 Lion"
+     },
+     "mc": {
+      "longitude": 33.6921,
+      "sign": "Taureau",
+      "degree": 3,
+      "minute": 41,
+      "label": "3°41 Taureau"
+     },
+     "cusps": [
+      {
+       "house": 1,
+       "longitude": 136.0077,
+       "sign": "Lion",
+       "degree": 16,
+       "minute": 0,
+       "label": "16°00 Lion"
+      },
+      {
+       "house": 2,
+       "longitude": 156.0636,
+       "sign": "Vierge",
+       "degree": 6,
+       "minute": 3,
+       "label": "6°03 Vierge"
+      },
+      {
+       "house": 3,
+       "longitude": 181.381,
+       "sign": "Balance",
+       "degree": 1,
+       "minute": 22,
+       "label": "1°22 Balance"
+      },
+      {
+       "house": 4,
+       "longitude": 213.6921,
+       "sign": "Scorpion",
+       "degree": 3,
+       "minute": 41,
+       "label": "3°41 Scorpion"
+      },
+      {
+       "house": 5,
+       "longitude": 251.1583,
+       "sign": "Sagittaire",
+       "degree": 11,
+       "minute": 9,
+       "label": "11°09 Sagittaire"
+      },
+      {
+       "house": 6,
+       "longitude": 286.5972,
+       "sign": "Capricorne",
+       "degree": 16,
+       "minute": 35,
+       "label": "16°35 Capricorne"
+      },
+      {
+       "house": 7,
+       "longitude": 316.0077,
+       "sign": "Verseau",
+       "degree": 16,
+       "minute": 0,
+       "label": "16°00 Verseau"
+      },
+      {
+       "house": 8,
+       "longitude": 336.0636,
+       "sign": "Poissons",
+       "degree": 6,
+       "minute": 3,
+       "label": "6°03 Poissons"
+      },
+      {
+       "house": 9,
+       "longitude": 1.381,
+       "sign": "Bélier",
+       "degree": 1,
+       "minute": 22,
+       "label": "1°22 Bélier"
+      },
+      {
+       "house": 10,
+       "longitude": 33.6921,
+       "sign": "Taureau",
+       "degree": 3,
+       "minute": 41,
+       "label": "3°41 Taureau"
+      },
+      {
+       "house": 11,
+       "longitude": 71.1583,
+       "sign": "Gémeaux",
+       "degree": 11,
+       "minute": 9,
+       "label": "11°09 Gémeaux"
+      },
+      {
+       "house": 12,
+       "longitude": 106.5972,
+       "sign": "Cancer",
+       "degree": 16,
+       "minute": 35,
+       "label": "16°35 Cancer"
+      }
+     ]
+    },
+    "natal": [
+     {
+      "planet": "Soleil",
+      "longitude": 220.8413,
+      "sign": "Scorpion",
+      "degree": 10,
+      "minute": 50,
+      "label": "10°50 Scorpion",
+      "retrograde": false,
+      "house": 4
+     },
+     {
+      "planet": "Lune",
+      "longitude": 189.0414,
+      "sign": "Balance",
+      "degree": 9,
+      "minute": 2,
+      "label": "9°02 Balance",
+      "retrograde": false,
+      "house": 3
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 243.9103,
+      "sign": "Sagittaire",
+      "degree": 3,
+      "minute": 54,
+      "label": "3°54 Sagittaire",
+      "retrograde": false,
+      "house": 4
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 183.9343,
+      "sign": "Balance",
+      "degree": 3,
+      "minute": 56,
+      "label": "3°56 Balance",
+      "retrograde": false,
+      "house": 3
+     },
+     {
+      "planet": "Mars",
+      "longitude": 201.5959,
+      "sign": "Balance",
+      "degree": 21,
+      "minute": 35,
+      "label": "21°35 Balance",
+      "retrograde": false,
+      "house": 3
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 275.3389,
+      "sign": "Capricorne",
+      "degree": 5,
+      "minute": 20,
+      "label": "5°20 Capricorne",
+      "retrograde": false,
+      "house": 5
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 79.712,
+      "sign": "Gémeaux",
+      "degree": 19,
+      "minute": 42,
+      "label": "19°42 Gémeaux",
+      "retrograde": true,
+      "house": 11
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 200.084,
+      "sign": "Balance",
+      "degree": 20,
+      "minute": 5,
+      "label": "20°05 Balance",
+      "retrograde": false,
+      "house": 3
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 244.0955,
+      "sign": "Sagittaire",
+      "degree": 4,
+      "minute": 5,
+      "label": "4°05 Sagittaire",
+      "retrograde": false,
+      "house": 4
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 183.3156,
+      "sign": "Balance",
+      "degree": 3,
+      "minute": 18,
+      "label": "3°18 Balance",
+      "retrograde": false,
+      "house": 3
+     }
+    ],
+    "transits": [
+     {
+      "planet": "Soleil",
+      "longitude": 239.1843,
+      "sign": "Scorpion",
+      "degree": 29,
+      "minute": 11,
+      "label": "29°11 Scorpion",
+      "retrograde": false,
+      "natalHouse": 4
+     },
+     {
+      "planet": "Lune",
+      "longitude": 17.0023,
+      "sign": "Bélier",
+      "degree": 17,
+      "minute": 0,
+      "label": "17°00 Bélier",
+      "retrograde": false,
+      "natalHouse": 9
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 219.7095,
+      "sign": "Scorpion",
+      "degree": 9,
+      "minute": 42,
+      "label": "9°42 Scorpion",
+      "retrograde": false,
+      "natalHouse": 4
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 203.9381,
+      "sign": "Balance",
+      "degree": 23,
+      "minute": 56,
+      "label": "23°56 Balance",
+      "retrograde": false,
+      "natalHouse": 3
+     },
+     {
+      "planet": "Mars",
+      "longitude": 148.1589,
+      "sign": "Lion",
+      "degree": 28,
+      "minute": 9,
+      "label": "28°09 Lion",
+      "retrograde": false,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 146.2811,
+      "sign": "Lion",
+      "degree": 26,
+      "minute": 16,
+      "label": "26°16 Lion",
+      "retrograde": false,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 8.2682,
+      "sign": "Bélier",
+      "degree": 8,
+      "minute": 16,
+      "label": "8°16 Bélier",
+      "retrograde": true,
+      "natalHouse": 9
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 63.8616,
+      "sign": "Gémeaux",
+      "degree": 3,
+      "minute": 51,
+      "label": "3°51 Gémeaux",
+      "retrograde": true,
+      "natalHouse": 10
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 1.7459,
+      "sign": "Bélier",
+      "degree": 1,
+      "minute": 44,
+      "label": "1°44 Bélier",
+      "retrograde": true,
+      "natalHouse": 9
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 303.3798,
+      "sign": "Verseau",
+      "degree": 3,
+      "minute": 22,
+      "label": "3°22 Verseau",
+      "retrograde": false,
+      "natalHouse": 6
+     }
+    ],
+    "aspects": [
+     {
+      "transitPlanet": "Uranus",
+      "aspect": "opposition",
+      "natalPlanet": "Mercure",
+      "orb": 0.05
+     },
+     {
+      "transitPlanet": "Pluton",
+      "aspect": "trigone",
+      "natalPlanet": "Pluton",
+      "orb": 0.06
+     },
+     {
+      "transitPlanet": "Uranus",
+      "aspect": "trigone",
+      "natalPlanet": "Vénus",
+      "orb": 0.07
+     },
+     {
+      "transitPlanet": "Uranus",
+      "aspect": "opposition",
+      "natalPlanet": "Neptune",
+      "orb": 0.23
+     },
+     {
+      "transitPlanet": "Pluton",
+      "aspect": "sextile",
+      "natalPlanet": "Mercure",
+      "orb": 0.53
+     },
+     {
+      "transitPlanet": "Uranus",
+      "aspect": "trigone",
+      "natalPlanet": "Pluton",
+      "orb": 0.55
+     },
+     {
+      "transitPlanet": "Pluton",
+      "aspect": "trigone",
+      "natalPlanet": "Vénus",
+      "orb": 0.55
+     },
+     {
+      "transitPlanet": "Pluton",
+      "aspect": "sextile",
+      "natalPlanet": "Neptune",
+      "orb": 0.72
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "opposition",
+      "natalPlanet": "Lune",
+      "orb": 0.77
+     },
+     {
+      "transitPlanet": "Mercure",
+      "aspect": "conjonction",
+      "natalPlanet": "Soleil",
+      "orb": 1.13
+     },
+     {
+      "transitPlanet": "Neptune",
+      "aspect": "opposition",
+      "natalPlanet": "Pluton",
+      "orb": 1.57
+     },
+     {
+      "transitPlanet": "Neptune",
+      "aspect": "trigone",
+      "natalPlanet": "Mercure",
+      "orb": 2.16
+     }
+    ],
+    "timing": {
+     "horizonDays": 120,
+     "basis": "transits-majeurs-vers-natal-sans-lune",
+     "quality": "porteuse",
+     "primary": {
+      "start": "2027-03-01",
+      "peak": "2027-03-04",
+      "end": "2027-03-07",
+      "aspects": [
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "trigone",
+        "natalPlanet": "Vénus",
+        "orb": 0.1
+       },
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "sextile",
+        "natalPlanet": "Mercure",
+        "orb": 0.07
+       },
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "trigone",
+        "natalPlanet": "Pluton",
+        "orb": 0.52
+       },
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "sextile",
+        "natalPlanet": "Neptune",
+        "orb": 0.26
+       }
+      ]
+     },
+     "alternatives": [
+      {
+       "start": "2026-12-09",
+       "peak": "2026-12-12",
+       "end": "2026-12-15",
+       "aspects": [
+        {
+         "transitPlanet": "Mars",
+         "aspect": "trigone",
+         "natalPlanet": "Jupiter",
+         "orb": 0.44
+        },
+        {
+         "transitPlanet": "Vénus",
+         "aspect": "sextile",
+         "natalPlanet": "Jupiter",
+         "orb": 0.49
+        },
+        {
+         "transitPlanet": "Pluton",
+         "aspect": "trigone",
+         "natalPlanet": "Vénus",
+         "orb": 0.12
+        },
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "sextile",
+         "natalPlanet": "Lune",
+         "orb": 0.33
+        }
+       ]
+      },
+      {
+       "start": "2027-01-12",
+       "peak": "2027-01-15",
+       "end": "2027-01-18",
+       "aspects": [
+        {
+         "transitPlanet": "Vénus",
+         "aspect": "sextile",
+         "natalPlanet": "Lune",
+         "orb": 0.4
+        },
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "trigone",
+         "natalPlanet": "Vénus",
+         "orb": 0.16
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "sextile",
+         "natalPlanet": "Soleil",
+         "orb": 0.57
+        },
+        {
+         "transitPlanet": "Saturne",
+         "aspect": "opposition",
+         "natalPlanet": "Lune",
+         "orb": 0.01
+        }
+       ]
+      }
+     ],
+     "caution": {
+      "start": "2027-02-09",
+      "peak": "2027-02-12",
+      "end": "2027-02-15",
+      "aspects": [
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "sextile",
+        "natalPlanet": "Soleil",
+        "orb": 0.56
+       },
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "carré",
+        "natalPlanet": "Lune",
+        "orb": 1.24
+       },
+       {
+        "transitPlanet": "Mars",
+        "aspect": "carré",
+        "natalPlanet": "Mercure",
+        "orb": 0.34
+       },
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "sextile",
+        "natalPlanet": "Mars",
+        "orb": 0.25
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "input": {
+    "profile": {
+     "fullName": "Test Noumea",
+     "birthDate": "2001-07-14",
+     "birthTime": "12:00",
+     "birthPlace": "Nouméa"
+    },
+    "location": {
+     "latitude": -22.2758,
+     "longitude": 166.458,
+     "timeZone": "Pacific/Noumea"
+    },
+    "theme": "finances"
+   },
+   "output": {
+    "birthUtc": "2001-07-14T01:00:00.000Z",
+    "drawUtc": "2026-11-21T12:00:00.000Z",
+    "location": {
+     "latitude": -22.2758,
+     "longitude": 166.458,
+     "timeZone": "Pacific/Noumea"
+    },
+    "geometry": {
+     "houseSystem": "placidus",
+     "ascendant": {
+      "longitude": 210.3515,
+      "sign": "Scorpion",
+      "degree": 0,
+      "minute": 21,
+      "label": "0°21 Scorpion"
+     },
+     "mc": {
+      "longitude": 111.6783,
+      "sign": "Cancer",
+      "degree": 21,
+      "minute": 40,
+      "label": "21°40 Cancer"
+     },
+     "cusps": [
+      {
+       "house": 1,
+       "longitude": 210.3515,
+       "sign": "Scorpion",
+       "degree": 0,
+       "minute": 21,
+       "label": "0°21 Scorpion"
+      },
+      {
+       "house": 2,
+       "longitude": 241.4007,
+       "sign": "Sagittaire",
+       "degree": 1,
+       "minute": 24,
+       "label": "1°24 Sagittaire"
+      },
+      {
+       "house": 3,
+       "longitude": 267.0909,
+       "sign": "Sagittaire",
+       "degree": 27,
+       "minute": 5,
+       "label": "27°05 Sagittaire"
+      },
+      {
+       "house": 4,
+       "longitude": 291.6783,
+       "sign": "Capricorne",
+       "degree": 21,
+       "minute": 40,
+       "label": "21°40 Capricorne"
+      },
+      {
+       "house": 5,
+       "longitude": 318.8725,
+       "sign": "Verseau",
+       "degree": 18,
+       "minute": 52,
+       "label": "18°52 Verseau"
+      },
+      {
+       "house": 6,
+       "longitude": 351.883,
+       "sign": "Poissons",
+       "degree": 21,
+       "minute": 52,
+       "label": "21°52 Poissons"
+      },
+      {
+       "house": 7,
+       "longitude": 30.3515,
+       "sign": "Taureau",
+       "degree": 0,
+       "minute": 21,
+       "label": "0°21 Taureau"
+      },
+      {
+       "house": 8,
+       "longitude": 61.4007,
+       "sign": "Gémeaux",
+       "degree": 1,
+       "minute": 24,
+       "label": "1°24 Gémeaux"
+      },
+      {
+       "house": 9,
+       "longitude": 87.0909,
+       "sign": "Gémeaux",
+       "degree": 27,
+       "minute": 5,
+       "label": "27°05 Gémeaux"
+      },
+      {
+       "house": 10,
+       "longitude": 111.6783,
+       "sign": "Cancer",
+       "degree": 21,
+       "minute": 40,
+       "label": "21°40 Cancer"
+      },
+      {
+       "house": 11,
+       "longitude": 138.8725,
+       "sign": "Lion",
+       "degree": 18,
+       "minute": 52,
+       "label": "18°52 Lion"
+      },
+      {
+       "house": 12,
+       "longitude": 171.883,
+       "sign": "Vierge",
+       "degree": 21,
+       "minute": 52,
+       "label": "21°52 Vierge"
+      }
+     ]
+    },
+    "natal": [
+     {
+      "planet": "Soleil",
+      "longitude": 111.6694,
+      "sign": "Cancer",
+      "degree": 21,
+      "minute": 40,
+      "label": "21°40 Cancer",
+      "retrograde": false,
+      "house": 9
+     },
+     {
+      "planet": "Lune",
+      "longitude": 24.6599,
+      "sign": "Bélier",
+      "degree": 24,
+      "minute": 39,
+      "label": "24°39 Bélier",
+      "retrograde": false,
+      "house": 6
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 91.325,
+      "sign": "Cancer",
+      "degree": 1,
+      "minute": 19,
+      "label": "1°19 Cancer",
+      "retrograde": false,
+      "house": 9
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 69.1509,
+      "sign": "Gémeaux",
+      "degree": 9,
+      "minute": 9,
+      "label": "9°09 Gémeaux",
+      "retrograde": false,
+      "house": 8
+     },
+     {
+      "planet": "Mars",
+      "longitude": 255.3568,
+      "sign": "Sagittaire",
+      "degree": 15,
+      "minute": 21,
+      "label": "15°21 Sagittaire",
+      "retrograde": true,
+      "house": 2
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 90.2308,
+      "sign": "Cancer",
+      "degree": 0,
+      "minute": 13,
+      "label": "0°13 Cancer",
+      "retrograde": false,
+      "house": 9
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 70.4276,
+      "sign": "Gémeaux",
+      "degree": 10,
+      "minute": 25,
+      "label": "10°25 Gémeaux",
+      "retrograde": false,
+      "house": 8
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 324.064,
+      "sign": "Verseau",
+      "degree": 24,
+      "minute": 3,
+      "label": "24°03 Verseau",
+      "retrograde": true,
+      "house": 5
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 307.8237,
+      "sign": "Verseau",
+      "degree": 7,
+      "minute": 49,
+      "label": "7°49 Verseau",
+      "retrograde": true,
+      "house": 4
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 252.9576,
+      "sign": "Sagittaire",
+      "degree": 12,
+      "minute": 57,
+      "label": "12°57 Sagittaire",
+      "retrograde": true,
+      "house": 2
+     }
+    ],
+    "transits": [
+     {
+      "planet": "Soleil",
+      "longitude": 239.1843,
+      "sign": "Scorpion",
+      "degree": 29,
+      "minute": 11,
+      "label": "29°11 Scorpion",
+      "retrograde": false,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Lune",
+      "longitude": 17.0023,
+      "sign": "Bélier",
+      "degree": 17,
+      "minute": 0,
+      "label": "17°00 Bélier",
+      "retrograde": false,
+      "natalHouse": 6
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 219.7095,
+      "sign": "Scorpion",
+      "degree": 9,
+      "minute": 42,
+      "label": "9°42 Scorpion",
+      "retrograde": false,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 203.9381,
+      "sign": "Balance",
+      "degree": 23,
+      "minute": 56,
+      "label": "23°56 Balance",
+      "retrograde": false,
+      "natalHouse": 12
+     },
+     {
+      "planet": "Mars",
+      "longitude": 148.1589,
+      "sign": "Lion",
+      "degree": 28,
+      "minute": 9,
+      "label": "28°09 Lion",
+      "retrograde": false,
+      "natalHouse": 11
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 146.2811,
+      "sign": "Lion",
+      "degree": 26,
+      "minute": 16,
+      "label": "26°16 Lion",
+      "retrograde": false,
+      "natalHouse": 11
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 8.2682,
+      "sign": "Bélier",
+      "degree": 8,
+      "minute": 16,
+      "label": "8°16 Bélier",
+      "retrograde": true,
+      "natalHouse": 6
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 63.8616,
+      "sign": "Gémeaux",
+      "degree": 3,
+      "minute": 51,
+      "label": "3°51 Gémeaux",
+      "retrograde": true,
+      "natalHouse": 8
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 1.7459,
+      "sign": "Bélier",
+      "degree": 1,
+      "minute": 44,
+      "label": "1°44 Bélier",
+      "retrograde": true,
+      "natalHouse": 6
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 303.3798,
+      "sign": "Verseau",
+      "degree": 3,
+      "minute": 22,
+      "label": "3°22 Verseau",
+      "retrograde": false,
+      "natalHouse": 4
+     }
+    ],
+    "aspects": [
+     {
+      "transitPlanet": "Vénus",
+      "aspect": "trigone",
+      "natalPlanet": "Uranus",
+      "orb": 0.13
+     },
+     {
+      "transitPlanet": "Neptune",
+      "aspect": "carré",
+      "natalPlanet": "Mercure",
+      "orb": 0.42
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "sextile",
+      "natalPlanet": "Neptune",
+      "orb": 0.44
+     },
+     {
+      "transitPlanet": "Vénus",
+      "aspect": "opposition",
+      "natalPlanet": "Lune",
+      "orb": 0.72
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "sextile",
+      "natalPlanet": "Vénus",
+      "orb": 0.88
+     },
+     {
+      "transitPlanet": "Neptune",
+      "aspect": "carré",
+      "natalPlanet": "Jupiter",
+      "orb": 1.52
+     },
+     {
+      "transitPlanet": "Jupiter",
+      "aspect": "trigone",
+      "natalPlanet": "Lune",
+      "orb": 1.62
+     },
+     {
+      "transitPlanet": "Lune",
+      "aspect": "trigone",
+      "natalPlanet": "Mars",
+      "orb": 1.65
+     },
+     {
+      "transitPlanet": "Mercure",
+      "aspect": "carré",
+      "natalPlanet": "Neptune",
+      "orb": 1.89
+     },
+     {
+      "transitPlanet": "Mars",
+      "aspect": "sextile",
+      "natalPlanet": "Jupiter",
+      "orb": 2.07
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "sextile",
+      "natalPlanet": "Saturne",
+      "orb": 2.16
+     },
+     {
+      "transitPlanet": "Jupiter",
+      "aspect": "opposition",
+      "natalPlanet": "Uranus",
+      "orb": 2.22
+     }
+    ],
+    "timing": {
+     "horizonDays": 120,
+     "basis": "transits-majeurs-vers-natal-sans-lune",
+     "quality": "porteuse",
+     "primary": {
+      "start": "2027-03-09",
+      "peak": "2027-03-12",
+      "end": "2027-03-15",
+      "aspects": [
+       {
+        "transitPlanet": "Soleil",
+        "aspect": "trigone",
+        "natalPlanet": "Soleil",
+        "orb": 0.01
+       },
+       {
+        "transitPlanet": "Saturne",
+        "aspect": "trigone",
+        "natalPlanet": "Mars",
+        "orb": 0.94
+       },
+       {
+        "transitPlanet": "Mercure",
+        "aspect": "sextile",
+        "natalPlanet": "Lune",
+        "orb": 0.04
+       },
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "sextile",
+        "natalPlanet": "Pluton",
+        "orb": 0.42
+       }
+      ]
+     },
+     "alternatives": [
+      {
+       "start": "2027-02-14",
+       "peak": "2027-02-17",
+       "end": "2027-02-20",
+       "aspects": [
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "trigone",
+         "natalPlanet": "Mercure",
+         "orb": 0.2
+        },
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "trigone",
+         "natalPlanet": "Jupiter",
+         "orb": 0.89
+        },
+        {
+         "transitPlanet": "Saturne",
+         "aspect": "trigone",
+         "natalPlanet": "Pluton",
+         "orb": 1.13
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "sextile",
+         "natalPlanet": "Mercure",
+         "orb": 0.3
+        }
+       ]
+      },
+      {
+       "start": "2027-01-26",
+       "peak": "2027-01-29",
+       "end": "2027-02-01",
+       "aspects": [
+        {
+         "transitPlanet": "Vénus",
+         "aspect": "trigone",
+         "natalPlanet": "Lune",
+         "orb": 0.48
+        },
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "trigone",
+         "natalPlanet": "Lune",
+         "orb": 0.99
+        },
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "opposition",
+         "natalPlanet": "Uranus",
+         "orb": 0.39
+        },
+        {
+         "transitPlanet": "Soleil",
+         "aspect": "trigone",
+         "natalPlanet": "Vénus",
+         "orb": 0.19
+        }
+       ]
+      }
+     ],
+     "caution": {
+      "start": "2027-01-13",
+      "peak": "2027-01-16",
+      "end": "2027-01-19",
+      "aspects": [
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "trigone",
+        "natalPlanet": "Lune",
+        "orb": 0.5
+       },
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "opposition",
+        "natalPlanet": "Vénus",
+        "orb": 0.58
+       },
+       {
+        "transitPlanet": "Vénus",
+        "aspect": "opposition",
+        "natalPlanet": "Saturne",
+        "orb": 0.7
+       },
+       {
+        "transitPlanet": "Saturne",
+        "aspect": "sextile",
+        "natalPlanet": "Vénus",
+        "orb": 0.03
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "input": {
+    "profile": {
+     "fullName": "Test Tromso",
+     "birthDate": "1990-06-21",
+     "birthTime": "00:30",
+     "birthPlace": "Tromsø"
+    },
+    "location": {
+     "latitude": 69.6492,
+     "longitude": 18.9553,
+     "timeZone": "Europe/Oslo"
+    },
+    "theme": "direction de vie"
+   },
+   "output": {
+    "birthUtc": "1990-06-20T22:30:00.000Z",
+    "drawUtc": "2026-11-21T12:00:00.000Z",
+    "location": {
+     "latitude": 69.6492,
+     "longitude": 18.9553,
+     "timeZone": "Europe/Oslo"
+    },
+    "geometry": {
+     "houseSystem": "whole",
+     "ascendant": {
+      "longitude": 27.2638,
+      "sign": "Bélier",
+      "degree": 27,
+      "minute": 15,
+      "label": "27°15 Bélier"
+     },
+     "mc": {
+      "longitude": 265.7105,
+      "sign": "Sagittaire",
+      "degree": 25,
+      "minute": 42,
+      "label": "25°42 Sagittaire"
+     },
+     "cusps": [
+      {
+       "house": 1,
+       "longitude": 0,
+       "sign": "Bélier",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Bélier"
+      },
+      {
+       "house": 2,
+       "longitude": 30,
+       "sign": "Taureau",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Taureau"
+      },
+      {
+       "house": 3,
+       "longitude": 60,
+       "sign": "Gémeaux",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Gémeaux"
+      },
+      {
+       "house": 4,
+       "longitude": 90,
+       "sign": "Cancer",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Cancer"
+      },
+      {
+       "house": 5,
+       "longitude": 120,
+       "sign": "Lion",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Lion"
+      },
+      {
+       "house": 6,
+       "longitude": 150,
+       "sign": "Vierge",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Vierge"
+      },
+      {
+       "house": 7,
+       "longitude": 180,
+       "sign": "Balance",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Balance"
+      },
+      {
+       "house": 8,
+       "longitude": 210,
+       "sign": "Scorpion",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Scorpion"
+      },
+      {
+       "house": 9,
+       "longitude": 240,
+       "sign": "Sagittaire",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Sagittaire"
+      },
+      {
+       "house": 10,
+       "longitude": 270,
+       "sign": "Capricorne",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Capricorne"
+      },
+      {
+       "house": 11,
+       "longitude": 300,
+       "sign": "Verseau",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Verseau"
+      },
+      {
+       "house": 12,
+       "longitude": 330,
+       "sign": "Poissons",
+       "degree": 0,
+       "minute": 0,
+       "label": "0°00 Poissons"
+      }
+     ]
+    },
+    "natal": [
+     {
+      "planet": "Soleil",
+      "longitude": 89.3218,
+      "sign": "Gémeaux",
+      "degree": 29,
+      "minute": 19,
+      "label": "29°19 Gémeaux",
+      "retrograde": false,
+      "house": 3
+     },
+     {
+      "planet": "Lune",
+      "longitude": 63.2955,
+      "sign": "Gémeaux",
+      "degree": 3,
+      "minute": 17,
+      "label": "3°17 Gémeaux",
+      "retrograde": false,
+      "house": 3
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 75.6786,
+      "sign": "Gémeaux",
+      "degree": 15,
+      "minute": 40,
+      "label": "15°40 Gémeaux",
+      "retrograde": false,
+      "house": 3
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 55.185,
+      "sign": "Taureau",
+      "degree": 25,
+      "minute": 11,
+      "label": "25°11 Taureau",
+      "retrograde": false,
+      "house": 2
+     },
+     {
+      "planet": "Mars",
+      "longitude": 14.9326,
+      "sign": "Bélier",
+      "degree": 14,
+      "minute": 55,
+      "label": "14°55 Bélier",
+      "retrograde": false,
+      "house": 1
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 107.0754,
+      "sign": "Cancer",
+      "degree": 17,
+      "minute": 4,
+      "label": "17°04 Cancer",
+      "retrograde": false,
+      "house": 4
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 293.6989,
+      "sign": "Capricorne",
+      "degree": 23,
+      "minute": 41,
+      "label": "23°41 Capricorne",
+      "retrograde": true,
+      "house": 10
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 277.9493,
+      "sign": "Capricorne",
+      "degree": 7,
+      "minute": 56,
+      "label": "7°56 Capricorne",
+      "retrograde": true,
+      "house": 10
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 283.5781,
+      "sign": "Capricorne",
+      "degree": 13,
+      "minute": 34,
+      "label": "13°34 Capricorne",
+      "retrograde": true,
+      "house": 10
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 225.2984,
+      "sign": "Scorpion",
+      "degree": 15,
+      "minute": 17,
+      "label": "15°17 Scorpion",
+      "retrograde": true,
+      "house": 8
+     }
+    ],
+    "transits": [
+     {
+      "planet": "Soleil",
+      "longitude": 239.1843,
+      "sign": "Scorpion",
+      "degree": 29,
+      "minute": 11,
+      "label": "29°11 Scorpion",
+      "retrograde": false,
+      "natalHouse": 8
+     },
+     {
+      "planet": "Lune",
+      "longitude": 17.0023,
+      "sign": "Bélier",
+      "degree": 17,
+      "minute": 0,
+      "label": "17°00 Bélier",
+      "retrograde": false,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 219.7095,
+      "sign": "Scorpion",
+      "degree": 9,
+      "minute": 42,
+      "label": "9°42 Scorpion",
+      "retrograde": false,
+      "natalHouse": 8
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 203.9381,
+      "sign": "Balance",
+      "degree": 23,
+      "minute": 56,
+      "label": "23°56 Balance",
+      "retrograde": false,
+      "natalHouse": 7
+     },
+     {
+      "planet": "Mars",
+      "longitude": 148.1589,
+      "sign": "Lion",
+      "degree": 28,
+      "minute": 9,
+      "label": "28°09 Lion",
+      "retrograde": false,
+      "natalHouse": 5
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 146.2811,
+      "sign": "Lion",
+      "degree": 26,
+      "minute": 16,
+      "label": "26°16 Lion",
+      "retrograde": false,
+      "natalHouse": 5
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 8.2682,
+      "sign": "Bélier",
+      "degree": 8,
+      "minute": 16,
+      "label": "8°16 Bélier",
+      "retrograde": true,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 63.8616,
+      "sign": "Gémeaux",
+      "degree": 3,
+      "minute": 51,
+      "label": "3°51 Gémeaux",
+      "retrograde": true,
+      "natalHouse": 3
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 1.7459,
+      "sign": "Bélier",
+      "degree": 1,
+      "minute": 44,
+      "label": "1°44 Bélier",
+      "retrograde": true,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 303.3798,
+      "sign": "Verseau",
+      "degree": 3,
+      "minute": 22,
+      "label": "3°22 Verseau",
+      "retrograde": false,
+      "natalHouse": 11
+     }
+    ],
+    "aspects": [
+     {
+      "transitPlanet": "Lune",
+      "aspect": "carré",
+      "natalPlanet": "Jupiter",
+      "orb": 0.07
+     },
+     {
+      "transitPlanet": "Pluton",
+      "aspect": "trigone",
+      "natalPlanet": "Lune",
+      "orb": 0.08
+     },
+     {
+      "transitPlanet": "Vénus",
+      "aspect": "carré",
+      "natalPlanet": "Saturne",
+      "orb": 0.24
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "carré",
+      "natalPlanet": "Uranus",
+      "orb": 0.32
+     },
+     {
+      "transitPlanet": "Uranus",
+      "aspect": "conjonction",
+      "natalPlanet": "Lune",
+      "orb": 0.57
+     },
+     {
+      "transitPlanet": "Jupiter",
+      "aspect": "carré",
+      "natalPlanet": "Vénus",
+      "orb": 1.1
+     },
+     {
+      "transitPlanet": "Mars",
+      "aspect": "sextile",
+      "natalPlanet": "Soleil",
+      "orb": 1.16
+     },
+     {
+      "transitPlanet": "Lune",
+      "aspect": "sextile",
+      "natalPlanet": "Mercure",
+      "orb": 1.32
+     },
+     {
+      "transitPlanet": "Neptune",
+      "aspect": "sextile",
+      "natalPlanet": "Lune",
+      "orb": 1.55
+     },
+     {
+      "transitPlanet": "Mercure",
+      "aspect": "sextile",
+      "natalPlanet": "Uranus",
+      "orb": 1.76
+     },
+     {
+      "transitPlanet": "Lune",
+      "aspect": "conjonction",
+      "natalPlanet": "Mars",
+      "orb": 2.07
+     },
+     {
+      "transitPlanet": "Neptune",
+      "aspect": "carré",
+      "natalPlanet": "Soleil",
+      "orb": 2.42
+     }
+    ],
+    "timing": {
+     "horizonDays": 120,
+     "basis": "transits-majeurs-vers-natal-sans-lune",
+     "quality": "porteuse",
+     "primary": {
+      "start": "2027-03-13",
+      "peak": "2027-03-16",
+      "end": "2027-03-19",
+      "aspects": [
+       {
+        "transitPlanet": "Soleil",
+        "aspect": "sextile",
+        "natalPlanet": "Vénus",
+        "orb": 0.49
+       },
+       {
+        "transitPlanet": "Mercure",
+        "aspect": "trigone",
+        "natalPlanet": "Soleil",
+        "orb": 1.25
+       },
+       {
+        "transitPlanet": "Saturne",
+        "aspect": "sextile",
+        "natalPlanet": "Mercure",
+        "orb": 0.78
+       },
+       {
+        "transitPlanet": "Saturne",
+        "aspect": "carré",
+        "natalPlanet": "Neptune",
+        "orb": 1.32
+       }
+      ]
+     },
+     "alternatives": [
+      {
+       "start": "2027-02-22",
+       "peak": "2027-02-25",
+       "end": "2027-02-28",
+       "aspects": [
+        {
+         "transitPlanet": "Vénus",
+         "aspect": "trigone",
+         "natalPlanet": "Vénus",
+         "orb": 0.35
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "sextile",
+         "natalPlanet": "Soleil",
+         "orb": 0.85
+        },
+        {
+         "transitPlanet": "Saturne",
+         "aspect": "carré",
+         "natalPlanet": "Neptune",
+         "orb": 0.9
+        },
+        {
+         "transitPlanet": "Soleil",
+         "aspect": "sextile",
+         "natalPlanet": "Uranus",
+         "orb": 1.3
+        }
+       ]
+      },
+      {
+       "start": "2027-01-12",
+       "peak": "2027-01-15",
+       "end": "2027-01-18",
+       "aspects": [
+        {
+         "transitPlanet": "Soleil",
+         "aspect": "trigone",
+         "natalPlanet": "Vénus",
+         "orb": 0.08
+        },
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "carré",
+         "natalPlanet": "Vénus",
+         "orb": 0.08
+        },
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "trigone",
+         "natalPlanet": "Lune",
+         "orb": 0.48
+        },
+        {
+         "transitPlanet": "Pluton",
+         "aspect": "trigone",
+         "natalPlanet": "Lune",
+         "orb": 1.5
+        }
+       ]
+      }
+     ],
+     "caution": {
+      "start": "2027-02-11",
+      "peak": "2027-02-14",
+      "end": "2027-02-17",
+      "aspects": [
+       {
+        "transitPlanet": "Soleil",
+        "aspect": "carré",
+        "natalPlanet": "Vénus",
+        "orb": 0.37
+       },
+       {
+        "transitPlanet": "Mars",
+        "aspect": "carré",
+        "natalPlanet": "Lune",
+        "orb": 0.49
+       },
+       {
+        "transitPlanet": "Mercure",
+        "aspect": "carré",
+        "natalPlanet": "Lune",
+        "orb": 0.7
+       },
+       {
+        "transitPlanet": "Pluton",
+        "aspect": "trigone",
+        "natalPlanet": "Lune",
+        "orb": 2.44
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "input": {
+    "profile": {
+     "fullName": "Test Buenos Aires",
+     "birthDate": "1960-01-01",
+     "birthTime": "15:20",
+     "birthPlace": "Buenos Aires"
+    },
+    "location": {
+     "latitude": -34.6037,
+     "longitude": -58.3816,
+     "timeZone": "America/Argentina/Buenos_Aires"
+    },
+    "theme": "autre"
+   },
+   "output": {
+    "birthUtc": "1960-01-01T18:20:00.000Z",
+    "drawUtc": "2026-11-21T12:00:00.000Z",
+    "location": {
+     "latitude": -34.6037,
+     "longitude": -58.3816,
+     "timeZone": "America/Argentina/Buenos_Aires"
+    },
+    "geometry": {
+     "houseSystem": "placidus",
+     "ascendant": {
+      "longitude": 39.1178,
+      "sign": "Taureau",
+      "degree": 9,
+      "minute": 7,
+      "label": "9°07 Taureau"
+     },
+     "mc": {
+      "longitude": 314.5652,
+      "sign": "Verseau",
+      "degree": 14,
+      "minute": 33,
+      "label": "14°33 Verseau"
+     },
+     "cusps": [
+      {
+       "house": 1,
+       "longitude": 39.1178,
+       "sign": "Taureau",
+       "degree": 9,
+       "minute": 7,
+       "label": "9°07 Taureau"
+      },
+      {
+       "house": 2,
+       "longitude": 68.1784,
+       "sign": "Gémeaux",
+       "degree": 8,
+       "minute": 10,
+       "label": "8°10 Gémeaux"
+      },
+      {
+       "house": 3,
+       "longitude": 100.4307,
+       "sign": "Cancer",
+       "degree": 10,
+       "minute": 25,
+       "label": "10°25 Cancer"
+      },
+      {
+       "house": 4,
+       "longitude": 134.5652,
+       "sign": "Lion",
+       "degree": 14,
+       "minute": 33,
+       "label": "14°33 Lion"
+      },
+      {
+       "house": 5,
+       "longitude": 167.1726,
+       "sign": "Vierge",
+       "degree": 17,
+       "minute": 10,
+       "label": "17°10 Vierge"
+      },
+      {
+       "house": 6,
+       "longitude": 195.442,
+       "sign": "Balance",
+       "degree": 15,
+       "minute": 26,
+       "label": "15°26 Balance"
+      },
+      {
+       "house": 7,
+       "longitude": 219.1178,
+       "sign": "Scorpion",
+       "degree": 9,
+       "minute": 7,
+       "label": "9°07 Scorpion"
+      },
+      {
+       "house": 8,
+       "longitude": 248.1784,
+       "sign": "Sagittaire",
+       "degree": 8,
+       "minute": 10,
+       "label": "8°10 Sagittaire"
+      },
+      {
+       "house": 9,
+       "longitude": 280.4307,
+       "sign": "Capricorne",
+       "degree": 10,
+       "minute": 25,
+       "label": "10°25 Capricorne"
+      },
+      {
+       "house": 10,
+       "longitude": 314.5652,
+       "sign": "Verseau",
+       "degree": 14,
+       "minute": 33,
+       "label": "14°33 Verseau"
+      },
+      {
+       "house": 11,
+       "longitude": 347.1726,
+       "sign": "Poissons",
+       "degree": 17,
+       "minute": 10,
+       "label": "17°10 Poissons"
+      },
+      {
+       "house": 12,
+       "longitude": 15.442,
+       "sign": "Bélier",
+       "degree": 15,
+       "minute": 26,
+       "label": "15°26 Bélier"
+      }
+     ]
+    },
+    "natal": [
+     {
+      "planet": "Soleil",
+      "longitude": 280.3536,
+      "sign": "Capricorne",
+      "degree": 10,
+      "minute": 21,
+      "label": "10°21 Capricorne",
+      "retrograde": false,
+      "house": 8
+     },
+     {
+      "planet": "Lune",
+      "longitude": 321.2438,
+      "sign": "Verseau",
+      "degree": 21,
+      "minute": 14,
+      "label": "21°14 Verseau",
+      "retrograde": false,
+      "house": 10
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 266.1016,
+      "sign": "Sagittaire",
+      "degree": 26,
+      "minute": 6,
+      "label": "26°06 Sagittaire",
+      "retrograde": false,
+      "house": 8
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 239.2846,
+      "sign": "Scorpion",
+      "degree": 29,
+      "minute": 17,
+      "label": "29°17 Scorpion",
+      "retrograde": false,
+      "house": 7
+     },
+     {
+      "planet": "Mars",
+      "longitude": 260.8643,
+      "sign": "Sagittaire",
+      "degree": 20,
+      "minute": 51,
+      "label": "20°51 Sagittaire",
+      "retrograde": false,
+      "house": 8
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 258.9069,
+      "sign": "Sagittaire",
+      "degree": 18,
+      "minute": 54,
+      "label": "18°54 Sagittaire",
+      "retrograde": false,
+      "house": 8
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 279.5452,
+      "sign": "Capricorne",
+      "degree": 9,
+      "minute": 32,
+      "label": "9°32 Capricorne",
+      "retrograde": false,
+      "house": 8
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 140.5171,
+      "sign": "Lion",
+      "degree": 20,
+      "minute": 31,
+      "label": "20°31 Lion",
+      "retrograde": true,
+      "house": 4
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 218.7047,
+      "sign": "Scorpion",
+      "degree": 8,
+      "minute": 42,
+      "label": "8°42 Scorpion",
+      "retrograde": false,
+      "house": 6
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 156.0227,
+      "sign": "Vierge",
+      "degree": 6,
+      "minute": 1,
+      "label": "6°01 Vierge",
+      "retrograde": true,
+      "house": 4
+     }
+    ],
+    "transits": [
+     {
+      "planet": "Soleil",
+      "longitude": 239.1843,
+      "sign": "Scorpion",
+      "degree": 29,
+      "minute": 11,
+      "label": "29°11 Scorpion",
+      "retrograde": false,
+      "natalHouse": 7
+     },
+     {
+      "planet": "Lune",
+      "longitude": 17.0023,
+      "sign": "Bélier",
+      "degree": 17,
+      "minute": 0,
+      "label": "17°00 Bélier",
+      "retrograde": false,
+      "natalHouse": 12
+     },
+     {
+      "planet": "Mercure",
+      "longitude": 219.7095,
+      "sign": "Scorpion",
+      "degree": 9,
+      "minute": 42,
+      "label": "9°42 Scorpion",
+      "retrograde": false,
+      "natalHouse": 7
+     },
+     {
+      "planet": "Vénus",
+      "longitude": 203.9381,
+      "sign": "Balance",
+      "degree": 23,
+      "minute": 56,
+      "label": "23°56 Balance",
+      "retrograde": false,
+      "natalHouse": 6
+     },
+     {
+      "planet": "Mars",
+      "longitude": 148.1589,
+      "sign": "Lion",
+      "degree": 28,
+      "minute": 9,
+      "label": "28°09 Lion",
+      "retrograde": false,
+      "natalHouse": 4
+     },
+     {
+      "planet": "Jupiter",
+      "longitude": 146.2811,
+      "sign": "Lion",
+      "degree": 26,
+      "minute": 16,
+      "label": "26°16 Lion",
+      "retrograde": false,
+      "natalHouse": 4
+     },
+     {
+      "planet": "Saturne",
+      "longitude": 8.2682,
+      "sign": "Bélier",
+      "degree": 8,
+      "minute": 16,
+      "label": "8°16 Bélier",
+      "retrograde": true,
+      "natalHouse": 11
+     },
+     {
+      "planet": "Uranus",
+      "longitude": 63.8616,
+      "sign": "Gémeaux",
+      "degree": 3,
+      "minute": 51,
+      "label": "3°51 Gémeaux",
+      "retrograde": true,
+      "natalHouse": 1
+     },
+     {
+      "planet": "Neptune",
+      "longitude": 1.7459,
+      "sign": "Bélier",
+      "degree": 1,
+      "minute": 44,
+      "label": "1°44 Bélier",
+      "retrograde": true,
+      "natalHouse": 11
+     },
+     {
+      "planet": "Pluton",
+      "longitude": 303.3798,
+      "sign": "Verseau",
+      "degree": 3,
+      "minute": 22,
+      "label": "3°22 Verseau",
+      "retrograde": false,
+      "natalHouse": 9
+     }
+    ],
+    "aspects": [
+     {
+      "transitPlanet": "Soleil",
+      "aspect": "conjonction",
+      "natalPlanet": "Vénus",
+      "orb": 0.1
+     },
+     {
+      "transitPlanet": "Mercure",
+      "aspect": "sextile",
+      "natalPlanet": "Saturne",
+      "orb": 0.16
+     },
+     {
+      "transitPlanet": "Jupiter",
+      "aspect": "trigone",
+      "natalPlanet": "Mercure",
+      "orb": 0.18
+     },
+     {
+      "transitPlanet": "Mercure",
+      "aspect": "sextile",
+      "natalPlanet": "Soleil",
+      "orb": 0.64
+     },
+     {
+      "transitPlanet": "Mercure",
+      "aspect": "conjonction",
+      "natalPlanet": "Neptune",
+      "orb": 1
+     },
+     {
+      "transitPlanet": "Mars",
+      "aspect": "carré",
+      "natalPlanet": "Vénus",
+      "orb": 1.13
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "carré",
+      "natalPlanet": "Saturne",
+      "orb": 1.28
+     },
+     {
+      "transitPlanet": "Lune",
+      "aspect": "trigone",
+      "natalPlanet": "Jupiter",
+      "orb": 1.9
+     },
+     {
+      "transitPlanet": "Mars",
+      "aspect": "trigone",
+      "natalPlanet": "Mercure",
+      "orb": 2.06
+     },
+     {
+      "transitPlanet": "Saturne",
+      "aspect": "carré",
+      "natalPlanet": "Soleil",
+      "orb": 2.09
+     },
+     {
+      "transitPlanet": "Vénus",
+      "aspect": "sextile",
+      "natalPlanet": "Mercure",
+      "orb": 2.16
+     },
+     {
+      "transitPlanet": "Uranus",
+      "aspect": "carré",
+      "natalPlanet": "Pluton",
+      "orb": 2.16
+     }
+    ],
+    "timing": {
+     "horizonDays": 120,
+     "basis": "transits-majeurs-vers-natal-sans-lune",
+     "quality": "porteuse",
+     "primary": {
+      "start": "2027-02-25",
+      "peak": "2027-02-28",
+      "end": "2027-03-03",
+      "aspects": [
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "trigone",
+        "natalPlanet": "Mars",
+        "orb": 1.06
+       },
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "trigone",
+        "natalPlanet": "Jupiter",
+        "orb": 0.9
+       },
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "opposition",
+        "natalPlanet": "Lune",
+        "orb": 1.44
+       },
+       {
+        "transitPlanet": "Mars",
+        "aspect": "trigone",
+        "natalPlanet": "Mercure",
+        "orb": 1.23
+       }
+      ]
+     },
+     "alternatives": [
+      {
+       "start": "2026-12-28",
+       "peak": "2026-12-31",
+       "end": "2027-01-03",
+       "aspects": [
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "trigone",
+         "natalPlanet": "Mercure",
+         "orb": 0.37
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "trigone",
+         "natalPlanet": "Soleil",
+         "orb": 0.54
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "trigone",
+         "natalPlanet": "Saturne",
+         "orb": 0.27
+        },
+        {
+         "transitPlanet": "Mercure",
+         "aspect": "sextile",
+         "natalPlanet": "Neptune",
+         "orb": 0.4
+        }
+       ]
+      },
+      {
+       "start": "2027-01-21",
+       "peak": "2027-01-24",
+       "end": "2027-01-27",
+       "aspects": [
+        {
+         "transitPlanet": "Mars",
+         "aspect": "trigone",
+         "natalPlanet": "Soleil",
+         "orb": 1.2
+        },
+        {
+         "transitPlanet": "Mars",
+         "aspect": "trigone",
+         "natalPlanet": "Saturne",
+         "orb": 0.39
+        },
+        {
+         "transitPlanet": "Saturne",
+         "aspect": "carré",
+         "natalPlanet": "Soleil",
+         "orb": 0.68
+        },
+        {
+         "transitPlanet": "Jupiter",
+         "aspect": "trigone",
+         "natalPlanet": "Mercure",
+         "orb": 1.82
+        }
+       ]
+      }
+     ],
+     "caution": {
+      "start": "2027-02-15",
+      "peak": "2027-02-18",
+      "end": "2027-02-21",
+      "aspects": [
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "trigone",
+        "natalPlanet": "Mars",
+        "orb": 0.19
+       },
+       {
+        "transitPlanet": "Jupiter",
+        "aspect": "opposition",
+        "natalPlanet": "Lune",
+        "orb": 0.19
+       },
+       {
+        "transitPlanet": "Soleil",
+        "aspect": "carré",
+        "natalPlanet": "Vénus",
+        "orb": 0.31
+       },
+       {
+        "transitPlanet": "Mercure",
+        "aspect": "carré",
+        "natalPlanet": "Vénus",
+        "orb": 0.73
+       }
+      ]
+     }
+    }
+   }
+  }
+ ]
+}

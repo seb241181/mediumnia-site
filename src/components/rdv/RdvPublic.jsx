@@ -268,7 +268,7 @@ function RdvReviews({ google, firstPerson = false }) {
       </div>
       <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
         <a href={google.mapsUrl} target="_blank" rel="noopener noreferrer" className="font-georgia text-sm font-semibold text-deep underline decoration-gold/50 underline-offset-4 hover:decoration-gold">Lire tous les avis sur Google →</a>
-        <a href="/avis" className="font-georgia text-sm text-mist underline decoration-gold/30 underline-offset-4 hover:text-deep">Laisser un avis</a>
+        <a href={google.writeUrl} target="_blank" rel="noopener noreferrer" className="font-georgia text-sm font-semibold text-deep underline decoration-gold/50 underline-offset-4 hover:decoration-gold">Laisser un avis sur Google</a>
       </div>
     </section>
   )

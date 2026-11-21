@@ -5,6 +5,10 @@
       "destination": "/api/rdv-config?rdvBalanceAction=cron"
     },
     {
+      "source": "/api/google-business/callback",
+      "destination": "/api/rdv-config?googleBusinessAction=callback"
+    },
+    {
       "source": "/test-paypal-mediumia-live-1eur-9f3b2c",
       "destination": "/index.html"
     },

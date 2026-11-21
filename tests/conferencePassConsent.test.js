@@ -10,6 +10,13 @@ import { buildConferencePassEmail, buildConferencePassConfirmationEmail, PAYPAL_
 const sha = (value) => createHash('sha256').update(value).digest('hex')
 const EVENT_ID = 'ev-1'
 const ENDS_AT = '2026-10-22T18:00:00.000Z'
+// Ces scénarios se déroulent pendant la période de demande du Pass (fin de la
+// conférence + 720 h, soit jusqu'au 21/11/2026 18:00 UTC) : l'horloge est fixée
+// dans cette période pour que les tests ne dépendent pas du jour où ils tournent.
+const OFFER_OPEN_NOW = Date.parse('2026-11-01T10:00:00.000Z')
+function openOfferClock(t) {
+  t.mock.timers.enable({ apis: ['Date'], now: OFFER_OPEN_NOW })
+}
 
 // ── Base simulée : uniquement les opérations utilisées par le serveur du Pass ────
 function fakeDb(seed) {
@@ -191,7 +198,8 @@ test('demande : accord explicite et e-mail valide obligatoires', async () => {
   assert.equal(mails.length, 0)
 })
 
-test('demande : même réponse pour une adresse inconnue ou inscrite après la conférence, sans Pass ni e-mail', async () => {
+test('demande : même réponse pour une adresse inconnue ou inscrite après la conférence, sans Pass ni e-mail', async (t) => {
+  openOfferClock(t)
   const db = fakeDb(seed())
   const unknown = await call(db, 'request', { body: { slug: 'premiere-conference-mediumia', email: 'inconnu@example.org', consent: true } })
   const late = await call(db, 'request', { body: { slug: 'premiere-conference-mediumia', email: 'late@example.org', consent: true } })
@@ -204,7 +212,8 @@ test('demande : même réponse pour une adresse inconnue ou inscrite après la c
   assert.equal(db.tables.conference_registrations.find((r) => r.id === 'r-late').offer_consent_at, undefined)
 })
 
-test('demande : accord enregistré, Pass haché créé, lien personnel envoyé une seule fois', async () => {
+test('demande : accord enregistré, Pass haché créé, lien personnel envoyé une seule fois', async (t) => {
+  openOfferClock(t)
   const db = fakeDb(seed())
   await call(db, 'request', { body: { slug: 'premiere-conference-mediumia', email: 'ada@example.org', consent: true } })
   const reg = db.tables.conference_registrations.find((r) => r.id === 'r-ada')
@@ -221,7 +230,8 @@ test('demande : accord enregistré, Pass haché créé, lien personnel envoyé u
   assert.deepEqual(db.tables.conference_pass_events.map((e) => e.event_name), ['pass_requested', 'pass_issued'])
 })
 
-test('demande répétée : rien pendant 2 minutes, puis nouveau lien qui remplace l’ancien sans second Pass', async () => {
+test('demande répétée : rien pendant 2 minutes, puis nouveau lien qui remplace l’ancien sans second Pass', async (t) => {
+  openOfferClock(t)
   const db = fakeDb(seed())
   const body = { slug: 'premiere-conference-mediumia', email: 'ada@example.org', consent: true }
   await call(db, 'request', { body })
@@ -240,7 +250,8 @@ test('demande répétée : rien pendant 2 minutes, puis nouveau lien qui remplac
   assert.equal(db.tables.conference_pass_events.at(-1).event_name, 'pass_resent')
 })
 
-test('échec d’envoi : Pass neuf supprimé, ancien lien restauré, envoi incertain conservé, tout est journalisé', async () => {
+test('échec d’envoi : Pass neuf supprimé, ancien lien restauré, envoi incertain conservé, tout est journalisé', async (t) => {
+  openOfferClock(t)
   const db = fakeDb(seed())
   const body = { slug: 'premiere-conference-mediumia', email: 'ada@example.org', consent: true }
   resendStatus = 500

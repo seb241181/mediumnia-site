@@ -235,7 +235,7 @@ test('before Google grants API access, the token is kept and the site stays on P
 test('state is signed, expires, and refusals or missing scope store nothing', async () => {
   const state = signBusinessState('n1', Date.now() + 60_000, ENV)
   assert.equal(verifyBusinessState(state, ENV), 'n1')
-  assert.equal(verifyBusinessState(`${state.slice(0, -2)}00`, ENV), null)
+  assert.equal(verifyBusinessState(`${state.slice(0, -1)}${state.endsWith('0') ? '1' : '0'}`, ENV), null)
   assert.equal(verifyBusinessState(signBusinessState('n1', Date.now() - 1, ENV), ENV), null)
   assert.equal(await completeConnect({ db: fakeDb(), env: ENV, query: { error: 'access_denied' } }), 'refused')
 

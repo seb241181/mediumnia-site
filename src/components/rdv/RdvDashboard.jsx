@@ -4,6 +4,7 @@ import EmailQuestionsPanel from './EmailQuestionsPanel'
 import AccountingSection from './AccountingSection.jsx'
 import DailyPayments from './DailyPayments.jsx'
 import UnifiedAgenda from './UnifiedAgenda.jsx'
+import BankTransferAdminPanel from './BankTransferAdminPanel.jsx'
 import UpcomingVisioToCollect from './UpcomingVisioToCollect.jsx'
 import { phoneActionHref } from '../../lib/rdvPhoneActions.js'
 
@@ -1863,6 +1864,8 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                     {activePanel === 'rdv' && (
                       <>
                   {/* Agenda quotidien complet, y compris les horaires déjà passés aujourd'hui. */}
+                  <BankTransferAdminPanel practitionerId={activePractitioner.id} session={session}
+                    onChanged={() => { loadMe(session); loadAttention(session) }} />
                   <UnifiedAgenda key={activePractitioner.id} practitionerId={activePractitioner.id} session={session} onOpenLumia={onOpenLumia} />
                   <DailyPayments
                     practitionerId={activePractitioner.id}

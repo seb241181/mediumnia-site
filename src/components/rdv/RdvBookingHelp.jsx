@@ -12,6 +12,11 @@ export default function RdvBookingHelp({ className = '' }) {
       </p>
       <p className="mt-2 text-sm leading-relaxed text-mist">Je vous aiderai à finaliser votre prise de rendez-vous.</p>
       <p className="mt-1 text-sm leading-relaxed text-mist">Merci de votre confiance et de votre compréhension.</p>
+      <p className="mt-3 rounded-lg border border-gold/20 bg-gold/5 px-3 py-2 text-sm leading-relaxed text-deep">
+        <strong>Vous attendez un e-mail de MediumIA ?</strong> Pensez à vérifier les dossiers
+        « Spams », « Indésirables » ou « Promotions », et à ajouter contact@mediumia.fr
+        à vos contacts pour retrouver plus facilement nos messages.
+      </p>
       <p className="mt-2 text-sm italic text-deep">Sébastien Seguin</p>
     </aside>
   )

@@ -13,7 +13,7 @@ export const consultationPractitioners = [
     rdvSlug: 'sebastien-seguin',
     portrait: '/sebastien.jpg',
     portraitAlt: 'Portrait de Sébastien Seguin',
-    introduction: "Je vous accompagne avec une présence attentive pour vous éclairer sur ce que vous traversez et explorer les différentes lignes de temps qui peuvent s’ouvrir à vous. Si vous êtes dans la découverte de votre médiumnité, je peux également vous aider à mieux comprendre vos ressentis, vos perceptions et votre fonctionnement, afin d’avancer avec davantage de repères et de confiance. Selon votre besoin, je propose également des séances de libération énergétique — pour aborder les blocages émotionnels, les schémas répétitifs, les liens karmiques et les ressentis d’influences spirituelles — ainsi que des dégagements énergétiques de lieux, dans une approche claire et bienveillante.",
+    introduction: "Je vous accompagne avec une présence attentive pour vous éclairer sur ce que vous traversez et explorer les différentes lignes de temps qui peuvent s’ouvrir à vous. Si vous êtes dans la découverte de votre médiumnité, je peux également vous aider à mieux comprendre vos ressentis, vos perceptions et votre fonctionnement, afin d’avancer avec davantage de repères et de confiance. Selon votre besoin, je propose également des séances de libération — pour aborder les blocages émotionnels, les schémas répétitifs, les liens karmiques et les ressentis d’influences spirituelles — ainsi que des dégagements énergétiques de lieux, dans une approche claire et bienveillante.",
     intention: 'Médiumnité, guidance intuitive et accompagnement autour des perceptions.',
     detailsLabel: 'Découvrir les consultations',
     statusLabel: null,

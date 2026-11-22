@@ -91,6 +91,9 @@ function SettlementCard({ item, practitionerId, session, refundsEnabled, onChang
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState(null)
   const remaining = item.amount_cents - item.refunded_cents
+  const guidance = item.policy_guidance || { code: 'manual_review', recommendedRefundCents: null, retainedCents: null }
+  const due = guidance.recommendedRefundCents == null ? null : Math.max(0, guidance.recommendedRefundCents - item.refunded_cents)
+  const canRetain = item.allowed.retain && (!item.new_terms || (guidance.code !== 'manual_review' && due === 0))
   const status = statusOf(item)
   const lastFailed = item.settlement_status !== 'refunded' && item.refunds.at(-1)?.status === 'failed' ? item.refunds.at(-1) : null
 
@@ -98,7 +101,7 @@ function SettlementCard({ item, practitionerId, session, refundsEnabled, onChang
     setAction(next)
     // Une clé par décision : un double clic ou un renvoi rejoue la même demande.
     setKey(newKey())
-    setAmount((remaining / 100).toFixed(2).replace('.', ','))
+    setAmount(((next === 'refund' && due != null && due > 0 ? Math.min(remaining, due) : remaining) / 100).toFixed(2).replace('.', ','))
     setTarget(item.targets[0]?.booking_id || '')
     setMessage(null)
   }
@@ -193,7 +196,16 @@ function SettlementCard({ item, practitionerId, session, refundsEnabled, onChang
         </p>
       )}
 
-      {!action && (item.allowed.refund || item.allowed.transfer || item.allowed.retain || item.allowed.reconcile) && (
+      {item.new_terms && (
+        <p className="mt-3 rounded-lg border border-gold/25 bg-gold/5 px-3 py-3 font-georgia text-xs leading-relaxed text-deep">
+          {guidance.code === 'early_full_refund'
+            ? `Annulation au moins 48 h avant : remboursement intégral prévu (${money(item.amount_cents)}), à effectuer et vérifier séparément.`
+            : guidance.code === 'late_arrhes_review'
+              ? `Annulation moins de 48 h avant : remboursement indicatif de ${money(guidance.recommendedRefundCents)}, arrhes de ${money(guidance.retainedCents)} conservables sous réserve des droits légaux, notamment de rétractation.`
+              : 'La nature de cette annulation nécessite un examen manuel (rétractation, annulation du professionnel ou situation particulière). Ne conservez pas les arrhes automatiquement.'}
+        </p>
+      )}
+      {!action && (item.allowed.refund || item.allowed.transfer || canRetain || item.allowed.reconcile) && (
         <div className="mt-3 flex flex-wrap gap-2">
           {item.allowed.reconcile && (
             <button type="button" disabled={busy} onClick={() => { const k = newKey(); setKey(k); send({ op: 'refund', idempotency_key: k }) }} className="rounded-lg bg-deep px-3 py-2 font-georgia text-xs text-gold disabled:opacity-50">
@@ -202,7 +214,7 @@ function SettlementCard({ item, practitionerId, session, refundsEnabled, onChang
           )}
           {item.allowed.refund && (
             <button type="button" onClick={() => open('refund')} className="rounded-lg bg-deep px-3 py-2 font-georgia text-xs text-gold">
-              Rembourser {money(remaining)}
+              Rembourser {money(due != null && due > 0 ? Math.min(remaining, due) : remaining)}
             </button>
           )}
           {item.allowed.transfer && (
@@ -210,7 +222,7 @@ function SettlementCard({ item, practitionerId, session, refundsEnabled, onChang
               Transférer vers un autre rendez-vous
             </button>
           )}
-          {item.allowed.retain && (
+          {canRetain && (
             <button type="button" onClick={() => open('retain')} className="rounded-lg border border-gold/25 px-3 py-2 font-georgia text-xs text-mist hover:text-deep">
               Conserver les arrhes
             </button>
@@ -302,11 +314,14 @@ export default function DepositSettlements({ practitionerId, session, onChanged 
   return (
     <div className="mt-6 rounded-2xl border border-gold/25 bg-white/55 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-georgia text-base font-medium text-deep">Arrhes des rendez-vous annulés</h3>
+        <h3 className="font-georgia text-base font-medium text-deep">Paiements PayPal des rendez-vous annulés</h3>
         <p className="font-georgia text-xs text-mist">{todo ? `${todo} à traiter` : 'Tout est traité ✓'}</p>
       </div>
       <p className="mt-1 font-georgia text-xs leading-relaxed text-mist">
-        Annuler un rendez-vous ne rembourse jamais automatiquement. Pour les dossiers à traiter, choisissez : rembourser, transférer vers un autre rendez-vous du même client, ou conserver.
+        L'annulation ne déclenche pas de remboursement automatique. Vérifiez les droits du client et les conditions
+        acceptées lors de sa réservation, puis remboursez via PayPal avec le montant adapté.
+        Pour les réservations soumises aux nouvelles conditions des 48 h, le montant à rembourser est proposé ci-dessous,
+        sous réserve des droits légaux. Les paiements par virement se remboursent séparément par voie bancaire.
       </p>
 
       {active.length ? (

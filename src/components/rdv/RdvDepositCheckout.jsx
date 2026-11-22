@@ -397,9 +397,22 @@ export default function RdvDepositCheckout({
         <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/20 bg-gold/5 p-3">
           <input type="checkbox" checked={termsAccepted} onChange={event => setTermsAccepted(event.target.checked)} className="mt-0.5 h-6 w-6 min-h-6 min-w-6 shrink-0 cursor-pointer accent-gold" />
           <span className="font-georgia text-sm leading-relaxed text-mist">
-            {paymentChoice === 'full_payment'
-              ? `J’accepte les conditions de réservation et je règle la totalité de la prestation, soit ${money(priceCents)}${priceCents >= PAY_LATER_MIN_CENTS ? ', en une fois ou en 4 fois sans frais avec PayPal' : ''}. Les conditions d’annulation et mes droits légaux restent applicables.`
-              : `J’accepte les conditions de réservation : les ${money(depositCents)} versés constituent des arrhes. En cas d’annulation à moins de 48 heures, leur traitement suit les conditions acceptées et les droits légaux applicables.`}
+            J’ai lu et j’accepte les{' '}
+            <a href="/conditions-rdv" target="_blank" rel="noopener noreferrer"
+              className="font-semibold text-deep underline decoration-gold underline-offset-2 hover:text-gold"
+              onClick={(e) => e.stopPropagation()}>
+              conditions de réservation et d’annulation
+            </a>.
+            <span className="mt-1 block text-xs">
+              Annulation au moins 48 h avant : remboursement intégral.
+              Moins de 48 h : {money(depositCents)} d’arrhes conservés et solde éventuel remboursé,
+              sous réserve des droits légaux, notamment de rétractation.
+            </span>
+            <span className="mt-1 block text-xs">
+              {paymentChoice === 'full_payment'
+                ? `Montant choisi : ${money(priceCents)} (totalité de la consultation).`
+                : `Montant choisi : ${money(depositCents)} d’arrhes, déduites du prix total.`}
+            </span>
           </span>
         </label>
         <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/20 bg-gold/5 p-3">

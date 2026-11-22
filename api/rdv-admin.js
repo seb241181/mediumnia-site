@@ -443,7 +443,7 @@ ${locLine}${priceLine}
 <p style="margin:0;font-size:13px;color:#4A3F6B;line-height:1.6;">
 Si vous avez des questions, n'hésitez pas à nous contacter en répondant directement à cet email.
 </p>
-<p style="margin:20px 0 0;font-size:13px;color:#4A3F6B;line-height:1.6;">Vous pouvez annuler vous-même jusqu’à 24 heures avant le rendez-vous.</p>
+<p style="margin:20px 0 0;font-size:13px;color:#4A3F6B;line-height:1.6;">Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous.</p>
 <p style="margin:16px 0 0;"><a href="${escapeHtml(cancelUrl)}" style="display:inline-block;background:#1A1535;color:#C9A84C;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:bold;">Annuler mon rendez-vous</a></p>
 <p style="margin:14px 0 0;font-size:11px;color:#9C8E7A;line-height:1.5;">À moins de 24 heures, contactez directement Sébastien.</p>
 <p style="margin:24px 0 0;font-size:13px;color:#4A3F6B;">À bientôt,<br><strong>L'équipe MediumIA</strong></p>
@@ -469,7 +469,7 @@ function buildConfirmationText({ firstName, svcTitle, dateStr, timeStr, location
   ]
   if (location) lines.push(`Lieu : ${location}`)
   if (finalPrice != null) lines.push(`Montant total : ${(finalPrice / 100).toFixed(2)} € TTC`)
-  lines.push('', 'Vous pouvez annuler vous-même jusqu’à 24 heures avant le rendez-vous :', cancelUrl)
+  lines.push('', 'Vous pouvez annuler vous-même jusqu’à 48 heures avant le rendez-vous :', cancelUrl)
   lines.push('', 'À moins de 24 heures, contactez directement Sébastien.', '', "L'équipe MediumIA")
   return lines.join('\n')
 }

@@ -6,6 +6,7 @@ const when=d=>new Intl.DateTimeFormat('fr-FR',{
 }).format(new Date(d))
 export default function BankTransferAdminPanel({practitionerId,session,onChanged}) {
   const [rows,setRows]=useState([])
+  const [refundRows,setRefundRows]=useState([])
   const [loading,setLoading]=useState(false)
   const [busy,setBusy]=useState(null)
   const [error,setError]=useState('')
@@ -21,6 +22,7 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
       const data=await res.json()
       if(!res.ok)throw new Error(data.error||'lecture impossible')
       setRows(data.requests||[])
+      setRefundRows(data.refunds_to_review||[])
     }catch{setError('Impossible de récupérer les virements en attente.')}
     finally{setLoading(false)}
   },[practitionerId,token])
@@ -64,7 +66,31 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
       </p>
       {error&&<p role="alert" className="text-red-800 text-sm mb-3">{error}</p>}
       {notice&&<p role="status" className="text-emerald-800 text-sm mb-3">{notice}</p>}
-      {!loading&&!pending.length&&<p className="text-sm text-mist">Aucun virement en attente.</p>}
+      {!loading&&!pending.length&&<p className="text-sm text-mist">Aucun virement en attente de validation.</p>}
+      {refundRows.length>0&&(
+        <div className="my-5 rounded-xl border border-amber-300 bg-amber-50/80 p-4">
+          <h3 className="font-georgia font-semibold text-deep">Virements de rendez-vous annulés — à examiner</h3>
+          <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">
+            Le remboursement d'un virement n'est jamais automatique. Vérifiez les droits du client et
+            demandez au payeur les coordonnées bancaires nécessaires. Après le virement de remboursement,
+            enregistrez l'opération dans la caisse MediumIA, avec le mode « virement ».
+          </p>
+          <div className="mt-3 space-y-3">
+            {refundRows.map(row=>(
+              <article key={row.request_id} className="rounded-lg border border-amber-200 bg-white p-3">
+                <p className="font-georgia text-sm font-semibold">{row.customer_name} — {when(row.starts_at)}</p>
+                <p className="text-xs text-mist">Réf. {row.reference} · reçu initialement : {money(row.amount_cents)}</p>
+                <p className="mt-2 text-sm font-georgia text-deep">
+                  {row.recommended_refund_cents == null
+                    ? 'Montant à vérifier manuellement (ancien contrat, annulation du praticien ou droit légal).'
+                    : 'Remboursement restant indicatif : '+money(row.recommended_refund_cents)+' (sous réserve des droits légaux).'}
+                </p>
+                <a className="mt-2 inline-block text-xs text-gold underline" href={'mailto:'+row.customer_email}>Contacter le client</a>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
         {pending.map(row=><article key={row.id} className="rounded-xl border border-gold/20 bg-white/75 p-4">
           <div className="flex flex-wrap justify-between gap-3">

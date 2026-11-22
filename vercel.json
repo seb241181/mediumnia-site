@@ -97,6 +97,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/conditions-rdv",
+      "destination": "/index.html"
+    },
+    {
       "source": "/mentions",
       "destination": "/index.html"
     },

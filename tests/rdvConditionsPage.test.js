@@ -27,6 +27,6 @@ test('RDV : la nouvelle version des conditions est conservée dans tous les paie
   ])
   for(const source of [deposit,full,bank]){
     assert.match(source, /RDV_TERMS_VERSION/)
-    assert.match(source, /p_terms_version: TERMS_VERSION/)
+    assert.match(source, /p_terms_version:\\s*TERMS_VERSION/)
   }
 })

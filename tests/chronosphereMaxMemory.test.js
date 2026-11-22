@@ -159,7 +159,7 @@ test('MAX preview exposes the solar temperament panel without turning it into a 
   assert.match(page, /pas une vérité psychologique/)
 })
 
-test('MAX launch stays distinct from V2 and exposes its own 19.90 checkout', async () => {
+test('MAX launch stays distinct from V2 and exposes its own 14.90 checkout', async () => {
   const [page, app, paypal, vercel, launchSql] = await Promise.all([
     readFile(pagePath, 'utf8'),
     readFile(appPath, 'utf8'),
@@ -172,14 +172,14 @@ test('MAX launch stays distinct from V2 and exposes its own 19.90 checkout', asy
     source: '/chronosphere-max',
     destination: '/index.html',
   })
-  assert.match(page, /19,90 €/)
+  assert.match(page, /14,90 €/)
   assert.match(page, /ChronoSphère MAX activé/)
   assert.match(page, /product: 'max3'/)
   assert.match(page, /Donnée comparée/)
   assert.match(page, /Interprétation symbolique/)
   assert.doesNotMatch(page, /probabilit/i)
   assert.match(paypal, /MAX_CONSENT_VERSION/)
-  assert.match(paypal, /displayAmount: '19\.90'/)
+  assert.match(paypal, /displayAmount: '14\.90'/)
   assert.match(paypal, /product === 'max3'/)
   assert.match(paypal, /displayAmount: '9\.90'/)
   assert.match(paypal, /displayAmount: '5\.00'/)

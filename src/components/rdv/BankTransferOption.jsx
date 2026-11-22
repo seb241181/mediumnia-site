@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 // 96 h = strictement au-delà des trois jours demandés ; le serveur revalide.
 export default function BankTransferOption({
   practitionerSlug,service,dateStr,time,customer,checkoutId,
-  paymentChoice,consentsReady,selectedModality,onBankPending,onUnavailable,offerToken,
+  paymentChoice,consentsReady,selectedModality,onBankPending,onUnavailable,offerToken,onAvailabilityChange,
 }) {
   const [config,setConfig]=useState({enabled:false,minLeadHours:96})
   const [busy,setBusy]=useState(false)
@@ -20,6 +20,9 @@ export default function BankTransferOption({
   const startsAt=dateStr&&time?new Date(dateStr+'T'+time+':00'):null
   const enoughTime=startsAt&&Number.isFinite(startsAt.getTime())
     &&startsAt.getTime()>Date.now()+96*60*60*1000
+  useEffect(() => {
+    onAvailabilityChange?.(Boolean(config.enabled && !offerToken && enoughTime))
+  }, [config.enabled, offerToken, enoughTime, onAvailabilityChange])
   if(!config.enabled||offerToken)return null
   if(!enoughTime)return (
     <p className="rounded-xl border border-gold/20 bg-white/50 p-3 font-georgia text-xs leading-relaxed text-mist">
@@ -54,7 +57,7 @@ export default function BankTransferOption({
     finally {setBusy(false)}
   }
   return (
-    <section className="rounded-2xl border border-gold/30 bg-white/70 p-5">
+    <section id="rdv-bank-transfer" tabIndex={-1} className="scroll-mt-24 rounded-2xl border border-gold/30 bg-white/70 p-5 focus:outline-none">
       <p className="font-georgia text-[11px] uppercase tracking-[.18em] text-gold">Autre moyen de paiement</p>
       <h3 className="mt-2 font-georgia text-base font-semibold text-deep">Virement bancaire</h3>
       <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">

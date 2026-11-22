@@ -1,0 +1,34 @@
+name: Bank AIS read-only checks
+
+on:
+  push:
+    branches: [feat/credit-mutuel-reconciliation-readonly-20261122]
+  pull_request:
+    paths:
+      - 'lib/enableBanking*.js'
+      - 'lib/rdvBankReconciliation.js'
+      - 'src/components/rdv/BankTransferAdminPanel.jsx'
+      - 'tests/enableBankingAuth.test.js'
+      - 'tests/rdvBankReconciliation.test.js'
+      - 'api/rdv-admin.js'
+      - 'api/rdv-config.js'
+      - 'vercel.json'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --version
+      - run: npm ci --ignore-scripts
+      - run: node --check lib/enableBankingAuth.js
+      - run: node --check lib/enableBankingConnect.js
+      - run: node --check lib/enableBankingSync.js
+      - run: node --check lib/enableBankingCron.js
+      - run: node --test tests/enableBankingAuth.test.js tests/rdvBankReconciliation.test.js
+      - run: npx vite build

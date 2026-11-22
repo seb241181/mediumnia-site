@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/banking/callback",
+      "destination": "/api/rdv-config?bankConnectionAction=callback"
+    },
+    {
       "source": "/api/rdv-balance-cron",
       "destination": "/api/rdv-config?rdvBalanceAction=cron"
     },

@@ -254,10 +254,20 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
           <li>Supabase — base de données et authentification</li>
           <li>Resend — emails transactionnels</li>
           <li>Google (Google Calendar) — synchronisation des rendez-vous</li>
+          <li>RepU — affichage des avis Google sur les pages publiques concernées</li>
           <li>Anthropic — intelligence artificielle (certaines fonctions)</li>
           <li>OpenAI — intelligence artificielle (certaines fonctions)</li>
           <li>PayPal — paiement sécurisé de l'Oracle</li>
         </ul>
+      </Section>
+
+      <Section title="Affichage des avis Google">
+        <p>
+          Les avis Google présentés sur certaines pages de MediumIA sont affichés grâce à un widget externe fourni par RepU.
+          Le chargement de ce widget établit une connexion aux serveurs de RepU et peut entraîner la transmission de données techniques
+          de connexion (notamment l'adresse IP) à ce prestataire. Le texte et la note des avis proviennent de Google ;
+          MediumIA ne les réécrit pas.
+        </p>
       </Section>
 
       <Section title="Conservation des données">

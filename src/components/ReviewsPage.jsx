@@ -154,6 +154,42 @@ export function GoogleReviewsBlock({ max = 3, columns = 'md:grid-cols-3' }) {
   )
 }
 
+// RepU carousel: user-configured Google reviews widget. Only public pages load
+// the third-party script, after React has mounted the widget container.
+// Keep the native Google Places/Business component as a network-error fallback.
+const REPU_WIDGET_SCRIPT = 'https://business.repu.ai/widget/reviews.js'
+const REPU_WIDGET_ID = '3ac987072d88d2bf'
+
+export function RepUGoogleReviewsBlock({ max = 3, columns = 'md:grid-cols-3' }) {
+  const [scriptFailed, setScriptFailed] = useState(false)
+
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = REPU_WIDGET_SCRIPT
+    script.async = true
+    script.onerror = () => setScriptFailed(true)
+    document.body.appendChild(script)
+    return () => {
+      script.onerror = null
+      script.remove()
+    }
+  }, [])
+
+  if (scriptFailed) return <GoogleReviewsBlock max={max} columns={columns} />
+
+  return (
+    <div className="mb-8 min-w-0">
+      <div data-repu-inline={REPU_WIDGET_ID} className="min-w-0" aria-label="Témoignages Google récents" />
+      <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <GoogleReviewButton />
+        <a href={GOOGLE_LINKS.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-gold/45 bg-white/80 px-6 py-3 font-georgia text-sm font-bold text-deep hover:bg-white">
+          Voir tous les avis sur Google <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+  )
+}
+
 // Home block: recent Google reviews first, then reviews left on MediumIA
 // (consultations and other services, never the formation testimonials).
 export function ReviewsHighlight() {
@@ -171,7 +207,7 @@ export function ReviewsHighlight() {
           Vous avez consulté Sébastien&nbsp;? Votre avis sur Google aide d’autres personnes à le trouver et à choisir en confiance.
         </p>
       </div>
-      <GoogleReviewsBlock max={3} />
+      <RepUGoogleReviewsBlock max={3} />
       {siteReviews.length > 0 && (
         <>
           <h3 className="mb-4 text-center font-georgia text-xs uppercase tracking-[0.2em] text-gold">Avis déposés sur MediumIA</h3>
@@ -608,7 +644,7 @@ export default function ReviewsPage({ onBack, onNavigate }) {
               <div className="space-y-10">
                 <section aria-labelledby="avis-google-title">
                   <h2 id="avis-google-title" className="mb-4 font-georgia text-2xl font-medium">Avis Google</h2>
-                  <GoogleReviewsBlock max={10} columns="grid-cols-1" />
+                  <RepUGoogleReviewsBlock max={10} columns="grid-cols-1" />
                 </section>
 
                 <section aria-labelledby="avis-mediumia-title" className="space-y-4">

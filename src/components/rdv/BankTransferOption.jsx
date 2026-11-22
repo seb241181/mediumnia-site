@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 // 96 h = strictement au-delà des trois jours demandés ; le serveur revalide.
 export default function BankTransferOption({
   practitionerSlug,service,dateStr,time,customer,checkoutId,
-  paymentChoice,consentsReady,selectedModality,onBankPending,onUnavailable,offerToken,onAvailabilityChange,
+  paymentChoice,consentsReady,selectedModality,onBankPending,onUnavailable,offerToken,
 }) {
   const [config,setConfig]=useState({enabled:false,minLeadHours:96})
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
+  const [expanded,setExpanded]=useState(false)
   useEffect(()=>{
     let active=true
     fetch('/api/rdv-config?bankBookingAction=config')
@@ -20,16 +21,7 @@ export default function BankTransferOption({
   const startsAt=dateStr&&time?new Date(dateStr+'T'+time+':00'):null
   const enoughTime=startsAt&&Number.isFinite(startsAt.getTime())
     &&startsAt.getTime()>Date.now()+96*60*60*1000
-  useEffect(() => {
-    onAvailabilityChange?.(Boolean(config.enabled && !offerToken && enoughTime))
-  }, [config.enabled, offerToken, enoughTime, onAvailabilityChange])
-  if(!config.enabled||offerToken)return null
-  if(!enoughTime)return (
-    <p className="rounded-xl border border-gold/20 bg-white/50 p-3 font-georgia text-xs leading-relaxed text-mist">
-      Le virement bancaire est disponible uniquement pour les rendez-vous dans plus de quatre jours,
-      afin de laisser le temps aux banques de traiter le paiement.
-    </p>
-  )
+  if(!config.enabled || offerToken || !enoughTime) return null
   async function submit() {
     if(busy||!consentsReady)return
     setBusy(true);setError('')
@@ -57,9 +49,20 @@ export default function BankTransferOption({
     finally {setBusy(false)}
   }
   return (
-    <section id="rdv-bank-transfer" tabIndex={-1} className="scroll-mt-24 rounded-2xl border border-gold/30 bg-white/70 p-5 focus:outline-none">
-      <p className="font-georgia text-[11px] uppercase tracking-[.18em] text-gold">Autre moyen de paiement</p>
-      <h3 className="mt-2 font-georgia text-base font-semibold text-deep">Virement bancaire</h3>
+    <section id="rdv-bank-transfer" className="scroll-mt-20">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls="rdv-bank-transfer-details"
+        onClick={() => setExpanded(open => !open)}
+        className="flex min-h-[55px] w-full items-center justify-center gap-3 rounded-md bg-deep px-4 py-3 font-georgia text-base font-semibold text-cream transition hover:bg-deep/90 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold/40"
+      >
+        <span>Virement bancaire</span>
+        <span aria-hidden="true" className="text-xl">{expanded ? '−' : '+'}</span>
+      </button>
+      {expanded && (
+      <div id="rdv-bank-transfer-details" className="mt-3 rounded-xl border border-gold/30 bg-white/80 p-4">
+      <p className="font-georgia text-xs uppercase tracking-[.16em] text-gold">Paiement par virement — mode d’emploi</p>
       <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">
         Vous pouvez effectuer un virement pour les arrhes ou pour la totalité.
         Le créneau sera <strong>bloqué provisoirement pendant 72 heures au maximum</strong>,
@@ -76,6 +79,8 @@ export default function BankTransferOption({
         {busy?'Réservation provisoire en cours…':'Bloquer mon créneau et recevoir le RIB'}
       </button>
       {!consentsReady&&<p className="mt-2 text-xs text-mist">Acceptez d’abord les conditions de réservation ci-dessus.</p>}
+      </div>
+      )}
     </section>
   )
 }

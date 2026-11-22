@@ -12,6 +12,7 @@ import { handleChronospherePayPal } from '../lib/chronospherePayPal.js'
 import { handleMediumiaAnalytics } from '../lib/mediumiaAnalytics.js'
 import { handleRdvDepositApi } from '../lib/rdvDepositApiHandler.js'
 import { handleBankBookingPublic } from '../lib/rdvBankBooking.js'
+import { handleEnableBankingConnection } from '../lib/enableBankingConnect.js'
 import { handleRdvFullPaymentCreate } from '../lib/rdvFullPaymentApiHandler.js'
 import { handleRdvBalanceApi } from '../lib/rdvBalanceApiHandler.js'
 import { handleMarketingApi } from '../lib/marketingConsent.js'
@@ -38,6 +39,7 @@ const CONFIG_REQUIRED = (notice, practitioner = null, services = []) => ({
 })
 
 export default async function handler(req, res) {
+  if (req.query?.bankConnectionAction === 'callback') return handleEnableBankingConnection(req, res, 'callback')
   if (req.query?.bankBookingAction) return handleBankBookingPublic(req, res, req.query.bankBookingAction)
   if (req.query.conferencePassAction) return handleConferencePassPayPal(req, res, req.query.conferencePassAction)
   res.setHeader('Cache-Control', 'no-store')

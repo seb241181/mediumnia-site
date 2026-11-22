@@ -38,6 +38,18 @@
 - Distinguer le compte **PRO** des autres comptes ; le système doit refuser un doute de correspondance.
 - Tests de bout en bout et audit de sécurité, puis autorisation explicite du titulaire avant mise en service.
 
+
+## Deux étapes d'autorisation distinctes — confirmé par Enable Banking
+
+1. **Activer en associant des comptes** dans le Control Panel Enable Banking : cette étape autorise le fournisseur à reconnaître/whitelister le compte propre de l'utilisateur et change l'application de `Inactive` à `Active (restricted)`. Elle ne nécessite pas encore que le callback MediumIA soit déployé. Elle **ne crée pas** de session bancaire accessible à MediumIA.
+2. **Consentement à la connexion MediumIA** après publication et configuration : lancement `POST /auth` par la fonction serveur MediumIA, authentification auprès de la banque, retour sur `/api/banking/callback`, échange du `code` contre un `session_id` via `POST /sessions`. La connexion ne doit jamais être considérée comme établie seulement à l'étape 1.
+
+Cette séparation est documentée : https://enablebanking.com/docs/api/linked-accounts .
+
+**Conditions commerciales :** une application Production restreinte utilisée par une entreprise est réservée à l'évaluation, pas à un usage professionnel permanent. Pour un usage de comptabilité récurrente sous licence commerciale, prévoir l'accord contractuel du fournisseur ; voir https://enablebanking.com/terms/ .
+
+**Clés et sécurité :** l'application actuelle reste conservée à la demande du titulaire, mais la clé RSA précédemment partagée ne doit pas être copiée depuis le chat vers un serveur. Toute mise en service technique reste désactivée et exige un secret sain configuré directement par le propriétaire, sans divulgation dans cette discussion.
+
 ## Documents officiels
 
 - https://enablebanking.com/docs/api/reference/

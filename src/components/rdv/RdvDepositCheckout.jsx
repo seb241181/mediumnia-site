@@ -74,6 +74,7 @@ export default function RdvDepositCheckout({
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [earlyPerformance, setEarlyPerformance] = useState(false)
   const [paymentChoice, setPaymentChoice] = useState('arrhes')
+  const [bankTransferAvailable, setBankTransferAvailable] = useState(false)
   // Only event names are sent; repeated SDK callbacks do not inflate a page visit.
   const checkoutFunnelSent = useRef(new Set())
   const emitOnce = (event) => {
@@ -349,6 +350,21 @@ export default function RdvDepositCheckout({
 
   return (
     <div className="space-y-5">
+      {bankTransferAvailable && (
+        <button
+          type="button"
+          aria-controls="rdv-bank-transfer"
+          onClick={() => {
+            const section = document.getElementById('rdv-bank-transfer')
+            section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            section?.focus({ preventScroll: true })
+          }}
+          className="w-full min-h-14 rounded-2xl border-2 border-gold bg-deep px-5 py-4 text-left font-georgia text-cream shadow-sm transition hover:bg-deep/90 focus:outline-none focus-visible:ring-4 focus-visible:ring-gold/50"
+        >
+          <span className="block text-base font-semibold">Payer par virement bancaire ↓</span>
+          <span className="mt-1 block text-xs text-cream/85">Arrhes ou totalité · accès direct aux informations et au RIB</span>
+        </button>
+      )}
       {fullOnlineAllowed && (
         <div className="rounded-2xl border border-gold/30 bg-white/70 p-5 space-y-3">
           <p className="font-georgia text-[11px] tracking-[.18em] uppercase text-gold">Choisissez votre règlement</p>
@@ -447,6 +463,7 @@ export default function RdvDepositCheckout({
         offerToken={offerToken}
         onBankPending={onBankPending}
         onUnavailable={onUnavailable}
+        onAvailabilityChange={setBankTransferAvailable}
       />
     </div>
   )

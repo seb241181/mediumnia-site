@@ -107,6 +107,23 @@ test('mauvais consentement, banque, compte ou type de PSU = aucun rapprochement'
   }
 })
 
+
+test('un consentement multi-comptes ne lit que le compte professionnel approuvé', async () => {
+  const db = fakeDatabase()
+  const accountReads = []
+  const result = await syncBankConnection({
+    db, config, connection: conn, now,
+    read: async (_config, kind, id) => {
+      if (kind === 'session') return { ...session, accounts: [SESSION, ACCOUNT] }
+      accountReads.push(id)
+      return { transactions: [bookedCredit] }
+    },
+  })
+  assert.equal(result.status, 'ok')
+  assert.deepEqual(accountReads, [ACCOUNT])
+  assert.equal(db.records.candidates.length, 1)
+})
+
 test('mouvement au montant différent : aucune proposition conservée', async () => {
   const db = fakeDatabase()
   const result = await syncBankConnection({

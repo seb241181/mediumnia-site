@@ -58,8 +58,8 @@ app = replaceRequired(
 
 app = replaceRequired(
   app,
-  `    const viewMap = { '/mentions': 'mentions', '/confidentialite': 'confidentialite', '/cgv-oracle': 'cgv-oracle', '/retractation': 'retractation' }`,
-  `    const viewMap = { '/mentions': 'mentions', '/confidentialite': 'confidentialite', '/cgv-oracle': 'cgv-oracle', '/retractation': 'retractation', '/conferences': 'conferences' }`,
+  `'/retractation': 'retractation' }`,
+  `'/retractation': 'retractation', '/conferences': 'conferences' }`,
   'footer conference navigation',
 )
 

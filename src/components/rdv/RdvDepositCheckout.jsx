@@ -350,21 +350,37 @@ export default function RdvDepositCheckout({
 
   return (
     <div className="space-y-5">
-      {bankTransferAvailable && (
-        <button
-          type="button"
-          aria-controls="rdv-bank-transfer"
-          onClick={() => {
-            const section = document.getElementById('rdv-bank-transfer')
-            section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            section?.focus({ preventScroll: true })
-          }}
-          className="w-full min-h-14 rounded-2xl border-2 border-gold bg-deep px-5 py-4 text-left font-georgia text-cream shadow-sm transition hover:bg-deep/90 focus:outline-none focus-visible:ring-4 focus-visible:ring-gold/50"
-        >
-          <span className="block text-base font-semibold">Payer par virement bancaire ↓</span>
-          <span className="mt-1 block text-xs text-cream/85">Arrhes ou totalité · accès direct aux informations et au RIB</span>
-        </button>
-      )}
+      <div className={`grid gap-3 ${bankTransferAvailable ? 'grid-cols-2' : 'grid-cols-1'}`} aria-label="Autres moyens de paiement">
+        {bankTransferAvailable && (
+          <button
+            type="button"
+            aria-controls="rdv-bank-transfer"
+            onClick={() => {
+              const section = document.getElementById('rdv-bank-transfer')
+              section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              section?.focus({ preventScroll: true })
+            }}
+            className="min-w-0 min-h-20 rounded-2xl border-2 border-gold bg-deep px-3 py-3 text-left font-georgia text-cream shadow-sm transition hover:bg-deep/90 focus:outline-none focus-visible:ring-4 focus-visible:ring-gold/50 sm:px-5"
+          >
+            <span className="block text-sm font-semibold leading-snug sm:text-base">Virement bancaire</span>
+            <span className="mt-1 block text-xs leading-snug text-cream/85">Accéder au RIB ↓</span>
+          </button>
+        )}
+        <GiftCardRedeem
+          compact
+          practitionerSlug={practitionerSlug}
+          service={service}
+          dateStr={dateStr}
+          time={time}
+          customer={customer}
+          selectedModality={selectedModality}
+          consentsReady={consentsReady}
+          depositCents={fullPaymentRequired ? priceCents : depositCents}
+          priceCents={priceCents}
+          onComplete={onComplete}
+          onUnavailable={onUnavailable}
+        />
+      </div>
       {fullOnlineAllowed && (
         <div className="rounded-2xl border border-gold/30 bg-white/70 p-5 space-y-3">
           <p className="font-georgia text-[11px] tracking-[.18em] uppercase text-gold">Choisissez votre règlement</p>
@@ -423,40 +439,55 @@ export default function RdvDepositCheckout({
           </span>
         </label>
       </div>
-
-      <GiftCardRedeem
-        practitionerSlug={practitionerSlug}
-        service={service}
-        dateStr={dateStr}
-        time={time}
-        customer={customer}
-        selectedModality={selectedModality}
-        consentsReady={consentsReady}
-        depositCents={fullPaymentRequired ? priceCents : depositCents}
-        priceCents={priceCents}
-        onComplete={onComplete}
-        onUnavailable={onUnavailable}
-      />
-
       <div className="rounded-2xl border border-gold/30 bg-white/70 p-5">
-        <p className="font-georgia text-sm text-mist leading-relaxed mb-4">Votre créneau est bloqué pendant 15 minutes à partir de la création du paiement.</p>
-        <PayPalGuestNotice className="mb-4" />
-        {paymentChoice === 'full_payment' && <p className="mb-4 text-sm text-mist">Une autre personne peut régler ce rendez-vous. Conservez les coordonnées du bénéficiaire dans la réservation et utilisez le moyen de paiement du payeur dans PayPal.</p>}
-        <div className="mb-4 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 font-georgia text-xs leading-relaxed text-deep">
-          <p className="font-semibold">Comment payer ?</p>
-          <ul className="mt-1.5 space-y-1 text-mist">
-            <li>• <strong className="text-deep">PayPal</strong> : en 1 fois{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou en 4 fois sans frais avec le bouton « Payer en 4X » (compte PayPal requis, il peut être créé pendant le paiement)' : ''}.</li>
-          </ul>
-          {paymentCents < PAY_LATER_MIN_CENTS && priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
-            <p className="mt-1.5 text-mist">Le paiement en 4 fois est proposé par PayPal à partir de 30 € : choisissez « Régler la totalité » pour en profiter.</p>
-          )}
-          {priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
-            <p className="mt-2 text-[10px] text-mist/80">Paiement en 4X proposé par PayPal, sous réserve d’acceptation par PayPal. Un crédit vous engage et doit être remboursé. Vérifiez vos capacités de remboursement avant de vous engager.</p>
-          )}
-        </div>
+        <p className="mb-3 font-georgia text-sm leading-relaxed text-mist">
+          Réglez votre réservation avec PayPal ou, si PayPal le propose, directement par carte bancaire.
+        </p>
+        <details className="group mb-3 rounded-xl border border-gold/25 bg-gold/5">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-georgia text-sm font-semibold text-deep focus-visible:outline-gold">
+            <span>Comment payer ? Carte, PayPal et 4X</span>
+            <span aria-hidden="true" className="text-gold transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="space-y-3 border-t border-gold/20 px-4 py-4">
+            <p className="font-georgia text-sm text-mist">Votre créneau est bloqué pendant 15 minutes à partir de la création du paiement.</p>
+            <PayPalGuestNotice />
+            {paymentChoice === 'full_payment' && (
+              <p className="font-georgia text-sm leading-relaxed text-mist">
+                Une autre personne peut régler ce rendez-vous : conservez les coordonnées du bénéficiaire
+                dans la réservation et choisissez le moyen de paiement du payeur dans PayPal.
+              </p>
+            )}
+            <p className="font-georgia text-xs leading-relaxed text-mist">
+              PayPal : règlement en 1 fois
+              {paymentCents >= PAY_LATER_MIN_CENTS
+                ? ', ou en 4 fois avec le bouton « Payer en 4X » (compte PayPal requis).'
+                : '.'}
+            </p>
+            {paymentCents < PAY_LATER_MIN_CENTS && priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
+              <p className="font-georgia text-xs text-mist">
+                Le paiement en 4 fois est proposé par PayPal à partir de 30 € :
+                choisissez « Régler la totalité » pour en profiter.
+              </p>
+            )}
+          </div>
+        </details>
+        {priceCents >= PAY_LATER_MIN_CENTS && fullOnlineAllowed && (
+          <p className="mb-3 font-georgia text-[11px] leading-relaxed text-mist">
+            Le paiement en 4X est proposé par PayPal sous réserve d’acceptation.
+            Un crédit vous engage et doit être remboursé. Vérifiez vos capacités de remboursement avant de vous engager.
+          </p>
+        )}
         {holdUntil && <p className="font-georgia text-xs text-mist mb-3">Créneau protégé jusqu’à {new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(holdUntil))}.</p>}
         {notice && <p className="font-georgia text-sm text-red-800 bg-red-50 rounded-xl px-3 py-2 mb-3">{notice}</p>}
-        <RdvBookingHelp className="mb-4" />
+        <details className="group mb-4 rounded-xl border border-gold/20 bg-white/60">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-georgia text-sm font-semibold text-deep">
+            <span>Une difficulté pour réserver ?</span>
+            <span aria-hidden="true" className="text-gold transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="border-t border-gold/15 p-3">
+            <RdvBookingHelp />
+          </div>
+        </details>
         {!consentsReady ? (
           <p className="font-georgia text-sm text-mist text-center py-3">Cochez les deux cases ci-dessus pour afficher le paiement PayPal et, si proposée, l’option <strong className="text-deep">carte bancaire sans compte</strong>{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou le paiement en plusieurs fois selon éligibilité' : ''}.</p>
         ) : (

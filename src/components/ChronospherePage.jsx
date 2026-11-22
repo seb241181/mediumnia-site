@@ -915,7 +915,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
                   className="flex flex-col rounded-2xl border-2 border-gold/50 bg-white/85 p-5 text-left text-deep transition-colors hover:border-gold">
                   <span className="font-georgia text-[11px] uppercase tracking-[.13em] text-gold">Pour suivre une situation</span>
                   <span className="mt-2 font-georgia text-lg font-semibold">ChronoSphère MAX</span>
-                  <span className="mt-1 font-georgia text-2xl">{maxPrice || '19,90 € TTC'}</span>
+                  <span className="mt-1 font-georgia text-2xl">{maxPrice || '14,90 € TTC'}</span>
                   <span className="mt-3 font-georgia text-xs leading-relaxed text-mist">
                     3 lectures <strong>reliées à la même situation</strong>.
                     MAX conserve la mémoire, compare les étapes et construit une synthèse finale.

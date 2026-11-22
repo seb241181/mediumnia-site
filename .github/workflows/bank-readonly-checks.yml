@@ -10,6 +10,7 @@ on:
       - 'src/components/rdv/BankTransferAdminPanel.jsx'
       - 'tests/enableBankingAuth.test.js'
       - 'tests/rdvBankReconciliation.test.js'
+      - 'tests/enableBankingSync.test.js'
       - 'api/rdv-admin.js'
       - 'api/rdv-config.js'
       - 'vercel.json'
@@ -30,5 +31,5 @@ jobs:
       - run: node --check lib/enableBankingConnect.js
       - run: node --check lib/enableBankingSync.js
       - run: node --check lib/enableBankingCron.js
-      - run: node --test tests/enableBankingAuth.test.js tests/rdvBankReconciliation.test.js
+      - run: node --test tests/enableBankingAuth.test.js tests/rdvBankReconciliation.test.js tests/enableBankingSync.test.js
       - run: npx vite build

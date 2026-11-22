@@ -690,7 +690,11 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
     setError('')
     const err = validateForm()
     if (err) { setError(err); return }
-    if (!selectedProduct) { setError('Choisissez le tirage unique ou le pack de 3 tirages.'); return }
+    if (!selectedProduct) {
+      setError('Choisissez une formule dans la sélection proposée plus haut.')
+      offersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     setShowPayment(true)
   }
 
@@ -854,7 +858,7 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               Vous choisissez trois nombres, qui correspondent à trois cartes de mon Oracle. ChronoSphère les relie à votre thème natal et au ciel du moment pour explorer plusieurs lignes de temps possibles.
             </p>
             <p className="mt-4 font-georgia text-sm font-semibold text-deep">
-              1 tirage à {singlePrice || '5,00 € TTC'} · 3 tirages à {packPrice || '9,90 € TTC'}
+              Choisissez la formule qui correspond à votre démarche.
             </p>
           </div>
 
@@ -875,33 +879,53 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
           </div>
 
           {offersVisible && (
-            <div className="mx-auto mt-5 grid max-w-3xl gap-3 sm:grid-cols-2" aria-label="Choisir un tirage ChronoSphère">
-              <button
-                type="button"
-                disabled={!paypalConfig}
+            <div ref={offersRef} className="mx-auto mt-6 max-w-4xl scroll-mt-28">
+              <h2 className="mb-3 font-georgia text-xl font-medium text-deep md:text-2xl">Choisissez votre formule</h2>
+              <p className="mb-4 font-georgia text-sm leading-relaxed text-mist">
+                Trois formules, une seule sélection. Le pack vous laisse explorer librement ; MAX accompagne une même situation dans le temps.
+              </p>
+              <div className="grid gap-3 md:grid-cols-3" aria-label="Choisir une seule formule ChronoSphère">
+                
+              <button type="button" disabled={!paypalConfig}
                 aria-pressed={selectedProduct === 'single'}
                 onClick={() => chooseOffer('single')}
-                className="rounded-2xl border-2 border-gold/30 bg-white/80 p-5 text-left transition-colors hover:border-gold disabled:opacity-60 aria-pressed:border-deep"
-              >
-                <span className="block font-georgia text-[11px] uppercase tracking-[0.13em] text-gold">Pour découvrir</span>
-                <span className="mt-2 block font-georgia text-lg font-semibold text-deep">Un tirage complet</span>
-                <span className="mt-1 block font-georgia text-2xl text-deep">{singlePrice || '5,00 € TTC'}</span>
-                <span className="mt-3 block font-georgia text-xs leading-relaxed text-mist">Une question, trois cartes et votre lecture personnelle.</span>
-                <span className="mt-3 block font-georgia text-sm font-bold text-deep underline decoration-gold/60 underline-offset-4">Préparer mon tirage →</span>
+                className={`flex flex-col rounded-2xl border-2 p-5 text-left transition-colors hover:border-gold disabled:opacity-60 ${selectedProduct === 'single' ? 'border-deep bg-deep text-cream' : 'border-gold/30 bg-white/80 text-deep'}`}>
+                <span className="font-georgia text-[11px] uppercase tracking-[.13em] text-gold">Pour découvrir</span>
+                <span className="mt-2 font-georgia text-lg font-semibold">Tirage unique</span>
+                <span className="mt-1 font-georgia text-2xl">{singlePrice || '5,00 € TTC'}</span>
+                <span className={`mt-3 font-georgia text-xs leading-relaxed ${selectedProduct === 'single' ? 'text-cream/80' : 'text-mist'}`}>1 question, 3 cartes et 1 lecture complète.</span>
+                <span className={`mt-auto pt-5 font-georgia text-sm font-bold underline decoration-gold/60 underline-offset-4 ${selectedProduct === 'single' ? 'text-gold' : 'text-deep'}`}>
+                  {selectedProduct === 'single' ? 'Formule sélectionnée ✓' : 'Choisir ce tirage →'}
+                </span>
               </button>
-              <button
-                type="button"
-                disabled={!paypalConfig}
+                
+              <button type="button" disabled={!paypalConfig}
                 aria-pressed={selectedProduct === 'pack3'}
                 onClick={choosePack}
-                className="rounded-2xl border-2 border-gold/60 bg-gold/[.08] p-5 text-left transition-colors hover:border-gold disabled:opacity-60 aria-pressed:border-deep"
-              >
-                <span className="block font-georgia text-[11px] uppercase tracking-[0.13em] text-gold">Pour prendre son temps</span>
-                <span className="mt-2 block font-georgia text-lg font-semibold text-deep">Pack conseillé : {packPrice || '9,90 € TTC'}</span>
-                <span className="mt-1 block font-georgia text-sm text-deep">3 tirages complets</span>
-                <span className="mt-3 block font-georgia text-xs leading-relaxed text-mist">Un maintenant, les autres quand vous le souhaitez, dans les 6 mois. Reprise grâce à votre lien personnel.</span>
-                <span className="mt-3 block font-georgia text-sm font-bold text-deep underline decoration-gold/60 underline-offset-4">Choisir le pack →</span>
+                className={`flex flex-col rounded-2xl border-2 p-5 text-left transition-colors hover:border-gold disabled:opacity-60 ${selectedProduct === 'pack3' ? 'border-deep bg-deep text-cream' : 'border-gold/60 bg-gold/[.08] text-deep'}`}>
+                <span className="font-georgia text-[11px] uppercase tracking-[.13em] text-gold">Pour explorer librement</span>
+                <span className="mt-2 font-georgia text-lg font-semibold">Pack 3 tirages</span>
+                <span className="mt-1 font-georgia text-2xl">{packPrice || '9,90 € TTC'}</span>
+                <span className={`mt-3 font-georgia text-xs leading-relaxed ${selectedProduct === 'pack3' ? 'text-cream/80' : 'text-mist'}`}>3 tirages <strong>indépendants</strong> sur les sujets de votre choix, à effectuer en 6 mois. Chaque lecture est complète, sans comparaison avec les autres.</span>
+                <span className={`mt-auto pt-5 font-georgia text-sm font-bold underline decoration-gold/60 underline-offset-4 ${selectedProduct === 'pack3' ? 'text-gold' : 'text-deep'}`}>
+                  {selectedProduct === 'pack3' ? 'Formule sélectionnée ✓' : 'Choisir ce pack →'}
+                </span>
               </button>
+                <a href="/chronosphere-max"
+                  className="flex flex-col rounded-2xl border-2 border-gold/50 bg-white/85 p-5 text-left text-deep transition-colors hover:border-gold">
+                  <span className="font-georgia text-[11px] uppercase tracking-[.13em] text-gold">Pour suivre une situation</span>
+                  <span className="mt-2 font-georgia text-lg font-semibold">ChronoSphère MAX</span>
+                  <span className="mt-1 font-georgia text-2xl">{maxPrice || '19,90 € TTC'}</span>
+                  <span className="mt-3 font-georgia text-xs leading-relaxed text-mist">
+                    3 lectures <strong>reliées à la même situation</strong>.
+                    MAX conserve la mémoire, compare les étapes et construit une synthèse finale.
+                    Compte MediumIA requis.
+                  </span>
+                  <span className="mt-auto pt-5 font-georgia text-sm font-bold underline decoration-gold/60 underline-offset-4">
+                    Découvrir MAX →
+                  </span>
+                </a>
+              </div>
             </div>
           )}
 
@@ -1116,61 +1140,6 @@ export default function ChronospherePage({ onBack, onNavigate, onOpenOracle, onO
               />
               <span className="mt-2 block font-georgia text-xs text-mist">Votre lecture s’affiche à l’écran et une copie complète vous est envoyée à cette adresse.</span>
             </label>
-
-            {!result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken && (
-              <fieldset ref={offersRef} className="mb-6 scroll-mt-28">
-                <legend className="mb-3 font-georgia text-[13px] uppercase tracking-[0.14em] text-gold">
-                  Choisissez votre offre
-                </legend>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    aria-pressed={selectedProduct === 'single'}
-                    onClick={() => setSelectedProduct('single')}
-                    disabled={!paypalConfig || loading}
-                    className={`rounded-2xl border-2 p-5 text-left transition-colors disabled:opacity-50 ${
-                      selectedProduct === 'single' ? 'border-deep bg-deep text-cream' : 'border-gold/30 bg-white/75 text-deep hover:border-gold/70'
-                    }`}
-                  >
-                    <span className="block font-georgia text-lg font-medium">Tirage unique</span>
-                    <span className={`mt-2 block font-georgia text-2xl ${selectedProduct === 'single' ? 'text-gold' : 'text-deep'}`}>
-                      {singlePrice || '5,00 € TTC'}
-                    </span>
-                    <span className={`mt-1 block font-georgia text-xs ${selectedProduct === 'single' ? 'text-cream/70' : 'text-mist'}`}>1 tirage</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={selectedProduct === 'pack3'}
-                    onClick={() => setSelectedProduct('pack3')}
-                    disabled={!paypalConfig || loading}
-                    className={`relative rounded-2xl border-2 p-5 text-left transition-colors disabled:opacity-50 ${
-                      selectedProduct === 'pack3' ? 'border-deep bg-deep text-cream' : 'border-gold/30 bg-white/75 text-deep hover:border-gold/70'
-                    }`}
-                  >
-                    <span className="absolute right-3 top-3 rounded-full bg-gold px-2.5 py-1 font-georgia text-[9px] uppercase tracking-[0.1em] text-deep">Le plus avantageux</span>
-                    <span className="block pr-28 font-georgia text-lg font-medium">Pack 3 tirages</span>
-                    <span className={`mt-2 block font-georgia text-2xl ${selectedProduct === 'pack3' ? 'text-gold' : 'text-deep'}`}>
-                      {packPrice || '9,90 € TTC'}
-                    </span>
-                    <span className={`mt-1 block font-georgia text-xs ${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}`}>3 tirages · les suivants quand vous voulez</span>
-                  </button>
-                </div>
-                <a
-                  href="/chronosphere-max"
-                  className="mt-3 flex flex-col gap-3 rounded-2xl border-2 border-gold/30 bg-white/75 p-5 text-left text-deep transition-colors hover:border-gold/70 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
-                >
-                  <span className="min-w-0">
-                    <span className="block font-georgia text-[10px] uppercase tracking-[0.16em] text-gold">ChronoSphère MAX</span>
-                    <span className="mt-1 block font-georgia text-lg font-medium">Suivre une situation dans le temps</span>
-                    <span className="mt-1 block font-georgia text-xs leading-relaxed text-mist">3 lectures reliées : chacune est comparée aux précédentes pour voir ce qui persiste, ce qui se déplace et ce qui s’ouvre. Avec votre compte MediumIA.</span>
-                  </span>
-                  <span className="shrink-0 sm:text-right">
-                    <span className="block font-georgia text-2xl text-deep">{maxPrice || '19,90 € TTC'}</span>
-                    <span className="mt-1 block font-georgia text-xs font-bold text-deep underline decoration-gold/60 underline-offset-4">Découvrir MAX →</span>
-                  </span>
-                </a>
-              </fieldset>
-            )}
 
             {/* Gift-card activation and regular purchase are mutually exclusive in the UI. */}
             {!result && !showPayment && !pendingPayment && !legacyPendingPayment && !hasToken && (

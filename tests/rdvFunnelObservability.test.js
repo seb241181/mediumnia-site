@@ -41,7 +41,8 @@ test('paid booking tracks stages without registering failed form submissions', a
 
 test('PayPal telemetry is read-only and separates deposit and full order creation', async () => {
   const checkout = await read('../src/components/rdv/RdvDepositCheckout.jsx')
-  assert.match(checkout, /await buttons\.render\(container\)/)
+  assert.match(checkout, /await buttons\.render\(target\)/)
+  assert.match(checkout, /fundingSource,/)
   assert.match(checkout, /emitOnce\('rdv_funnel_paypal_buttons'\)/)
   assert.match(checkout, /result\.id\) emitOnce\(paymentChoice === 'full_payment'/)
   assert.match(checkout, /'rdv_funnel_full_order' : 'rdv_funnel_arrhes_order'/)

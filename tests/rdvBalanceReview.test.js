@@ -702,6 +702,24 @@ test('Sélection du cron : 5 incidents en examen manuel + 1 remise éligible →
   assert.deepEqual(selects.map(c => [c.limit, c.filters.find(f => f[1] === 'balance_google_resync_review_at')?.[0]]), [[5, 'is'], [20, 'not']])
 })
 
+test('Tableau des soldes : seules les visios avec un vrai reste à payer sont affichées', async () => {
+  const supabase = restoreSupabase()
+  const originalRpc = supabase.rpc
+  const paid = { booking_id: 'paid', status: 'confirmed', paid_cents: 7000, due_cents: 0, balance_paid_at: null }
+  const due = { booking_id: 'due', status: 'confirmed', paid_cents: 2000, due_cents: 5000 }
+  const cancelledDue = { booking_id: 'cancelled-due', status: 'cancelled', paid_cents: 2000, due_cents: 5000 }
+  const unknown = { booking_id: 'unknown', status: 'confirmed', paid_cents: 7000, due_cents: null }
+  const negative = { booking_id: 'overpaid', status: 'confirmed', paid_cents: 8000, due_cents: -1000 }
+  supabase.rpc = (name, args) => name === 'rdv_balance_watch'
+    ? thenable({ data: [paid, due, cancelledDue, unknown, negative], error: null })
+    : originalRpc(name, args)
+
+  const result = await listBalanceWatch({ supabase, userId: USER, practitionerId: PRACT, env: {} })
+  assert.equal(result.status, 200)
+  assert.deepEqual(result.body.items, [due, cancelledDue], 'les dossiers soldés disparaissent, les vrais soldes restent')
+  assert.match(read('src/components/rdv/RdvBalanceWatch.jsx'), /const items = \(data\.items \|\| \[\]\)\.filter\(item => Number\(item\?\.due_cents\) > 0\)/)
+})
+
 test('Tableau de bord : incident ancien non résolu toujours listé, liste plafonnée avec le total', async () => {
   const old = { booking_id: BOOKING, customer_name: 'Ancien Incident', starts_at: new Date(Date.now() - 60 * 24 * H).toISOString(), started: true, kind: 'google_resync', manual_review: true, error: 'appointment_started' }
   const supabase = restoreSupabase()

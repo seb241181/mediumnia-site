@@ -63,3 +63,40 @@ test('checkouts say plainly that a card works without a PayPal account', () => {
   assert.match(read('lib/rdvFullPaymentApiHandler.js'), /TERMS_VERSION = RDV_TERMS_VERSION/)
   assert.match(read('lib/rdvDepositApiHandler.js'), /TERMS_VERSION = RDV_TERMS_VERSION/)
 })
+
+test('moyens de paiement : PayPal, paiement en plusieurs fois, virement, carte bancaire', () => {
+  const checkout = read('src/components/rdv/RdvDepositCheckout.jsx')
+  const bank = read('src/components/rdv/BankTransferOption.jsx')
+  const sources = [
+    checkout.indexOf('window.paypal.FUNDING?.PAYPAL'),
+    checkout.indexOf('window.paypal.FUNDING?.PAYLATER'),
+    checkout.indexOf('window.paypal.FUNDING?.CARD'),
+  ]
+  assert.ok(sources.every(n => n >= 0) && sources[0] < sources[1] && sources[1] < sources[2])
+  const nodes = [
+    checkout.indexOf('<div ref={containerRef}>'),
+    checkout.indexOf('<div ref={payLaterContainerRef} />'),
+    checkout.indexOf('<BankTransferOption'),
+    checkout.indexOf('<div ref={cardContainerRef} />'),
+  ]
+  assert.ok(nodes.every(n => n >= 0) && nodes[0] < nodes[1] && nodes[1] < nodes[2] && nodes[2] < nodes[3])
+  assert.match(checkout, /fundingSource,/)
+  assert.match(checkout, /buttons\.isEligible\(\)/)
+  assert.match(checkout, /onApprove: async \(data, actions\)/)
+  assert.match(checkout, /createCheckoutOrderGate/)
+  assert.match(bank, /aria-expanded=\{expanded\}/)
+  assert.match(bank, /Bloquer mon créneau et recevoir le RIB/)
+  assert.match(bank, /!config\.enabled \|\| offerToken \|\| !enoughTime/)
+})
+
+test('actualités : statut vérifié du compte, pas de demande répétée ou de réabonnement automatique', () => {
+  const rdv = read('src/components/rdv/RdvPublic.jsx')
+  const bank = read('lib/rdvBankBooking.js')
+  assert.match(rdv, /marketingAction=preferences/)
+  assert.match(rdv, /Authorization: \x60Bearer \$\{accountToken\}\x60/)
+  assert.match(rdv, /sameVerifiedEmail/)
+  assert.match(rdv, /\['subscribed', 'pending', 'unsubscribed'\]/)
+  assert.match(rdv, /marketingOptIn: skipMarketingChoice \? undefined : form\.marketingOptIn/)
+  assert.match(bank, /typeof customer\.marketingOptIn === 'boolean'/)
+  assert.match(bank, /recordBookingConsent\(supabase/)
+})

@@ -73,7 +73,7 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
           <p className="mt-2 font-georgia text-xs leading-relaxed text-mist">
             Le remboursement d'un virement n'est jamais automatique. Vérifiez les droits du client et
             demandez au payeur les coordonnées bancaires nécessaires. Après le virement de remboursement,
-            enregistrez l'opération dans la caisse MediumIA, avec le mode « virement ».
+            conservez le justificatif pour votre comptabilité : cette rubrique ne comptabilise pas encore automatiquement les remboursements bancaires.
           </p>
           <div className="mt-3 space-y-3">
             {refundRows.map(row=>(

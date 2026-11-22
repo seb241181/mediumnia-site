@@ -4,7 +4,7 @@ const money = (cents) => `${(Number(cents || 0) / 100).toFixed(2).replace('.', '
 
 // "Vous avez une carte cadeau ?" at the booking payment step: checks the code,
 // shows what it covers, then books through /api/rdv-book without PayPal.
-export default function GiftCardRedeem({ practitionerSlug, service, dateStr, time, customer, selectedModality, consentsReady, depositCents, priceCents, onComplete, onUnavailable }) {
+export default function GiftCardRedeem({ practitionerSlug, service, dateStr, time, customer, selectedModality, consentsReady, depositCents, priceCents, onComplete, onUnavailable, compact = false }) {
   const [open, setOpen] = useState(false)
   const [code, setCode] = useState('')
   const [card, setCard] = useState(null)
@@ -74,15 +74,35 @@ export default function GiftCardRedeem({ practitionerSlug, service, dateStr, tim
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="w-full rounded-2xl border border-dashed border-gold/40 bg-white/60 px-5 py-4 text-left font-georgia text-sm text-deep hover:bg-gold/5">
-        🎁 Vous avez une carte cadeau ? <span className="text-gold underline">Utiliser mon code</span>
+      <button
+        type="button"
+        aria-expanded={false}
+        aria-controls="rdv-gift-code-panel"
+        onClick={() => setOpen(true)}
+        className={compact
+          ? 'min-w-0 min-h-20 w-full rounded-2xl border-2 border-gold/40 bg-white/75 px-3 py-3 text-left font-georgia text-deep transition hover:border-gold hover:bg-gold/5 focus:outline-none focus-visible:ring-4 focus-visible:ring-gold/40 sm:px-5'
+          : 'w-full rounded-2xl border border-dashed border-gold/40 bg-white/60 px-5 py-4 text-left font-georgia text-sm text-deep hover:bg-gold/5'}
+      >
+        {compact ? (
+          <>
+            <span className="block text-sm font-semibold leading-snug sm:text-base">Carte cadeau</span>
+            <span className="mt-1 block text-xs leading-snug text-mist">Saisir un code ↓</span>
+          </>
+        ) : (
+          <>🎁 Vous avez une carte cadeau ? <span className="text-gold underline">Utiliser mon code</span></>
+        )}
       </button>
     )
   }
 
   return (
-    <div className="rounded-2xl border border-gold/30 bg-white/70 p-5 space-y-3">
-      <p className="font-georgia text-[11px] uppercase tracking-[.18em] text-gold">Carte cadeau</p>
+    <div id="rdv-gift-code-panel" className={`${compact ? 'col-span-full scroll-mt-24 ' : ''}rounded-2xl border border-gold/30 bg-white/70 p-5 space-y-3`}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-georgia text-[11px] uppercase tracking-[.18em] text-gold">Carte cadeau</p>
+        <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 font-georgia text-sm text-mist underline decoration-gold/50 hover:text-deep">
+          Fermer
+        </button>
+      </div>
       <form onSubmit={check} className="flex flex-col gap-2 sm:flex-row">
         <label htmlFor="gift-code" className="sr-only">Code de la carte cadeau</label>
         <input id="gift-code" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); setCard(null) }} placeholder="MDIA-XXXX-XXXX" autoComplete="off" className="flex-1 rounded-xl border border-gold/30 bg-white px-4 py-3 font-georgia text-sm tracking-widest text-deep" />
@@ -98,7 +118,7 @@ export default function GiftCardRedeem({ practitionerSlug, service, dateStr, tim
       {card && coversDeposit && (
         consentsReady
           ? <button type="button" onClick={book} disabled={busy} className="w-full rounded-xl bg-gold px-5 py-3 font-georgia text-sm font-bold text-deep disabled:opacity-50">{busy ? 'Réservation…' : 'Réserver avec ma carte cadeau'}</button>
-          : <p className="font-georgia text-xs text-mist">Cochez les deux cases ci-dessus pour réserver avec votre carte.</p>
+          : <p className="font-georgia text-xs text-mist">Cochez les deux cases d’acceptation plus bas pour confirmer la réservation avec votre carte.</p>
       )}
       {error && <p role="alert" className="font-georgia text-xs text-red-700">{error}</p>}
     </div>

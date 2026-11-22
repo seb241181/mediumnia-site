@@ -11,6 +11,7 @@ on:
       - 'tests/enableBankingAuth.test.js'
       - 'tests/rdvBankReconciliation.test.js'
       - 'tests/enableBankingSync.test.js'
+      - 'tests/enableBankingConnect.test.js'
       - 'api/rdv-admin.js'
       - 'api/rdv-config.js'
       - 'vercel.json'
@@ -31,5 +32,5 @@ jobs:
       - run: node --check lib/enableBankingConnect.js
       - run: node --check lib/enableBankingSync.js
       - run: node --check lib/enableBankingCron.js
-      - run: node --test tests/enableBankingAuth.test.js tests/rdvBankReconciliation.test.js tests/enableBankingSync.test.js
+      - run: node --test tests/enableBankingAuth.test.js tests/rdvBankReconciliation.test.js tests/enableBankingSync.test.js tests/enableBankingConnect.test.js
       - run: npx vite build

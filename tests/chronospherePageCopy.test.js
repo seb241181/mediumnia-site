@@ -20,14 +20,18 @@ test('ChronoSphère page speaks to customers, not about unfinished features', ()
   assert.match(page, /Elle n’établit pas de certitude/)
 })
 
-test('e-mail is asked after the birth data and the numbers, just before the offers', () => {
+test('les trois offres sont visibles une seule fois avant le formulaire de naissance', () => {
   const page = read('src/components/ChronospherePage.jsx')
-  const place = page.indexOf('id="chrono-bplace"')
-  const numbers = page.indexOf("['Carte principale', 'Résonance I', 'Résonance II']")
+  const choices = page.indexOf('Choisissez votre formule')
+  const form = page.indexOf('id="chronosphere-start"')
+  const birth = page.indexOf('id="chrono-bplace"')
   const email = page.indexOf('type="email"')
-  const offers = page.indexOf('Choisissez votre offre')
-  assert.ok(place > 0 && numbers > place && email > numbers && offers > email)
+  assert.ok(choices > 0 && form > choices && birth > form && email > birth)
+  assert.equal(page.split('Choisissez votre formule').length - 1, 1)
+  assert.equal(page.split('href="/chronosphere-max"').length - 1, 1)
+  assert.doesNotMatch(page, /<fieldset ref=\{offersRef\}/)
 })
+
 
 test('MAX is offered next to the single draw and the pack, legal consent unchanged', () => {
   const page = read('src/components/ChronospherePage.jsx')
@@ -48,10 +52,13 @@ test('only ChronoSphère reviews appear, and the free Oracle draw is offered', (
   assert.match(read('src/App.jsx'), /view !== 'chronosphere'/)
 })
 
-test('before any click, the single draw and the pack look the same', () => {
+test('la sélection des formules n’est active qu’après le choix du client', () => {
   const page = read('src/components/ChronospherePage.jsx')
-  const unselected = "'border-gold/30 bg-white/75 text-deep hover:border-gold/70'"
-  assert.equal(page.split(unselected).length - 1, 2)
-  // Un fond doré sur un bouton est rendu comme un bouton actif par le thème cosmique.
-  assert.doesNotMatch(page, /selectedProduct === 'pack3' \? 'border-deep bg-deep text-cream' : '[^']*bg-gold/)
+  assert.match(page, /aria-pressed=\{selectedProduct === 'single'\}/)
+  assert.match(page, /aria-pressed=\{selectedProduct === 'pack3'\}/)
+  assert.match(page, /Formule sélectionnée/)
+  assert.match(page, /3 tirages <strong>indépendants<\/strong>/)
+  assert.match(page, /3 lectures <strong>reliées à la même situation<\/strong>/)
+  assert.match(page, /Compte MediumIA requis/)
+  assert.match(page, /maxPrice \|\| '19,90 € TTC'/)
 })

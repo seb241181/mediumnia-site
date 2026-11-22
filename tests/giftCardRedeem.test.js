@@ -95,12 +95,12 @@ test('rdv-book refuses a deposit service without payment, unless a gift card cov
   assert.match(api, /restoreGiftForCancelledBooking\(supabase, booking\)/)
 })
 
-test('sur mobile, carte cadeau et virement sont côte à côte et les explications PayPal se déplient', () => {
+test('sur mobile, carte cadeau compacte en tête et moyens de paiement séparés', () => {
   const checkout = read('src/components/rdv/RdvDepositCheckout.jsx')
   const cardComponent = read('src/components/rdv/GiftCardRedeem.jsx')
-  assert.match(checkout, /bankTransferAvailable \? 'grid-cols-2' : 'grid-cols-1'/)
+  assert.match(checkout, /grid grid-cols-2 items-start gap-3/)
   assert.match(checkout, /<GiftCardRedeem\s+compact/)
-  assert.ok(checkout.indexOf('<GiftCardRedeem') < checkout.indexOf('Choisissez votre règlement'))
+  assert.ok(checkout.indexOf('<GiftCardRedeem') < checkout.indexOf('Réservation sécurisée'))
   assert.equal((checkout.match(/<GiftCardRedeem/g) || []).length, 1)
   assert.match(cardComponent, /aria-controls="rdv-gift-code-panel"/)
   assert.match(cardComponent, /col-span-full scroll-mt-24/)

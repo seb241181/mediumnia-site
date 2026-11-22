@@ -16,7 +16,7 @@ test('prices are decided by the server, never by the browser', () => {
   const coffret = resolveGiftOffer({ kind: 'coffret', serviceId: 's1' }, services)
   assert.deepEqual([coffret.priceCents, coffret.consultationCreditCents, coffret.chronosphereProduct], [7990, 7000, 'pack3'])
   const chrono = resolveGiftOffer({ kind: 'chronosphere', chronosphereProduct: 'max3' }, services)
-  assert.deepEqual([chrono.priceCents, chrono.consultationCreditCents], [1990, 0])
+  assert.deepEqual([chrono.priceCents, chrono.consultationCreditCents], [1490, 0])
   assert.equal(resolveGiftOffer({ kind: 'consultation', serviceId: 'unknown' }, services), null)
   assert.deepEqual(GIFT_AMOUNTS_CENTS, [3000, 5000, 8000, 10000, 15000])
 })

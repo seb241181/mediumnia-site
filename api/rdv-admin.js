@@ -970,7 +970,7 @@ export default async function handler(req, res) {
       return res.status(result.status).json(result.body)
     }
     case 'bank-connection': {
-      const subaction = req.method === 'POST' ? 'start' : 'status'
+      const subaction = req.method === 'POST' && req.body?.op === 'approve' ? 'approve' : req.method === 'POST' ? 'start' : 'status'
       return handleEnableBankingConnection(req, res, subaction)
     }
     case 'bank-bookings': {

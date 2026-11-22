@@ -105,6 +105,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/conditions-banque",
+      "destination": "/index.html"
+    },
+    {
       "source": "/conditions-rdv",
       "destination": "/index.html"
     },

@@ -97,6 +97,13 @@ export default function RdvCancellation({ onBack }) {
               <p className="text-gold text-5xl mb-5">✓</p>
               <p className="font-georgia text-gold tracking-[0.2em] text-[11px] uppercase mb-3">Annulation confirmée</p>
               <h1 className="font-georgia text-3xl font-medium mb-4">Votre rendez-vous est annulé.</h1>
+              <p className="mb-4 font-georgia text-sm text-mist leading-relaxed">
+                Si vous aviez réglé la consultation, le remboursement sera traité séparément :
+                l’annulation ne déclenche pas de paiement automatique.
+                <a className="ml-1 text-gold underline" href="/conditions-rdv" target="_blank" rel="noopener noreferrer">
+                  Voir les conditions.
+                </a>
+              </p>
               <p className="font-georgia text-sm text-mist leading-relaxed">
                 Le créneau a été libéré.
                 {booking?.email_status === 'sent' ? ' Un e-mail de confirmation vous a été envoyé.' : ''}

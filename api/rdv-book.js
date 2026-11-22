@@ -1,3 +1,4 @@
+import { RDV_TERMS_URL } from '../lib/rdvCancellationTerms.js'
 /* global process */
 /**
  * POST /api/rdv-book
@@ -280,13 +281,15 @@ function buildCancellationConfirmationHtml({ firstName, svcTitle, startsAt, time
   <h1 style="font-size:22px;margin:0 0 20px;">Votre rendez-vous est annulé</h1>
   <p style="font-size:15px;line-height:1.7;">Bonjour ${escapeHtml(firstName)},</p>
   <p style="font-size:15px;line-height:1.7;">Le rendez-vous « ${escapeHtml(svcTitle)} » prévu le ${escapeHtml(dateText)} à ${escapeHtml(timeText)} a bien été annulé. Le créneau est désormais libéré.</p>
+  <p style="font-size:14px;line-height:1.7;">Si vous aviez déjà réglé ce rendez-vous, le remboursement éventuel sera traité séparément, selon les conditions acceptées et vos droits légaux. L'annulation ne déclenche pas de remboursement instantané.</p>
+  <p style="font-size:13px;"><a href="${RDV_TERMS_URL}">Consulter les conditions des consultations</a></p>
   <p style="font-size:15px;line-height:1.7;margin-top:28px;">Sébastien<br>MediumIA</p>
 </div></body></html>`
 }
 
 function buildCancellationConfirmationText({ firstName, svcTitle, startsAt, timezone }) {
   const { dateText, timeText } = formatBookingDate(startsAt, timezone)
-  return `Bonjour ${firstName},\n\nLe rendez-vous « ${svcTitle} » prévu le ${dateText} à ${timeText} a bien été annulé. Le créneau est désormais libéré.\n\nSébastien\nMediumIA`
+  return `Bonjour ${firstName},\n\nLe rendez-vous « ${svcTitle} » prévu le ${dateText} à ${timeText} a bien été annulé. Le créneau est désormais libéré.\n\nSi vous aviez déjà réglé ce rendez-vous, le remboursement éventuel sera traité séparément selon les conditions acceptées et vos droits légaux.\nConditions : ${RDV_TERMS_URL}\n\nSébastien\nMediumIA`
 }
 
 async function loadCancellationBooking(supabase, token) {

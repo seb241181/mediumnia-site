@@ -27,3 +27,13 @@ test('arrhes : dossier réglé absent de la liste active mais toujours accessibl
   assert.match(backend, /case 'deposit-settlements'|settlement_status/)
   assert.doesNotMatch(ui, /\.delete\(|DELETE FROM|automatic.refund/i)
 })
+
+test('RDV : après remboursement de 60 € et conservation des 20 € d’arrhes, le dossier n’est plus à traiter',()=>{
+  const item={
+    booking_id:'new-1',settlement_status:'partially_refunded',refunded_cents:6000,
+    new_terms:true,policy_guidance:{code:'late_arrhes_review',recommendedRefundCents:6000,retainedCents:2000},
+  }
+  const {active,archived}=groupDepositSettlements([item])
+  assert.equal(active.length,0)
+  assert.deepEqual(archived,[item])
+})

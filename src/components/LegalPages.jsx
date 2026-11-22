@@ -301,6 +301,135 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
   )
 }
 
+
+/* ─────────────────────────────────────
+   CONDITIONS DES CONSULTATIONS ET RENDEZ-VOUS
+   ───────────────────────────────────── */
+export function ConditionsRdv({ onBack, onNavigate }) {
+  return (
+    <LegalShell onBack={onBack} onNavigate={onNavigate} title="Conditions de réservation et d’annulation — Consultations">
+      <p className="font-georgia text-xs text-mist">
+        Version du 22 novembre 2026 — applicable aux nouvelles réservations acceptées à partir de cette date.
+        Les réservations antérieures conservent les conditions qui leur ont été communiquées.
+      </p>
+      <Section title="1. Objet et nature des prestations">
+        <p>
+          Ces conditions concernent les consultations individuelles, en présence ou à distance,
+          proposées par Sébastien Seguin, entrepreneur individuel (MediumIA).
+          Elles ne remplacent pas les conditions de vente des livres, oracles ou formations.
+          Les séances relèvent de l’accompagnement personnel et spirituel et ne constituent pas
+          un acte médical, un diagnostic ou un traitement psychologique. Aucun résultat précis n’est garanti.
+        </p>
+      </Section>
+      <Section title="2. Réservation, prix et paiement">
+        <p>
+          La prestation, sa date, sa durée, son prix et le montant à régler sont affichés avant
+          validation. Lorsqu’un paiement est requis, le client peut choisir les arrhes indiquées
+          à l’écran (généralement 20 €) ou, si proposé, régler l’intégralité de la prestation.
+          Le montant versé au titre des arrhes est déduit du prix total.
+        </p>
+        <p>
+          Par carte ou PayPal, le rendez-vous est confirmé après validation du règlement.
+          Par virement, le créneau peut être bloqué provisoirement, pour un maximum de 72 heures,
+          sans aller au-delà de 24 heures avant la séance ; la confirmation est effectuée seulement
+          après constatation de l’encaissement. En l’absence de paiement validé à la date indiquée,
+          le créneau est libéré.
+        </p>
+      </Section>
+      <Section title="3. Annulation par le client">
+        <p>
+          <strong>Au moins 48 heures avant le début du rendez-vous :</strong> le client peut
+          annuler sans frais et obtient le remboursement intégral des sommes versées,
+          qu’il ait réglé des arrhes ou la totalité de la consultation.
+          L’annulation est possible depuis le lien personnel reçu par e-mail.
+        </p>
+        <p>
+          <strong>Moins de 48 heures avant le début du rendez-vous, ou en cas d’absence :</strong>
+          les arrhes convenues (habituellement 20 €) sont conservées.
+          Lorsque le client avait réglé l’intégralité de la consultation, seule la part
+          correspondant aux arrhes est conservée et le surplus est remboursé.
+          Par exemple, pour une consultation de 80 € avec 20 € d’arrhes, 60 € sont remboursés.
+          Ces modalités sont soumises aux droits légaux du consommateur, notamment à un éventuel
+          droit de rétractation applicable.
+        </p>
+        <p>
+          Le lien d’annulation automatique cesse de fonctionner à moins de 48 heures.
+          Pour toute demande tardive, signalez votre situation à
+          {' '}<a href="mailto:contact@mediumia.fr" className="text-gold underline">contact@mediumia.fr</a>.
+          Une difficulté grave ou exceptionnelle peut être étudiée au cas par cas,
+          sans limiter les droits légaux du client.
+        </p>
+      </Section>
+      <Section title="4. Report et annulation par Sébastien">
+        <p>
+          Un report de rendez-vous est soumis à la disponibilité et à l’accord des deux parties.
+          En cas d’annulation par le professionnel, les restitutions et éventuelles indemnités
+          prévues par la loi s’appliquent. Pour des arrhes au sens de l’article 1590 du Code civil,
+          le désistement du professionnel peut notamment entraîner la restitution du double
+          des arrhes reçues.
+        </p>
+      </Section>
+      <Section title="5. Rétractation légale après réservation en ligne">
+        <p>
+          Lorsque le contrat est conclu à distance, le consommateur dispose en principe
+          d’un droit de rétractation de 14 jours à compter de sa conclusion,
+          sous réserve des exceptions prévues par la loi.
+          La règle commerciale des 48 heures ne supprime pas ce droit.
+        </p>
+        <p>
+          Si le consommateur demande expressément que la prestation commence avant la fin
+          de ces 14 jours puis exerce son droit de rétractation, il ne doit payer, selon les
+          conditions légales, que la part correspondant au service effectivement fourni.
+          La perte du droit de rétractation en cas de prestation entièrement exécutée
+          suppose le respect des conditions légales de consentement et de reconnaissance.
+        </p>
+        <p>
+          Pour exercer la rétractation, envoyez avant la fin du délai un e-mail non équivoque à
+          {' '}<a href="mailto:contact@mediumia.fr" className="text-gold underline">contact@mediumia.fr</a>,
+          en indiquant le nom utilisé, la date de réservation et la séance concernée.
+          Vous pouvez utiliser le modèle ci-dessous, sans obligation :
+        </p>
+        <blockquote className="border-l-2 border-gold/50 pl-4 italic">
+          « Je vous notifie par la présente ma rétractation du contrat de consultation
+          conclu le [date], pour le rendez-vous du [date], au nom de [nom].
+          Date et signature, si envoi sur papier. »
+        </blockquote>
+        <p>
+          Références :
+          {' '}<a className="text-gold underline" target="_blank" rel="noopener noreferrer" href="https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044563179/">article L. 221-25</a>
+          {' '}et{' '}
+          <a className="text-gold underline" target="_blank" rel="noopener noreferrer" href="https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000044563170/">article L. 221-28</a>
+          {' '}du Code de la consommation.
+        </p>
+      </Section>
+      <Section title="6. Traitement du remboursement">
+        <p>
+          L’annulation d’un rendez-vous ne déclenche pas un virement ou un remboursement PayPal
+          immédiat et automatique. Les sommes dues sont vérifiées puis remboursées dans
+          les meilleurs délais, au plus tard sous 14 jours après la demande recevable.
+          Le remboursement intervient en principe par le moyen de paiement initial,
+          sauf accord du client pour une autre solution sans frais supplémentaire.
+          En cas de virement bancaire, un justificatif ou les coordonnées nécessaires
+          au remboursement pourront être demandés au payeur.
+        </p>
+        <p>
+          Pour toute demande ou difficulté :
+          {' '}<a href="mailto:contact@mediumia.fr" className="text-gold underline">contact@mediumia.fr</a>.
+        </p>
+      </Section>
+      <Section title="7. Réclamations et médiation">
+        <p>
+          Les informations relatives au professionnel, aux réclamations et au médiateur
+          de la consommation figurent dans les{' '}
+          <a href="/mentions" onClick={(e) => { e.preventDefault(); onNavigate('/mentions') }} className="text-gold underline">
+            mentions légales de MediumIA
+          </a>.
+        </p>
+      </Section>
+    </LegalShell>
+  )
+}
+
 /* ─────────────────────────────────────
    CGV — ORACLE AU-DELÀ DE L'ÂME
    ───────────────────────────────────── */

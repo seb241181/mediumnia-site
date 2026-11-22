@@ -60,5 +60,5 @@ test('la sélection des formules n’est active qu’après le choix du client',
   assert.match(page, /3 tirages <strong>indépendants<\/strong>/)
   assert.match(page, /3 lectures <strong>reliées à la même situation<\/strong>/)
   assert.match(page, /Compte MediumIA requis/)
-  assert.match(page, /maxPrice \|\| '19,90 € TTC'/)
+  assert.match(page, /maxPrice \|\| '14,90 € TTC'/)
 })

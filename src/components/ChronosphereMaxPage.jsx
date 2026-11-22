@@ -747,7 +747,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
             <div className="border-b border-gold/20 p-6 md:border-b-0 md:border-r md:p-8">
               <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Offre de lancement</p>
               <div className="mt-3 flex items-end gap-3">
-                <span className="font-georgia text-5xl font-medium text-cream">19,90 €</span>
+                <span className="font-georgia text-5xl font-medium text-cream">14,90 €</span>
                 <span className="pb-1 font-georgia text-xs text-cream/55">TTC · paiement unique</span>
               </div>
               <p className="mt-5 font-georgia text-sm leading-relaxed text-cream/72">
@@ -811,7 +811,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
                     </button>
                   )}
                   {paymentError && <p className="mt-3 font-georgia text-xs leading-relaxed text-red-700">{paymentError}</p>}
-                  {paypalConfig?.env === 'sandbox' && <p className="mt-3 font-georgia text-[11px] text-mist">Preview : PayPal Sandbox facture 1,00 € de test. La production est configurée à 19,90 €.</p>}
+                  {paypalConfig?.env === 'sandbox' && <p className="mt-3 font-georgia text-[11px] text-mist">Preview : PayPal Sandbox facture 1,00 € de test. La production est configurée à 14,90 €.</p>}
                 </>
               ) : (
                 <>

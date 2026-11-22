@@ -26,14 +26,14 @@
    - `ENABLE_BANKING_PRIVATE_KEY_B64` — nouvelle clé RSA privée au format PEM encodée en base64 ; seulement côté serveur.
    - `ENABLE_BANKING_DATA_KEY` — nouvelle clé indépendante de 32 octets encodée en hexadécimal (64 caractères).
    - `ENABLE_BANKING_ASPSP_NAME` — nom exact de l'institution disponible dans `GET /aspsps?country=FR&psu_type=business&service=AIS`. Ne pas deviner sa chaîne.
-   - `ENABLE_BANKING_CONNECT_ENABLED` — laisser `false` jusqu'au contrôle final ; jamais dans Preview.
+   - `ENABLE_BANKING_CONNECT_ENABLED` et `ENABLE_BANKING_SYNC_ENABLED` — laisser `false` jusqu'au contrôle final ; jamais dans Preview.
 7. Après validation complète du code déployé sur `mediumia.fr`, remplacer l'URL `https://example.com/callback` dans Enable Banking par l'URL définitive. Configurer les secrets sans les divulguer à un tiers.
 8. Tester la liaison en lecture seule avec un compte professionnel réel, en mode Production restreinte et après consentement sur le portail bancaire officiel, sans donner d'identifiants à MediumIA. Vérifier que seul le compte autorisé est lié et qu'il n'y a **aucune confirmation de rendez-vous automatique**.
 
-## Étape restant à développer avant « contrôle quotidien automatique »
+## Synchronisation quotidienne préparée — désactivée tant que la connexion n'est pas approuvée
 
-- Récupération quotidienne des écritures bancaires `BOOK/CRDT` en EUR dans un job serveur autorisé ; pagination `continuation_key`, expirations, renouvellement du consentement, alertes d'échec, déduplication par identifiant bancaire et compte.
-- Écran de confirmation par le propriétaire, sans double saisie ni annulation d'un rendez-vous déjà réglé.
+- Récupération quotidienne des écritures bancaires `BOOK/CRDT` en EUR et pagination bornée `continuation_key` **implémentées dans le code**. Le cron est programmé pour 06:00 UTC mais refuse toute synchronisation sans autorisation et les variables de Production. Le renouvellement du consentement et les alertes d'échec nécessitent encore une validation opérationnelle.
+- Affichage des virements identifiés et activation volontaire dans le panneau administrateur implémentés. Un crédit identifié reste **à confirmer manuellement** avant toute écriture financière ou réservation.
 - Examen des chèques, virements non identifiables et versements PayPal groupés séparément.
 - Distinguer le compte **PRO** des autres comptes ; le système doit refuser un doute de correspondance.
 - Tests de bout en bout et audit de sécurité, puis autorisation explicite du titulaire avant mise en service.

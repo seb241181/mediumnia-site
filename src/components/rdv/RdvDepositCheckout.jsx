@@ -68,13 +68,14 @@ export default function RdvDepositCheckout({
   offerToken = null,
 }) {
   const containerRef = useRef(null)
+  const payLaterContainerRef = useRef(null)
+  const cardContainerRef = useRef(null)
   const [config, setConfig] = useState(null)
   const [notice, setNotice] = useState('')
   const [holdUntil, setHoldUntil] = useState(null)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [earlyPerformance, setEarlyPerformance] = useState(false)
   const [paymentChoice, setPaymentChoice] = useState('arrhes')
-  const [bankTransferAvailable, setBankTransferAvailable] = useState(false)
   // Only event names are sent; repeated SDK callbacks do not inflate a page visit.
   const checkoutFunnelSent = useRef(new Set())
   const emitOnce = (event) => {
@@ -171,6 +172,9 @@ export default function RdvDepositCheckout({
     if (!config?.clientId || !consentsReady || !containerRef.current) return undefined
     let disposed = false
     const container = containerRef.current
+    const payLaterContainer = payLaterContainerRef.current
+    const cardContainer = cardContainerRef.current
+    const paypalContainers = [container, payLaterContainer, cardContainer].filter(Boolean)
 
     let approvedContext
     const createOrder = async () => {
@@ -246,10 +250,9 @@ export default function RdvDepositCheckout({
 
     async function mountButtons() {
       if (disposed || !window.paypal || !container) return
-      container.innerHTML = ''
+      paypalContainers.forEach(element => { element.innerHTML = '' })
       try {
-        const buttons = window.paypal.Buttons({
-          style: { layout: 'vertical', shape: 'rect', label: 'paypal' },
+        const buttonCallbacks = {
           createOrder,
           onApprove: async (data, actions) => {
             if (approvedContext?.orderId !== data.orderID || !approvedContext.active()) return
@@ -310,9 +313,41 @@ export default function RdvDepositCheckout({
               setNotice(paymentMessage(error?.message || 'paypal_capture_uncertain'))
             }
           },
-        })
-        await buttons.render(container)
-        if (!disposed && consentsReady) emitOnce('rdv_funnel_paypal_buttons')
+        }
+        // PayPal fournit les vrais boutons sécurisés : on les installe séparément
+        // pour insérer le virement entre « payer en plusieurs fois » et « carte ».
+        const sources = [
+          [window.paypal.FUNDING?.PAYPAL, container],
+          [paymentCents >= PAY_LATER_MIN_CENTS ? window.paypal.FUNDING?.PAYLATER : null, payLaterContainer],
+          [window.paypal.FUNDING?.CARD, cardContainer],
+        ]
+        let rendered = 0
+        for (const [fundingSource, target] of sources) {
+          if (disposed || !fundingSource || !target) continue
+          const buttons = window.paypal.Buttons({
+            ...buttonCallbacks,
+            fundingSource,
+            style: { layout: 'vertical', shape: 'rect' },
+          })
+          if (typeof buttons.isEligible === 'function' && !buttons.isEligible()) continue
+          try {
+            await buttons.render(target)
+            rendered += 1
+          } catch (error) {
+            // Un moyen non disponible ne doit pas masquer les autres.
+            if (fundingSource === window.paypal.FUNDING?.PAYPAL) throw error
+            target.innerHTML = ''
+          }
+        }
+        if (!rendered && !disposed) {
+          const fallback = window.paypal.Buttons({
+            ...buttonCallbacks,
+            style: { layout: 'vertical', shape: 'rect', label: 'paypal' },
+          })
+          await fallback.render(container)
+          rendered = 1
+        }
+        if (!disposed && consentsReady && rendered > 0) emitOnce('rdv_funnel_paypal_buttons')
       } catch (error) {
         if (!disposed && error?.message !== 'already_converted') {
           emitOnce('rdv_funnel_paypal_error')
@@ -325,7 +360,7 @@ export default function RdvDepositCheckout({
     const existing = document.querySelector('script[data-mediumia-paypal-sdk="1"]')
     if (window.paypal) {
       void mountButtons()
-      return () => { disposed = true; if (container) container.innerHTML = '' }
+      return () => { disposed = true; paypalContainers.forEach(element => { element.innerHTML = '' }) }
     }
 
     const script = existing || document.createElement('script')
@@ -344,28 +379,14 @@ export default function RdvDepositCheckout({
       disposed = true
       script.removeEventListener('load', onLoad)
       script.removeEventListener('error', onError)
-      if (container) container.innerHTML = ''
+      paypalContainers.forEach(element => { element.innerHTML = '' })
     }
   }, [config, consentsReady, payload, paymentChoice, paymentCents, priceCents, balanceCents, onComplete, onUnavailable, onMetric])
 
   return (
     <div className="space-y-5">
-      <div className={`grid gap-3 ${bankTransferAvailable ? 'grid-cols-2' : 'grid-cols-1'}`} aria-label="Autres moyens de paiement">
-        {bankTransferAvailable && (
-          <button
-            type="button"
-            aria-controls="rdv-bank-transfer"
-            onClick={() => {
-              const section = document.getElementById('rdv-bank-transfer')
-              section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              section?.focus({ preventScroll: true })
-            }}
-            className="min-w-0 min-h-20 rounded-2xl border-2 border-gold bg-deep px-3 py-3 text-left font-georgia text-cream shadow-sm transition hover:bg-deep/90 focus:outline-none focus-visible:ring-4 focus-visible:ring-gold/50 sm:px-5"
-          >
-            <span className="block text-sm font-semibold leading-snug sm:text-base">Virement bancaire</span>
-            <span className="mt-1 block text-xs leading-snug text-cream/85">Accéder au RIB ↓</span>
-          </button>
-        )}
+      <div className="grid grid-cols-2 items-start gap-3" aria-label="Options de réservation">
+        <p className="self-center font-georgia text-xs uppercase tracking-[.12em] text-gold">Choisissez votre règlement</p>
         <GiftCardRedeem
           compact
           practitionerSlug={practitionerSlug}
@@ -383,7 +404,6 @@ export default function RdvDepositCheckout({
       </div>
       {fullOnlineAllowed && (
         <div className="rounded-2xl border border-gold/30 bg-white/70 p-5 space-y-3">
-          <p className="font-georgia text-[11px] tracking-[.18em] uppercase text-gold">Choisissez votre règlement</p>
           {fullPaymentRequired && (
             <p className="rounded-xl border border-gold/30 bg-gold/10 px-3 py-2 font-georgia text-xs leading-relaxed text-deep">
               Ce rendez-vous est prévu dans moins de 48 heures : le règlement intégral est requis pour confirmer la visioconférence.
@@ -488,27 +508,31 @@ export default function RdvDepositCheckout({
             <RdvBookingHelp />
           </div>
         </details>
-        {!consentsReady ? (
-          <p className="font-georgia text-sm text-mist text-center py-3">Cochez les deux cases ci-dessus pour afficher le paiement PayPal et, si proposée, l’option <strong className="text-deep">carte bancaire sans compte</strong>{paymentCents >= PAY_LATER_MIN_CENTS ? ', ou le paiement en plusieurs fois selon éligibilité' : ''}.</p>
-        ) : (
-          <div ref={containerRef}>{!config && !notice && <p className="font-georgia text-sm text-mist">Chargement du paiement sécurisé…</p>}</div>
+        {!consentsReady && (
+          <p className="font-georgia text-sm text-mist text-center py-3">
+            Cochez les deux cases ci-dessus pour activer le paiement sécurisé et le virement bancaire.
+          </p>
         )}
+        <div className="space-y-3">
+          <div ref={containerRef}>{consentsReady && !config && !notice && <p className="font-georgia text-sm text-mist">Chargement du paiement sécurisé…</p>}</div>
+          <div ref={payLaterContainerRef} />
+          <BankTransferOption
+            practitionerSlug={practitionerSlug}
+            service={service}
+            dateStr={dateStr}
+            time={time}
+            customer={customer}
+            selectedModality={selectedModality}
+            checkoutId={checkoutId}
+            paymentChoice={paymentChoice}
+            consentsReady={consentsReady}
+            offerToken={offerToken}
+            onBankPending={onBankPending}
+            onUnavailable={onUnavailable}
+          />
+          <div ref={cardContainerRef} />
+        </div>
       </div>
-      <BankTransferOption
-        practitionerSlug={practitionerSlug}
-        service={service}
-        dateStr={dateStr}
-        time={time}
-        customer={customer}
-        selectedModality={selectedModality}
-        checkoutId={checkoutId}
-        paymentChoice={paymentChoice}
-        consentsReady={consentsReady}
-        offerToken={offerToken}
-        onBankPending={onBankPending}
-        onUnavailable={onUnavailable}
-        onAvailabilityChange={setBankTransferAvailable}
-      />
     </div>
   )
 }

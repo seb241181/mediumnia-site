@@ -25,6 +25,7 @@
    - `ENABLE_BANKING_APP_ID` — UUID de la NOUVELLE application.
    - `ENABLE_BANKING_PRIVATE_KEY_B64` — nouvelle clé RSA privée au format PEM encodée en base64 ; seulement côté serveur.
    - `ENABLE_BANKING_DATA_KEY` — nouvelle clé indépendante de 32 octets encodée en hexadécimal (64 caractères).
+   - `ENABLE_BANKING_TARGET_IBAN` — IBAN du compte PRO sélectionné dans Enable Banking, en secret Production Vercel, distinct du RIB de facturation `BOOKING_BANK_IBAN`.
    - `ENABLE_BANKING_ASPSP_NAME` — nom exact de l'institution disponible dans `GET /aspsps?country=FR&psu_type=business&service=AIS`. Ne pas deviner sa chaîne.
    - `ENABLE_BANKING_CONNECT_ENABLED` et `ENABLE_BANKING_SYNC_ENABLED` — laisser `false` jusqu'au contrôle final ; jamais dans Preview.
 7. Après validation complète du code déployé sur `mediumia.fr`, remplacer l'URL `https://example.com/callback` dans Enable Banking par l'URL définitive. Configurer les secrets sans les divulguer à un tiers.

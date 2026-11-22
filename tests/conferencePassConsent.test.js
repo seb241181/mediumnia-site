@@ -377,7 +377,8 @@ test('page Pass : formulaire de demande sans lien, accords avant les boutons Pay
   assert.match(page, /body: JSON\.stringify\(\{ passToken, termsAccepted: true, immediateAccessAccepted: true \}\)/)
 })
 
-test('offre publique : prix, économie, date limite du 21 novembre et Pass de 30 jours ; demandes refusées après', async () => {
+test('offre publique : prix, économie, date limite du 21 novembre et Pass de 30 jours ; demandes refusées après', async (t) => {
+  openOfferClock(t)
   const s = seed()
   s.conference_events[0].pass_request_deadline = '2026-11-21T22:59:59.000Z'
   const db = fakeDb(s)

@@ -23,7 +23,7 @@ const session = {
   accounts: [ACCOUNT], access: { valid_until: '2026-12-15T12:00:00Z' },
 }
 const bookedCredit = {
-  status: 'BOOK', credit_debit_indicator: 'CRDT', transaction_id: 'tx1',
+  status: 'BOOK', credit_debit_indicator: 'CRDT', entry_reference: 'stable-1', transaction_id: 'tx1',
   booking_date: '2026-11-21', remittance_information: [REF],
   transaction_amount: { amount: '70.00', currency: 'EUR' },
 }
@@ -63,7 +63,7 @@ test('pagination complète avant tout rapprochement, dates UTC et statut BOOK', 
     calls.push({ kind, id, query })
     return calls.length === 1
       ? { transactions: [bookedCredit], continuation_key: 'next-page' }
-      : { transactions: [{ ...bookedCredit, transaction_id: 'tx2' }] }
+      : { transactions: [{ ...bookedCredit, entry_reference: 'stable-2', transaction_id: 'tx2' }] }
   })
   assert.equal(result.length, 2)
   assert.deepEqual(calls.map(c => c.query.continuation_key), [undefined, 'next-page'])

@@ -132,7 +132,8 @@ export default function RdvBalanceWatch({ practitionerId, session }) {
 
   if (!data) return error ? <p className="mt-6 text-sm text-rose-800">{error}</p> : null
   const now = data.loadedAt
-  const items = data.items || []
+  // Garde-fou d'affichage : jamais de boutons d'annulation pour un solde nul.
+  const items = (data.items || []).filter(item => Number(item?.due_cents) > 0)
 
   return (
     <section className="mt-8 rounded-2xl border border-gold/30 bg-white/80 p-4" aria-labelledby="balance-watch-title">

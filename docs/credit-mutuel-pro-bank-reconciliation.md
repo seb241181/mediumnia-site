@@ -1,32 +1,47 @@
-# Crédit Mutuel PRO — rapprochement bancaire MediumIA (préparation)
+# MediumIA × Crédit Mutuel PRO — procédure d'activation et sécurité
 
-État au 22/11/2026 : **socle de rapprochement uniquement**. Pas de compte lié, aucune lecture bancaire, aucune tâche planifiée ni action automatique sur les réservations. Ne pas confondre le moteur `lib/rdvBankReconciliation.js` avec une intégration bancaire activée.
+État au 22/11/2026 : **préparation sur branche GitHub / PR brouillon**. Aucun compte bancaire relié à MediumIA, aucune donnée bancaire importée, aucune transaction ni comptabilité modifiée, aucun cron quotidien installé. Ne pas fusionner en l'état.
 
-## Fournisseur candidat
+## Ce qui est préparé en code
 
-Enable Banking (AIS seulement) : https://enablebanking.com/docs/api/quick-start/ et https://enablebanking.com/docs/markets/fr/ .
-Le Crédit Mutuel est documenté avec redirection d’authentification. Une application de production restreinte peut être activée avec ses propres comptes après ouverture d’un compte Enable Banking ; les conditions tarifaires de l’usage professionnel doivent être vérifiées directement auprès du fournisseur.
+- Endpoint de retour : `https://mediumia.fr/api/banking/callback`, réécrit vers la fonction Vercel existante `api/rdv-config.js` (pas de nouvelle fonction).
+- Démarrage réservé au propriétaire connecté : `POST /api/rdv-admin?action=bank-connection`. Récupération de statut : `GET` sur la même route.
+- Fournisseur AIS seulement : `POST https://api.enablebanking.com/auth` pour démarrer, puis `POST /sessions` à l'arrivée du code.
+- État aléatoire à usage unique, valable 10 minutes, consommé atomiquement côté Supabase ; code jamais affiché dans l'URL de retour du site.
+- JWT signé en RS256 côté serveur, session bancaire et identifiant de compte chiffrés en AES-256-GCM avec une autre clé. Un compte professionnel uniquement, toute sélection multiple renvoyée à un examen manuel.
+- Retour `review_required` : aucun encaissement confirmé, aucune écriture dans `rdv_financial_entries`, aucun événement Google modifié et aucune synchronisation bancaire en service.
+- Le panneau « Virements bancaires » ne propose la connexion que si toutes les variables sont configurées et l'interrupteur est activé ; les prévisualisations Vercel sont toujours bloquées.
+- Moteur de rapprochement déterministe `lib/rdvBankReconciliation.js` avec ses tests, sans appel bancaire ni mutation.
+- Schéma de tables à examiner dans `docs/enable-banking-connection-schema-review.sql` (**brouillon SQL, non appliqué**). Générer ensuite la migration réelle via Supabase CLI et la tester sur TEST.
 
-## À faire par le titulaire du compte (hors ChatGPT / hors dépôt Git)
+## Étapes avant activation
 
-1. Ouvrir https://enablebanking.com/sign-in/ avec son adresse professionnelle.
-2. Créer une application **Sandbox**, puis demander/activer une application **Production restreinte** si nécessaire, liée uniquement au compte professionnel autorisé.
-3. Choisir Crédit Mutuel (FR) et **accès aux informations sur les comptes (AIS / lecture seule)** ; ne pas autoriser de paiement initié (PIS).
-4. S’authentifier uniquement sur la page officielle du fournisseur/de la banque. Ne jamais communiquer ici un mot de passe bancaire, code de validation, clé privée RSA, jeton ou relevé complet.
-5. Confirmer les frais éventuels et les modalités de renouvellement du consentement.
+1. **Révoquer la clé RSA initialement partagée** dans la conversation : supprimer ou renouveler l'application Enable Banking initiale puis générer une nouvelle paire de clés. Supprimer une conversation/placer l'ancien PEM sur une clé USB ne révoque pas l'ancien secret.
+2. Créer une application Enable Banking Production restreinte de remplacement, avec le **retour exact** `https://mediumia.fr/api/banking/callback`, seulement APRÈS publication du code final. Ne plus utiliser `https://example.com/callback`.
+3. Mettre à jour les conditions MediumIA pour couvrir précisément la connexion bancaire et la confidentialité pour les transactions (période de conservation, destinataires, sécurité, exercice des droits). Les `/conditions-rdv` actuelles concernent les consultations, pas l'agrégation bancaire. Obtenir une revue juridique appropriée.
+4. Faire valider le tarif / contrat et le cadre « Production restreinte » par Enable Banking. Ce mode sert aux comptes propres du titulaire, sous les conditions contractuelles du fournisseur. Ne pas confondre lien de compte via le panneau Enable Banking et consentement au sein de MediumIA : les deux sont requis.
+5. Appliquer le schéma SQL sur la base **TEST** distincte ; vérifier RLS, privilèges, contrôle de propriété, expirations, états réutilisés et écriture après autorisation ; ne pas l'appliquer à la Production sans tests.
+6. Configurer les secrets **directement dans Vercel**, jamais dans GitHub, dans le chat, dans une capture ou en pièce jointe :
+   - `ENABLE_BANKING_APP_ID` — UUID de la NOUVELLE application.
+   - `ENABLE_BANKING_PRIVATE_KEY_B64` — nouvelle clé RSA privée au format PEM encodée en base64 ; seulement côté serveur.
+   - `ENABLE_BANKING_DATA_KEY` — nouvelle clé indépendante de 32 octets encodée en hexadécimal (64 caractères).
+   - `ENABLE_BANKING_ASPSP_NAME` — nom exact de l'institution disponible dans `GET /aspsps?country=FR&psu_type=business&service=AIS`. Ne pas deviner sa chaîne.
+   - `ENABLE_BANKING_CONNECT_ENABLED` — laisser `false` jusqu'au contrôle final ; jamais dans Preview.
+7. Après validation complète du code déployé sur `mediumia.fr`, remplacer l'URL `https://example.com/callback` dans Enable Banking par l'URL définitive. Configurer les secrets sans les divulguer à un tiers.
+8. Tester la liaison en lecture seule avec un compte professionnel réel, en mode Production restreinte et après consentement sur le portail bancaire officiel, sans donner d'identifiants à MediumIA. Vérifier que seul le compte autorisé est lié et qu'il n'y a **aucune confirmation de rendez-vous automatique**.
 
-## Prochaine phase de développement (non livrée)
+## Étape restant à développer avant « contrôle quotidien automatique »
 
-- API serveur de connexion, callback avec vérification stricte du `state` anti-CSRF, création de session bancaire. JWT RSA signé uniquement côté serveur ; clé privée en secret Vercel, jamais dans Git ni dans le navigateur.
-- Stocker les identifiants de session/compte chiffrés, les dates d’expiration, les consentements et les mouvements strictement nécessaires à la réconciliation dans une base privée, limitée au propriétaire du profil. Éviter le stockage des identifiants bancaires complets.
-- Planifier une récupération quotidienne de transactions avec reprise sur pagination (`continuation_key`), gestion des erreurs, vérification des nouveaux identifiants d’un compte après renouvellement et dédoublonnage.
-- Réutiliser les routes et la tâche cron Vercel existantes : vérifier la limite actuelle de fonctions serverless et ne pas créer de fonction supplémentaire sans audit.
-- Faire correspondre les virements crédités et comptabilisés (`BOOK`, `CRDT`, EUR) aux références `MDIA-xxxxxxxxxxxx` **et** montants attendus, uniquement pour des demandes `pending` non expirées.
-- Étape initiale : afficher « Virement identifié sur le compte — à confirmer » dans `BankTransferAdminPanel`. Aucune confirmation de réservation, écriture financière, e-mail ou événement Google automatique tant que le flux et le comportement sur des paiements réels n’ont pas été validés.
-- Une demande de virement expirée, un virement sans référence, deux encaissements possibles, un montant différent ou un versement PayPal groupé exigent une vérification humaine.
-- Assurer l’idempotence et l’absence de double comptabilisation entre PayPal, chèques, espèces, saisie manuelle et virements.
-- Activer seulement après validation en environnement de test (TEST distinct de PRODUCTION), revue des accès, protection du flux de consentement, et tests de sécurité.
+- Récupération quotidienne des écritures bancaires `BOOK/CRDT` en EUR dans un job serveur autorisé ; pagination `continuation_key`, expirations, renouvellement du consentement, alertes d'échec, déduplication par identifiant bancaire et compte.
+- Écran de confirmation par le propriétaire, sans double saisie ni annulation d'un rendez-vous déjà réglé.
+- Examen des chèques, virements non identifiables et versements PayPal groupés séparément.
+- Distinguer le compte **PRO** des autres comptes ; le système doit refuser un doute de correspondance.
+- Tests de bout en bout et audit de sécurité, puis autorisation explicite du titulaire avant mise en service.
 
-## Limites métier
+## Documents officiels
 
-La simple réception de virements bancaires n’identifie pas les paiements PayPal (virements souvent groupés) ni le détail des chèques/espèces. Les relevés bancaires ne doivent jamais servir à marquer automatiquement tous les rendez-vous comme soldés.
+- https://enablebanking.com/docs/api/reference/
+- https://enablebanking.com/docs/api/control-panel/
+- https://enablebanking.com/docs/api/linked-accounts
+
+**Consigne permanente : ne jamais réutiliser la première clé .pem partagée dans ChatGPT.**

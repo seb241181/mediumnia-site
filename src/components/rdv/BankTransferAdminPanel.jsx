@@ -13,6 +13,7 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
   const [notice,setNotice]=useState('')
   const [bankConnection,setBankConnection]=useState(null)
   const [bankConnectionAvailable,setBankConnectionAvailable]=useState(false)
+  const [bankAccountLastFour,setBankAccountLastFour]=useState(null)
   const [bankConnecting,setBankConnecting]=useState(false)
   const [bankConnectionError,setBankConnectionError]=useState('')
   const [bankConsent,setBankConsent]=useState(false)
@@ -42,7 +43,7 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
       if(response.status===503){setBankConnectionAvailable(false);return}
       if(!response.ok)return
       const body=await response.json()
-      if(active){setBankConnectionAvailable(true);setBankConnection(body.connection||null)}
+      if(active){setBankConnectionAvailable(true);setBankConnection(body.connection||null);setBankAccountLastFour(body.account_last_four||null)}
     }).catch(()=>{})
     return ()=>{active=false}
   },[token])
@@ -115,7 +116,7 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
         </button>
       </div>
       <div className="mb-4 rounded-xl border border-gold/20 bg-white/80 p-3 text-sm">
-        <p className="font-georgia font-semibold text-deep">Crédit Mutuel PRO — lecture seule</p>
+        <p className="font-georgia font-semibold text-deep">Crédit Mutuel PRO — compte {bankAccountLastFour?'•••• '+bankAccountLastFour:'sélectionné'} — lecture seule</p>
         <p className="mt-1 text-xs text-mist">
           {bankConnection?.status==='review_required'
             ? 'Autorisation reçue. Activez uniquement si le compte autorisé est bien votre compte PRO : aucun règlement ne sera confirmé automatiquement.'

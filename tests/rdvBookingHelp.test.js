@@ -27,7 +27,7 @@ test('aide à la réservation : juste au-dessus des boutons de paiement, sans to
   const checkout = read('src/components/rdv/RdvDepositCheckout.jsx')
   const help = checkout.indexOf('<RdvBookingHelp')
   const buttons = checkout.indexOf('<div ref={containerRef}>')
-  const consents = checkout.indexOf('{!consentsReady ? (')
+  const consents = checkout.indexOf('{!consentsReady && (')
   assert.ok(help > 0 && help < consents && consents < buttons, 'encadré placé avant le paiement')
   assert.equal((checkout.match(/<RdvBookingHelp/g) || []).length, 1)
   assert.doesNotMatch(read('src/components/rdv/RdvBookingHelp.jsx'), /onClick|fetch\(|useEffect/)

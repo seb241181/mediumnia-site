@@ -650,10 +650,14 @@ function TimeSlots({ practitionerSlug, date, service, selected, onSelect }) {
 
 // ── Contact form ──────────────────────────────────────────────────────────────
 
-function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →', isVideo = false, accountEmail = null, prefill = null }) {
+function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la réservation →', isVideo = false, accountEmail = null, prefill = null, marketingStatus = null }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: accountEmail || '', phone: '', message: '', videoChannel: '', wantsAccount: '', marketingOptIn: false, ...(prefill || {}) })
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  // Un statut d'abonnement n'est utilisé que pour l'e-mail vérifié du compte.
+  const sameVerifiedEmail = Boolean(accountEmail && form.email.trim().toLowerCase() === accountEmail.trim().toLowerCase())
+  const skipMarketingChoice = sameVerifiedEmail
+    && (marketingStatus === null || ['subscribed', 'pending', 'unsubscribed'].includes(marketingStatus))
 
   function validate() {
     const e = {}
@@ -670,7 +674,7 @@ function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la ré
     ev.preventDefault()
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
-    onSubmit(form)
+    onSubmit({ ...form, marketingOptIn: skipMarketingChoice ? undefined : form.marketingOptIn })
   }
 
   const input = "w-full font-georgia text-sm text-deep bg-white border border-gold/30 rounded-xl px-4 py-3 focus:outline-none focus:border-gold/70 transition-colors placeholder:text-mist/40"
@@ -715,7 +719,20 @@ function ContactForm({ onSubmit, loading, error, submitLabel = 'Confirmer la ré
       {accountEmail
         ? <SignedInNotice email={accountEmail} />
         : <AccountChoice value={form.wantsAccount} onChange={v => set('wantsAccount', v)} />}
-      <MarketingConsentField checked={form.marketingOptIn} onChange={v => set('marketingOptIn', v)} />
+      {!skipMarketingChoice && (
+        <MarketingConsentField checked={form.marketingOptIn} onChange={v => set('marketingOptIn', v)} />
+      )}
+      {sameVerifiedEmail && marketingStatus === 'pending' && (
+        <p className="font-georgia text-xs text-mist">
+          Vous avez déjà demandé les actualités MediumIA. Consultez votre e-mail pour confirmer l’inscription.
+        </p>
+      )}
+      {sameVerifiedEmail && marketingStatus === 'unsubscribed' && (
+        <p className="font-georgia text-xs text-mist">
+          Vous avez choisi de ne plus recevoir les actualités.
+          {' '}<a className="text-gold underline" href="/preferences-email" target="_blank" rel="noopener noreferrer">Gérer mes préférences</a>.
+        </p>
+      )}
       <button
         type="submit"
         disabled={loading}
@@ -906,6 +923,18 @@ export default function RdvPublic({ onBack, onNavigate }) {
   const { user: accountUser, session: accountSession } = useAuth()
   const accountToken = accountSession?.access_token || null
   const [accountProfile, setAccountProfile] = useState(null)
+  const [marketingStatus, setMarketingStatus] = useState(null)
+  useEffect(() => {
+    if (!accountToken) { setMarketingStatus(null); return undefined }
+    let active = true
+    fetch('/api/rdv-config?marketingAction=preferences', {
+      headers: { Authorization: `Bearer ${accountToken}` },
+    })
+      .then(async response => response.ok ? response.json() : { status: 'none' })
+      .then(result => { if (active) setMarketingStatus(result?.status || 'none') })
+      .catch(() => { if (active) setMarketingStatus('none') })
+    return () => { active = false }
+  }, [accountToken])
   useEffect(() => {
     if (!accountToken) return undefined
     let active = true
@@ -1463,6 +1492,7 @@ export default function RdvPublic({ onBack, onNavigate }) {
                   prefill={accountUser ? bookingPrefill(accountProfile, selectedModality === 'video') : null}
                   isVideo={selectedModality === 'video'}
                   accountEmail={accountUser?.email || null}
+                  marketingStatus={marketingStatus}
                   onSubmit={handleConfirm}
                   loading={bookingLoading}
                   error={bookingError}

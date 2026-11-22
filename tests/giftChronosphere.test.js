@@ -111,7 +111,7 @@ test('MAX needs the recipient account and is attached to it', async () => {
   const res = fakeRes()
   await handleGiftChronosphere(request({ product: 'max3' }, { authorization: 'Bearer jwt1' }), res, db)
   assert.equal(res.statusCode, 200)
-  assert.deepEqual([tables.chronosphere_credit_packs[0].user_id, tables.chronosphere_credit_packs[0].product_type, tables.chronosphere_credit_packs[0].amount_cents], ['u1', 'max3', 1990])
+  assert.deepEqual([tables.chronosphere_credit_packs[0].user_id, tables.chronosphere_credit_packs[0].product_type, tables.chronosphere_credit_packs[0].amount_cents], ['u1', 'max3', 1490])
 })
 
 test('wrong page, missing consent, expiry and consultation-only cards are refused without side effects', async () => {

@@ -9,6 +9,7 @@ import {
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
 const fakeAppId = '11111111-1111-4111-8111-111111111111'
 const fakeEnv = {
+  VERCEL_ENV: 'production',
   ENABLE_BANKING_CONNECT_ENABLED: 'true',
   ENABLE_BANKING_APP_ID: fakeAppId,
   ENABLE_BANKING_PRIVATE_KEY_B64: Buffer.from(privateKey.export({ format: 'pem', type: 'pkcs8' })).toString('base64'),
@@ -19,6 +20,7 @@ const fakeEnv = {
 test('connexion bancaire désactivée par défaut, en cas de clé absente ou mauvaise', () => {
   assert.equal(readBankConnectionConfig({}), null)
   assert.equal(readBankConnectionConfig({ ...fakeEnv, ENABLE_BANKING_CONNECT_ENABLED: 'false' }), null)
+  assert.equal(readBankConnectionConfig({ ...fakeEnv, VERCEL_ENV: 'preview' }), null)
   assert.equal(readBankConnectionConfig({ ...fakeEnv, ENABLE_BANKING_PRIVATE_KEY_B64: 'garbage' }), null)
   assert.equal(readBankConnectionConfig({ ...fakeEnv, ENABLE_BANKING_DATA_KEY: 'x' }), null)
   assert.ok(readBankConnectionConfig(fakeEnv))

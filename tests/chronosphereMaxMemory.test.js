@@ -261,3 +261,26 @@ test('MAX clearly displays a waiting state during a paid reading without a secon
   assert.match(page, /<button type="submit" disabled=\{drawBusy\}/)
   assert.match(page, /Patientez, génération en cours/)
 })
+
+test('MAX final synthesis stays readable and distinguishes stable from shifted windows', async () => {
+  const original = summarizeChronosphereLine(chronosphereMaxDemoTimeline.entries)
+  assert.match(original.synthesis, /La Ligne de Temps relie/)
+  assert.ok(original.synthesis.length < 360, 'summary must not be arbitrarily truncated')
+  const firstPeak = chronosphereMaxDemoTimeline.entries[0].snapshot.timing.primary.peak
+  const stableEntries = chronosphereMaxDemoTimeline.entries.map((entry, index) => index !== 2 ? entry : ({
+    ...entry,
+    snapshot: {
+      ...entry.snapshot,
+      timing: {
+        ...entry.snapshot.timing,
+        primary: { ...entry.snapshot.timing.primary, peak: firstPeak },
+      },
+    },
+  }))
+  const stable = summarizeChronosphereLine(stableEntries)
+  assert.equal(stable.firstWindow, stable.currentWindow)
+  assert.match(stable.synthesis, /fenêtre prioritaire reste stable/)
+  const page = await readFile(pagePath, 'utf8')
+  assert.match(page, /synthesis.firstWindow === synthesis.currentWindow \? 'Fenêtre stable' : 'Fenêtre déplacée'/)
+  assert.match(page, /synthesis.firstWindow === synthesis.currentWindow\s*\? shortDate\(synthesis.currentWindow\)/)
+})

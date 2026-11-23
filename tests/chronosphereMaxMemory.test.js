@@ -238,3 +238,14 @@ test('MAX account history stays scoped to owner and lets them select a distinct 
   assert.match(page, /refreshMaxStatus\('', false, packId\)/)
   assert.match(page, /item\.id === creditState\?\.packId/)
 })
+
+test('ChronoSphère requests Anthropic schema-constrained JSON and never consumes truncated text', async () => {
+  const oracleTimeline = await readFile(new URL('../lib/oracleTimeline.js', import.meta.url), 'utf8')
+  assert.match(oracleTimeline, /const CHRONOSPHERE_JSON_OUTPUT = \{/)
+  assert.match(oracleTimeline, /type: 'json_schema'/)
+  assert.match(oracleTimeline, /required: \['summary30s', 'direction', 'closure', 'whyNow', 'sections'\]/)
+  assert.match(oracleTimeline, /output_config: \{ format: CHRONOSPHERE_JSON_OUTPUT \}/)
+  assert.match(oracleTimeline, /truncated_max_tokens/)
+  assert.match(oracleTimeline, /anthropicFailure = structured.reason/)
+  assert.doesNotMatch(oracleTimeline, /console\.error\([^\n]*anthropic\.text/)
+})

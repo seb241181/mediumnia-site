@@ -370,8 +370,18 @@ function FinalSynthesis({ timeline }) {
           <p className="mt-2 font-georgia text-sm text-cream/78">{synthesis.fromTheme}</p>
         </div>
         <div className="rounded-2xl border border-gold/25 p-4">
-          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Fenêtre déplacée</p>
-          <p className="mt-2 font-georgia text-sm text-cream/78">{shortDate(synthesis.firstWindow)} → {shortDate(synthesis.currentWindow)}</p>
+          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">
+            {synthesis.firstWindow && synthesis.currentWindow
+              ? synthesis.firstWindow === synthesis.currentWindow ? 'Fenêtre stable' : 'Fenêtre déplacée'
+              : 'Fenêtre non calculée'}
+          </p>
+          <p className="mt-2 font-georgia text-sm text-cream/78">
+            {synthesis.firstWindow && synthesis.currentWindow
+              ? synthesis.firstWindow === synthesis.currentWindow
+                ? shortDate(synthesis.currentWindow)
+                : `${shortDate(synthesis.firstWindow)} → ${shortDate(synthesis.currentWindow)}`
+              : 'Non calculée'}
+          </p>
         </div>
         <div className="rounded-2xl border border-gold/25 p-4">
           <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Lectures suivies</p>

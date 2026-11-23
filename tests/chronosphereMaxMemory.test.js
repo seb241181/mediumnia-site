@@ -249,3 +249,15 @@ test('ChronoSphère requests Anthropic schema-constrained JSON and never consume
   assert.match(oracleTimeline, /anthropicFailure = structured.reason/)
   assert.doesNotMatch(oracleTimeline, /console\.error\([^\n]*anthropic\.text/)
 })
+
+test('MAX clearly displays a waiting state during a paid reading without a second submission', async () => {
+  const page = await readFile(pagePath, 'utf8')
+  assert.match(page, /setDrawBusy\(true\)/)
+  assert.match(page, /setDrawBusy\(false\)/)
+  assert.match(page, /<form onSubmit=\{submitMaxReading\} aria-busy=\{drawBusy\}/)
+  assert.match(page, /\{drawBusy && \(\s*<div role="status" aria-live="polite"/)
+  assert.match(page, /Patientez, votre Ligne de Temps se prépare/)
+  assert.match(page, /Ne fermez pas cette page pendant la génération/)
+  assert.match(page, /<button type="submit" disabled=\{drawBusy\}/)
+  assert.match(page, /Patientez, génération en cours/)
+})

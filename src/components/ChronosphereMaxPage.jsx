@@ -892,7 +892,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
             <h2 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{liveTimeline ? 'Continuer cette Ligne de Temps' : 'Créer votre Ligne de Temps'}</h2>
             <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">Chaque nouvelle lecture repart du ciel du moment et compare ensuite sa structure aux lectures précédentes.</p>
 
-            <form onSubmit={submitMaxReading} className="mt-6 grid gap-4">
+            <form onSubmit={submitMaxReading} aria-busy={drawBusy} className="mt-6 grid gap-4">
               {!liveTimeline && (
                 <label className="grid gap-1.5">
                   <span className="font-georgia text-xs font-semibold text-deep">Nom de la Ligne de Temps</span>
@@ -950,8 +950,20 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
               </div>
 
               {drawError && <p className="font-georgia text-sm leading-relaxed text-red-700">{drawError}</p>}
-              <button disabled={drawBusy} className="rounded-xl bg-deep px-6 py-4 font-georgia text-base font-bold text-gold disabled:opacity-50">
-                {drawBusy ? 'ChronoSphère ouvre la Ligne de Temps…' : liveTimeline ? 'Générer la prochaine lecture MAX' : 'Ouvrir ma Ligne de Temps'}
+              {drawBusy && (
+                <div role="status" aria-live="polite" className="flex items-start gap-4 rounded-2xl border border-gold/40 bg-gold/10 p-4 md:p-5">
+                  <span aria-hidden="true" className="mt-1 inline-block h-6 w-6 shrink-0 animate-spin rounded-full border-[3px] border-gold/25 border-t-gold motion-reduce:animate-none" />
+                  <div>
+                    <p className="font-georgia text-base font-semibold text-deep">Patientez, votre Ligne de Temps se prépare…</p>
+                    <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/75">
+                      ChronoSphère rassemble les éléments de votre tirage et rédige votre interprétation personnalisée. Ne fermez pas cette page pendant la génération.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <button type="submit" disabled={drawBusy} className="flex w-full items-center justify-center gap-3 rounded-xl bg-deep px-6 py-4 font-georgia text-base font-bold text-gold disabled:cursor-wait disabled:opacity-70">
+                {drawBusy && <span aria-hidden="true" className="inline-block h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-gold/25 border-t-gold motion-reduce:animate-none" />}
+                {drawBusy ? 'Patientez, génération en cours…' : liveTimeline ? 'Générer la prochaine lecture MAX' : 'Ouvrir ma Ligne de Temps'}
               </button>
             </form>
           </section>

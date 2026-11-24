@@ -13,6 +13,7 @@ import { LUMIA_AVAILABILITY_UNAVAILABLE, loadLumiaAvailabilityContext, lumiaAvai
 import { buildLumiaPolicyInstructions, redactForLog } from '../lib/lumiaPolicy.js'
 import { maybeHandleLumiaBookingCancelChat } from '../lib/lumiaBookingCancelChat.js'
 import { LUMIA_NO_PROVIDER_REPLY, maybeHandleLumiaRequestImportChat } from '../lib/lumiaRequestImport.js'
+import { maybeHandleLumiaSmsChat } from '../lib/lumiaSmsChat.js'
 
 function lumiaProviderConfigured(provider) {
   return provider === 'openai'
@@ -375,8 +376,13 @@ export default async function handler(req, res) {
   // session propriétaire authentifiée de cette conversation privée.
   if (agent.metadata?.purpose === 'lumia_rdv_assistant' && !auth.rehearsal) {
     try {
-      // Ajout de demandes depuis les messages (preview → GO), puis annulation.
-      const importResult = await maybeHandleLumiaRequestImportChat({
+      // Envoi de SMS : seul un ordre explicite du propriétaire est accepté
+      // (« SMS à +33… : texte » puis « GO SMS #CODE »), jamais une donnée cliente.
+      const smsResult = await maybeHandleLumiaSmsChat({
+        db, userId: auth.userId, conversationId, message: cleanMessage,
+      })
+      // Ajout des demandes puis annulations, chemins inchangés.
+      const importResult = smsResult?.handled ? smsResult : await maybeHandleLumiaRequestImportChat({
         db,
         userId: auth.userId,
         conversationId,

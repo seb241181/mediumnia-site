@@ -20,7 +20,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { backfillRange, confirmationFor, createInboxBackfill } from './backfill.js'
 import { createBridge } from './bridge.js'
-import { processApprovedSmsOnce, DEFAULT_OUTBOX_ENDPOINT } from './outbox.js'
+import { processApprovedSmsOnce } from './outbox.js'
 import { DEFAULT_CHAT_DB, openChatDb } from './chatdb.js'
 import { assertSafeEndpoint, DEFAULT_ENDPOINT } from './sender.js'
 import { INBOX_KEYCHAIN_ACCOUNT, OUTBOX_KEYCHAIN_ACCOUNT, keychainHasToken, readInboxToken, readToken, readOutboxToken } from './token.js'
@@ -168,7 +168,14 @@ async function sendApproved(args) {
     process.exitCode = 2
     return
   }
-  const endpoint = config.outbox_endpoint || DEFAULT_OUTBOX_ENDPOINT
+  // Ne jamais utiliser mediumia.fr par défaut pour la première expérimentation.
+  // Une URL explicite et vérifiée est obligatoire avant toute requête.
+  const endpoint = String(config.outbox_endpoint || '').trim()
+  if (!endpoint) {
+    console.error('outbox_endpoint explicite obligatoire (Preview TEST pour les essais). Aucune requête.')
+    process.exitCode = 2
+    return
+  }
   assertSafeEndpoint(endpoint)
   const pollSeconds = Math.max(15, Number(args.interval ?? config.outbox_poll_seconds ?? 20))
   let stopping = false

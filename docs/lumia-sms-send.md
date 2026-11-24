@@ -67,12 +67,14 @@ reste `dispatching` et ne peut pas être renvoyé automatiquement.
   {
     "live": true,
     "outbox_enabled": true,
-    "outbox_endpoint": "https://mediumia-site-gifcy1r89-seguins-projects-a1d4673f.vercel.app/api/rdv-admin?action=lumia-sms-outbox",
+    "outbox_endpoint": "",
     "outbox_only_handles": ["+33612345678"],
     "outbox_allow_all": false
   }
   ```
   L’URL de sortie est **obligatoire** : il n’y a plus d’endpoint par défaut.
+  Renseigner ici l’URL de la **dernière Preview READY au commit testé**,
+  suivie de `/api/rdv-admin?action=lumia-sms-outbox`.
   Cette URL est une Preview : il faut **prouver qu’elle utilise Supabase TEST
   et jamais Production** avant d’activer les envois. Les variables Vercel
   génériques Preview ne suffisent pas comme preuve d’isolement.

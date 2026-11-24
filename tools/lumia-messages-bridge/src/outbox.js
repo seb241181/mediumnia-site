@@ -15,7 +15,7 @@ export function assertApprovedOutboxEndpoint(endpoint) {
   const url = assertSafeEndpoint(endpoint)
   const host = url.hostname
   const production = host === 'mediumia.fr' || host === 'www.mediumia.fr'
-  const preview = /^mediumia-site-[a-z0-9-]+\\.vercel\\.app$/i.test(host)
+  const preview = /^mediumia-site-[a-z0-9-]+\.vercel\.app$/i.test(host)
   const local = host === 'localhost' || host === '127.0.0.1'
   if (!production && !preview && !local) throw new Error('outbox_host_not_allowed')
   if (url.pathname !== '/api/rdv-admin' || url.searchParams.get('action') !== 'lumia-sms-outbox'

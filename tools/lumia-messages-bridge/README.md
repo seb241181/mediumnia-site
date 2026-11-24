@@ -311,3 +311,25 @@ Données entièrement fictives. Les tests utilisent une fausse `chat.db` en mode
 - dates Apple ;
 - HTTPS ;
 - refus du mode réel sans configuration.
+
+
+## Réponses sortantes approuvées (nouveau pilote, OFF par défaut)
+
+Le bridge historique **reste en lecture seule**. Un processus distinct
+`send-approved` peut désormais, **après GO SMS explicite dans Lumia**, retirer
+un SMS de la file privée puis demander à Messages.app de l'envoyer. Ni les
+messages reçus, ni Codex, ni le modèle ne peuvent provoquer seuls un envoi.
+
+- `npm run send-approved` : mode inactif, aucun accès réseau.
+- `npm run send-approved -- --live --once` : un seul retrait et tentative, **si**
+  `config.local.json` a `live=true`, `outbox_enabled=true` et
+  `outbox_only_handles` configuré pour un numéro de test, avec le secret dédié
+  `sms-outbox-token` dans le Trousseau du Mac.
+- `STATUT SMS #CODE` dans Lumia donne ensuite `ready`, `dispatching`,
+  `accepted`, `uncertain`, etc. `accepted` ne prouve pas la livraison.
+- Un message retiré n'est **jamais remis en file automatiquement** après crash.
+  Les SMS incertains nécessitent une vérification humaine.
+
+Procédure et précautions : [docs/lumia-sms-send.md](../../docs/lumia-sms-send.md).
+Ne pas activer en Production avant des essais réels entre deux numéros que
+Sébastien contrôle (iMessage ET SMS indépendamment).

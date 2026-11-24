@@ -9,6 +9,7 @@ import { cancelSlotOffer, createSlotOffer, listSlotOffers, updateSlotOfferContac
 import { listDepositSettlements, refundBookingDeposit, retainBookingDeposit, transferBookingDeposit } from '../lib/rdvDepositSettlements.js'
 import { handleLumiaApi } from '../lib/lumiaRdvIntake.js'
 import { handleLumiaInboxApi } from '../lib/lumiaMessageInbox.js'
+import { handleLumiaSmsOutboxApi } from '../lib/lumiaSmsOutbox.js'
 import { handleLumiaBookingCancelApi } from '../lib/lumiaBookingCancelApi.js'
 import { handleEmailQuestionsAdmin } from '../lib/emailQuestions.js'
 import { handleEmailDeliveryAdmin } from '../lib/emailDelivery.js'
@@ -921,6 +922,13 @@ export default async function handler(req, res) {
   // seule d'un message texte reçu ; sans ce secret, 503 et rien n'est stocké.
   if (req.query.action === 'lumia-message-intake') {
     const result = await handleLumiaInboxApi({ req })
+    return res.status(result.status).json(result.body)
+  }
+
+  // Mac uniquement : retire UNE réponse explicitement validée par GO, puis
+  // enregistre le résultat. Jeton distinct, pas d'accès au calendrier.
+  if (req.query.action === 'lumia-sms-outbox') {
+    const result = await handleLumiaSmsOutboxApi({ req })
     return res.status(result.status).json(result.body)
   }
 

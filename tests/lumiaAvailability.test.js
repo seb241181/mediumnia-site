@@ -616,12 +616,12 @@ test('lecture seule : aucune écriture en base ni dans Google ; seul le renouvel
     assert.doesNotMatch(src, /method:\s*'(POST|PUT|PATCH|DELETE)'/, file)
     assert.doesNotMatch(src, /console\./, `${file} : aucun log de données`)
   }
-  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel', 'mediumia.booking_request.import'])
+  assert.deepEqual(LUMIA_ALLOWED_ACTIONS, ['mediumia.booking.cancel', 'mediumia.booking_request.import', 'message.send'])
 })
 
 test('politique : disponibilité déterministe, jamais inventée, Google indisponible, lecture seule', () => {
   const policy = buildLumiaPolicyInstructions()
-  assert.equal(LUMIA_POLICY_VERSION, '2026-11-15.2')
+  assert.equal(LUMIA_POLICY_VERSION, '2026-11-24.1')
   for (const re of [
     /résultat déterministe du moteur MediumIA \+ Google Agenda/,
     /N'invente jamais un créneau/,

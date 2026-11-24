@@ -11,6 +11,7 @@ import process from 'node:process'
 export const KEYCHAIN_SERVICE = 'mediumia-lumia'
 export const KEYCHAIN_ACCOUNT = 'intake-token'
 export const INBOX_KEYCHAIN_ACCOUNT = 'inbox-token'
+export const OUTBOX_KEYCHAIN_ACCOUNT = 'sms-outbox-token'
 
 function keychainToken(account = KEYCHAIN_ACCOUNT) {
   if (process.platform !== 'darwin') return Promise.resolve(null)
@@ -29,6 +30,13 @@ export async function readToken({ env = process.env, keychain = keychainToken } 
 export async function readInboxToken({ env = process.env, keychain = keychainToken } = {}) {
   const fromKeychain = await keychain(INBOX_KEYCHAIN_ACCOUNT)
   const token = fromKeychain || String(env.LUMIA_INBOX_TOKEN || '').trim() || null
+  return token && token.length >= 32 ? token : null
+}
+
+// Pour le travailleur Mac d'envoi seulement. Distinct de tous les autres jetons.
+export async function readOutboxToken({ env = process.env, keychain = keychainToken } = {}) {
+  const fromKeychain = await keychain(OUTBOX_KEYCHAIN_ACCOUNT)
+  const token = fromKeychain || String(env.LUMIA_SMS_OUTBOX_TOKEN || '').trim() || null
   return token && token.length >= 32 ? token : null
 }
 

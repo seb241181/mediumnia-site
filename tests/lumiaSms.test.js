@@ -91,5 +91,5 @@ test('L’API de sortie ne contient aucun endpoint public et aucune écriture Ap
   assert.match(sql,/FOR UPDATE SKIP LOCKED/)
   assert.match(sql,/status='dispatching'/)
   assert.match(sql,/REVOKE ALL ON public.lumia_sms_outbox FROM PUBLIC, anon, authenticated/)
-  assert.match(sql,/approved/)
+  assert.match(sql,/intent_id UUID NOT NULL UNIQUE/)
 })

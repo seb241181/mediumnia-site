@@ -62,6 +62,67 @@ test('API Mac : refus sans flag, sans secret et sans méthode connue', async () 
   })).status,401)
 })
 
+test('Lumia : le brouillon reste une action privée ; seul GO SMS crée la file', async () => {
+  const now = new Date('2026-11-24T18:00:00Z')
+  const source = { id, source_conversation_id:'conv-fictif', source_channel:'sms', message_sent_at:'2026-11-24T17:55:00Z' }
+  const trace = []
+  const intent = { id, short_code:'#ABC123', status:'preview',
+    preview_expires_at:'2026-11-24T18:10:00Z',
+    canonical_payload:{ version:1, recipient:num, body, channel:'sms', source_inbox_id:id, source_conversation_id:source.source_conversation_id } }
+  const db = {
+    from(table) {
+      const chain={
+        select(){return chain},eq(){return chain},in(){return chain},order(){return chain},limit(){return Promise.resolve({data:[source],error:null})},
+        maybeSingle(){return Promise.resolve({data:intent,error:null})},
+        insert(value){trace.push({table,value});return Promise.resolve({data:null,error:null})},
+      }
+      return chain
+    },
+    async rpc(name,args) {
+      trace.push({name,args})
+      if(name==='lumia_create_action_intent') return {data:{short_code:'#ABC123'},error:null}
+      if(name==='lumia_approve_action_intent') return {data:{status:'approved'},error:null}
+      if(name==='lumia_claim_action_execution') return {data:{status:'executing'},error:null}
+      if(name==='lumia_finish_action_execution') return {data:{status:'succeeded'},error:null}
+      return {data:null,error:{message:'unknown rpc'}}
+    },
+  }
+  const draft=await maybeHandleLumiaSmsChat({
+    db,userId:id,conversationId:id,message:`SMS à ${num} : ${body}`,
+    env:{LUMIA_SMS_SEND_ENABLED:'true'},now,
+  })
+  assert.match(draft.reply,/RIEN N’EST ENVOYÉ/)
+  assert.match(draft.reply,/GO SMS #ABC123/)
+  assert.equal(trace.filter(x=>x.table==='lumia_sms_outbox').length,0)
+  const approved=await maybeHandleLumiaSmsChat({
+    db,userId:id,conversationId:id,message:'GO SMS #ABC123',
+    env:{LUMIA_SMS_SEND_ENABLED:'true'},now,
+  })
+  assert.match(approved.reply,/file d’envoi/)
+  assert.equal(trace.filter(x=>x.table==='lumia_sms_outbox').length,1)
+  assert.equal(trace.find(x=>x.table==='lumia_sms_outbox').value.recipient,num)
+})
+
+test('API Mac : token correct sans travail renvoie job null et ne lit pas les messages personnels', async () => {
+  const token='k'.repeat(48), calls=[]
+  const chain={
+    select(){return chain},eq(){return chain},
+    maybeSingle:async()=>({data:{owner_id:id},error:null}),
+  }
+  const db={
+    from(table){calls.push(table);return chain},
+    async rpc(name,args){calls.push(name);return {data:[],error:null}},
+  }
+  const result=await handleLumiaSmsOutboxApi({
+    req:{method:'GET',headers:{authorization:`Bearer ${token}`}},
+    env:{LUMIA_SMS_OUTBOX_ENABLED:'true',LUMIA_SMS_OUTBOX_TOKEN:token},
+    db,
+  })
+  assert.equal(result.status,200)
+  assert.deepEqual(result.body,{job:null})
+  assert.deepEqual(calls,['booking_practitioners','lumia_claim_sms_outbox'])
+})
+
 test('Mac : un travail réclamé n’est jamais renvoyé, même si la preuve chat.db est absente', async () => {
   const called=[]
   const job={id,recipient:num,channel:'sms',body}

@@ -8,6 +8,7 @@
   "scripts": {
     "doctor": "node --disable-warning=ExperimentalWarning src/cli.js doctor",
     "dry-run": "node --disable-warning=ExperimentalWarning src/cli.js run --show",
+    "send-approved": "node --disable-warning=ExperimentalWarning src/cli.js send-approved",
     "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.js"
   }
 }

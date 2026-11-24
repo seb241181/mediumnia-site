@@ -37,12 +37,13 @@
     </div>
 
     <div id="paidState" class="state hidden"><div class="symbol">✦</div><h2>Rendez-vous entièrement réglé</h2><p>Votre paiement est bien enregistré. Il ne reste plus aucun solde à régler.</p></div>
-    <div id="expiredState" class="state hidden"><div class="symbol">◌</div><h2>Délai de règlement dépassé</h2><p>Le lien de paiement n’est plus actif, car l’échéance de 48 heures avant le rendez-vous est atteinte.</p></div>
+    <div id="expiredState" class="state hidden"><div class="symbol">◌</div><h2>Délai de règlement dépassé</h2><p>Le lien de paiement n’est plus actif<span id="expiredDeadline"></span>. Contactez Sébastien pour vérifier le maintien de votre rendez-vous.</p></div>
     <div id="cancelledState" class="state hidden"><div class="symbol">◌</div><h2>Rendez-vous annulé</h2><p>Ce rendez-vous n’est plus actif et ne peut plus être réglé depuis ce lien.</p></div>
-    <div id="payPalCancelled" class="state hidden"><div class="symbol">◌</div><h2>Paiement annulé</h2><p>Aucun nouveau règlement n’a été confirmé. Retrouvez votre e-mail MediumIA pour reprendre le paiement, ou contactez Sébastien si le lien ne fonctionne plus.</p></div>
-    <div id="technicalState" class="state hidden"><div class="symbol">◌</div><h2>Vérification momentanément indisponible</h2><p>Ne réglez pas deux fois la même séance. Réessayez avec votre lien d’origine ou contactez Sébastien.</p></div>
+    <div id="payPalCancelled" class="state hidden"><div class="symbol">◌</div><h2>Paiement annulé</h2><p>Aucun règlement n’a été confirmé. Rouvrez le lien de votre e-mail MediumIA pour reprendre le paiement, ou contactez Sébastien.</p></div>
+    <div id="verifyingState" class="state hidden"><div class="symbol">◌</div><h2>Paiement en cours de vérification</h2><p id="verifyingText">Un règlement PayPal est engagé pour ce rendez-vous. <strong>Ne payez pas une deuxième fois.</strong> Votre rendez-vous est conservé pendant la vérification ; Sébastien est prévenu si elle n’aboutit pas.</p><p style="margin-top:18px"><button id="verifyButton" class="paypal-btn" type="button">Vérifier à nouveau</button></p></div>
+    <div id="technicalState" class="state hidden"><div class="symbol">◌</div><h2>Vérification momentanément indisponible</h2><p>Aucun nouveau paiement n’a été lancé. Ne réglez pas deux fois la même séance : réessayez dans quelques instants, ou contactez Sébastien.</p><p style="margin-top:18px"><button id="retryButton" class="paypal-btn" type="button">Réessayer</button></p></div>
     <div id="accountState" class="state hidden"><div class="symbol">◈</div><h2>Ouvrez ce règlement depuis votre espace</h2><p>Pour votre sécurité, le règlement du solde s’ouvre depuis votre espace MediumIA, une fois connecté.</p><p><a href="/mon-espace">Ouvrir mon espace MediumIA</a></p></div>
-    <div id="invalidState" class="state hidden"><div class="symbol">◌</div><h2>Lien invalide ou expiré</h2><p>Ce lien de règlement ne peut pas être utilisé. Vérifiez que vous avez ouvert le lien reçu par e-mail.</p></div>
+    <div id="invalidState" class="state hidden"><div class="symbol">◌</div><h2>Lien invalide ou expiré</h2><p>Ce lien de règlement ne peut pas être utilisé. Ouvrez directement le lien du dernier e-mail MediumIA reçu : un nouveau lien remplace les précédents. Vous pouvez aussi régler depuis <a href="/mon-espace">votre espace MediumIA</a>.</p></div>
   </section>
   <a class="back" href="https://mediumia.fr">← Retour à MediumIA</a>
 </main>
@@ -51,30 +52,42 @@
   const $ = id => document.getElementById(id)
   const query = new URLSearchParams(window.location.search)
   const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
-  // Le jeton ne doit pas rester dans la barre d'adresse, mais doit pouvoir
-  // être retrouvé en cas de rechargement de CET onglet (history.state).
-  const tokenFromLink = new URLSearchParams(rawHash).get('token') || ''
-  const token = tokenFromLink || (typeof history.state?.mediumiaBalanceToken === 'string' ? history.state.mediumiaBalanceToken : '')
+  const hash = new URLSearchParams(rawHash)
+  // Reprise dans CET onglet seulement (actualisation, retour de PayPal) : le
+  // jeton n'est jamais remis dans l'adresse et disparaît avec l'onglet.
+  const RESUME_KEY = 'mediumia:rdv-solde-reprise'
+  const readJson = key => { try { return JSON.parse(sessionStorage.getItem(key) || 'null') } catch (_) { return null } }
+  const remember = value => { try { sessionStorage.setItem(RESUME_KEY, JSON.stringify(value)) } catch (_) {} }
+  const tokenFromLink = hash.get('token') || ''
+  const bookingFromLink = hash.get('compte') || ''
+  const resume = tokenFromLink || bookingFromLink ? null : readJson(RESUME_KEY)
+  const token = tokenFromLink
+    || (bookingFromLink ? '' : (typeof history.state?.mediumiaBalanceToken === 'string' ? history.state.mediumiaBalanceToken : (typeof resume?.token === 'string' ? resume.token : '')))
   // Depuis l'espace client : #compte=<rendez-vous>. La session du compte est
   // transmise par l'onglet (sessionStorage), jamais dans l'adresse.
-  const accountBookingId = new URLSearchParams(rawHash).get('compte') || ''
+  const accountBookingId = bookingFromLink || (token ? '' : (typeof resume?.compte === 'string' ? resume.compte : ''))
   const ACCOUNT_HANDOFF = 'mediumia:rdv-solde-compte'
   const accountAccess = (() => {
     if (!accountBookingId) return null
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(ACCOUNT_HANDOFF) || 'null')
-      return saved && saved.bookingId === accountBookingId && saved.accessToken ? saved : null
-    } catch (_) { return null }
+    const saved = readJson(ACCOUNT_HANDOFF)
+    return saved && saved.bookingId === accountBookingId && saved.accessToken ? saved : null
   })()
+  const hasAccess = !!accountAccess || token.length >= 32
   const isPayPalReturn = query.get('balance_return') === '1'
   const isPayPalCancel = query.get('balance_cancel') === '1'
   let current = null
 
+  function forget() {
+    try { sessionStorage.removeItem(RESUME_KEY) } catch (_) {}
+    if (history.state?.mediumiaBalanceToken) history.replaceState(null, '', window.location.pathname + window.location.search + window.location.hash)
+  }
+
   const money = cents => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
   const fmt = value => new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }).format(new Date(value))
-  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','payPalCancelled','technicalState','accountState','invalidState'].forEach(id => $(id).classList.add('hidden'))
+  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','payPalCancelled','verifyingState','technicalState','accountState','invalidState'].forEach(id => $(id).classList.add('hidden'))
   const show = id => { hideAll(); $(id).classList.remove('hidden') }
   const showError = text => { $('paymentNotice').textContent = text; $('paymentNotice').classList.remove('hidden') }
+  const showPaid = () => { forget(); show('paidState') }
 
   async function api(action, body, accessToken) {
     const headers = {'Content-Type':'application/json'}
@@ -87,15 +100,22 @@
     return data
   }
 
+  // Paiement peut-être engagé : jamais d'invitation à repayer.
+  const VERIFYING_CODES = new Set(['balance_capture_in_progress','paypal_capture_uncertain','paypal_capture_pending','balance_payment_review_required'])
   function message(code) {
     const map = {
-      balance_payment_expired:'Le délai de règlement est dépassé.',
+      balance_payment_expired:'Le délai de règlement est dépassé. Aucun montant n’a été encaissé par cette tentative.',
       balance_token_not_found:'Ce lien de paiement est invalide ou expiré.',
-      paypal_create_order_failed:'PayPal n’a pas pu préparer le paiement. Réessayez dans quelques instants.',
-      paypal_capture_failed:'La confirmation PayPal n’a pas pu être finalisée. Ne repayez pas : rechargez d’abord cette page.',
-      balance_capture_in_progress:'Le paiement est déjà en cours de confirmation. Patientez quelques instants.',
+      balance_payment_not_found:'Cette fenêtre PayPal correspondait à une ancienne demande : aucun montant n’a été encaissé. Vous pouvez reprendre le règlement ci-dessous.',
+      balance_payment_retry_required:'Le règlement vient d’être préparé dans un autre onglet. Réessayez.',
+      paypal_order_not_approved:'Le paiement n’a pas été validé chez PayPal : aucun montant n’a été encaissé. Vous pouvez reprendre ci-dessous.',
+      paypal_approval_expired:'La validation PayPal a expiré : aucun montant n’a été encaissé. Vous pouvez reprendre ci-dessous.',
+      paypal_payment_declined:'PayPal a refusé ce moyen de paiement : aucun montant n’a été encaissé. Vous pouvez en choisir un autre.',
+      paypal_order_amount_changed:'Le solde a changé depuis la préparation du paiement : aucun montant n’a été encaissé. Reprenez avec le montant à jour.',
+      paypal_order_status_unavailable:'PayPal ne répond pas pour le moment. Aucun nouveau paiement n’a été lancé : réessayez dans quelques instants.',
+      paypal_create_order_failed:'PayPal n’a pas pu préparer le paiement. Aucun montant n’a été encaissé ; réessayez dans quelques instants.',
     }
-    return map[code] || 'Le paiement ne peut pas être finalisé pour le moment. Réessayez dans quelques instants.'
+    return map[code] || 'Le paiement ne peut pas être préparé pour le moment. Aucun nouveau paiement n’a été lancé : réessayez dans quelques instants.'
   }
 
   function notifyOpener(type) {
@@ -104,30 +124,49 @@
     } catch (_) {}
   }
 
-  async function handlePayPalCallback() {
-    if (isPayPalCancel) {
-      notifyOpener('mediumia-rdv-balance-cancelled')
-      show('payPalCancelled')
-      return true
-    }
-    if (!isPayPalReturn) return false
-
-    const orderId = String(query.get('token') || '').trim()
-    if (!orderId) { show('invalidState'); return true }
+  // Confirme chez MediumIA une commande validée chez PayPal.
+  async function confirmOrder(orderId) {
     $('loadingText').textContent = 'Confirmation de votre paiement PayPal…'
-    try {
-      const result = await api('capture', { orderId })
-      if (result.status !== 'COMPLETED') throw new Error(result.error || 'paypal_capture_failed')
-      notifyOpener('mediumia-rdv-balance-paid')
-      show('paidState')
-    } catch (error) {
-      $('loadingText').textContent = message(error.message)
-      show('loading')
-    }
+    show('loading')
+    const result = await api('capture', { orderId })
+    if (result.status !== 'COMPLETED') throw new Error(result.error || 'paypal_capture_uncertain')
+    notifyOpener('mediumia-rdv-balance-paid')
+    showPaid()
+  }
+
+  // Après un retour de PayPal sans règlement : on réaffiche le solde à jour.
+  async function backToBalance(text) {
+    if (!hasAccess) return false
+    await loadBalance()
+    if (!$('payable').classList.contains('hidden') && text) showError(text)
     return true
   }
 
-  async function startHostedCheckout() {
+  async function handlePayPalReturn() {
+    const orderId = query.get('token') || ''
+    try {
+      if (!orderId) throw new Error('paypal_order_not_approved')
+      await confirmOrder(orderId)
+    } catch (error) {
+      // Coupure réseau du navigateur : l'issue est inconnue, jamais « échec ».
+      const code = error instanceof TypeError ? 'paypal_capture_uncertain' : error.message
+      if (VERIFYING_CODES.has(code)) { show('verifyingState'); return }
+      if (code === 'paypal_order_status_unavailable') { show('technicalState'); return }
+      if (await backToBalance(message(code))) return
+      if (code === 'balance_payment_expired') { show('expiredState'); return }
+      $('payPalCancelled').querySelector('h2').textContent = 'Paiement non confirmé'
+      $('payPalCancelled').querySelector('p').textContent = `${message(code).replace(/ (Vous pouvez reprendre|Vous pouvez en choisir|Reprenez).*$/, '')} Rouvrez le lien de votre e-mail MediumIA pour reprendre, ou contactez Sébastien.`
+      show('payPalCancelled')
+    }
+  }
+
+  function resetButton() {
+    const button = $('paypalButton')
+    button.disabled = false
+    if (current) button.textContent = current.approved ? `Confirmer le paiement de ${money(current.balanceCents)}` : `Payer ${money(current.balanceCents)} avec PayPal`
+  }
+
+  async function openPayPalCheckout() {
     const button = $('paypalButton')
     button.disabled = true
     $('paymentNotice').classList.add('hidden')
@@ -135,64 +174,104 @@
       // Redirection dans le même onglet : compatible mobile et sans fenêtre
       // vide bloquée par le navigateur pendant la préparation PayPal.
       button.textContent = 'Préparation du paiement sécurisé…'
-      const storageKey = `mediumia:rdv-solde:${current.bookingId}`
-      let checkoutId = sessionStorage.getItem(storageKey)
-      if (!checkoutId) { checkoutId = crypto.randomUUID(); sessionStorage.setItem(storageKey, checkoutId) }
+      const checkoutId = newCheckoutId()
       const data = accountAccess
         ? await api('accountCreate', { bookingId: accountBookingId, client_checkout_id: checkoutId }, accountAccess.accessToken)
         : await api('create', { token, client_checkout_id: checkoutId })
-      if (data.status === 'PAID') {
-        show('paidState')
+      if (data.status === 'PAID') { showPaid(); return }
+      if (!data.id) throw new Error('paypal_create_order_failed')
+      if (data.status === 'APPROVED') {
+        // Déjà validé chez PayPal : on confirme CETTE commande. Si le bouton
+        // proposait un nouveau paiement, on demande d'abord l'accord du client.
+        if (current.approved) { await confirmOrder(data.id); return }
+        current.approved = true
+        showError('Vous avez déjà validé ce paiement chez PayPal, mais il n’a pas encore été encaissé. Confirmez-le ci-dessus : aucun second paiement ne sera créé.')
+        resetButton()
         return
       }
-      if (!data.id) throw new Error('paypal_create_order_failed')
       const host = current.env === 'sandbox' ? 'https://www.sandbox.paypal.com' : 'https://www.paypal.com'
-      const checkoutUrl = `${host}/checkoutnow?token=${encodeURIComponent(data.id)}`
+      const checkoutUrl = typeof data.approveUrl === 'string' && data.approveUrl.startsWith(`${host}/`)
+        ? data.approveUrl
+        : `${host}/checkoutnow?token=${encodeURIComponent(data.id)}`
       window.location.assign(checkoutUrl)
     } catch (error) {
-      if (accountAccess && (error.message === 'unauthenticated' || error.message === 'email_not_verified')) { show('accountState'); return }
-      showError(message(error.message))
-      button.disabled = false
-      button.textContent = `Payer ${money(current.balanceCents)} avec PayPal`
+      const code = error instanceof TypeError ? 'paypal_order_status_unavailable' : error.message
+      if (accountAccess && (code === 'unauthenticated' || code === 'email_not_verified')) { show('accountState'); return }
+      if (VERIFYING_CODES.has(code)) { show('verifyingState'); return }
+      current.approved = false
+      show('payable')
+      showError(message(code))
+      resetButton()
     }
   }
 
-  async function init() {
-    if (await handlePayPalCallback()) return
-    if (accountBookingId && !accountAccess) { show('accountState'); return }
-    if (!accountAccess && (!token || token.length < 32)) { show('invalidState'); return }
-    if (!accountAccess && tokenFromLink) {
-      history.replaceState({ ...(history.state || {}), mediumiaBalanceToken: token }, '', window.location.pathname + window.location.search)
-    }
+  function newCheckoutId() {
+    if (crypto.randomUUID) return crypto.randomUUID()
+    // Anciens iPhone et navigateurs intégrés aux messageries.
+    const bytes = crypto.getRandomValues(new Uint8Array(16))
+    bytes[6] = (bytes[6] & 15) | 64
+    bytes[8] = (bytes[8] & 63) | 128
+    const hex = [...bytes].map(value => value.toString(16).padStart(2, '0')).join('')
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+
+  async function loadBalance() {
     try {
       current = accountAccess
         ? await api('accountStatus', { bookingId: accountBookingId }, accountAccess.accessToken)
         : await api('status', { token })
-      if (current.status === 'PAID') { show('paidState'); return }
-      if (current.status === 'CANCELLED') { show('cancelledState'); return }
-      if (current.status === 'EXPIRED') { show('expiredState'); return }
-      if (current.status !== 'PAYABLE') { show('invalidState'); return }
-      $('service').textContent = current.serviceTitle
+      $('service').textContent = current.serviceTitle || 'Rendez-vous MediumIA'
       $('appointment').textContent = fmt(current.startsAt)
       $('price').textContent = money(current.priceCents)
       $('paid').textContent = money(current.paidCents)
       $('balance').textContent = money(current.balanceCents)
       $('deadline').textContent = fmt(current.deadlineAt)
-      $('paypalButton').textContent = `Payer ${money(current.balanceCents)} avec PayPal`
-      $('paypalButton').addEventListener('click', startHostedCheckout)
-      window.addEventListener('message', event => {
-        if (event.origin !== window.location.origin) return
-        if (event.data?.type === 'mediumia-rdv-balance-paid') show('paidState')
-        if (event.data?.type === 'mediumia-rdv-balance-cancelled') showError('Paiement annulé. Votre solde reste à régler avant l’échéance indiquée.')
-      })
+      $('expiredDeadline').textContent = `, car l’échéance du ${fmt(current.deadlineAt)} est atteinte`
+      resetButton()
+      if (current.status === 'PAID') return showPaid()
+      if (current.status === 'EXPIRED') { forget(); return show('expiredState') }
+      if (current.status === 'CANCELLED') { forget(); return show('cancelledState') }
+      if (current.status === 'VERIFYING') return show('verifyingState')
       show('payable')
+      if (current.approved) showError('Vous avez déjà validé ce paiement chez PayPal, mais il n’a pas encore été encaissé. Confirmez-le ci-dessus : aucun second paiement ne sera créé.')
+      $('paypalButton').onclick = openPayPalCheckout
     } catch (error) {
       if (error.message === 'balance_payment_expired') show('expiredState')
       else if (accountAccess && (error.message === 'unauthenticated' || error.message === 'email_not_verified')) show('accountState')
-      else if (error.message === 'balance_token_not_found' || error.message === 'invalid_balance_token') show('invalidState')
+      else if (error.message === 'balance_token_not_found' || error.message === 'invalid_balance_token') { forget(); show('invalidState') }
       else show('technicalState')
     }
   }
+
+  async function init() {
+    if (hasAccess) remember(accountAccess ? { compte: accountBookingId } : { token })
+    if (isPayPalReturn) return handlePayPalReturn()
+    if (isPayPalCancel) {
+      notifyOpener('mediumia-rdv-balance-cancelled')
+      if (await backToBalance('Paiement annulé : aucun montant n’a été encaissé. Vous pouvez reprendre quand vous le souhaitez.')) return
+      show('payPalCancelled')
+      return
+    }
+    if (accountBookingId && !accountAccess) { show('accountState'); return }
+    if (!hasAccess) { show('invalidState'); return }
+    if (tokenFromLink) {
+      history.replaceState({ ...(history.state || {}), mediumiaBalanceToken: token }, '', window.location.pathname + window.location.search)
+    }
+    await loadBalance()
+  }
+
+  async function verifyAgain() {
+    $('loadingText').textContent = 'Vérification de votre paiement…'
+    show('loading')
+    if (isPayPalReturn) return handlePayPalReturn()
+    return loadBalance()
+  }
+  $('verifyButton').onclick = verifyAgain
+  $('retryButton').onclick = verifyAgain
+
+  // Bouton « Retour » depuis PayPal : la page peut être restituée telle quelle,
+  // bouton bloqué. On recharge alors l'état réel du solde.
+  window.addEventListener('pageshow', event => { if (event.persisted && hasAccess && !isPayPalReturn) loadBalance() })
   init()
 })()
 </script>

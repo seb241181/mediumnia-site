@@ -902,7 +902,7 @@ test('migration : paiement et annulation sérialisés, reprise des restaurations
   assert.match(sql, /CHECK \(kind IN \('pre_cancel', 'review', 'restore', 'google_sync', 'google_conflict', 'google_overdue'\)\)/)
   assert.match(sql, /IF v_booking\.starts_at <= p_now THEN\s+UPDATE public\.bookings\s+SET balance_google_resync_review_at = COALESCE/, 'rendez-vous commencé : repère conservé en incident')
   assert.match(sql, /FUNCTION public\.rdv_balance_google_incidents/)
-  const handler = read('lib/rdvBalanceApiHandler.js')
+  const handler = read('lib/rdvBalanceSettlement.js')
   assert.match(handler, /rpc\('attach_rdv_balance_paypal_order'/)
   assert.doesNotMatch(handler, /\.update\(\{ paypal_order_id: order\.orderId/, 'plus de rattachement direct hors verrou')
   assert.match(read('lib/rdvBalanceCronHandler.js'), /reconcilePendingRestorations\(options\)/)

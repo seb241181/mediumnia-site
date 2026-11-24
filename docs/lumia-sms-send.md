@@ -30,7 +30,9 @@ confirmer, réponds `GO SMS #ABC123`. »
 
 Sébastien : `GO SMS #ABC123`
 
-Lumia : « GO enregistré, message placé en file d'envoi. » Elle ne prétend
+Lumia : « GO enregistré, message placé en file d'envoi. » Le propriétaire
+peut vérifier l'état depuis son téléphone en envoyant `STATUT SMS #ABC123`.
+Elle ne prétend
 JAMAIS qu'un SMS est parti avant le retour de la synchronisation Mac.
 
 Le GO générique des annulations et des demandes est distinct du **GO SMS**.

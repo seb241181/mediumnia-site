@@ -67,10 +67,19 @@ reste `dispatching` et ne peut pas être renvoyé automatiquement.
   {
     "live": true,
     "outbox_enabled": true,
+    "outbox_endpoint": "https://mediumia-site-gifcy1r89-seguins-projects-a1d4673f.vercel.app/api/rdv-admin?action=lumia-sms-outbox",
     "outbox_only_handles": ["+33612345678"],
     "outbox_allow_all": false
   }
   ```
+  L’URL de sortie est **obligatoire** : il n’y a plus d’endpoint par défaut.
+  Cette URL est une Preview : il faut **prouver qu’elle utilise Supabase TEST
+  et jamais Production** avant d’activer les envois. Les variables Vercel
+  génériques Preview ne suffisent pas comme preuve d’isolement.
+  Configurer sur la branche de la PR les variables Supabase TEST
+  (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, VITE_SUPABASE_URL,
+  VITE_SUPABASE_PUBLISHABLE_KEY), sans afficher ni transmettre les secrets
+  par chat, et contrôler la cible après redéploiement.
   Le numéro est **un exemple fictif** : remplacer par le numéro du téléphone
   test réellement utilisé, qui a déjà écrit récemment.
 - Placer le secret identique à Vercel dans le Trousseau macOS, service

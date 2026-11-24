@@ -13,6 +13,7 @@ test('commandes SMS : aucune action implicite, numéro exact et GO explicite', (
   assert.equal(parseLumiaSmsCommand('Réponds à Sophie').kind,'none')
   assert.equal(parseLumiaSmsCommand('GO #ABC123').kind,'none')
   assert.equal(parseLumiaSmsCommand('GO SMS #ABC123').kind,'approve')
+  assert.deepEqual(parseLumiaSmsCommand('STATUT SMS #ABC123'),{kind:'status',code:'#ABC123'})
   assert.deepEqual(parseLumiaSmsCommand('SMS à 06 12 34 56 78 : Salut Sophie'),
     { kind:'draft', recipient:num, body:'Salut Sophie' })
   assert.equal(parseLumiaSmsCommand('SMS à 0600000000 : Salut').kind,'draft')

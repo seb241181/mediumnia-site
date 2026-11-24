@@ -39,6 +39,8 @@
     <div id="paidState" class="state hidden"><div class="symbol">✦</div><h2>Rendez-vous entièrement réglé</h2><p>Votre paiement est bien enregistré. Il ne reste plus aucun solde à régler.</p></div>
     <div id="expiredState" class="state hidden"><div class="symbol">◌</div><h2>Délai de règlement dépassé</h2><p>Le lien de paiement n’est plus actif, car l’échéance de 48 heures avant le rendez-vous est atteinte.</p></div>
     <div id="cancelledState" class="state hidden"><div class="symbol">◌</div><h2>Rendez-vous annulé</h2><p>Ce rendez-vous n’est plus actif et ne peut plus être réglé depuis ce lien.</p></div>
+    <div id="payPalCancelled" class="state hidden"><div class="symbol">◌</div><h2>Paiement annulé</h2><p>Aucun nouveau règlement n’a été confirmé. Retrouvez votre e-mail MediumIA pour reprendre le paiement, ou contactez Sébastien si le lien ne fonctionne plus.</p></div>
+    <div id="technicalState" class="state hidden"><div class="symbol">◌</div><h2>Vérification momentanément indisponible</h2><p>Ne réglez pas deux fois la même séance. Réessayez avec votre lien d’origine ou contactez Sébastien.</p></div>
     <div id="accountState" class="state hidden"><div class="symbol">◈</div><h2>Ouvrez ce règlement depuis votre espace</h2><p>Pour votre sécurité, le règlement du solde s’ouvre depuis votre espace MediumIA, une fois connecté.</p><p><a href="/mon-espace">Ouvrir mon espace MediumIA</a></p></div>
     <div id="invalidState" class="state hidden"><div class="symbol">◌</div><h2>Lien invalide ou expiré</h2><p>Ce lien de règlement ne peut pas être utilisé. Vérifiez que vous avez ouvert le lien reçu par e-mail.</p></div>
   </section>
@@ -49,7 +51,10 @@
   const $ = id => document.getElementById(id)
   const query = new URLSearchParams(window.location.search)
   const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
-  const token = new URLSearchParams(rawHash).get('token') || ''
+  // Le jeton ne doit pas rester dans la barre d'adresse, mais doit pouvoir
+  // être retrouvé en cas de rechargement de CET onglet (history.state).
+  const tokenFromLink = new URLSearchParams(rawHash).get('token') || ''
+  const token = tokenFromLink || (typeof history.state?.mediumiaBalanceToken === 'string' ? history.state.mediumiaBalanceToken : '')
   // Depuis l'espace client : #compte=<rendez-vous>. La session du compte est
   // transmise par l'onglet (sessionStorage), jamais dans l'adresse.
   const accountBookingId = new URLSearchParams(rawHash).get('compte') || ''
@@ -67,7 +72,7 @@
 
   const money = cents => `${(Number(cents || 0) / 100).toFixed(2).replace('.', ',')} €`
   const fmt = value => new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Paris' }).format(new Date(value))
-  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','accountState','invalidState'].forEach(id => $(id).classList.add('hidden'))
+  const hideAll = () => ['loading','payable','paidState','expiredState','cancelledState','payPalCancelled','technicalState','accountState','invalidState'].forEach(id => $(id).classList.add('hidden'))
   const show = id => { hideAll(); $(id).classList.remove('hidden') }
   const showError = text => { $('paymentNotice').textContent = text; $('paymentNotice').classList.remove('hidden') }
 
@@ -102,8 +107,7 @@
   async function handlePayPalCallback() {
     if (isPayPalCancel) {
       notifyOpener('mediumia-rdv-balance-cancelled')
-      $('loadingText').textContent = 'Paiement annulé. Vous pouvez fermer cette fenêtre.'
-      setTimeout(() => { try { window.close() } catch (_) {} }, 600)
+      show('payPalCancelled')
       return true
     }
     if (!isPayPalReturn) return false
@@ -116,7 +120,6 @@
       if (result.status !== 'COMPLETED') throw new Error(result.error || 'paypal_capture_failed')
       notifyOpener('mediumia-rdv-balance-paid')
       show('paidState')
-      setTimeout(() => { try { window.close() } catch (_) {} }, 900)
     } catch (error) {
       $('loadingText').textContent = message(error.message)
       show('loading')
@@ -128,9 +131,10 @@
     const button = $('paypalButton')
     button.disabled = true
     $('paymentNotice').classList.add('hidden')
-    let popup = null
     try {
-      popup = window.open('about:blank', 'mediumia-paypal-balance', 'width=520,height=760')
+      // Redirection dans le même onglet : compatible mobile et sans fenêtre
+      // vide bloquée par le navigateur pendant la préparation PayPal.
+      button.textContent = 'Préparation du paiement sécurisé…'
       const storageKey = `mediumia:rdv-solde:${current.bookingId}`
       let checkoutId = sessionStorage.getItem(storageKey)
       if (!checkoutId) { checkoutId = crypto.randomUUID(); sessionStorage.setItem(storageKey, checkoutId) }
@@ -138,20 +142,18 @@
         ? await api('accountCreate', { bookingId: accountBookingId, client_checkout_id: checkoutId }, accountAccess.accessToken)
         : await api('create', { token, client_checkout_id: checkoutId })
       if (data.status === 'PAID') {
-        if (popup && !popup.closed) popup.close()
         show('paidState')
         return
       }
       if (!data.id) throw new Error('paypal_create_order_failed')
       const host = current.env === 'sandbox' ? 'https://www.sandbox.paypal.com' : 'https://www.paypal.com'
       const checkoutUrl = `${host}/checkoutnow?token=${encodeURIComponent(data.id)}`
-      if (popup && !popup.closed) popup.location.href = checkoutUrl
-      else window.location.href = checkoutUrl
+      window.location.assign(checkoutUrl)
     } catch (error) {
-      if (popup && !popup.closed) popup.close()
       if (accountAccess && (error.message === 'unauthenticated' || error.message === 'email_not_verified')) { show('accountState'); return }
       showError(message(error.message))
       button.disabled = false
+      button.textContent = `Payer ${money(current.balanceCents)} avec PayPal`
     }
   }
 
@@ -159,7 +161,9 @@
     if (await handlePayPalCallback()) return
     if (accountBookingId && !accountAccess) { show('accountState'); return }
     if (!accountAccess && (!token || token.length < 32)) { show('invalidState'); return }
-    if (!accountAccess) history.replaceState(null, '', window.location.pathname + window.location.search)
+    if (!accountAccess && tokenFromLink) {
+      history.replaceState({ ...(history.state || {}), mediumiaBalanceToken: token }, '', window.location.pathname + window.location.search)
+    }
     try {
       current = accountAccess
         ? await api('accountStatus', { bookingId: accountBookingId }, accountAccess.accessToken)
@@ -185,7 +189,8 @@
     } catch (error) {
       if (error.message === 'balance_payment_expired') show('expiredState')
       else if (accountAccess && (error.message === 'unauthenticated' || error.message === 'email_not_verified')) show('accountState')
-      else show('invalidState')
+      else if (error.message === 'balance_token_not_found' || error.message === 'invalid_balance_token') show('invalidState')
+      else show('technicalState')
     }
   }
   init()

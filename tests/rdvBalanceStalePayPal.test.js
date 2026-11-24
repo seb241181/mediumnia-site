@@ -357,6 +357,38 @@ test('PayPal injoignable : aucune commande créée, aucun encaissement', async (
   assert.equal(t.pp.state.created + t.pp.state.captures, 0)
 })
 
+test('ancien onglet de retour rouvert après expiration de la commande : le lien reste utilisable', async () => {
+  const t = setup({ updated_at: ago(48 * H) })
+  assert.equal((await t.settle('OLD-ORDER')).error, 'paypal_order_not_approved')
+  t.pp.state.orders.delete('OLD-ORDER')
+  assert.equal((await t.settle('OLD-ORDER')).error, 'paypal_order_not_approved')
+  t.db.row.updated_at = ago(48 * H)
+  assert.equal((await t.prepare()).id, 'NEW-ORDER-1')
+  assert.deepEqual(t.alerts, [])
+})
+
+test('panne PayPal au retour, puis commande expirée : le lien reste utilisable', async () => {
+  const t = setup()
+  t.pp.state.down = true
+  assert.equal((await t.settle('OLD-ORDER')).error, 'paypal_order_status_unavailable')
+  t.pp.state.down = false
+  t.pp.state.orders.delete('OLD-ORDER')
+  t.db.row.updated_at = ago(48 * H)
+  assert.equal((await t.prepare()).id, 'NEW-ORDER-1')
+})
+
+test('encaissement sans réponse, repris plus tard : jamais libéré tant que PayPal ne tranche pas', async () => {
+  const stale = { status: 'capture_in_progress', capture_claimed_at: ago(H), updated_at: ago(48 * H) }
+  const down = setup(stale)
+  down.pp.state.down = true
+  assert.equal((await down.settle('OLD-ORDER')).error, 'paypal_capture_uncertain')
+  assert.equal(down.db.row.status, 'capture_in_progress')
+  const gone = setup(stale, null)
+  assert.equal((await gone.settle('OLD-ORDER')).error, 'balance_payment_review_required')
+  assert.equal(gone.db.row.status, 'capture_in_progress')
+  assert.deepEqual([gone.alerts.length, gone.pp.state.created], [1, 0])
+})
+
 test('annulation approuvée : interdite si payé, incertain ou illisible ; permise si rien n’est engagé', async () => {
   const paid = setup()
   paid.pp.paid(paid.pp.state.orders.get('OLD-ORDER'))
@@ -465,7 +497,7 @@ test('page : jeton gardé dans l’onglet seulement, reprise après PayPal, jama
   assert.doesNotMatch(page, /window\.open\(|window\.close\(/)
   assert.match(page, /addEventListener\('pageshow'/)
   assert.match(page, /Paiement en cours de vérification/)
-  assert.match(page, /error instanceof TypeError \? 'paypal_capture_uncertain'/)
+  assert.match(page, /error instanceof TypeError \? new Error\('paypal_capture_uncertain'\)/)
   assert.doesNotMatch(page, /l’échéance de 48 heures/)
   // Le script de la page est syntaxiquement valide.
   assert.doesNotThrow(() => new Function(page.slice(page.indexOf('<script>\n') + 9, page.lastIndexOf('</script>'))))

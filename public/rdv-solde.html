@@ -128,7 +128,13 @@
   async function confirmOrder(orderId) {
     $('loadingText').textContent = 'Confirmation de votre paiement PayPal…'
     show('loading')
-    const result = await api('capture', { orderId })
+    let result
+    try {
+      result = await api('capture', { orderId })
+    } catch (error) {
+      // Coupure réseau du navigateur : l'issue est inconnue, jamais « échec ».
+      throw error instanceof TypeError ? new Error('paypal_capture_uncertain') : error
+    }
     if (result.status !== 'COMPLETED') throw new Error(result.error || 'paypal_capture_uncertain')
     notifyOpener('mediumia-rdv-balance-paid')
     showPaid()
@@ -148,8 +154,7 @@
       if (!orderId) throw new Error('paypal_order_not_approved')
       await confirmOrder(orderId)
     } catch (error) {
-      // Coupure réseau du navigateur : l'issue est inconnue, jamais « échec ».
-      const code = error instanceof TypeError ? 'paypal_capture_uncertain' : error.message
+      const code = error.message
       if (VERIFYING_CODES.has(code)) { show('verifyingState'); return }
       if (code === 'paypal_order_status_unavailable') { show('technicalState'); return }
       if (await backToBalance(message(code))) return

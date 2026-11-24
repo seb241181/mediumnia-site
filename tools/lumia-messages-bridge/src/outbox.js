@@ -58,11 +58,20 @@ export function sendThroughMessages({ channel, recipient, body }, { exec = execF
   })
 }
 
-async function callOutbox({ endpoint, token, method = 'GET', payload = null, fetchImpl = fetch }) {
-  assertApprovedOutboxEndpoint(endpoint)
+export async function callOutbox({ endpoint, token, method = 'GET', payload = null, fetchImpl = fetch, env = process.env }) {
+  const url = assertApprovedOutboxEndpoint(endpoint)
+  const preview = url.hostname.endsWith('.vercel.app')
+  // Vercel Preview est protégée par SSO. Utiliser un jeton OIDC court (vc env run),
+  // jamais un contournement public ni un secret persistant supplémentaire.
+  const oidc = preview ? String(env.VERCEL_OIDC_TOKEN || '').trim() : ''
+  if (preview && !oidc) throw new Error('vercel_preview_auth_required')
   const res = await fetchImpl(endpoint, {
     method,
-    headers: { authorization: `Bearer ${token}`, ...(payload ? { 'content-type': 'application/json' } : {}) },
+    headers: {
+      authorization: `Bearer ${token}`,
+      ...(preview ? { 'x-vercel-trusted-oidc-idp-token': oidc } : {}),
+      ...(payload ? { 'content-type': 'application/json' } : {}),
+    },
     ...(payload ? { body: JSON.stringify(payload) } : {}),
     signal: AbortSignal.timeout(15_000),
   })

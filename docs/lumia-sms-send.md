@@ -100,6 +100,41 @@ reste `dispatching` et ne peut pas être renvoyé automatiquement.
   utilisateur Mac uniquement après test ; ne pas créer de LaunchAgent avant
   une validation manuelle avec un destinataire test.
 
+## Preview Vercel protégée et données de test
+
+Le projet MediumIA protège les Previews par SSO. Le worker Mac doit
+utiliser, uniquement lors des essais de Preview, un jeton OIDC **court**
+fourni par la CLI Vercel liée au projet (`vc env run`). Le code transmet
+`x-vercel-trusted-oidc-idp-token` uniquement aux hôtes Preview
+`mediumia-site-*.vercel.app`, jamais à `mediumia.fr`. Si le jeton manque,
+l'essai s'arrête avant tout retrait de la file. Ne pas désactiver la
+protection Vercel ni enregistrer un secret de contournement permanent.
+
+Codex peut vérifier d'abord la connexion en lecture via `vc curl` vers
+la Preview. Ne **jamais** utiliser le GET `lumia-sms-outbox` pour une
+simple vérification : ce GET retire irréversiblement le prochain SMS
+approuvé de la file.
+
+Le LaunchAgent historique peut continuer à alimenter la **Production**.
+Il ne faut pas le couper à l'aveugle. Par conséquent, la base Supabase
+TEST peut ne pas contenir le message source du numéro d'essai :
+prévoir un import Inbox TEST **séparé**, sur liste blanche du numéro
+d'essai et dans un répertoire d'état distinct, sans toucher au relais
+habituel ni recopier les SMS réels des clients dans TEST.
+
+Sur le Mac, après avoir vérifié les droits Vercel et le pointage vers
+Supabase TEST, exécuter manuellement avec l'environnement OIDC
+éphémère du projet :
+
+```sh
+vc env run -- node tools/lumia-messages-bridge/src/cli.js send-approved --live --once
+```
+
+Cette commande ne doit être utilisée **qu'après un GO de test SMS
+spécifique**, avec le jeton d'outbox au Trousseau, une allowlist
+limitée au numéro contrôlé par Sébastien et l'endpoint exact de la
+dernière Preview prête. La CLI doit être déjà authentifiée et liée
+au projet MediumIA. Ne jamais afficher les variables ou leurs valeurs.
 ## Essais indispensables avant publication
 
 1. Test unitaire et compilation en Preview+Supabase TEST.

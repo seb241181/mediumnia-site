@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { parseLumiaSmsCommand, maybeHandleLumiaSmsChat } from '../lib/lumiaSmsChat.js'
 import { handleLumiaSmsOutboxApi } from '../lib/lumiaSmsOutbox.js'
-import { validateApprovedSms, outgoingFound, processApprovedSmsOnce } from '../tools/lumia-messages-bridge/src/outbox.js'
+import { validateApprovedSms, outgoingFound, processApprovedSmsOnce, assertApprovedOutboxEndpoint } from '../tools/lumia-messages-bridge/src/outbox.js'
 
 const id = '01234567-1234-4123-8123-123456789012'
 const num = '+33612345678'
@@ -123,11 +123,22 @@ test('API Mac : token correct sans travail renvoie job null et ne lit pas les me
   assert.deepEqual(calls,['booking_practitioners','lumia_claim_sms_outbox'])
 })
 
+test('Sécurité Mac : endpoint explicitement choisi, Preview MediumIA acceptée, autres refusés', () => {
+  const preview='https://mediumia-site-gifcy1r89-seguins-projects-a1d4673f.vercel.app/api/rdv-admin?action=lumia-sms-outbox'
+  assert.equal(assertApprovedOutboxEndpoint(preview).hostname,
+    'mediumia-site-gifcy1r89-seguins-projects-a1d4673f.vercel.app')
+  assert.throws(()=>assertApprovedOutboxEndpoint(),/outbox_endpoint_required/)
+  assert.throws(()=>assertApprovedOutboxEndpoint('https://evil.vercel.app/api/rdv-admin?action=lumia-sms-outbox'),/outbox_host_not_allowed/)
+  assert.throws(()=>assertApprovedOutboxEndpoint('https://mediumia.fr/api/rdv-admin?action=lumia-rdv-intake'),/outbox_path_not_allowed/)
+  assert.throws(()=>assertApprovedOutboxEndpoint('https://mediumia.fr/api/rdv-admin?action=lumia-sms-outbox&other=1'),/outbox_path_not_allowed/)
+})
+
 test('Mac : un travail réclamé n’est jamais renvoyé, même si la preuve chat.db est absente', async () => {
   const called=[]
   const job={id,recipient:num,channel:'sms',body}
   const requests=[]
   const result=await processApprovedSmsOnce({
+    endpoint:'https://mediumia-site-gifcy1r89-seguins-projects-a1d4673f.vercel.app/api/rdv-admin?action=lumia-sms-outbox',
     getToken: async()=> 'x'.repeat(64),
     allowedHandles:[num],
     openDb:()=>({

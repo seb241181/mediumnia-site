@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { parseLumiaSmsCommand, maybeHandleLumiaSmsChat } from '../lib/lumiaSmsChat.js'
 import { handleLumiaSmsOutboxApi } from '../lib/lumiaSmsOutbox.js'
-import { validateApprovedSms, outgoingFound, processApprovedSmsOnce, assertApprovedOutboxEndpoint } from '../tools/lumia-messages-bridge/src/outbox.js'
+import { validateApprovedSms, outgoingFound, processApprovedSmsOnce, assertApprovedOutboxEndpoint, callOutbox } from '../tools/lumia-messages-bridge/src/outbox.js'
 
 const id = '01234567-1234-4123-8123-123456789012'
 const num = '+33612345678'
@@ -131,6 +131,36 @@ test('Sécurité Mac : endpoint explicitement choisi, Preview MediumIA acceptée
   assert.throws(()=>assertApprovedOutboxEndpoint('https://evil.vercel.app/api/rdv-admin?action=lumia-sms-outbox'),/outbox_host_not_allowed/)
   assert.throws(()=>assertApprovedOutboxEndpoint('https://mediumia.fr/api/rdv-admin?action=lumia-rdv-intake'),/outbox_path_not_allowed/)
   assert.throws(()=>assertApprovedOutboxEndpoint('https://mediumia.fr/api/rdv-admin?action=lumia-sms-outbox&other=1'),/outbox_path_not_allowed/)
+})
+
+test('Preview SSO : exige un OIDC éphémère, jamais envoyé sur Production', async () => {
+  const preview='https://mediumia-site-gifcy1r89-seguins-projects-a1d4673f.vercel.app/api/rdv-admin?action=lumia-sms-outbox'
+  const token='x'.repeat(64)
+  let count=0
+  const fetchImpl=async (_url, opts)=> {
+    count++
+    assert.equal(opts.headers.authorization,`Bearer ${token}`)
+    assert.equal(opts.headers['x-vercel-trusted-oidc-idp-token'],'oidc-fictif-test')
+    return { ok:true, json:async()=>({job:null}) }
+  }
+  await assert.rejects(()=>callOutbox({
+    endpoint:preview,token,fetchImpl,env:{},
+  }),/vercel_preview_auth_required/)
+  assert.equal(count,0)
+  assert.deepEqual(await callOutbox({
+    endpoint:preview,token,fetchImpl,env:{VERCEL_OIDC_TOKEN:'oidc-fictif-test'},
+  }),{job:null})
+  assert.equal(count,1)
+  let prodHeaders
+  await callOutbox({
+    endpoint:'https://mediumia.fr/api/rdv-admin?action=lumia-sms-outbox',token,
+    env:{VERCEL_OIDC_TOKEN:'oidc-fictif-test'},
+    fetchImpl:async (_url,opts)=>{
+      prodHeaders=opts.headers
+      return {ok:true,json:async()=>({job:null})}
+    },
+  })
+  assert.equal(prodHeaders['x-vercel-trusted-oidc-idp-token'],undefined)
 })
 
 test('Mac : un travail réclamé n’est jamais renvoyé, même si la preuve chat.db est absente', async () => {

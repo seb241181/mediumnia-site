@@ -20,9 +20,10 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { backfillRange, confirmationFor, createInboxBackfill } from './backfill.js'
 import { createBridge } from './bridge.js'
+import { processApprovedSmsOnce, DEFAULT_OUTBOX_ENDPOINT } from './outbox.js'
 import { DEFAULT_CHAT_DB, openChatDb } from './chatdb.js'
 import { assertSafeEndpoint, DEFAULT_ENDPOINT } from './sender.js'
-import { INBOX_KEYCHAIN_ACCOUNT, keychainHasToken, readInboxToken, readToken } from './token.js'
+import { INBOX_KEYCHAIN_ACCOUNT, OUTBOX_KEYCHAIN_ACCOUNT, keychainHasToken, readInboxToken, readToken, readOutboxToken } from './token.js'
 
 export const DEFAULT_INBOX_ENDPOINT = 'https://mediumia.fr/api/rdv-admin?action=lumia-message-intake'
 
@@ -93,6 +94,7 @@ async function doctor(args) {
   chat.close()
   lines.push(`jeton Trousseau  : ${(await keychainHasToken()) ? 'présent (valeur non affichée)' : 'absent'}`)
   lines.push(`jeton Inbox      : ${(await keychainHasToken(INBOX_KEYCHAIN_ACCOUNT)) ? 'présent (valeur non affichée)' : 'absent'}`)
+  lines.push(`jeton SMS sortant : ${(await keychainHasToken(OUTBOX_KEYCHAIN_ACCOUNT)) ? 'présent (valeur non affichée)' : 'absent'}`)
   console.log(lines.join('\n'))
 }
 
@@ -144,6 +146,48 @@ async function run(args) {
   } while (!stopping)
   chat.close()
   log('stop')
+}
+
+// Outbox Mac : seule la présence simultanée de --live, config.live et du
+// commutateur outbox_enabled permet de réclamer une demande validée.
+async function sendApproved(args) {
+  const config = loadConfig(args.config || join(ROOT, 'config.local.json'))
+  if (!args.live || config.live !== true || config.outbox_enabled !== true) {
+    console.log('Envoi désactivé. Réglages requis : --live, live=true, outbox_enabled=true. Aucune requête effectuée.')
+    return
+  }
+  if (process.platform !== 'darwin') {
+    console.error('Messages.app nécessite une session macOS utilisateur.')
+    process.exitCode = 78
+    return
+  }
+  const allowAll = config.outbox_allow_all === true
+  const allowedHandles = Array.isArray(config.outbox_only_handles) ? config.outbox_only_handles : []
+  if (!allowAll && allowedHandles.length === 0) {
+    console.error('Ajoute un numéro test à outbox_only_handles ou autorise explicitement outbox_allow_all=true. Aucune requête.')
+    process.exitCode = 2
+    return
+  }
+  const endpoint = config.outbox_endpoint || DEFAULT_OUTBOX_ENDPOINT
+  assertSafeEndpoint(endpoint)
+  const pollSeconds = Math.max(15, Number(args.interval ?? config.outbox_poll_seconds ?? 20))
+  let stopping = false
+  for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { stopping = true })
+  log('sms_outbox_start (seules réponses validées, aucune reprise automatique)')
+  do {
+    try {
+      const result = await processApprovedSmsOnce({
+        endpoint, getToken: () => readOutboxToken(), allowedHandles, allowAll,
+        dbPath: args.db || config.chat_db || DEFAULT_CHAT_DB, log,
+      })
+      if (result.status === 'failed') log(`sms_outbox_refused reason=${result.reason}`)
+    } catch (error) {
+      log(`sms_outbox_error ${String(error?.message || 'unknown').replace(/[^a-z0-9_]/gi, '_').slice(0,70)}`)
+    }
+    if (args.once) break
+    await new Promise((resolve) => setTimeout(resolve, pollSeconds * 1000))
+  } while (!stopping)
+  log('sms_outbox_stop')
 }
 
 // Rattrapage Inbox d'une période passée : jamais le RDV, jamais live.json.
@@ -218,7 +262,8 @@ const command = args._[0] || 'run'
 if (command === 'doctor') await doctor(args)
 else if (command === 'run') await run(args)
 else if (command === 'backfill-inbox') await backfillInbox(args)
+else if (command === 'send-approved') await sendApproved(args)
 else {
-  console.error('Commandes : doctor | run [--once] [--show] [--live] | backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ [--live --confirm …]')
+  console.error('Commandes : doctor | run [--once] [--show] [--live] | backfill-inbox --from AAAA-MM-JJ --to AAAA-MM-JJ [--live --confirm …] | send-approved [--once] [--live]')
   process.exitCode = 64
 }

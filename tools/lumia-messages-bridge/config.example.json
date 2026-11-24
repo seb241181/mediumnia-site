@@ -6,5 +6,10 @@
   "send_uncertain": false,
   "ignore_handles": [],
   "live_only_handles": [],
-  "inbox_enabled": false
+  "inbox_enabled": false,
+  "outbox_enabled": false,
+  "outbox_endpoint": "https://mediumia.fr/api/rdv-admin?action=lumia-sms-outbox",
+  "outbox_poll_seconds": 20,
+  "outbox_only_handles": [],
+  "outbox_allow_all": false
 }

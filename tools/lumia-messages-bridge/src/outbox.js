@@ -9,7 +9,21 @@ import { fileURLToPath } from 'node:url'
 import { openChatDb, decodeAttributedBody, DEFAULT_CHAT_DB } from './chatdb.js'
 import { assertSafeEndpoint } from './sender.js'
 
-export const DEFAULT_OUTBOX_ENDPOINT = 'https://mediumia.fr/api/rdv-admin?action=lumia-sms-outbox'
+// Aucun endpoint de secours : une URL explicitement choisie est obligatoire.
+export function assertApprovedOutboxEndpoint(endpoint) {
+  if (!endpoint) throw new Error('outbox_endpoint_required')
+  const url = assertSafeEndpoint(endpoint)
+  const host = url.hostname
+  const production = host === 'mediumia.fr' || host === 'www.mediumia.fr'
+  const preview = /^mediumia-site-[a-z0-9-]+\\.vercel\\.app$/i.test(host)
+  const local = host === 'localhost' || host === '127.0.0.1'
+  if (!production && !preview && !local) throw new Error('outbox_host_not_allowed')
+  if (url.pathname !== '/api/rdv-admin' || url.searchParams.get('action') !== 'lumia-sms-outbox'
+      || [...url.searchParams.keys()].some((key) => key !== 'action')) {
+    throw new Error('outbox_path_not_allowed')
+  }
+  return url
+}
 const SCRIPT = fileURLToPath(new URL('../scripts/send-approved.applescript', import.meta.url))
 const E164_RE = /^\+[1-9][0-9]{6,14}$/
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -45,9 +59,7 @@ export function sendThroughMessages({ channel, recipient, body }, { exec = execF
 }
 
 async function callOutbox({ endpoint, token, method = 'GET', payload = null, fetchImpl = fetch }) {
-  assertSafeEndpoint(endpoint)
-  const host = new URL(endpoint).hostname
-  if (!['mediumia.fr', 'www.mediumia.fr', 'localhost', '127.0.0.1'].includes(host)) throw new Error('outbox_host_not_allowed')
+  assertApprovedOutboxEndpoint(endpoint)
   const res = await fetchImpl(endpoint, {
     method,
     headers: { authorization: `Bearer ${token}`, ...(payload ? { 'content-type': 'application/json' } : {}) },
@@ -59,7 +71,7 @@ async function callOutbox({ endpoint, token, method = 'GET', payload = null, fet
 }
 
 export async function processApprovedSmsOnce({
-  endpoint = DEFAULT_OUTBOX_ENDPOINT,
+  endpoint,
   getToken,
   allowedHandles = [],
   allowAll = false,
@@ -69,6 +81,7 @@ export async function processApprovedSmsOnce({
   request = callOutbox,
   log = () => {},
 }) {
+  assertApprovedOutboxEndpoint(endpoint)
   if (process.platform !== 'darwin' && send === sendThroughMessages) throw new Error('macos_required')
   const token = await getToken()
   if (!token || token.length < 32) throw new Error('outbox_token_missing')

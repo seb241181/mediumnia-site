@@ -370,8 +370,18 @@ function FinalSynthesis({ timeline }) {
           <p className="mt-2 font-georgia text-sm text-cream/78">{synthesis.fromTheme}</p>
         </div>
         <div className="rounded-2xl border border-gold/25 p-4">
-          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Fenêtre déplacée</p>
-          <p className="mt-2 font-georgia text-sm text-cream/78">{shortDate(synthesis.firstWindow)} → {shortDate(synthesis.currentWindow)}</p>
+          <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">
+            {synthesis.firstWindow && synthesis.currentWindow
+              ? synthesis.firstWindow === synthesis.currentWindow ? 'Fenêtre stable' : 'Fenêtre déplacée'
+              : 'Fenêtre non calculée'}
+          </p>
+          <p className="mt-2 font-georgia text-sm text-cream/78">
+            {synthesis.firstWindow && synthesis.currentWindow
+              ? synthesis.firstWindow === synthesis.currentWindow
+                ? shortDate(synthesis.currentWindow)
+                : `${shortDate(synthesis.firstWindow)} → ${shortDate(synthesis.currentWindow)}`
+              : 'Non calculée'}
+          </p>
         </div>
         <div className="rounded-2xl border border-gold/25 p-4">
           <p className="font-georgia text-[10px] uppercase tracking-[0.14em] text-gold">Lectures suivies</p>
@@ -421,6 +431,8 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
   const [consentAccepted, setConsentAccepted] = useState(false)
   const [packToken, setPackToken] = useState('')
   const [creditState, setCreditState] = useState(null)
+  const [maxHistory, setMaxHistory] = useState([])
+  const [renewalOpen, setRenewalOpen] = useState(false)
   const [liveTimeline, setLiveTimeline] = useState(null)
   const [paymentError, setPaymentError] = useState('')
   const [paymentBusy, setPaymentBusy] = useState(false)
@@ -455,6 +467,8 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     : chronosphereMaxDemoProfile.solarSign
 
   const hasMaxAccess = Boolean(packToken || creditState?.product === 'max3')
+  const isMaxFinished = hasMaxAccess && creditState?.creditsRemaining === 0
+  const showMaxCheckout = !hasMaxAccess || (isMaxFinished && renewalOpen)
 
   useEffect(() => {
     fetch('/api/rdv-config?chronospherePayPalAction=config')
@@ -470,6 +484,8 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     if (!userId) {
       setPackToken('')
       setCreditState(null)
+      setMaxHistory([])
+      setRenewalOpen(false)
       setLiveTimeline(null)
       return
     }
@@ -487,9 +503,9 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     }
   }, [userId, userEmail])
 
-  async function refreshMaxStatus(token = packToken, allowAccountFallback = true) {
+  async function refreshMaxStatus(token = packToken, allowAccountFallback = true, requestedPackId = '') {
     if (!session?.access_token) return null
-    const payload = token ? { packToken: token } : { product: 'max3' }
+    const payload = requestedPackId ? { product: 'max3', packId: requestedPackId } : (token ? { packToken: token } : { product: 'max3' })
     const res = await fetch('/api/rdv-config?chronospherePayPalAction=status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -503,8 +519,9 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
         setPackToken('')
         return refreshMaxStatus('', false)
       }
-      if (!token && res.status === 404) {
+      if (!token && !requestedPackId && res.status === 404) {
         setCreditState(null)
+        setMaxHistory([])
         setLiveTimeline(null)
       }
       return null
@@ -514,8 +531,10 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
       try { localStorage.setItem(maxTokenKey(user.id), data.packToken) } catch {}
       setPackToken(data.packToken)
     }
+    if (Array.isArray(data.maxHistory)) setMaxHistory(data.maxHistory)
     setCreditState({
       product: 'max3',
+      packId: data.packId,
       creditsRemaining: data.creditsRemaining,
       creditsTotal: data.creditsTotal,
       status: data.status,
@@ -539,6 +558,18 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     if (!session?.access_token || !user) return
     refreshMaxStatus(packToken, true).catch(() => setPaymentError('Impossible de relire votre suivi MAX pour le moment.'))
   }, [packToken, session?.access_token, user?.id])
+
+  async function selectPastMax(packId) {
+    if (!packId || packId === creditState?.packId || paymentBusy) return
+    setPaymentError('')
+    setRenewalOpen(false)
+    try {
+      const data = await refreshMaxStatus('', false, packId)
+      if (!data) setPaymentError('Impossible de retrouver ce suivi MAX pour le moment.')
+    } catch {
+      setPaymentError('Impossible de retrouver ce suivi MAX pour le moment.')
+    }
+  }
 
   async function handleAuth(mode) {
     setAuthMessage('')
@@ -576,6 +607,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
     } catch {}
     pendingPaymentRef.current = null
     setPendingPayment(null)
+    setRenewalOpen(false)
     setPackToken(token)
     setCreditState({ product: 'max3', creditsRemaining: data.creditsRemaining, creditsTotal: data.creditsTotal, status: data.packStatus || 'active', resumeMode: 'token' })
     await refreshMaxStatus(token)
@@ -604,18 +636,18 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
   // par PayPal : rien n'est débité et le bouton « Vérifier mon paiement » reste.
   useEffect(() => {
     const pending = pendingPayment
-    if (!signedIn || hasMaxAccess || !pending?.orderId || !pending?.packToken) return
+    if (!signedIn || (hasMaxAccess && !isMaxFinished) || !pending?.orderId || !pending?.packToken) return
     if (resumedOrderRef.current === pending.orderId) return
     resumedOrderRef.current = pending.orderId
     captureMaxOrder(pending.orderId, pending.packToken).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signedIn, hasMaxAccess, pendingPayment])
+  }, [signedIn, hasMaxAccess, isMaxFinished, pendingPayment])
 
   const maxOfferAvailable = Boolean(paypalConfig?.clientId && paypalConfig?.products?.max3)
   const paypalClientId = paypalConfig?.clientId || ''
 
   useEffect(() => {
-    if (!signedIn || !maxOfferAvailable || hasMaxAccess || !consentAccepted) return
+    if (!signedIn || !maxOfferAvailable || !showMaxCheckout || !consentAccepted) return
     const node = paypalContainerRef.current
     if (!node) return
 
@@ -665,7 +697,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
       if (node) node.innerHTML = ''
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paypalClientId, maxOfferAvailable, signedIn, userId, hasMaxAccess, consentAccepted])
+  }, [paypalClientId, maxOfferAvailable, signedIn, userId, showMaxCheckout, consentAccepted])
 
   async function submitMaxReading(event) {
     event.preventDefault()
@@ -747,7 +779,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
             <div className="border-b border-gold/20 p-6 md:border-b-0 md:border-r md:p-8">
               <p className="font-georgia text-[10px] uppercase tracking-[0.2em] text-gold">Offre de lancement</p>
               <div className="mt-3 flex items-end gap-3">
-                <span className="font-georgia text-5xl font-medium text-cream">19,90 €</span>
+                <span className="font-georgia text-5xl font-medium text-cream">14,90 €</span>
                 <span className="pb-1 font-georgia text-xs text-cream/55">TTC · paiement unique</span>
               </div>
               <p className="mt-5 font-georgia text-sm leading-relaxed text-cream/72">
@@ -780,11 +812,17 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
                     {authMessage && <p className="font-georgia text-xs leading-relaxed text-mist">{authMessage}</p>}
                   </div>
                 </>
-              ) : !hasMaxAccess ? (
+              ) : showMaxCheckout ? (
                 <>
                   <p className="font-georgia text-[10px] uppercase tracking-[0.18em] text-gold">Compte connecté</p>
-                  <h2 className="mt-2 font-georgia text-2xl font-medium">Ouvrir votre suivi MAX</h2>
+                  <h2 className="mt-2 font-georgia text-2xl font-medium">{isMaxFinished ? 'Démarrer un nouveau suivi MAX' : 'Ouvrir votre suivi MAX'}</h2>
                   <p className="mt-2 font-georgia text-sm text-mist">{user.email}</p>
+                  {isMaxFinished && (
+                    <div className="mt-4 rounded-xl border border-gold/25 bg-white/75 p-4">
+                      <p className="font-georgia text-sm leading-relaxed text-deep/80">Ce nouvel achat ouvre une Ligne de Temps indépendante. Votre suivi terminé et ses trois lectures restent consultables dans votre historique.</p>
+                      <button type="button" onClick={() => setRenewalOpen(false)} className="mt-3 font-georgia text-xs font-semibold text-deep underline">Revenir à mon suivi terminé</button>
+                    </div>
+                  )}
                   <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-gold/25 bg-white/70 p-4">
                     <input type="checkbox" checked={consentAccepted} onChange={(e) => setConsentAccepted(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-gold" />
                     <span className="font-georgia text-xs leading-relaxed text-deep/78">
@@ -811,7 +849,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
                     </button>
                   )}
                   {paymentError && <p className="mt-3 font-georgia text-xs leading-relaxed text-red-700">{paymentError}</p>}
-                  {paypalConfig?.env === 'sandbox' && <p className="mt-3 font-georgia text-[11px] text-mist">Preview : PayPal Sandbox facture 1,00 € de test. La production est configurée à 19,90 €.</p>}
+                  {paypalConfig?.env === 'sandbox' && <p className="mt-3 font-georgia text-[11px] text-mist">Preview : PayPal Sandbox facture 1,00 € de test. La production est configurée à 14,90 €.</p>}
                 </>
               ) : (
                 <>
@@ -828,11 +866,35 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
                     </div>
                   </div>
                   <p className="mt-4 font-georgia text-xs leading-relaxed text-mist">Votre achat, vos lectures et votre mémoire MAX sont liés à ce compte MediumIA.</p>
+                  {isMaxFinished && (
+                    <div className="mt-5 rounded-2xl border border-gold/40 bg-white/80 p-4">
+                      <p className="font-georgia text-sm leading-relaxed text-deep/80">Ce suivi est terminé. Vos lectures restent disponibles, et vous pouvez ouvrir une nouvelle Ligne de Temps indépendante.</p>
+                      <button type="button" onClick={() => { setRenewalOpen(true); setConsentAccepted(false); setPaymentError('') }} className="mt-4 w-full rounded-xl bg-deep px-4 py-3 font-georgia text-sm font-semibold text-gold">
+                        Démarrer un nouveau suivi MAX — 14,90 €
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
           </div>
         </section>
+
+        {user && maxHistory.length > 1 && (
+          <section className="mt-7 rounded-3xl border border-gold/30 bg-white/80 p-5 md:p-7">
+            <h2 className="font-georgia text-xl font-medium text-deep">Mes suivis MAX</h2>
+            <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">Retrouvez vos anciennes Lignes de Temps. Chaque suivi conserve ses propres lectures et sa synthèse.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {maxHistory.map((item) => (
+                <button key={item.id} type="button" disabled={item.id === creditState?.packId || paymentBusy} onClick={() => selectPastMax(item.id)}
+                  className="rounded-xl border border-gold/35 bg-white px-4 py-3 text-left font-georgia text-sm text-deep disabled:opacity-60">
+                  <span className="block font-semibold">Suivi du {formatDate(item.capturedAt || item.createdAt)}</span>
+                  <span className="mt-1 block text-xs text-mist">{item.id === creditState?.packId ? 'Suivi affiché' : item.creditsRemaining === 0 ? 'Terminé · Voir les lectures' : 'Voir ce suivi'}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {user && packToken && (creditState?.creditsRemaining ?? 0) > 0 && (
           <section className="mt-7 rounded-3xl border border-gold/30 bg-white/80 p-5 shadow-sm md:p-8">
@@ -840,7 +902,7 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
             <h2 className="mt-2 font-georgia text-2xl font-medium text-deep md:text-3xl">{liveTimeline ? 'Continuer cette Ligne de Temps' : 'Créer votre Ligne de Temps'}</h2>
             <p className="mt-2 font-georgia text-sm leading-relaxed text-mist">Chaque nouvelle lecture repart du ciel du moment et compare ensuite sa structure aux lectures précédentes.</p>
 
-            <form onSubmit={submitMaxReading} className="mt-6 grid gap-4">
+            <form onSubmit={submitMaxReading} aria-busy={drawBusy} className="mt-6 grid gap-4">
               {!liveTimeline && (
                 <label className="grid gap-1.5">
                   <span className="font-georgia text-xs font-semibold text-deep">Nom de la Ligne de Temps</span>
@@ -898,8 +960,20 @@ export default function ChronosphereMaxPage({ onBack, onNavigate }) {
               </div>
 
               {drawError && <p className="font-georgia text-sm leading-relaxed text-red-700">{drawError}</p>}
-              <button disabled={drawBusy} className="rounded-xl bg-deep px-6 py-4 font-georgia text-base font-bold text-gold disabled:opacity-50">
-                {drawBusy ? 'ChronoSphère ouvre la Ligne de Temps…' : liveTimeline ? 'Générer la prochaine lecture MAX' : 'Ouvrir ma Ligne de Temps'}
+              {drawBusy && (
+                <div role="status" aria-live="polite" className="flex items-start gap-4 rounded-2xl border border-gold/40 bg-gold/10 p-4 md:p-5">
+                  <span aria-hidden="true" className="mt-1 inline-block h-6 w-6 shrink-0 animate-spin rounded-full border-[3px] border-gold/25 border-t-gold motion-reduce:animate-none" />
+                  <div>
+                    <p className="font-georgia text-base font-semibold text-deep">Patientez, votre Ligne de Temps se prépare…</p>
+                    <p className="mt-2 font-georgia text-sm leading-relaxed text-deep/75">
+                      ChronoSphère rassemble les éléments de votre tirage et rédige votre interprétation personnalisée. Ne fermez pas cette page pendant la génération.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <button type="submit" disabled={drawBusy} className="flex w-full items-center justify-center gap-3 rounded-xl bg-deep px-6 py-4 font-georgia text-base font-bold text-gold disabled:cursor-wait disabled:opacity-70">
+                {drawBusy && <span aria-hidden="true" className="inline-block h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-gold/25 border-t-gold motion-reduce:animate-none" />}
+                {drawBusy ? 'Patientez, génération en cours…' : liveTimeline ? 'Générer la prochaine lecture MAX' : 'Ouvrir ma Ligne de Temps'}
               </button>
             </form>
           </section>

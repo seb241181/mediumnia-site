@@ -111,7 +111,20 @@ test('MAX needs the recipient account and is attached to it', async () => {
   const res = fakeRes()
   await handleGiftChronosphere(request({ product: 'max3' }, { authorization: 'Bearer jwt1' }), res, db)
   assert.equal(res.statusCode, 200)
-  assert.deepEqual([tables.chronosphere_credit_packs[0].user_id, tables.chronosphere_credit_packs[0].product_type, tables.chronosphere_credit_packs[0].amount_cents], ['u1', 'max3', 1990])
+  assert.deepEqual([tables.chronosphere_credit_packs[0].user_id, tables.chronosphere_credit_packs[0].product_type, tables.chronosphere_credit_packs[0].amount_cents], ['u1', 'max3', 1490])
+})
+
+test('an older MAX gift bought at 19,90 € preserves its paid value when redeemed', async () => {
+  const tables = {
+    gift_cards: [chronoCard({ chronosphere_product: 'max3', price_cents: 1990 })],
+  }
+  const db = fakeDb(tables, { users: { jwt1: { id: 'u1' } } })
+  const res = fakeRes()
+  await handleGiftChronosphere(request({ product: 'max3' }, { authorization: 'Bearer jwt1' }), res, db)
+  assert.equal(res.statusCode, 200)
+  assert.equal(res.body.creditsRemaining, 3)
+  assert.equal(tables.gift_card_redemptions[0].amount_cents, 1990)
+  assert.equal(tables.chronosphere_credit_packs[0].credits_remaining, 3)
 })
 
 test('wrong page, missing consent, expiry and consultation-only cards are refused without side effects', async () => {

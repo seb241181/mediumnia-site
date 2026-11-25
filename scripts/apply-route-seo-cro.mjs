@@ -205,12 +205,11 @@ chronosphere = replaceRequired(
   'Chronosphere number-choice explanation',
 )
 
-chronosphere = replaceRequired(
-  chronosphere,
-  `                    <span className={\`mt-1 block font-georgia text-xs \${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}\`}>3 tirages</span>`,
-  `                    <span className={\`mt-1 block font-georgia text-xs \${selectedProduct === 'pack3' ? 'text-cream/70' : 'text-mist'}\`}>3 tirages · les suivants quand vous voulez</span>`,
-  'Chronosphere pack card value',
-)
+// La grille historique après le formulaire n'existe plus : les trois offres sont
+// présentées une seule fois avant les champs, avec la différence pack/MAX explicite.
+if (!chronosphere.includes('3 tirages <strong>indépendants</strong>')) {
+  throw new Error('MediumIA route/CRO patch drift: grille ChronoSphère unique introuvable')
+}
 
 chronosphere = replaceRequired(
   chronosphere,

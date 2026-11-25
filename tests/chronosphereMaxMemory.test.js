@@ -159,7 +159,7 @@ test('MAX preview exposes the solar temperament panel without turning it into a 
   assert.match(page, /pas une vérité psychologique/)
 })
 
-test('MAX launch stays distinct from V2 and exposes its own 19.90 checkout', async () => {
+test('MAX launch stays distinct from V2 and exposes its own 14.90 checkout', async () => {
   const [page, app, paypal, vercel, launchSql] = await Promise.all([
     readFile(pagePath, 'utf8'),
     readFile(appPath, 'utf8'),
@@ -172,14 +172,14 @@ test('MAX launch stays distinct from V2 and exposes its own 19.90 checkout', asy
     source: '/chronosphere-max',
     destination: '/index.html',
   })
-  assert.match(page, /19,90 €/)
+  assert.match(page, /14,90 €/)
   assert.match(page, /ChronoSphère MAX activé/)
   assert.match(page, /product: 'max3'/)
   assert.match(page, /Donnée comparée/)
   assert.match(page, /Interprétation symbolique/)
   assert.doesNotMatch(page, /probabilit/i)
   assert.match(paypal, /MAX_CONSENT_VERSION/)
-  assert.match(paypal, /displayAmount: '19\.90'/)
+  assert.match(paypal, /displayAmount: '14\.90'/)
   assert.match(paypal, /product === 'max3'/)
   assert.match(paypal, /displayAmount: '9\.90'/)
   assert.match(paypal, /displayAmount: '5\.00'/)
@@ -210,4 +210,77 @@ test('V2 bundle verifier stays scoped to the V2 offer while MAX becomes a distin
   assert.match(verifier, /ChronospherePage-/)
   assert.match(verifier, /chronosphere_packPendingPayment/)
   assert.doesNotMatch(verifier, /if \(bundle\.includes\('ChronoSphère MAX'\)\)/)
+})
+
+test('MAX allows a fresh purchase after an exhausted or expired journey without hiding the past one', async () => {
+  const [page, paypal] = await Promise.all([readFile(pagePath, 'utf8'), readFile(paypalPath, 'utf8')])
+  assert.match(page, /const isMaxFinished = hasMaxAccess && creditState\?\.creditsRemaining === 0/)
+  assert.match(page, /const showMaxCheckout = !hasMaxAccess \|\| \(isMaxFinished && renewalOpen\)/)
+  assert.match(page, /showMaxCheckout \? \(/)
+  assert.match(page, /Démarrer un nouveau suivi MAX — 14,90 €/)
+  assert.match(page, /Ce nouvel achat ouvre une Ligne de Temps indépendante/)
+  assert.match(page, /hasMaxAccess && !isMaxFinished/)
+  assert.match(page, /setRenewalOpen\(false\)/)
+  assert.match(paypal, /credits_remaining: 0, status: 'payment_pending'/)
+  assert.match(paypal, /\.eq\('status', 'payment_pending'\)/)
+})
+
+test('MAX account history stays scoped to owner and lets them select a distinct past pack', async () => {
+  const [page, paypal] = await Promise.all([readFile(pagePath, 'utf8'), readFile(paypalPath, 'utf8')])
+  assert.match(paypal, /requestedPackId/)
+  assert.match(paypal, /\.eq\('id', requestedPackId\)/)
+  assert.match(paypal, /\.eq\('user_id', user\.id\)/)
+  assert.match(paypal, /user\.id !== pack\.user_id/)
+  assert.match(paypal, /maxHistory = \(pastPacks \|\| \[\]\)\.map/)
+  assert.match(paypal, /packId: pack\.id, maxHistory/)
+  assert.match(page, /Mes suivis MAX/)
+  assert.match(page, /selectPastMax\(item\.id\)/)
+  assert.match(page, /refreshMaxStatus\('', false, packId\)/)
+  assert.match(page, /item\.id === creditState\?\.packId/)
+})
+
+test('ChronoSphère requests Anthropic schema-constrained JSON and never consumes truncated text', async () => {
+  const oracleTimeline = await readFile(new URL('../lib/oracleTimeline.js', import.meta.url), 'utf8')
+  assert.match(oracleTimeline, /const CHRONOSPHERE_JSON_OUTPUT = \{/)
+  assert.match(oracleTimeline, /type: 'json_schema'/)
+  assert.match(oracleTimeline, /required: \['summary30s', 'direction', 'closure', 'whyNow', 'sections'\]/)
+  assert.match(oracleTimeline, /output_config: \{ format: CHRONOSPHERE_JSON_OUTPUT \}/)
+  assert.match(oracleTimeline, /truncated_max_tokens/)
+  assert.match(oracleTimeline, /anthropicFailure = structured.reason/)
+  assert.doesNotMatch(oracleTimeline, /console\.error\([^\n]*anthropic\.text/)
+})
+
+test('MAX clearly displays a waiting state during a paid reading without a second submission', async () => {
+  const page = await readFile(pagePath, 'utf8')
+  assert.match(page, /setDrawBusy\(true\)/)
+  assert.match(page, /setDrawBusy\(false\)/)
+  assert.match(page, /<form onSubmit=\{submitMaxReading\} aria-busy=\{drawBusy\}/)
+  assert.match(page, /\{drawBusy && \(\s*<div role="status" aria-live="polite"/)
+  assert.match(page, /Patientez, votre Ligne de Temps se prépare/)
+  assert.match(page, /Ne fermez pas cette page pendant la génération/)
+  assert.match(page, /<button type="submit" disabled=\{drawBusy\}/)
+  assert.match(page, /Patientez, génération en cours/)
+})
+
+test('MAX final synthesis stays readable and distinguishes stable from shifted windows', async () => {
+  const original = summarizeChronosphereLine(chronosphereMaxDemoTimeline.entries)
+  assert.match(original.synthesis, /La Ligne de Temps relie/)
+  assert.ok(original.synthesis.length < 360, 'summary must not be arbitrarily truncated')
+  const firstPeak = chronosphereMaxDemoTimeline.entries[0].snapshot.timing.primary.peak
+  const stableEntries = chronosphereMaxDemoTimeline.entries.map((entry, index) => index !== 2 ? entry : ({
+    ...entry,
+    snapshot: {
+      ...entry.snapshot,
+      timing: {
+        ...entry.snapshot.timing,
+        primary: { ...entry.snapshot.timing.primary, peak: firstPeak },
+      },
+    },
+  }))
+  const stable = summarizeChronosphereLine(stableEntries)
+  assert.equal(stable.firstWindow, stable.currentWindow)
+  assert.match(stable.synthesis, /fenêtre prioritaire reste stable/)
+  const page = await readFile(pagePath, 'utf8')
+  assert.match(page, /synthesis.firstWindow === synthesis.currentWindow \? 'Fenêtre stable' : 'Fenêtre déplacée'/)
+  assert.match(page, /synthesis.firstWindow === synthesis.currentWindow\s*\? shortDate\(synthesis.currentWindow\)/)
 })

@@ -6,7 +6,7 @@ import BoutiqueEcommerce from './components/BoutiqueEcommerce'
 import ConsultationSection from './components/ConsultationSection'
 import FormationPage from './components/FormationPage'
 import LegalFooter from './components/LegalFooter'
-import { MentionsLegales, PolitiqueConfidentialite, CgvOracle, CgvChronosphere, Retractation, ConditionsRdv } from './components/LegalPages'
+import { MentionsLegales, PolitiqueConfidentialite, CgvOracle, CgvChronosphere, Retractation, ConditionsRdv, ConditionsBanque } from './components/LegalPages'
 import OraclePage from './components/OraclePage'
 import ProWaitlistPage from './components/ProWaitlistPage'
 import ReseauDirectory from './components/ReseauDirectory'
@@ -180,6 +180,7 @@ function pathToView(p) {
     : p === '/mentions' ? 'mentions'
     : p === '/confidentialite' ? 'confidentialite'
     : p === '/conditions-rdv' ? 'conditions-rdv'
+    : p === '/conditions-banque' ? 'conditions-banque'
     : p === '/cgv-oracle' ? 'cgv-oracle'
     : p === '/cgv-chronosphere' ? 'cgv-chronosphere'
     : p === '/retractation' ? 'retractation'
@@ -221,7 +222,7 @@ export default function App() {
   const backHome        = () => nav('/',                 'home')
 
   const legalNav = (p) => {
-    const viewMap = { '/mentions': 'mentions', '/confidentialite': 'confidentialite', '/cgv-oracle': 'cgv-oracle', '/conditions-rdv': 'conditions-rdv', '/retractation': 'retractation' }
+    const viewMap = { '/mentions': 'mentions', '/confidentialite': 'confidentialite', '/cgv-oracle': 'cgv-oracle', '/conditions-rdv': 'conditions-rdv', '/conditions-banque': 'conditions-banque', '/retractation': 'retractation' }
     if (p === '/cgv-chronosphere') nav(p, 'cgv-chronosphere')
     else if (viewMap[p]) nav(p, viewMap[p])
     else backHome()
@@ -235,6 +236,7 @@ export default function App() {
   if (view === 'mentions')       return <><MentionsLegales onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'confidentialite') return <><PolitiqueConfidentialite onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'conditions-rdv') return <><ConditionsRdv onBack={backHome} onNavigate={legalNav} />{guardian}</>
+  if (view === 'conditions-banque') return <><ConditionsBanque onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cgv-oracle')     return <><CgvOracle onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'cgv-chronosphere') return <><CgvChronosphere onBack={backHome} onNavigate={legalNav} />{guardian}</>
   if (view === 'retractation')   return <><Retractation onBack={backHome} onNavigate={legalNav} />{guardian}</>

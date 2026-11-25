@@ -112,6 +112,37 @@ export function PolitiqueConfidentialite({ onBack, onNavigate }) {
         </p>
       </Section>
 
+
+      <Section title="Connexion bancaire professionnelle — rapprochement des virements">
+        <p>
+          Le titulaire du compte professionnel MediumIA peut choisir de connecter son compte Crédit Mutuel
+          à un prestataire d'information sur les comptes (Enable Banking) afin de vérifier les virements
+          reçus et les rapprocher des réservations. Cette fonction est facultative et n'est active
+          qu'après son autorisation explicite.
+        </p>
+        <p>
+          En cas d'activation, MediumIA conserve sous forme chiffrée des identifiants techniques de
+          session et de compte, les dates de validité du consentement et les informations minimales
+          nécessaires au rapprochement : référence de réservation, montant, date comptable et empreinte
+          technique non réversible de la transaction. Les relevés complets et identifiants des
+          émetteurs ne sont pas conservés par ce module.
+        </p>
+        <p>
+          Les informations sont traitées exclusivement pour la vérification des règlements et la
+          gestion administrative des prestations. Enable Banking et la banque assurent les étapes
+          d'authentification bancaire. MediumIA n'a pas accès à votre mot de passe bancaire et
+          ne peut pas initier un virement sortant avec cette fonction.
+        </p>
+        <p>
+          L'accès au suivi est limité au propriétaire authentifié du compte MediumIA. Pour une demande
+          d'accès, de rectification ou de suppression, ainsi que pour toute question sur les durées
+          de conservation et les destinataires, écrivez à
+          {' '}<a href="mailto:contact@mediumia.fr" className="text-gold underline">contact@mediumia.fr</a>.
+          Les opérations déjà nécessaires à la tenue des obligations comptables peuvent être conservées
+          dans les limites légales applicables.
+        </p>
+      </Section>
+
       <Section title="Données collectées — Rendez-vous">
         <p>
           Lors d'une demande de rendez-vous, les données suivantes peuvent être collectées :
@@ -991,6 +1022,52 @@ export function Retractation({ onBack, onNavigate }) {
         </p>
       </div>
 
+    </LegalShell>
+  )
+}
+
+
+/* ─────────────────────────────────────
+   CONDITIONS DU SUIVI BANCAIRE (PROPRIETAIRE)
+   ───────────────────────────────────── */
+export function ConditionsBanque({ onBack, onNavigate }) {
+  return (
+    <LegalShell onBack={onBack} onNavigate={onNavigate} title="Conditions du suivi bancaire MediumIA">
+      <Section title="Objet et personnes concernées">
+        <p>
+          Ce service facultatif est réservé au titulaire du compte professionnel de l'entreprise
+          MediumIA, afin de rapprocher ses virements reçus avec les règlements des prestations.
+          Il n'est pas proposé aux clients comme un service bancaire autonome.
+        </p>
+      </Section>
+      <Section title="Autorisation et étendue">
+        <p>
+          La connexion à Crédit Mutuel est établie avec le consentement du titulaire sur l'interface
+          de la banque via Enable Banking. Seul l'accès aux informations du compte (AIS, lecture seule)
+          est demandé. MediumIA ne propose aucune initiation de paiement par ce module.
+          Le titulaire peut mettre fin à son autorisation via les mécanismes de la banque ou du fournisseur.
+        </p>
+      </Section>
+      <Section title="Rapprochement et vérification">
+        <p>
+          Les références et montants des virements reçus sont comparés aux demandes de règlement.
+          Une correspondance est présentée comme une suggestion à vérifier et ne vaut pas attestation
+          de paiement à elle seule. Aucune réservation n'est confirmée, aucun remboursement ou
+          virement n'est effectué automatiquement par le rapprochement bancaire.
+        </p>
+      </Section>
+      <Section title="Disponibilité et données personnelles">
+        <p>
+          La disponibilité dépend de la banque, du consentement en cours et des conditions du
+          fournisseur Enable Banking. Les informations personnelles sont décrites dans la
+          <a href="/confidentialite" onClick={e=>{e.preventDefault();onNavigate('/confidentialite')}}
+            className="text-gold underline"> politique de confidentialité</a>.
+        </p>
+      </Section>
+      <Section title="Contact">
+        <p>Questions sur le service : <a href="mailto:contact@mediumia.fr"
+          className="text-gold underline">contact@mediumia.fr</a>.</p>
+      </Section>
     </LegalShell>
   )
 }

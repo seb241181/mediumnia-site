@@ -11,6 +11,12 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
   const [busy,setBusy]=useState(null)
   const [error,setError]=useState('')
   const [notice,setNotice]=useState('')
+  const [bankConnection,setBankConnection]=useState(null)
+  const [bankConnectionAvailable,setBankConnectionAvailable]=useState(false)
+  const [bankAccountLastFour,setBankAccountLastFour]=useState(null)
+  const [bankConnecting,setBankConnecting]=useState(false)
+  const [bankConnectionError,setBankConnectionError]=useState('')
+  const [bankConsent,setBankConsent]=useState(false)
   const token=session?.access_token
   const load=useCallback(async()=>{
     if(!token||!practitionerId)return
@@ -27,9 +33,58 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
     finally{setLoading(false)}
   },[practitionerId,token])
   useEffect(()=>{void load()},[load])
+  useEffect(()=>{
+    if(!token)return
+    let active=true
+    fetch('/api/rdv-admin?action=bank-connection',{
+      headers:{Authorization:'Bearer '+token},cache:'no-store',
+    }).then(async response=>{
+      if(!active)return
+      if(response.status===503){setBankConnectionAvailable(false);return}
+      if(!response.ok)return
+      const body=await response.json()
+      if(active){setBankConnectionAvailable(true);setBankConnection(body.connection||null);setBankAccountLastFour(body.account_last_four||null)}
+    }).catch(()=>{})
+    return ()=>{active=false}
+  },[token])
+  async function connectBank(){
+    if(!token||bankConnecting)return
+    setBankConnectionError('')
+    setBankConnecting(true)
+    try{
+      const response=await fetch('/api/rdv-admin?action=bank-connection',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+        body:'{}',
+      })
+      const body=await response.json().catch(()=>({}))
+      if(!response.ok||typeof body.authorization_url!=='string')throw new Error('unavailable')
+      const url=new URL(body.authorization_url)
+      if(url.protocol!=='https:'||(url.hostname!=='enablebanking.com'&&!url.hostname.endsWith('.enablebanking.com')))
+        throw new Error('untrusted_bank_url')
+      window.location.assign(url.href)
+    }catch{setBankConnectionError('Connexion indisponible. Aucune donnée bancaire modifiée.')}
+    finally{setBankConnecting(false)}
+  }
+  async function activateBankMonitoring(){
+    if(!token||!bankConsent||bankConnecting)return
+    setBankConnectionError('');setBankConnecting(true)
+    try{
+      const response=await fetch('/api/rdv-admin?action=bank-connection',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify({op:'approve',confirm_read_only:true}),
+      })
+      if(!response.ok)throw new Error('activation_refused')
+      setBankConnection(previous=>({...previous,status:'active'}))
+    }catch{setBankConnectionError('Impossible d’activer le suivi bancaire. Aucun paiement modifié.')}
+    finally{setBankConnecting(false)}
+  }
   async function act(row,op){
     const msg=op==='confirm'
-      ? 'Avez-vous vérifié sur votre compte bancaire la réception du virement de '+money(row.amount_cents)+' (référence '+row.reference+') ?'
+      ? row.bank_match?.bank_seen
+        ? 'Virement repéré sur le compte Crédit Mutuel : '+money(row.amount_cents)+' (référence '+row.reference+'). Confirmer ce rendez-vous après vérification ?'
+        : 'Avez-vous vérifié sur votre compte bancaire la réception du virement de '+money(row.amount_cents)+' (référence '+row.reference+') ?'
       : 'Annuler le blocage provisoire de '+row.customer_name+' ?'
     if(!window.confirm(msg))return
     setBusy(row.id);setError('');setNotice('')
@@ -59,6 +114,36 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
         <button onClick={load} disabled={loading} className="rounded-lg border border-gold/30 px-3 py-2 text-sm text-deep">
           {loading?'Actualisation…':'Actualiser'}
         </button>
+      </div>
+      <div className="mb-4 rounded-xl border border-gold/20 bg-white/80 p-3 text-sm">
+        <p className="font-georgia font-semibold text-deep">Crédit Mutuel PRO — compte {bankAccountLastFour?'•••• '+bankAccountLastFour:'sélectionné'} — lecture seule</p>
+        <p className="mt-1 text-xs text-mist">
+          {bankConnection?.status==='review_required'
+            ? 'Autorisation reçue. Activez uniquement si le compte autorisé est bien votre compte PRO : aucun règlement ne sera confirmé automatiquement.'
+            : bankConnection?.status==='active'
+              ? 'Lecture bancaire activée. Les virements identifiés restent soumis à votre confirmation.'
+              : bankConnectionAvailable
+                ? 'Connexion possible après validation des autorisations bancaires. Aucun virement sortant.'
+                : 'Connexion bancaire non activée. Les validations de virements restent manuelles.'}
+        </p>
+        {bankConnectionAvailable&&!bankConnection&&<button type="button" disabled={bankConnecting}
+          onClick={connectBank} className="mt-2 rounded-lg border border-gold/40 px-3 py-2 text-xs font-semibold disabled:opacity-50">
+          {bankConnecting?'Ouverture sécurisée…':'Connecter mon compte en lecture seule'}
+        </button>}
+        {bankConnection?.status==='review_required'&&<div className="mt-3 space-y-2">
+          <label className="flex items-start gap-2 text-xs text-mist">
+            <input type="checkbox" checked={bankConsent} onChange={e=>setBankConsent(e.target.checked)} />
+            <span>Je confirme l'utilisation de mon compte professionnel pour la consultation quotidienne en lecture seule.
+              Les correspondances devront toujours être validées avant comptabilisation.</span>
+          </label>
+          <button type="button" disabled={!bankConsent||bankConnecting}
+            onClick={activateBankMonitoring} className="rounded-lg border border-gold/40 px-3 py-2 text-xs font-semibold disabled:opacity-50">
+            Activer la surveillance quotidienne
+          </button>
+        </div>}
+        {bankConnection?.status==='active'&&bankConnection.last_synced_at&&
+          <p className="mt-2 text-xs text-mist">Dernière vérification bancaire : {when(bankConnection.last_synced_at)}</p>}
+        {bankConnectionError&&<p role="alert" className="mt-2 text-xs text-red-800">{bankConnectionError}</p>}
       </div>
       <p className="font-georgia text-sm text-mist mb-4">
         Une demande de virement bloque le créneau sur MediumIA mais ne constitue pas un règlement.
@@ -105,6 +190,10 @@ export default function BankTransferAdminPanel({practitionerId,session,onChanged
               <p className="font-georgia text-xs text-mist">Réf. {row.reference}</p>
             </div>
           </div>
+          {row.bank_match?.bank_seen&&<p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+            Virement identifié sur Crédit Mutuel le {row.bank_match.booked_on||'jour non précisé'}
+            ({money(row.bank_match.amount_cents)}) — vérification finale nécessaire.
+          </p>}
           <p className="my-3 text-sm text-mist">
             {row.status==='expired'?'Délai expiré : créneau libéré':'Bloqué jusqu’au '+when(row.expires_at)}
           </p>

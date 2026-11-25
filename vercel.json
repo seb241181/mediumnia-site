@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/banking/callback",
+      "destination": "/api/rdv-config?bankConnectionAction=callback"
+    },
+    {
+      "source": "/api/banking/cron",
+      "destination": "/api/rdv-config?bankConnectionAction=cron"
+    },
+    {
       "source": "/api/rdv-balance-cron",
       "destination": "/api/rdv-config?rdvBalanceAction=cron"
     },
@@ -94,6 +102,10 @@
     },
     {
       "source": "/rdv",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conditions-banque",
       "destination": "/index.html"
     },
     {
@@ -205,6 +217,9 @@
   "env": {
     "PAYPAL_FORMATION_PATH_ENABLED": "true"
   },
+  "crons": [
+    { "path": "/api/banking/cron", "schedule": "0 6 * * *" }
+  ],
   "functions": {
     "api/rdv-config.js": {
       "maxDuration": 300

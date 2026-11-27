@@ -1,4 +1,5 @@
 import { getBookingBalances, getDayPayments } from '../lib/rdvDayPayments.js'
+import { getManualPaymentBookings } from '../lib/rdvManualPaymentsAdmin.js'
 import { handleBankBookingAdmin } from '../lib/rdvBankBooking.js'
 import { markAgendaNoShow } from '../lib/rdvNoShow.js'
 import { setAgendaSessionOutcome } from '../lib/rdvSessionOutcomes.js'
@@ -92,14 +93,12 @@ async function handleMe(req, res, supabase, userId) {
 
   const ids = practitioners.map(p => p.id)
   const now = new Date().toISOString()
-  const recentStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
 
   const [
     { data: services },
     { data: rules },
     { data: connections },
     { data: bookings },
-    { data: recentBookings, error: recentBookingsError },
     { data: exceptions },
     { data: requests },
   ] = await Promise.all([
@@ -116,12 +115,6 @@ async function handleMe(req, res, supabase, userId) {
       .select('id, practitioner_id, service_id, customer_first_name, customer_last_name, customer_email, starts_at, ends_at, status')
       .in('practitioner_id', ids).eq('status', 'confirmed').gte('starts_at', now)
       .order('starts_at').limit(20),
-    // Separate owner-scoped list for the caisse: a session doesn't vanish at its start time.
-    supabase.from('bookings')
-      .select('id, practitioner_id, service_id, customer_first_name, customer_last_name, starts_at, status')
-      .in('practitioner_id', ids).eq('status', 'confirmed')
-      .gte('starts_at', recentStart).lt('starts_at', now)
-      .order('starts_at', { ascending: false }).limit(150),
     supabase.from('booking_exceptions')
       .select('id, practitioner_id, exception_date, exception_type, slots, note')
       .in('practitioner_id', ids).order('exception_date'),
@@ -132,8 +125,6 @@ async function handleMe(req, res, supabase, userId) {
       .order('created_at', { ascending: false })
       .limit(100),
   ])
-
-  if (recentBookingsError) return res.status(500).json({ error: 'recent_bookings_unavailable' })
 
   // Phase 2 : récupérer google_event_id pour les demandes planifiées
   const scheduledWithBooking = (requests || []).filter(r => r.status === 'scheduled' && r.confirmed_booking_id)
@@ -181,7 +172,6 @@ async function handleMe(req, res, supabase, userId) {
     availability_rules:(rules       || []).filter(r => r.practitioner_id === p.id),
     calendar:          (connections || []).find(c  => c.practitioner_id  === p.id) || null,
     upcoming_bookings: upcomingWithModality.filter(b => b.practitioner_id === p.id),
-    recent_bookings:   (recentBookings || []).filter(b => b.practitioner_id === p.id),
     exceptions:        (exceptions  || []).filter(e => e.practitioner_id === p.id),
     pending_requests:  (requests    || []).filter(r => r.practitioner_id === p.id).map(r => ({
       ...r,
@@ -963,6 +953,11 @@ export default async function handler(req, res) {
     case 'exceptions':   return handleExceptions(req, res, supabase, userId)
     case 'requests':     return handleRequests(req, res, supabase, userId)
     case 'bookings':     return handleBookings(req, res, supabase, userId)
+    case 'collection-bookings': {
+      if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
+      const result = await getManualPaymentBookings({ supabase, userId, practitionerId: String(req.query.practitioner_id || '') })
+      return res.status(result.status).json(result.body)
+    }
     case 'booking-balances': {
       if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
       const result = await getBookingBalances({ supabase, userId, practitionerId: req.query.practitioner_id, ids: req.query.ids })

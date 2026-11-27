@@ -1,5 +1,12 @@
 # Reprise Codex - MediumIA
 
+## Caisse RDV et choix du paiement mobile (27 novembre 2026)
+
+- Correctif local sur `codex/rdv-caisse-paiement-mobile`, base `main` de production `039c77cc`. Le lot 1 suspendu reste séparé.
+- Le suivi des visios utilise les rendez-vous après l’heure courante et exclut le jour civil en cours. La caisse charge donc sa propre liste au moment de la saisie, pour les RDV confirmés avec un reste positif au registre. Elle ne pose aucun diagnostic d’impayé. Résultats Supabase paginés par identifiant, par lots de 100 réservations pour les écritures, elles-mêmes paginées. Le contexte de saisie relit toutes les écritures. Aucun changement de statut, d’historique ou de relance.
+- Sur mobile, les choix arrhes et totalité sont au premier plan de l’étape paiement. La garde visio H-48 et le moteur PayPal sont conservés.
+- Validation locale : 8 contrôles Node ciblés, rendu React local et vérification des scripts de génération de caisse en copie temporaire. Pas d’essai de paiement ni de changement distant. Prochaine action après validation : recette visuelle à largeur mobile et vérification du parcours privé en environnement autorisé.
+
 ## Calendrier « Disponibilités MediumIA » — intégration Production préparée (15 novembre 2026)
 
 - Branche d'intégration : `codex/availability-calendar-production-prep`, créée

@@ -37,10 +37,9 @@ function clearShortcutHash(hash) {
   }
 }
 
-export default function ManualPaymentModal({ practitionerId, session, services = [], upcomingBookings = [], initialBookingId = null, onClose, onSaved }) {
+export default function ManualPaymentModal({ practitionerId, session, services = [], initialBookingId = null, onClose, onSaved }) {
   const closeModal = () => { clearShortcutHash('#encaisser'); onClose?.() }
-  const initialMode = initialBookingId ? 'booking' : 'reservio'
-  const [mode, setMode] = useState(initialMode)
+  const [mode, setMode] = useState('booking')
   const [bookingId, setBookingId] = useState(initialBookingId || '')
   const [serviceId, setServiceId] = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -51,12 +50,31 @@ export default function ManualPaymentModal({ practitionerId, session, services =
   const [appointmentAt, setAppointmentAt] = useState('')
   const [note, setNote] = useState('')
   const [context, setContext] = useState(null)
+  const [bookingOptions, setBookingOptions] = useState(null)
   const [loadingContext, setLoadingContext] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   const selectedService = useMemo(() => services.find(service => service.id === serviceId) || null, [services, serviceId])
-  const bookingGroups = useMemo(() => groupPaymentBookings(upcomingBookings), [upcomingBookings])
+  const bookingGroups = useMemo(() => groupPaymentBookings(bookingOptions?.bookings), [bookingOptions])
+
+  useEffect(() => {
+    if (mode !== 'booking' || !practitionerId || !session) return
+    const controller = new AbortController()
+    setBookingOptions(null)
+    const params = new URLSearchParams({ action: 'collection-bookings', practitioner_id: practitionerId })
+    fetch(`/api/rdv-admin?${params}`, { headers: authHeader(session), cache: 'no-store', signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('collection_bookings_unavailable')
+        const { bookings } = await response.json()
+        if (!Array.isArray(bookings)) throw new Error('collection_bookings_unavailable')
+        if (!controller.signal.aborted) setBookingOptions({ bookings })
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setBookingOptions({ error: true })
+      })
+    return () => controller.abort()
+  }, [mode, practitionerId, session])
 
   useEffect(() => {
     if (mode !== 'booking' || !bookingId || !practitionerId || !session) {
@@ -208,6 +226,9 @@ export default function ManualPaymentModal({ practitionerId, session, services =
               <label className="mb-1.5 block font-georgia text-xs text-mist">Rendez-vous</label>
               <select value={bookingId} onChange={e => setBookingId(e.target.value)} required className="w-full rounded-xl border border-gold/25 bg-white/80 px-3 py-2.5 font-georgia text-base sm:text-sm text-deep focus:outline-none focus:border-gold/60">
                 <option value="">Choisir un rendez-vous…</option>
+                {bookingId && !bookingOptions?.bookings?.some(booking => booking.id === bookingId) && (
+                  <option value={bookingId}>{context?.customer_name || 'Rendez-vous sélectionné'}</option>
+                )}
                 {bookingGroups.recent.length > 0 && (
                   <optgroup label="Rendez-vous déjà passés · plus récents en premier">
                     {bookingGroups.recent.map(booking => (
@@ -227,7 +248,10 @@ export default function ManualPaymentModal({ practitionerId, session, services =
                   </optgroup>
                 )}
               </select>
-              <p className="mt-2 font-georgia text-xs text-mist">Choisis la séance concernée avant de valider. Le montant restant est vérifié automatiquement.</p>
+              {bookingOptions === null && <p role="status" className="mt-2 font-georgia text-xs text-mist">Chargement des rendez-vous…</p>}
+              {bookingOptions?.error && <p role="alert" className="mt-2 font-georgia text-xs text-red-800">Liste indisponible. Ferme et rouvre la caisse pour réessayer.</p>}
+              {bookingOptions?.bookings?.length === 0 && <p className="mt-2 font-georgia text-xs text-mist">Aucun rendez-vous avec un solde restant au registre.</p>}
+              <p className="mt-2 font-georgia text-xs text-mist">Choisis la séance concernée avant de valider. Vérifie que le règlement a bien été reçu avant de le saisir.</p>
               {loadingContext && <p className="mt-2 font-georgia text-xs text-mist">Calcul du solde restant…</p>}
               {context && (
                 <div className="mt-3 rounded-xl border border-gold/20 bg-gold/[.06] px-4 py-3">

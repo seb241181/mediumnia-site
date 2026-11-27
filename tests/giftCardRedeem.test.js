@@ -95,10 +95,11 @@ test('rdv-book refuses a deposit service without payment, unless a gift card cov
   assert.match(api, /restoreGiftForCancelledBooking\(supabase, booking\)/)
 })
 
-test('sur mobile, carte cadeau compacte en tête et moyens de paiement séparés', () => {
+test('sur mobile, le choix du montant précède la carte cadeau compacte', () => {
   const checkout = read('src/components/rdv/RdvDepositCheckout.jsx')
   const cardComponent = read('src/components/rdv/GiftCardRedeem.jsx')
-  assert.match(checkout, /grid grid-cols-2 items-start gap-3/)
+  const paymentChoice = checkout.indexOf('name="rdv-payment-choice"')
+  assert.ok(paymentChoice >= 0 && paymentChoice < checkout.indexOf('<GiftCardRedeem'))
   assert.match(checkout, /<GiftCardRedeem\s+compact/)
   assert.ok(checkout.indexOf('<GiftCardRedeem') < checkout.indexOf('Réservation sécurisée'))
   assert.equal((checkout.match(/<GiftCardRedeem/g) || []).length, 1)

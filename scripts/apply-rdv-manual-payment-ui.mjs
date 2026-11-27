@@ -15,13 +15,13 @@ if (!source.includes("import ManualPaymentModal from './ManualPaymentModal.jsx'"
 if (source.includes('export default function AccountingSection({ practitionerId, session, showDailyPayments = true })')) {
   source = source.replace(
     'export default function AccountingSection({ practitionerId, session, showDailyPayments = true })',
-    'export default function AccountingSection({ practitionerId, session, services = [], upcomingBookings = [], showDailyPayments = true })'
+    'export default function AccountingSection({ practitionerId, session, services = [], showDailyPayments = true })'
   )
   changed = true
 } else if (source.includes('export default function AccountingSection({ practitionerId, session })')) {
   source = source.replace(
     'export default function AccountingSection({ practitionerId, session })',
-    'export default function AccountingSection({ practitionerId, session, services = [], upcomingBookings = [] })'
+    'export default function AccountingSection({ practitionerId, session, services = [] })'
   )
   changed = true
 }
@@ -100,7 +100,7 @@ if (source.includes("['Encaissement', 'Client', 'Prestation', 'Type', 'TTC', 'HT
 if (!source.includes('<ManualPaymentModal')) {
   const marker = `    </section>\n  )\n}`
   if (!source.includes(marker)) throw new Error('rdv_manual_ui_modal_marker_missing')
-  const modal = `      {manualPayment && (\n        <ManualPaymentModal\n          practitionerId={practitionerId}\n          session={session}\n          services={services}\n          upcomingBookings={upcomingBookings}\n          initialBookingId={manualPayment.bookingId}\n          onClose={() => setManualPayment(null)}\n          onSaved={() => setRefreshNonce(value => value + 1)}\n        />\n      )}\n    </section>\n  )\n}`
+  const modal = `      {manualPayment && (\n        <ManualPaymentModal\n          practitionerId={practitionerId}\n          session={session}\n          services={services}\n          initialBookingId={manualPayment.bookingId}\n          onClose={() => setManualPayment(null)}\n          onSaved={() => setRefreshNonce(value => value + 1)}\n        />\n      )}\n    </section>\n  )\n}`
   source = source.replace(marker, modal)
   changed = true
 }

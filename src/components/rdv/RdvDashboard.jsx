@@ -19,8 +19,7 @@ function slugify(str) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
-// Date civile française : un rendez-vous du matin reste visible toute la journée,
- // même si le visiteur a changé de fuseau horaire sur son téléphone.
+// Date civile française pour le suivi des visios des prochains jours.
 function parisDayKey(value) {
   const at = new Date(value)
   if (Number.isNaN(at.getTime())) return ''
@@ -1913,7 +1912,6 @@ export default function RdvDashboard({ onBack, onOpenPublic, onOpenLumia }) {
                     practitionerId={activePractitioner.id}
                     session={session}
                     services={activePractitioner.services || []}
-                    upcomingBookings={[...(activePractitioner.recent_bookings || []), ...(activePractitioner.upcoming_bookings || [])]}
                     showDailyPayments={false}
                   />
 

@@ -385,8 +385,31 @@ export default function RdvDepositCheckout({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 items-start gap-3" aria-label="Options de réservation">
-        <p className="self-center font-georgia text-xs uppercase tracking-[.12em] text-gold">Choisissez votre règlement</p>
+      {fullOnlineAllowed && (
+        <fieldset className="min-w-0 space-y-3 rounded-2xl border border-gold/30 bg-white/70 p-3 sm:p-5">
+          <legend className="px-2 font-georgia text-base font-semibold text-deep">Choisissez le montant à régler</legend>
+          {fullPaymentRequired && (
+            <p className="rounded-xl border border-gold/30 bg-gold/10 px-3 py-2 font-georgia text-xs leading-relaxed text-deep">
+              Ce rendez-vous est prévu dans moins de 48 heures : le règlement intégral est requis pour confirmer la visioconférence.
+            </p>
+          )}
+          <label className={`flex min-h-12 items-start gap-3 rounded-xl border p-3 font-georgia text-deep ${paymentChoice === 'arrhes' && !fullPaymentRequired ? 'border-gold bg-gold/10' : 'border-gold/20'} ${fullPaymentRequired ? 'cursor-not-allowed opacity-45' : 'cursor-pointer'}`}>
+            <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'arrhes'} disabled={fullPaymentRequired} onChange={() => choosePayment('arrhes')} className="mt-1 h-5 w-5 shrink-0 accent-deep" />
+            <span className="min-w-0 flex-1">
+              <strong className="block text-base">Verser les arrhes · {money(depositCents)}</strong>
+              <span className="block text-sm leading-relaxed text-mist">Il restera {money(Math.max(0, priceCents - depositCents))} à régler{selectedModality === 'in-person' ? ' sur place, par carte bancaire, espèces ou chèque' : ''}.</span>
+            </span>
+          </label>
+          <label className={`flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border p-3 font-georgia text-deep ${paymentChoice === 'full_payment' ? 'border-gold bg-gold/10' : 'border-gold/20'}`}>
+            <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'full_payment'} onChange={() => choosePayment('full_payment')} className="mt-1 h-5 w-5 shrink-0 accent-deep" />
+            <span className="min-w-0 flex-1">
+              <strong className="block text-base">Régler la totalité · {money(priceCents)}</strong>
+              <span className="block text-sm leading-relaxed text-mist">Votre rendez-vous sera entièrement réglé. Par carte bancaire ou PayPal, en 1 fois{priceCents >= PAY_LATER_MIN_CENTS ? ` — ou en 4 fois sans frais avec PayPal (4 × ${money(Math.ceil(priceCents / 4))} environ)` : ''}.</span>
+            </span>
+          </label>
+        </fieldset>
+      )}
+      <div className="flex justify-end">
         <GiftCardRedeem
           compact
           practitionerSlug={practitionerSlug}
@@ -402,23 +425,6 @@ export default function RdvDepositCheckout({
           onUnavailable={onUnavailable}
         />
       </div>
-      {fullOnlineAllowed && (
-        <div className="rounded-2xl border border-gold/30 bg-white/70 p-5 space-y-3">
-          {fullPaymentRequired && (
-            <p className="rounded-xl border border-gold/30 bg-gold/10 px-3 py-2 font-georgia text-xs leading-relaxed text-deep">
-              Ce rendez-vous est prévu dans moins de 48 heures : le règlement intégral est requis pour confirmer la visioconférence.
-            </p>
-          )}
-          <label className={`flex items-start gap-3 rounded-xl border border-gold/15 p-3 ${fullPaymentRequired ? 'opacity-45 cursor-not-allowed' : 'cursor-pointer'}`}>
-            <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'arrhes'} disabled={fullPaymentRequired} onChange={() => choosePayment('arrhes')} className="mt-1 h-4 w-4" />
-            <span className="font-georgia text-sm leading-relaxed"><strong>Réserver avec {money(depositCents)} d’arrhes</strong><br /><span className="text-mist">Il restera {money(Math.max(0, priceCents - depositCents))} à régler{selectedModality === 'in-person' ? ' sur place, par carte bancaire, espèces ou chèque' : ''}.</span></span>
-          </label>
-          <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gold/15 p-3">
-            <input type="radio" name="rdv-payment-choice" checked={paymentChoice === 'full_payment'} onChange={() => choosePayment('full_payment')} className="mt-1 h-4 w-4" />
-            <span className="font-georgia text-sm leading-relaxed"><strong>Régler la totalité maintenant : {money(priceCents)}</strong><br /><span className="text-mist">Votre rendez-vous sera entièrement réglé. Par carte bancaire ou PayPal, en 1 fois{priceCents >= PAY_LATER_MIN_CENTS ? ` — ou en 4 fois sans frais avec PayPal (4 × ${money(Math.ceil(priceCents / 4))} environ)` : ''}.</span></span>
-          </label>
-        </div>
-      )}
 
       <div className="rounded-2xl border border-gold/30 bg-gold/5 p-5">
         <p className="font-georgia text-[11px] tracking-[.18em] uppercase text-gold mb-3">Réservation sécurisée</p>
